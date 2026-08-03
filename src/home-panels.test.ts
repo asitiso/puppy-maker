@@ -11,7 +11,7 @@ describe('home panel navigation', () => {
   });
 
   it('returns the quest panel for the quest menu', () => {
-    expect(getHomePanel('quest').title).toBe('퀘스트');
+    expect(getHomePanel('quest')).toMatchObject({ title: '퀘스트' });
   });
 
   it('returns no panel for the schedule menu', () => {
