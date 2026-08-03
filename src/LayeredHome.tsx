@@ -16,9 +16,16 @@ const nav = [
 
 export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) {
   const [petted, setPetted] = useState(false);
+
   return <section className="layered-home">
+    <img className="lh-background" src="/assets/home/home_bg_layer.webp" alt="" />
     <div className="layered-vignette" />
     <div className="layered-particles" />
+
+    <button className="lh-character" onClick={() => setPetted(true)} aria-label="루나와 교감">
+      <img src="/assets/home/runa_idle_layer.png" alt="수호 여우 루나" />
+    </button>
+    {petted && <div className="lh-heart">♥</div>}
 
     <div className="lh-level">
       <Asset id="level" />
@@ -48,9 +55,6 @@ export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) 
       <Asset id="goal" />
       <div><h3>이번 주 목표</h3><p>✓ 훈련 3회 완료 <b>(1/3)</b></p><p>□ 대화 2회 하기 <b>(1/2)</b></p><p>□ 요리 1회 하기 <b>(0/1)</b></p></div>
     </div>
-
-    <button className="lh-character-hit" onClick={() => setPetted(true)} aria-label="루나와 교감" />
-    {petted && <div className="lh-heart">♥</div>}
 
     <div className="lh-dialogue">
       <Asset id="dialogue" />
