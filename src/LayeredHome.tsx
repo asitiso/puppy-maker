@@ -34,13 +34,39 @@ const nav = [
 
 export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) {
   const [petted, setPetted] = useState(false);
+  const [activeNav, setActiveNav] = useState(2);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  return <section className="layered-home">
-    <img className="lh-background" src="/assets/home/home_bg_layer.webp" alt="" />
+  const handleMove = (event: React.PointerEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    setTilt({ x, y });
+  };
+
+  const handleNav = (index: number) => {
+    setActiveNav(index);
+    if (index === 0) onSchedule();
+    if (index === 4) setPetted(true);
+  };
+
+  return <section
+    className="layered-home"
+    onPointerMove={handleMove}
+    onPointerLeave={() => setTilt({ x: 0, y: 0 })}
+    style={{ '--px': tilt.x, '--py': tilt.y } as React.CSSProperties}
+  >
+    <div className="lh-scene-layer">
+      <img className="lh-background" src="/assets/home/home_bg_layer.webp" alt="" />
+      <div className="lh-window-light" />
+      <div className="lh-fire-light" />
+      <div className="lh-floor-glow" />
+    </div>
     <div className="layered-vignette" />
     <div className="layered-particles" />
 
     <button className="lh-character" onClick={() => setPetted(true)} aria-label="루나와 교감">
+      <span className="lh-character-rim" />
       <img src="/assets/home/runa_idle_layer.png" alt="수호 여우 루나" />
     </button>
     {petted && <div className="lh-heart">♥</div>}
@@ -85,10 +111,16 @@ export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) 
       <Asset id="dialogue" />
       <span className="lh-name">루나</span>
       <p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : '주인님! 오늘도 좋은 하루가 될 거예요!'}<br/>어디로 가볼까요? ✨</p>
+      <i className="lh-dialogue-next">◆</i>
     </div>
 
     <nav className="lh-bottom-nav">
-      {nav.map(([icon, label], index) => <button key={label} onClick={index === 0 ? onSchedule : index === 4 ? () => setPetted(true) : undefined}>
+      {nav.map(([icon, label], index) => <button
+        key={label}
+        className={activeNav === index ? 'is-active' : ''}
+        onClick={() => handleNav(index)}
+        aria-pressed={activeNav === index}
+      >
         <Asset id="nav" />
         <span><GameIcon name={icon} /></span><b>{label}</b>
       </button>)}
