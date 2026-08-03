@@ -26,3 +26,5 @@ npm run build
 ```
 
 데스크톱에서는 중앙 9:16 게임 캔버스로 표시되고 모바일에서는 화면을 채웁니다.
+
+> Vercel Preview: `feat/vertical-slice` 브랜치 자동 배포 확인용.
