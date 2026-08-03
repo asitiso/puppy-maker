@@ -2,6 +2,7 @@ import { useState } from 'react';
 import App from './App';
 import LayeredHome from './LayeredHome';
 import './layered-home.css';
+import './home-panels.css';
 
 export default function Root() {
   const [showHome, setShowHome] = useState(true);
