@@ -1,0 +1,4 @@
+.hub-screen{background:#1f1714 url('/lobby.webp') center/cover no-repeat!important}
+.hub-screen .cabin-backdrop,.hub-screen .top-hud,.hub-screen .side-stats,.hub-screen .pet-stage,.hub-screen .speech{opacity:0!important}
+.hub-screen .bottom-nav{opacity:0!important;pointer-events:auto}
+.hub-screen::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 25%,transparent 80%,rgba(16,8,12,.08));mix-blend-mode:screen}
