@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { GameState } from './game';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
@@ -31,12 +32,32 @@ const nav: Array<[string, string, HomeMenuId]> = [
   ['calendar', '스케줄', 'schedule'], ['bag', '가방', 'bag'], ['quest', '퀘스트', 'quest'], ['map', '외출', 'outing'], ['heart', '교감', 'bond']
 ];
 
-export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) {
+const conditionLabels: Record<GameState['condition'], string> = {
+  energetic: '활기참',
+  normal: '평범함',
+  focused: '집중됨',
+  tired: '피곤함',
+};
+
+const recommendations: Record<GameState['condition'], string> = {
+  energetic: '몸이 가벼워요. 사냥 훈련에 잘 맞는 날이에요.',
+  normal: '오늘은 원하는 훈련을 골라도 좋아요.',
+  focused: '집중력이 좋아요. 마법 수업을 해볼까요?',
+  tired: '오늘은 휴식을 넣어보는 게 좋아요.',
+};
+
+type LayeredHomeProps = {
+  state: GameState;
+  onSchedule: () => void;
+};
+
+export default function LayeredHome({ state, onSchedule }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const panel = activePanel ? getHomePanel(activePanel) : null;
+  const stamina = Math.max(0, 100 - state.stats.fatigue);
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -76,14 +97,14 @@ export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) 
     {petted && <img className="lh-heart" src="/assets/effects/affection_hearts.png" alt="" />}
 
     <div className="lh-level"><Frame src="/ui/level_badge_frame.png" /><div><small>Lv.</small><strong>10</strong><span>루나</span></div></div>
-    <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin star">★</i><b>5,250</b></span><span><i className="coin gold">●</i><b>22,000</b></span><span><i className="coin gem">◆</i><b>220</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i /><b>120 / 120</b></div></div>
-    <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>4월 2주차</b><span>☀ 맑음</span></div></div>
+    <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin gold">●</i><b>{state.gold.toLocaleString()}</b></span><span><i className="coin gem">◆</i><b>{state.gems.toLocaleString()}</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i style={{ width: `${stamina}%` }} /><b>{stamina} / 100</b></div></div>
+    <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>이번 주 목표</h3><p>✓ 훈련 3회 완료 <b>(1/3)</b></p><p>□ 대화 2회 하기 <b>(1/2)</b></p><p>□ 요리 1회 하기 <b>(0/1)</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('mission')}><span><GameIcon name="paw" /></span><b>성장 보너스</b><small>11:42:18</small></button></div>
 
-    <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : '주인님! 오늘도 좋은 하루가 될 거예요!'}<br/>어디로 가볼까요? ✨</p><i className="lh-dialogue-next">◆</i></div>
+    <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `컨디션 · ${conditionLabels[state.condition]}`}<br/>{petted ? '오늘도 함께 있어줘서 기뻐요.' : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
 
     <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
