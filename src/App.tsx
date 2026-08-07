@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
-import { activities, initialState, reducer, trainingGrade, type ActivityId } from './game';
+import { activities, hydrateGameState, initialState, reducer, trainingGrade, type ActivityId } from './game';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -102,8 +102,13 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
 }
 
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState, init => {
-    try { return JSON.parse(localStorage.getItem('puppy-maker-save') || '') || init; } catch { return init; }
+  const [state, dispatch] = useReducer(reducer, initialState, () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
+      return hydrateGameState(raw);
+    } catch {
+      return hydrateGameState(null);
+    }
   });
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => dispatch({type:'GO',screen:'schedule'})}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
