@@ -5,6 +5,7 @@ import {
   initialState,
   reducer,
   trainingGrade,
+  type AchievementId,
   type ActivityId,
   type GameState,
   type MemoryId,
@@ -82,7 +83,7 @@ function Training({ state, dispatch }: { state: typeof initialState; dispatch: R
   const hit = (kind: 'attack'|'dodge'|'charge') => { dispatch({type:'TRAIN',kind,accuracy}); setFlash(accuracy > .7 ? 'PERFECT!' : accuracy > .45 ? 'GOOD!' : 'MISS'); setTimeout(() => setFlash(''), 500); };
   return <section className="screen training-screen">
     <div className="forest-arena"><div className="moon-orb"/><div className="trees"/><div className="mist"/></div>
-    <div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={() => dispatch({type:'FINISH_TRAINING'})}>훈련 종료</button></div>
+    <div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={() => dispatch({type:'FINISH_TRAINING', eventRoll: Math.random()})}>훈련 종료</button></div>
     <div className="dummy"><span/><i/><b/></div><div className="fighter"><Pet mood="focus"/></div>
     <div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/>{flash && <img className="training-burst" src="/assets/effects/success_burst.png" alt=""/>}<span>{flash}</span></div>
     <div className="action-bar"><button className="attack" onClick={() => hit('attack')}><Icon name="sword"/><b>공격</b></button><button className="dodge" onClick={() => hit('dodge')}><span>◒</span><b>회피</b></button><button className="charge" onClick={() => hit('charge')}><Icon name="spark"/><b>기 모으기</b></button></div>
@@ -90,12 +91,9 @@ function Training({ state, dispatch }: { state: typeof initialState; dispatch: R
 }
 
 const eventDialogue: Record<RandomEventId, string> = {
-  rare_herb: '돌아오는 길에 반짝이는 희귀 약초를 발견했어요!',
-  new_move: '훈련하다가 새로운 움직임이 떠올랐어요. 다음엔 더 잘할 수 있어요!',
-  magic_flow: '오늘은 마력이 정말 자연스럽게 흘렀어요.',
-  second_wind: '힘들었는데 갑자기 다시 힘이 나는 것 같아요!',
-  quiet_focus: '마음이 조용해지니까 주변이 더 또렷하게 보여요.',
-  fox_curiosity: '궁금한 걸 따라가다 보니 새로운 걸 하나 배웠어요!',
+  rare_herb: '돌아오는 길에 반짝이는 희귀 약초를 발견했어요!', new_move: '훈련하다가 새로운 움직임이 떠올랐어요. 다음엔 더 잘할 수 있어요!',
+  magic_flow: '오늘은 마력이 정말 자연스럽게 흘렀어요.', second_wind: '힘들었는데 갑자기 다시 힘이 나는 것 같아요!',
+  quiet_focus: '마음이 조용해지니까 주변이 더 또렷하게 보여요.', fox_curiosity: '궁금한 걸 따라가다 보니 새로운 걸 하나 배웠어요!',
 };
 
 function Dialogue({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
@@ -103,19 +101,16 @@ function Dialogue({ state, dispatch }: { state: typeof initialState; dispatch: R
   return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>{discovery ? eventDialogue[discovery] : <>오늘 사냥 수업, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</>}</p><div className="choices"><button onClick={() => dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ 스트레스 ↓</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>100G · 스트레스 크게 ↓</small></button></div></div></section>;
 }
 
-const statLabels: Record<string, string> = {
-  strength: '근력', intelligence: '지식', magic: '마력', morality: '도덕성', affection: '호감도', stress: '스트레스', fatigue: '피로',
-};
+const statLabels: Record<string, string> = { strength: '근력', intelligence: '지식', magic: '마력', morality: '도덕성', affection: '호감도', stress: '스트레스', fatigue: '피로' };
 const personalityLabels = { courage: '용감함', kindness: '다정함', curiosity: '호기심', calmness: '침착함' } as const;
 const memoryLabels: Record<MemoryId, string> = {
-  first_training: '첫 훈련', first_perfect: '첫 PERFECT', first_hug: '처음 나눈 포옹', first_snack: '처음 건넨 간식', first_s_grade: '첫 S등급', first_month_complete: '첫 달의 성장',
+  first_training: '첫 훈련', first_perfect: '첫 PERFECT', first_hug: '처음 나눈 포옹', first_snack: '처음 건넨 간식',
+  first_s_grade: '첫 S등급', first_month_complete: '첫 달의 성장', first_skill: '처음 익힌 기술', close_bond: '가까워진 마음',
 };
 const eventLabels: Record<RandomEventId, string> = {
   rare_herb: '희귀 약초 발견', new_move: '새로운 동작 발견', magic_flow: '마력의 흐름', second_wind: '두 번째 호흡', quiet_focus: '고요한 집중', fox_curiosity: '여우의 호기심',
 };
-const skillLabels: Record<SkillId, string> = {
-  quick_strike: '빠른 일격', mana_focus: '마력 집중', steady_breath: '고른 호흡', trail_instinct: '길찾기 감각',
-};
+const skillLabels: Record<SkillId, string> = { quick_strike: '빠른 일격', mana_focus: '마력 집중', steady_breath: '고른 호흡', trail_instinct: '길찾기 감각' };
 
 function Result({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const grade = trainingGrade(state.trainingScore);
@@ -125,7 +120,6 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
   const memory = report?.newMemories[0];
   const discoveryLabel = report?.unlockedSkill ? '새 기술 해금' : report?.randomEvent ? '새로운 발견' : memory ? '새로운 기억' : '현재 컨디션';
   const discoveryValue = report?.unlockedSkill ? skillLabels[report.unlockedSkill] : report?.randomEvent ? eventLabels[report.randomEvent] : memory ? memoryLabels[memory] : state.condition;
-
   return <section className="screen result-screen">
     <div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1>
     <p>{report ? `${report.quality} · 이번 달 루나의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
@@ -143,9 +137,10 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
 type AppProps = {
   onStateChange?: (state: GameState) => void;
   onNavigateReady?: (navigate: (screen: Screen) => void) => void;
+  onClaimAchievementReady?: (claim: (achievement: AchievementId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -155,9 +150,11 @@ export default function App({ onStateChange, onNavigateReady }: AppProps = {}) {
     }
   });
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
+  const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
+  useEffect(() => onClaimAchievementReady?.(claimAchievement), [claimAchievement, onClaimAchievementReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
