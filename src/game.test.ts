@@ -6,9 +6,11 @@ import {
   hydrateGameState,
   initialState,
   masteryLevel,
+  pickRandomEvent,
   reducer,
   resultQuality,
   trainingGrade,
+  unlockedSkills,
 } from './game';
 
 describe('game engine', () => {
@@ -175,5 +177,107 @@ describe('game engine', () => {
 
     state = reducer(state, { type: 'GO', screen: 'schedule' });
     expect(state.screen).toBe('schedule');
+  });
+
+  it('unlocks first-tier skills from mastery level two', () => {
+    const skilled = {
+      ...initialState,
+      mastery: {
+        hunt: { xp: 3 },
+        magic: { xp: 3 },
+        rest: { xp: 3 },
+        herb: { xp: 3 },
+      },
+    };
+
+    expect(unlockedSkills(initialState)).toEqual([]);
+    expect(unlockedSkills(skilled)).toEqual(['quick_strike', 'mana_focus', 'steady_breath', 'trail_instinct']);
+  });
+
+  it('selects eligible random events deterministically from state and roll', () => {
+    const herbOnly = {
+      ...initialState,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      personality: { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
+      stats: { ...initialState.stats, fatigue: 10 },
+      condition: 'normal' as const,
+    };
+    const huntOnly = {
+      ...initialState,
+      schedule: ['hunt', 'hunt', 'hunt', 'hunt'] as const,
+      personality: { courage: 30, kindness: 20, curiosity: 20, calmness: 20 },
+      stats: { ...initialState.stats, fatigue: 10 },
+      condition: 'normal' as const,
+    };
+
+    expect(pickRandomEvent(herbOnly, 0)).toBe('rare_herb');
+    expect(pickRandomEvent(herbOnly, 0)).toBe('rare_herb');
+    expect(pickRandomEvent(huntOnly, 0)).toBe('new_move');
+    expect(pickRandomEvent(herbOnly, 0.999)).toBeNull();
+  });
+
+  it('applies a selected event and records it in the monthly report', () => {
+    const state = {
+      ...initialState,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      personality: { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
+      stats: { ...initialState.stats, fatigue: 10 },
+      condition: 'normal' as const,
+    };
+    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });
+
+    expect(trained.gold).toBe(initialState.gold + 100);
+    expect(trained.personality.curiosity).toBeGreaterThan(state.personality.curiosity);
+    expect(trained.lastGrowthReport?.randomEvent).toBe('rare_herb');
+  });
+
+  it('reports a newly unlocked skill when training crosses a mastery threshold', () => {
+    const state = {
+      ...initialState,
+      schedule: ['hunt', 'rest', 'rest', 'rest'] as const,
+      mastery: { ...initialState.mastery, hunt: { xp: 2 } },
+    };
+    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
+
+    expect(unlockedSkills(trained)).toContain('quick_strike');
+    expect(trained.lastGrowthReport?.unlockedSkill).toBe('quick_strike');
+  });
+
+  it('applies small mastery skill bonuses to existing training actions', () => {
+    const huntState = { ...initialState, mastery: { ...initialState.mastery, hunt: { xp: 3 } } };
+    const magicState = { ...initialState, mastery: { ...initialState.mastery, magic: { xp: 3 } } };
+    const restState = {
+      ...initialState,
+      condition: 'tired' as const,
+      mastery: { ...initialState.mastery, rest: { xp: 3 } },
+    };
+
+    expect(reducer(huntState, { type: 'TRAIN', kind: 'attack', accuracy: 1 }).trainingScore).toBe(147);
+    expect(reducer(magicState, { type: 'TRAIN', kind: 'charge', accuracy: 1 }).trainingScore).toBe(84);
+    expect(reducer(restState, { type: 'TRAIN', kind: 'attack', accuracy: 1 }).trainingScore).toBe(133);
+  });
+
+  it('adds trail instinct intelligence once for each herb schedule slot', () => {
+    const state = {
+      ...initialState,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      mastery: { ...initialState.mastery, herb: { xp: 3 } },
+    };
+    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
+
+    expect(trained.stats.intelligence).toBe(initialState.stats.intelligence + 12);
+  });
+
+  it('clears transient discovery report next month while preserving derived skills', () => {
+    const state = {
+      ...initialState,
+      schedule: ['hunt', 'rest', 'rest', 'rest'] as const,
+      mastery: { ...initialState.mastery, hunt: { xp: 2 } },
+    };
+    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
+    const next = reducer({ ...trained, screen: 'result' }, { type: 'NEXT_MONTH' });
+
+    expect(next.lastGrowthReport).toBeNull();
+    expect(unlockedSkills(next)).toContain('quick_strike');
   });
 });
