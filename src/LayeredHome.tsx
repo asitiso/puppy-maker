@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 
-const sprite = '/ui/home-ui-sprite.svg';
-
-function Asset({ id, className = '' }: { id: string; className?: string }) {
-  return <svg className={className} aria-hidden="true"><use href={`${sprite}#${id}`} /></svg>;
+function Frame({ src, alt = '' }: { src: string; alt?: string }) {
+  return <img className="lh-frame" src={src} alt={alt} draggable={false} />;
 }
 
 const iconPaths: Record<string, string> = {
@@ -72,21 +70,22 @@ export default function LayeredHome({ onSchedule }: { onSchedule: () => void }) 
     <div className="layered-vignette" /><div className="layered-particles" />
 
     <button className="lh-character" onClick={() => setPetted(true)} aria-label="루나와 교감">
-      <span className="lh-character-rim" /><img src="/assets/home/runa_idle_layer.png" alt="수호 여우 루나" />
+      {/* runa_happy.png hasn't been supplied yet — falls back to the idle art until it is. */}
+      <span className="lh-character-rim" /><img src={petted ? '/assets/runa/runa_talk.png' : '/assets/home/runa_idle_layer.png'} alt="수호 여우 루나" />
     </button>
-    {petted && <div className="lh-heart">♥</div>}
+    {petted && <img className="lh-heart" src="/assets/effects/affection_hearts.png" alt="" />}
 
-    <div className="lh-level"><Asset id="level" /><div><small>Lv.</small><strong>10</strong><span>루나</span></div></div>
-    <div className="lh-currency"><Asset id="currency" /><div className="lh-currency-values"><span><i className="coin star">★</i><b>5,250</b></span><span><i className="coin gold">●</i><b>22,000</b></span><span><i className="coin gem">◆</i><b>220</b></span></div><div className="lh-hp"><i /><b>120 / 120</b></div></div>
-    <div className="lh-weather"><Asset id="weather" /><div><b>4월 2주차</b><span>☀ 맑음</span></div></div>
+    <div className="lh-level"><Frame src="/ui/level_badge_frame.png" /><div><small>Lv.</small><strong>10</strong><span>루나</span></div></div>
+    <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin star">★</i><b>5,250</b></span><span><i className="coin gold">●</i><b>22,000</b></span><span><i className="coin gem">◆</i><b>220</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i /><b>120 / 120</b></div></div>
+    <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>4월 2주차</b><span>☀ 맑음</span></div></div>
 
-    <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Asset id="shortcut" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
-    <div className="lh-goal"><Asset id="goal" /><div><h3>이번 주 목표</h3><p>✓ 훈련 3회 완료 <b>(1/3)</b></p><p>□ 대화 2회 하기 <b>(1/2)</b></p><p>□ 요리 1회 하기 <b>(0/1)</b></p></div></div>
+    <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
+    <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>이번 주 목표</h3><p>✓ 훈련 3회 완료 <b>(1/3)</b></p><p>□ 대화 2회 하기 <b>(1/2)</b></p><p>□ 요리 1회 하기 <b>(0/1)</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('mission')}><span><GameIcon name="paw" /></span><b>성장 보너스</b><small>11:42:18</small></button></div>
 
-    <div className="lh-dialogue"><Asset id="dialogue" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : '주인님! 오늘도 좋은 하루가 될 거예요!'}<br/>어디로 가볼까요? ✨</p><i className="lh-dialogue-next">◆</i></div>
+    <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : '주인님! 오늘도 좋은 하루가 될 거예요!'}<br/>어디로 가볼까요? ✨</p><i className="lh-dialogue-next">◆</i></div>
 
-    <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index}><Asset id="nav" /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
+    <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
     {panel && <div className="lh-panel-backdrop" onClick={() => setActivePanel(null)}>
       <section className="lh-panel" role="dialog" aria-modal="true" aria-label={panel.title} onClick={event => event.stopPropagation()}>

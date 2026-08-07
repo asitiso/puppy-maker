@@ -17,32 +17,18 @@ function Icon({ name }: { name: string }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={iconPaths[name]} /></svg>;
 }
 
+const petArt: Record<'happy' | 'focus' | 'shy', string> = {
+  // runa_happy.png hasn't been supplied yet — falls back to the idle art until it is.
+  happy: '/assets/home/runa_idle_layer.png',
+  focus: '/assets/runa/runa_training_ready.png',
+  shy: '/assets/runa/runa_talk.png',
+};
+
 function Pet({ mood = 'happy' }: { mood?: 'happy' | 'focus' | 'shy' }) {
   return (
     <div className={`pet pet-${mood}`} aria-label="수호 여우 루나">
       <div className="pet-aura" />
-      <svg viewBox="0 0 360 480" role="img">
-        <defs>
-          <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#fff6ef"/><stop offset=".58" stopColor="#ffc7a8"/><stop offset="1" stopColor="#ee8290"/></linearGradient>
-          <linearGradient id="tail" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#ffd3b1"/><stop offset="1" stopColor="#df7186"/></linearGradient>
-          <radialGradient id="eye"><stop stopColor="#fff6bd"/><stop offset=".38" stopColor="#8eeaff"/><stop offset="1" stopColor="#38639f"/></radialGradient>
-          <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
-        <path className="tail" d="M270 289c81 44 61 145-25 141 46-27 35-66-4-83z" fill="url(#tail)"/>
-        <path d="M89 135L68 28l88 67M270 135l22-107-88 67" fill="url(#fur)" stroke="#d67485" strokeWidth="7"/>
-        <path d="M88 112L78 53l51 48m143 11 10-59-51 48" fill="#b45175" opacity=".78"/>
-        <ellipse cx="180" cy="211" rx="117" ry="130" fill="url(#fur)" stroke="#d9798b" strokeWidth="7"/>
-        <path d="M105 223c21 72 129 84 154 0-9 105-36 165-79 165s-70-60-75-165z" fill="#fff5ec" opacity=".94"/>
-        <ellipse cx="132" cy="190" rx="30" ry="39" fill="#fff"/><ellipse cx="228" cy="190" rx="30" ry="39" fill="#fff"/>
-        <ellipse cx="137" cy="195" rx="18" ry="27" fill="url(#eye)"/><ellipse cx="223" cy="195" rx="18" ry="27" fill="url(#eye)"/>
-        <ellipse cx="141" cy="188" rx="6" ry="10" fill="#fff"/><ellipse cx="227" cy="188" rx="6" ry="10" fill="#fff"/>
-        <path d="M163 235q17 17 34 0-17-11-34 0z" fill="#9d4d69"/>
-        <path className="pet-mouth" d="M180 248c-8 13-22 14-30 3m30-3c8 13 22 14 30 3" fill="none" stroke="#8e4960" strokeWidth="5" strokeLinecap="round"/>
-        <circle cx="106" cy="231" r="16" fill="#ff8fa1" opacity=".35"/><circle cx="254" cy="231" r="16" fill="#ff8fa1" opacity=".35"/>
-        <path d="M134 311c-36 30-47 91-22 118 17 18 42 2 46-28m68-90c36 30 47 91 22 118-17 18-42 2-46-28" fill="url(#fur)" stroke="#d9798b" strokeWidth="7"/>
-        <path d="M135 302q45 31 90 0l13 74q-58 38-116 0z" fill="#6174bc" stroke="#ffd98a" strokeWidth="7"/>
-        <path d="M180 306l18 35-18 43-18-43z" fill="#89f5ff" filter="url(#glow)"/>
-      </svg>
+      <img src={petArt[mood]} alt="수호 여우 루나" />
     </div>
   );
 }
@@ -101,7 +87,7 @@ function Training({ state, dispatch }: { state: typeof initialState; dispatch: R
     <div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={() => dispatch({type:'FINISH_TRAINING'})}>훈련 종료</button></div>
     <div className="dummy"><span/><i/><b/></div>
     <div className="fighter"><Pet mood="focus"/></div>
-    <div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/><span>{flash}</span></div>
+    <div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/>{flash && <img className="training-burst" src="/assets/effects/success_burst.png" alt="" />}<span>{flash}</span></div>
     <div className="action-bar"><button className="attack" onClick={() => hit('attack')}><Icon name="sword"/><b>공격</b></button><button className="dodge" onClick={() => hit('dodge')}><span>◒</span><b>회피</b></button><button className="charge" onClick={() => hit('charge')}><Icon name="spark"/><b>기 모으기</b></button></div>
   </section>;
 }
@@ -112,7 +98,7 @@ function Dialogue({ dispatch }: { dispatch: React.Dispatch<any> }) {
 
 function Result({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const grade = trainingGrade(state.trainingScore);
-  return <section className="screen result-screen"><div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1><p>루나는 이번 달에도 한 뼘 더 성장했어요.</p><div className="result-card"><div><span>근력</span><b>{state.stats.strength}</b></div><div><span>마력</span><b>{state.stats.magic}</b></div><div><span>호감도</span><b>{state.stats.affection}</b></div><div><span>스트레스</span><b>{state.stats.stress}</b></div></div><div className="reward"><span>월간 보상</span><b>350 G</b></div><button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button></section>;
+  return <section className="screen result-screen"><div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1><p>루나는 이번 달에도 한 뼘 더 성장했어요.</p><div className="result-card"><div><span>근력</span><b>{state.stats.strength}</b></div><div><span>마력</span><b>{state.stats.magic}</b></div><div><span>호감도</span><b>{state.stats.affection}</b></div><div><span>스트레스</span><b>{state.stats.stress}</b></div></div><div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt="" /><span>월간 보상</span><b>350 G</b></div><button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button></section>;
 }
 
 export default function App() {
