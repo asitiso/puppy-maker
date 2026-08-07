@@ -1,5 +1,15 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
-import { activities, hydrateGameState, initialState, reducer, trainingGrade, type ActivityId, type MemoryId } from './game';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import {
+  activities,
+  hydrateGameState,
+  initialState,
+  reducer,
+  trainingGrade,
+  type ActivityId,
+  type GameState,
+  type MemoryId,
+  type Screen,
+} from './game';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -140,7 +150,12 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
   </section>;
 }
 
-export default function App() {
+type AppProps = {
+  onStateChange?: (state: GameState) => void;
+  onNavigateReady?: (navigate: (screen: Screen) => void) => void;
+};
+
+export default function App({ onStateChange, onNavigateReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -149,6 +164,11 @@ export default function App() {
       return hydrateGameState(null);
     }
   });
+  const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
+
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
-  return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => dispatch({type:'GO',screen:'schedule'})}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
+  useEffect(() => onStateChange?.(state), [state, onStateChange]);
+  useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
+
+  return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
