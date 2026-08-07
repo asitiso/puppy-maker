@@ -85,9 +85,14 @@ export const initialState: GameState = {
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value));
 const activityIds: ActivityId[] = ['hunt', 'magic', 'rest', 'herb'];
+const statKeys: Array<keyof Stats> = ['strength', 'intelligence', 'magic', 'morality', 'affection', 'stress', 'fatigue'];
+const personalityKeys: Array<keyof Personality> = ['courage', 'kindness', 'curiosity', 'calmness'];
 const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result'];
 const conditions: Condition[] = ['energetic', 'normal', 'focused', 'tired'];
+const resultQualities: ResultQuality[] = ['NORMAL', 'GOOD', 'GREAT', 'PERFECT'];
+const grades: Array<GrowthReport['grade']> = ['S', 'A', 'B', 'C'];
 const memoryIds: MemoryId[] = ['first_training', 'first_perfect', 'first_hug', 'first_snack', 'first_s_grade', 'first_month_complete'];
+const memoryPriority: MemoryId[] = ['first_perfect', 'first_s_grade', 'first_training', 'first_hug', 'first_snack', 'first_month_complete'];
 
 const cloneInitialState = (): GameState => ({
   ...initialState,
@@ -144,12 +149,37 @@ function addMemory(memories: MemoryId[], id: MemoryId): MemoryId[] {
   return memories.includes(id) ? memories : [...memories, id];
 }
 
+function pickReportMemory(memories: MemoryId[]): MemoryId[] {
+  const chosen = memoryPriority.find(id => memories.includes(id));
+  return chosen ? [chosen] : [];
+}
+
 function applyPersonalityDelta(personality: Personality, delta: Partial<Personality>): Personality {
   const next = { ...personality };
-  (Object.keys(delta) as Array<keyof Personality>).forEach(key => {
-    next[key] = clamp(next[key] + (delta[key] ?? 0));
+  personalityKeys.forEach(key => {
+    if (delta[key] !== undefined) next[key] = clamp(next[key] + (delta[key] ?? 0));
   });
   return next;
+}
+
+function personalityDifference(before: Personality, after: Personality): Partial<Personality> {
+  const delta: Partial<Personality> = {};
+  personalityKeys.forEach(key => {
+    const difference = after[key] - before[key];
+    if (difference !== 0) delta[key] = difference;
+  });
+  return delta;
+}
+
+function mergePersonalityDeltas(...deltas: Array<Partial<Personality>>): Partial<Personality> {
+  const merged: Partial<Personality> = {};
+  for (const delta of deltas) {
+    personalityKeys.forEach(key => {
+      const value = delta[key];
+      if (value !== undefined && value !== 0) merged[key] = (merged[key] ?? 0) + value;
+    });
+  }
+  return merged;
 }
 
 const activityPersonality: Record<ActivityId, Partial<Personality>> = {
@@ -192,7 +222,48 @@ function buildGrowthReport(state: GameState, personalityDeltas: Partial<Personal
     topStat: topStatGrowth(state.schedule, state.trainingScore),
     masteryLevels: Object.fromEntries(activityIds.map(id => [id, masteryLevel(state.mastery[id].xp)])) as Record<ActivityId, number>,
     personalityDeltas,
-    newMemories: newMemories.slice(0, 1),
+    newMemories: pickReportMemory(newMemories),
+  };
+}
+
+function hydrateGrowthReport(raw: unknown): GrowthReport | null {
+  if (!isRecord(raw)) return null;
+  if (typeof raw.grade !== 'string' || !grades.includes(raw.grade as GrowthReport['grade'])) return null;
+  if (typeof raw.quality !== 'string' || !resultQualities.includes(raw.quality as ResultQuality)) return null;
+  if (!isRecord(raw.masteryLevels) || !isRecord(raw.personalityDeltas) || !Array.isArray(raw.newMemories)) return null;
+
+  let topStat: GrowthReport['topStat'] = null;
+  if (raw.topStat !== null) {
+    if (!isRecord(raw.topStat) || typeof raw.topStat.key !== 'string' || !statKeys.includes(raw.topStat.key as keyof Stats)) return null;
+    if (typeof raw.topStat.delta !== 'number' || !Number.isFinite(raw.topStat.delta)) return null;
+    topStat = { key: raw.topStat.key as keyof Stats, delta: raw.topStat.delta };
+  }
+
+  const masteryLevels = {} as Record<ActivityId, number>;
+  for (const id of activityIds) {
+    const value = raw.masteryLevels[id];
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    masteryLevels[id] = Math.min(5, Math.max(1, Math.floor(value)));
+  }
+
+  const personalityDeltas: Partial<Personality> = {};
+  for (const key of personalityKeys) {
+    const value = raw.personalityDeltas[key];
+    if (value !== undefined) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+      personalityDeltas[key] = value;
+    }
+  }
+
+  const newMemories = raw.newMemories.filter((id): id is MemoryId => typeof id === 'string' && memoryIds.includes(id as MemoryId));
+
+  return {
+    grade: raw.grade as GrowthReport['grade'],
+    quality: raw.quality as ResultQuality,
+    topStat,
+    masteryLevels,
+    personalityDeltas,
+    newMemories: pickReportMemory(newMemories),
   };
 }
 
@@ -226,8 +297,10 @@ export function hydrateGameState(raw: unknown): GameState {
   };
 
   const schedule = Array.isArray(raw.schedule)
-    ? raw.schedule.filter((id): id is ActivityId => typeof id === 'string' && activityIds.includes(id as ActivityId))
-    : fallback.schedule;
+    && raw.schedule.length === 4
+    && raw.schedule.every(id => typeof id === 'string' && activityIds.includes(id as ActivityId))
+    ? [...raw.schedule] as ActivityId[]
+    : [...fallback.schedule];
 
   const memories = Array.isArray(raw.memories)
     ? [...new Set(raw.memories.filter((id): id is MemoryId => typeof id === 'string' && memoryIds.includes(id as MemoryId)))]
@@ -241,7 +314,7 @@ export function hydrateGameState(raw: unknown): GameState {
     week: Math.min(4, Math.max(1, Math.floor(finiteNumber(raw.week, fallback.week)))),
     gold: Math.max(0, Math.floor(finiteNumber(raw.gold, fallback.gold))),
     gems: Math.max(0, Math.floor(finiteNumber(raw.gems, fallback.gems))),
-    schedule: schedule.length ? schedule : [...fallback.schedule],
+    schedule,
     stats,
     combo: Math.max(0, Math.floor(finiteNumber(raw.combo, fallback.combo))),
     trainingScore: Math.max(0, Math.floor(finiteNumber(raw.trainingScore, fallback.trainingScore))),
@@ -250,7 +323,7 @@ export function hydrateGameState(raw: unknown): GameState {
     mastery,
     personality,
     memories,
-    lastGrowthReport: isRecord(raw.lastGrowthReport) ? raw.lastGrowthReport as unknown as GrowthReport : null,
+    lastGrowthReport: hydrateGrowthReport(raw.lastGrowthReport),
   };
 }
 
@@ -294,6 +367,7 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'FINISH_TRAINING': {
       let stats = { ...state.stats };
+      const personalityBefore = { ...state.personality };
       let mastery: MasteryState = Object.fromEntries(activityIds.map(id => [id, { ...state.mastery[id] }])) as MasteryState;
       let personality = { ...state.personality };
       const quality = resultQuality(state.trainingScore);
@@ -311,7 +385,8 @@ export function reducer(state: GameState, action: Action): GameState {
       if (quality === 'PERFECT') memories = addMemory(memories, 'first_perfect');
       if (trainingGrade(state.trainingScore) === 'S') memories = addMemory(memories, 'first_s_grade');
 
-      return {
+      const trainingNewMemories = memories.filter(id => !state.memories.includes(id));
+      const nextState: GameState = {
         ...state,
         stats,
         mastery,
@@ -319,6 +394,12 @@ export function reducer(state: GameState, action: Action): GameState {
         memories,
         condition: deriveCondition(stats),
         screen: 'dialogue',
+        lastGrowthReport: null,
+      };
+
+      return {
+        ...nextState,
+        lastGrowthReport: buildGrowthReport(nextState, personalityDifference(personalityBefore, personality), trainingNewMemories),
       };
     }
     case 'CHOOSE': {
@@ -326,14 +407,21 @@ export function reducer(state: GameState, action: Action): GameState {
       let memories = beforeMemories;
       if (action.choice === 'hug') memories = addMemory(memories, 'first_hug');
       if (action.choice === 'snack') memories = addMemory(memories, 'first_snack');
-      const newMemories = memories.filter(id => !beforeMemories.includes(id));
-      const personalityDeltas = dialoguePersonality[action.choice];
-      const personality = applyPersonalityDelta(state.personality, personalityDeltas);
+      const dialogueNewMemories = memories.filter(id => !beforeMemories.includes(id));
+      const personalityBefore = { ...state.personality };
+      const personality = applyPersonalityDelta(state.personality, dialoguePersonality[action.choice]);
       const chosen = applyDialogueChoice({ ...state, memories, personality }, action.choice);
+      const previousDeltas = state.lastGrowthReport?.personalityDeltas ?? {};
+      const allNewMemories = [...(state.lastGrowthReport?.newMemories ?? []), ...dialogueNewMemories];
+
       return {
         ...chosen,
         condition: deriveCondition(chosen.stats),
-        lastGrowthReport: buildGrowthReport({ ...chosen, memories, personality }, personalityDeltas, newMemories),
+        lastGrowthReport: buildGrowthReport(
+          { ...chosen, memories, personality },
+          mergePersonalityDeltas(previousDeltas, personalityDifference(personalityBefore, personality)),
+          allNewMemories,
+        ),
       };
     }
     case 'NEXT_MONTH': {
@@ -351,6 +439,7 @@ export function reducer(state: GameState, action: Action): GameState {
         gold: state.gold + 350,
         memories,
         condition: deriveCondition(state.stats),
+        lastGrowthReport: null,
       };
     }
     case 'RESET': return cloneInitialState();
