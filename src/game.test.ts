@@ -134,4 +134,24 @@ describe('game engine', () => {
     expect(next.mastery.hunt.xp).toBe(progressed.mastery.hunt.xp);
     expect(next.memories).toContain('first_month_complete');
   });
+
+  it('completes the monthly loop and can enter schedule again after returning home', () => {
+    let state = reducer(initialState, { type: 'GO', screen: 'schedule' });
+    expect(state.screen).toBe('schedule');
+
+    state = reducer(state, { type: 'GO', screen: 'training' });
+    state = reducer(state, { type: 'TRAIN', kind: 'attack', accuracy: 0.8 });
+    state = reducer(state, { type: 'FINISH_TRAINING' });
+    expect(state.screen).toBe('dialogue');
+
+    state = reducer(state, { type: 'CHOOSE', choice: 'hug' });
+    expect(state.screen).toBe('result');
+
+    state = reducer(state, { type: 'NEXT_MONTH' });
+    expect(state.screen).toBe('hub');
+    expect(state.month).toBe(5);
+
+    state = reducer(state, { type: 'GO', screen: 'schedule' });
+    expect(state.screen).toBe('schedule');
+  });
 });
