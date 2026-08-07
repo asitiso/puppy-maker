@@ -30,18 +30,9 @@ describe('game engine', () => {
 
   it('hydrates legacy saves with v2 defaults', () => {
     const legacy = {
-      screen: 'hub',
-      year: 1,
-      month: 4,
-      week: 2,
-      gold: 5000,
-      gems: 220,
-      schedule: ['hunt', 'magic', 'rest', 'herb'],
-      stats: { ...initialState.stats },
-      combo: 0,
-      trainingScore: 0,
+      screen: 'hub', year: 1, month: 4, week: 2, gold: 5000, gems: 220,
+      schedule: ['hunt', 'magic', 'rest', 'herb'], stats: { ...initialState.stats }, combo: 0, trainingScore: 0,
     };
-
     const hydrated = hydrateGameState(legacy);
     expect(hydrated.condition).toBe('normal');
     expect(hydrated.mastery.hunt.xp).toBe(0);
@@ -56,12 +47,7 @@ describe('game engine', () => {
   });
 
   it('rejects malformed schedules and growth reports during hydration', () => {
-    const hydrated = hydrateGameState({
-      ...initialState,
-      schedule: ['hunt'],
-      lastGrowthReport: { quality: 'PERFECT' },
-    });
-
+    const hydrated = hydrateGameState({ ...initialState, schedule: ['hunt'], lastGrowthReport: { quality: 'PERFECT' } });
     expect(hydrated.schedule).toEqual(initialState.schedule);
     expect(hydrated.lastGrowthReport).toBeNull();
   });
@@ -104,7 +90,6 @@ describe('game engine', () => {
     expect(first.mastery.magic.xp).toBeGreaterThan(0);
     expect(first.personality.courage).toBeGreaterThan(initialState.personality.courage);
     expect(first.memories).toContain('first_training');
-
     const second = reducer({ ...first, screen: 'training' }, { type: 'FINISH_TRAINING' });
     expect(second.memories.filter(id => id === 'first_training')).toHaveLength(1);
   });
@@ -119,7 +104,6 @@ describe('game engine', () => {
   it('applies dialogue personality effects and creates a growth report', () => {
     const trained = reducer({ ...initialState, trainingScore: 700 }, { type: 'FINISH_TRAINING' });
     const result = reducer(trained, { type: 'CHOOSE', choice: 'hug' });
-
     expect(result.personality.kindness).toBeGreaterThan(trained.personality.kindness);
     expect(result.memories).toContain('first_hug');
     expect(result.lastGrowthReport).not.toBeNull();
@@ -131,7 +115,6 @@ describe('game engine', () => {
   it('includes training and dialogue personality changes in the monthly report', () => {
     const trained = reducer({ ...initialState, trainingScore: 700 }, { type: 'FINISH_TRAINING' });
     const result = reducer(trained, { type: 'CHOOSE', choice: 'scold' });
-
     expect(result.lastGrowthReport?.personalityDeltas.courage).toBe(5);
     expect(result.lastGrowthReport?.personalityDeltas.curiosity).toBe(5);
     expect(result.lastGrowthReport?.personalityDeltas.calmness).toBe(5);
@@ -139,11 +122,7 @@ describe('game engine', () => {
   });
 
   it('clamps personality values during hydration', () => {
-    const hydrated = hydrateGameState({
-      ...initialState,
-      personality: { courage: 200, kindness: -10, curiosity: 30, calmness: 40 },
-    });
-
+    const hydrated = hydrateGameState({ ...initialState, personality: { courage: 200, kindness: -10, curiosity: 30, calmness: 40 } });
     expect(hydrated.personality.courage).toBe(100);
     expect(hydrated.personality.kindness).toBe(0);
   });
@@ -151,7 +130,6 @@ describe('game engine', () => {
   it('advances month, preserves v2 progress and returns to hub', () => {
     const progressed = reducer({ ...initialState, screen: 'training' }, { type: 'FINISH_TRAINING' });
     const next = reducer({ ...progressed, screen: 'result' }, { type: 'NEXT_MONTH' });
-
     expect(next.month).toBe(5);
     expect(next.screen).toBe('hub');
     expect(next.gold).toBe(5350);
@@ -162,34 +140,21 @@ describe('game engine', () => {
   it('completes the monthly loop and can enter schedule again after returning home', () => {
     let state = reducer(initialState, { type: 'GO', screen: 'schedule' });
     expect(state.screen).toBe('schedule');
-
     state = reducer(state, { type: 'GO', screen: 'training' });
     state = reducer(state, { type: 'TRAIN', kind: 'attack', accuracy: 0.8 });
     state = reducer(state, { type: 'FINISH_TRAINING' });
     expect(state.screen).toBe('dialogue');
-
     state = reducer(state, { type: 'CHOOSE', choice: 'hug' });
     expect(state.screen).toBe('result');
-
     state = reducer(state, { type: 'NEXT_MONTH' });
     expect(state.screen).toBe('hub');
     expect(state.month).toBe(5);
-
     state = reducer(state, { type: 'GO', screen: 'schedule' });
     expect(state.screen).toBe('schedule');
   });
 
   it('unlocks first-tier skills from mastery level two', () => {
-    const skilled = {
-      ...initialState,
-      mastery: {
-        hunt: { xp: 3 },
-        magic: { xp: 3 },
-        rest: { xp: 3 },
-        herb: { xp: 3 },
-      },
-    };
-
+    const skilled = { ...initialState, mastery: { hunt: { xp: 3 }, magic: { xp: 3 }, rest: { xp: 3 }, herb: { xp: 3 } } };
     expect(unlockedSkills(initialState)).toEqual([]);
     expect(unlockedSkills(skilled)).toEqual(['quick_strike', 'mana_focus', 'steady_breath', 'trail_instinct']);
   });
@@ -197,19 +162,16 @@ describe('game engine', () => {
   it('selects eligible random events deterministically from state and roll', () => {
     const herbOnly = {
       ...initialState,
-      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as typeof initialState.schedule,
       personality: { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
-      stats: { ...initialState.stats, fatigue: 10 },
-      condition: 'normal' as const,
+      stats: { ...initialState.stats, fatigue: 10 }, condition: 'normal' as const,
     };
     const huntOnly = {
       ...initialState,
-      schedule: ['hunt', 'hunt', 'hunt', 'hunt'] as const,
+      schedule: ['hunt', 'hunt', 'hunt', 'hunt'] as typeof initialState.schedule,
       personality: { courage: 30, kindness: 20, curiosity: 20, calmness: 20 },
-      stats: { ...initialState.stats, fatigue: 10 },
-      condition: 'normal' as const,
+      stats: { ...initialState.stats, fatigue: 10 }, condition: 'normal' as const,
     };
-
     expect(pickRandomEvent(herbOnly, 0)).toBe('rare_herb');
     expect(pickRandomEvent(herbOnly, 0)).toBe('rare_herb');
     expect(pickRandomEvent(huntOnly, 0)).toBe('new_move');
@@ -219,13 +181,11 @@ describe('game engine', () => {
   it('applies a selected event and records it in the monthly report', () => {
     const state = {
       ...initialState,
-      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as typeof initialState.schedule,
       personality: { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
-      stats: { ...initialState.stats, fatigue: 10 },
-      condition: 'normal' as const,
+      stats: { ...initialState.stats, fatigue: 10 }, condition: 'normal' as const,
     };
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });
-
     expect(trained.gold).toBe(initialState.gold + 100);
     expect(trained.personality.curiosity).toBeGreaterThan(state.personality.curiosity);
     expect(trained.lastGrowthReport?.randomEvent).toBe('rare_herb');
@@ -234,11 +194,10 @@ describe('game engine', () => {
   it('reports a newly unlocked skill when training crosses a mastery threshold', () => {
     const state = {
       ...initialState,
-      schedule: ['hunt', 'rest', 'rest', 'rest'] as const,
+      schedule: ['hunt', 'rest', 'rest', 'rest'] as typeof initialState.schedule,
       mastery: { ...initialState.mastery, hunt: { xp: 2 } },
     };
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
-
     expect(unlockedSkills(trained)).toContain('quick_strike');
     expect(trained.lastGrowthReport?.unlockedSkill).toBe('quick_strike');
   });
@@ -246,12 +205,7 @@ describe('game engine', () => {
   it('applies small mastery skill bonuses to existing training actions', () => {
     const huntState = { ...initialState, mastery: { ...initialState.mastery, hunt: { xp: 3 } } };
     const magicState = { ...initialState, mastery: { ...initialState.mastery, magic: { xp: 3 } } };
-    const restState = {
-      ...initialState,
-      condition: 'tired' as const,
-      mastery: { ...initialState.mastery, rest: { xp: 3 } },
-    };
-
+    const restState = { ...initialState, condition: 'tired' as const, mastery: { ...initialState.mastery, rest: { xp: 3 } } };
     expect(reducer(huntState, { type: 'TRAIN', kind: 'attack', accuracy: 1 }).trainingScore).toBe(147);
     expect(reducer(magicState, { type: 'TRAIN', kind: 'charge', accuracy: 1 }).trainingScore).toBe(84);
     expect(reducer(restState, { type: 'TRAIN', kind: 'attack', accuracy: 1 }).trainingScore).toBe(133);
@@ -260,23 +214,21 @@ describe('game engine', () => {
   it('adds trail instinct intelligence once for each herb schedule slot', () => {
     const state = {
       ...initialState,
-      schedule: ['herb', 'herb', 'herb', 'herb'] as const,
+      schedule: ['herb', 'herb', 'herb', 'herb'] as typeof initialState.schedule,
       mastery: { ...initialState.mastery, herb: { xp: 3 } },
     };
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
-
     expect(trained.stats.intelligence).toBe(initialState.stats.intelligence + 12);
   });
 
   it('clears transient discovery report next month while preserving derived skills', () => {
     const state = {
       ...initialState,
-      schedule: ['hunt', 'rest', 'rest', 'rest'] as const,
+      schedule: ['hunt', 'rest', 'rest', 'rest'] as typeof initialState.schedule,
       mastery: { ...initialState.mastery, hunt: { xp: 2 } },
     };
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
     const next = reducer({ ...trained, screen: 'result' }, { type: 'NEXT_MONTH' });
-
     expect(next.lastGrowthReport).toBeNull();
     expect(unlockedSkills(next)).toContain('quick_strike');
   });
