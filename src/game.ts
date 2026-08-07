@@ -4,6 +4,8 @@ export type Condition = 'energetic' | 'normal' | 'focused' | 'tired';
 export type ResultQuality = 'NORMAL' | 'GOOD' | 'GREAT' | 'PERFECT';
 export type MemoryId = 'first_training' | 'first_perfect' | 'first_hug' | 'first_snack' | 'first_s_grade' | 'first_month_complete';
 export type DialogueChoice = 'hug' | 'scold' | 'snack';
+export type SkillId = 'quick_strike' | 'mana_focus' | 'steady_breath' | 'trail_instinct';
+export type RandomEventId = 'rare_herb' | 'new_move' | 'magic_flow' | 'second_wind' | 'quiet_focus' | 'fox_curiosity';
 
 export interface Stats {
   strength: number;
@@ -35,6 +37,8 @@ export interface GrowthReport {
   masteryLevels: Record<ActivityId, number>;
   personalityDeltas: Partial<Personality>;
   newMemories: MemoryId[];
+  randomEvent: RandomEventId | null;
+  unlockedSkill: SkillId | null;
 }
 
 export interface GameState {
@@ -60,7 +64,7 @@ export const activities: Record<ActivityId, { name: string; icon: string; effect
   hunt: { name: '사냥 훈련', icon: 'sword', effect: { strength: 6, fatigue: 9, stress: 4 } },
   magic: { name: '마법 수업', icon: 'spark', effect: { magic: 7, intelligence: 3, fatigue: 7 } },
   rest: { name: '포근한 휴식', icon: 'moon', effect: { stress: -16, fatigue: -20, affection: 2 } },
-  herb: { name: '약초 채집', icon: 'leaf', effect: { intelligence: 2, fatigue: 5 } }
+  herb: { name: '약초 채집', icon: 'leaf', effect: { intelligence: 2, fatigue: 5 } },
 };
 
 const defaultMastery = (): MasteryState => ({
@@ -73,8 +77,15 @@ const defaultMastery = (): MasteryState => ({
 const defaultPersonality = (): Personality => ({ courage: 20, kindness: 20, curiosity: 20, calmness: 20 });
 
 export const initialState: GameState = {
-  screen: 'hub', year: 1, month: 4, week: 2, gold: 5000, gems: 220,
-  schedule: ['hunt', 'magic', 'rest', 'herb'], combo: 0, trainingScore: 0,
+  screen: 'hub',
+  year: 1,
+  month: 4,
+  week: 2,
+  gold: 5000,
+  gems: 220,
+  schedule: ['hunt', 'magic', 'rest', 'herb'],
+  combo: 0,
+  trainingScore: 0,
   stats: { strength: 28, intelligence: 34, magic: 42, morality: 61, affection: 72, stress: 24, fatigue: 18 },
   condition: 'normal',
   mastery: defaultMastery(),
@@ -93,6 +104,8 @@ const resultQualities: ResultQuality[] = ['NORMAL', 'GOOD', 'GREAT', 'PERFECT'];
 const grades: Array<GrowthReport['grade']> = ['S', 'A', 'B', 'C'];
 const memoryIds: MemoryId[] = ['first_training', 'first_perfect', 'first_hug', 'first_snack', 'first_s_grade', 'first_month_complete'];
 const memoryPriority: MemoryId[] = ['first_perfect', 'first_s_grade', 'first_training', 'first_hug', 'first_snack', 'first_month_complete'];
+const skillIds: SkillId[] = ['quick_strike', 'mana_focus', 'steady_breath', 'trail_instinct'];
+const randomEventIds: RandomEventId[] = ['rare_herb', 'new_move', 'magic_flow', 'second_wind', 'quiet_focus', 'fox_curiosity'];
 
 const cloneInitialState = (): GameState => ({
   ...initialState,
@@ -136,6 +149,15 @@ export function masteryLevel(xp: number): number {
   if (xp >= 7) return 3;
   if (xp >= 3) return 2;
   return 1;
+}
+
+export function unlockedSkills(state: GameState): SkillId[] {
+  const result: SkillId[] = [];
+  if (masteryLevel(state.mastery.hunt.xp) >= 2) result.push('quick_strike');
+  if (masteryLevel(state.mastery.magic.xp) >= 2) result.push('mana_focus');
+  if (masteryLevel(state.mastery.rest.xp) >= 2) result.push('steady_breath');
+  if (masteryLevel(state.mastery.herb.xp) >= 2) result.push('trail_instinct');
+  return result;
 }
 
 export function deriveCondition(stats: Stats): Condition {
@@ -215,7 +237,86 @@ function topStatGrowth(schedule: ActivityId[], score: number): GrowthReport['top
   return { key, delta };
 }
 
-function buildGrowthReport(state: GameState, personalityDeltas: Partial<Personality>, newMemories: MemoryId[]): GrowthReport {
+type WeightedEvent = { id: RandomEventId; weight: number };
+
+function eligibleRandomEvents(state: GameState): WeightedEvent[] {
+  const events: WeightedEvent[] = [];
+  if (state.schedule.includes('herb')) events.push({ id: 'rare_herb', weight: 2 });
+  if (state.schedule.includes('hunt') && state.personality.courage >= 25) events.push({ id: 'new_move', weight: 2 });
+  if (state.schedule.includes('magic') && (state.condition === 'focused' || state.condition === 'energetic')) events.push({ id: 'magic_flow', weight: 2 });
+  if (state.stats.fatigue >= 35) events.push({ id: 'second_wind', weight: 2 });
+  if (state.personality.calmness >= 25) events.push({ id: 'quiet_focus', weight: 1 });
+  if (state.personality.curiosity >= 25 && (state.schedule.includes('herb') || state.schedule.includes('magic'))) events.push({ id: 'fox_curiosity', weight: 1 });
+  return events;
+}
+
+export function pickRandomEvent(state: GameState, roll: number): RandomEventId | null {
+  const eligible = eligibleRandomEvents(state);
+  if (!eligible.length) return null;
+  const safeRoll = Math.min(0.999999, Math.max(0, roll));
+  const eventWeight = eligible.reduce((total, event) => total + event.weight, 0);
+  const noEventWeight = 4;
+  const totalWeight = eventWeight + noEventWeight;
+  let cursor = safeRoll * totalWeight;
+  for (const event of eligible) {
+    if (cursor < event.weight) return event.id;
+    cursor -= event.weight;
+  }
+  return null;
+}
+
+function applyRandomEvent(
+  state: GameState,
+  event: RandomEventId | null,
+): GameState {
+  if (!event) return state;
+
+  if (event === 'rare_herb') {
+    return {
+      ...state,
+      gold: state.gold + 100,
+      personality: applyPersonalityDelta(state.personality, { curiosity: 1 }),
+    };
+  }
+
+  if (event === 'new_move') {
+    return {
+      ...state,
+      mastery: { ...state.mastery, hunt: { xp: state.mastery.hunt.xp + 1 } },
+    };
+  }
+
+  if (event === 'magic_flow') {
+    return { ...state, trainingScore: state.trainingScore + 80 };
+  }
+
+  if (event === 'second_wind') {
+    return { ...state, stats: { ...state.stats, fatigue: clamp(state.stats.fatigue - 8) } };
+  }
+
+  if (event === 'quiet_focus') {
+    return { ...state, stats: { ...state.stats, stress: clamp(state.stats.stress - 6) } };
+  }
+
+  const target: ActivityId = state.schedule.includes('herb') ? 'herb' : 'magic';
+  return {
+    ...state,
+    mastery: { ...state.mastery, [target]: { xp: state.mastery[target].xp + 1 } },
+  };
+}
+
+function newlyUnlockedSkill(before: GameState, after: GameState): SkillId | null {
+  const beforeSkills = unlockedSkills(before);
+  return unlockedSkills(after).find(skill => !beforeSkills.includes(skill)) ?? null;
+}
+
+function buildGrowthReport(
+  state: GameState,
+  personalityDeltas: Partial<Personality>,
+  newMemories: MemoryId[],
+  randomEvent: RandomEventId | null = null,
+  unlockedSkill: SkillId | null = null,
+): GrowthReport {
   return {
     grade: trainingGrade(state.trainingScore),
     quality: resultQuality(state.trainingScore),
@@ -223,6 +324,8 @@ function buildGrowthReport(state: GameState, personalityDeltas: Partial<Personal
     masteryLevels: Object.fromEntries(activityIds.map(id => [id, masteryLevel(state.mastery[id].xp)])) as Record<ActivityId, number>,
     personalityDeltas,
     newMemories: pickReportMemory(newMemories),
+    randomEvent,
+    unlockedSkill,
   };
 }
 
@@ -256,6 +359,12 @@ function hydrateGrowthReport(raw: unknown): GrowthReport | null {
   }
 
   const newMemories = raw.newMemories.filter((id): id is MemoryId => typeof id === 'string' && memoryIds.includes(id as MemoryId));
+  const randomEvent = typeof raw.randomEvent === 'string' && randomEventIds.includes(raw.randomEvent as RandomEventId)
+    ? raw.randomEvent as RandomEventId
+    : null;
+  const unlockedSkill = typeof raw.unlockedSkill === 'string' && skillIds.includes(raw.unlockedSkill as SkillId)
+    ? raw.unlockedSkill as SkillId
+    : null;
 
   return {
     grade: raw.grade as GrowthReport['grade'],
@@ -264,6 +373,8 @@ function hydrateGrowthReport(raw: unknown): GrowthReport | null {
     masteryLevels,
     personalityDeltas,
     newMemories: pickReportMemory(newMemories),
+    randomEvent,
+    unlockedSkill,
   };
 }
 
@@ -329,9 +440,19 @@ export function hydrateGameState(raw: unknown): GameState {
 
 export function applyDialogueChoice(state: GameState, choice: DialogueChoice): GameState {
   const stats = { ...state.stats };
-  if (choice === 'hug') { stats.stress = clamp(stats.stress - 20); stats.affection = clamp(stats.affection + 10); stats.morality = clamp(stats.morality + 2); }
-  if (choice === 'scold') { stats.morality = clamp(stats.morality + 5); stats.stress = clamp(stats.stress + 15); }
-  if (choice === 'snack') { stats.stress = clamp(stats.stress - 30); stats.affection = clamp(stats.affection + 4); }
+  if (choice === 'hug') {
+    stats.stress = clamp(stats.stress - 20);
+    stats.affection = clamp(stats.affection + 10);
+    stats.morality = clamp(stats.morality + 2);
+  }
+  if (choice === 'scold') {
+    stats.morality = clamp(stats.morality + 5);
+    stats.stress = clamp(stats.stress + 15);
+  }
+  if (choice === 'snack') {
+    stats.stress = clamp(stats.stress - 30);
+    stats.affection = clamp(stats.affection + 4);
+  }
   return {
     ...state,
     stats,
@@ -346,24 +467,38 @@ export type Action =
   | { type: 'SET_SCHEDULE'; index: number; activity: ActivityId }
   | { type: 'AUTO_SCHEDULE' }
   | { type: 'TRAIN'; kind: 'attack' | 'dodge' | 'charge'; accuracy: number }
-  | { type: 'FINISH_TRAINING' }
+  | { type: 'FINISH_TRAINING'; eventRoll?: number }
   | { type: 'CHOOSE'; choice: DialogueChoice }
   | { type: 'NEXT_MONTH' }
   | { type: 'RESET' };
 
 export function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
-    case 'GO': return { ...state, screen: action.screen };
+    case 'GO':
+      return { ...state, screen: action.screen };
     case 'SET_SCHEDULE': {
       const schedule = [...state.schedule];
       schedule[action.index] = action.activity;
       return { ...state, schedule };
     }
-    case 'AUTO_SCHEDULE': return { ...state, schedule: ['hunt', 'magic', 'rest', 'herb'] };
+    case 'AUTO_SCHEDULE':
+      return { ...state, schedule: ['hunt', 'magic', 'rest', 'herb'] };
     case 'TRAIN': {
-      const conditionMultiplier = state.condition === 'energetic' ? 1.1 : state.condition === 'focused' ? 1.05 : state.condition === 'tired' ? 0.9 : 1;
-      const gain = Math.round(action.accuracy * (action.kind === 'attack' ? 140 : action.kind === 'dodge' ? 110 : 80) * conditionMultiplier);
-      return { ...state, combo: action.accuracy > .55 ? state.combo + 1 : 0, trainingScore: state.trainingScore + gain };
+      const skills = unlockedSkills(state);
+      const tiredMultiplier = state.condition === 'tired' && skills.includes('steady_breath') ? 0.95 : 0.9;
+      const conditionMultiplier = state.condition === 'energetic' ? 1.1 : state.condition === 'focused' ? 1.05 : state.condition === 'tired' ? tiredMultiplier : 1;
+      const skillMultiplier = action.kind === 'attack' && skills.includes('quick_strike')
+        ? 1.05
+        : action.kind === 'charge' && skills.includes('mana_focus')
+          ? 1.05
+          : 1;
+      const base = action.kind === 'attack' ? 140 : action.kind === 'dodge' ? 110 : 80;
+      const gain = Math.round(action.accuracy * base * conditionMultiplier * skillMultiplier);
+      return {
+        ...state,
+        combo: action.accuracy > .55 ? state.combo + 1 : 0,
+        trainingScore: state.trainingScore + gain,
+      };
     }
     case 'FINISH_TRAINING': {
       let stats = { ...state.stats };
@@ -372,9 +507,11 @@ export function reducer(state: GameState, action: Action): GameState {
       let personality = { ...state.personality };
       const quality = resultQuality(state.trainingScore);
       const masteryGain = quality === 'GREAT' || quality === 'PERFECT' ? 2 : 1;
+      const hasTrailInstinct = unlockedSkills(state).includes('trail_instinct');
 
       state.schedule.forEach(id => {
         stats = applyActivity(stats, id);
+        if (id === 'herb' && hasTrailInstinct) stats.intelligence = clamp(stats.intelligence + 1);
         mastery[id] = { xp: mastery[id].xp + masteryGain };
         personality = applyPersonalityDelta(personality, activityPersonality[id]);
       });
@@ -386,7 +523,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (trainingGrade(state.trainingScore) === 'S') memories = addMemory(memories, 'first_s_grade');
 
       const trainingNewMemories = memories.filter(id => !state.memories.includes(id));
-      const nextState: GameState = {
+      const preEventState: GameState = {
         ...state,
         stats,
         mastery,
@@ -396,10 +533,23 @@ export function reducer(state: GameState, action: Action): GameState {
         screen: 'dialogue',
         lastGrowthReport: null,
       };
+      const randomEvent = pickRandomEvent(state, action.eventRoll ?? 0.999999);
+      const eventState = applyRandomEvent(preEventState, randomEvent);
+      const unlockedSkill = newlyUnlockedSkill(state, eventState);
+      const finalState: GameState = {
+        ...eventState,
+        condition: deriveCondition(eventState.stats),
+      };
 
       return {
-        ...nextState,
-        lastGrowthReport: buildGrowthReport(nextState, personalityDifference(personalityBefore, personality), trainingNewMemories),
+        ...finalState,
+        lastGrowthReport: buildGrowthReport(
+          finalState,
+          personalityDifference(personalityBefore, finalState.personality),
+          trainingNewMemories,
+          randomEvent,
+          unlockedSkill,
+        ),
       };
     }
     case 'CHOOSE': {
@@ -421,6 +571,8 @@ export function reducer(state: GameState, action: Action): GameState {
           { ...chosen, memories, personality },
           mergePersonalityDeltas(previousDeltas, personalityDifference(personalityBefore, personality)),
           allNewMemories,
+          state.lastGrowthReport?.randomEvent ?? null,
+          state.lastGrowthReport?.unlockedSkill ?? null,
         ),
       };
     }
@@ -442,7 +594,9 @@ export function reducer(state: GameState, action: Action): GameState {
         lastGrowthReport: null,
       };
     }
-    case 'RESET': return cloneInitialState();
-    default: return state;
+    case 'RESET':
+      return cloneInitialState();
+    default:
+      return state;
   }
 }
