@@ -53,6 +53,17 @@ describe('game engine', () => {
     expect(hydrateGameState('broken')).toEqual(initialState);
   });
 
+  it('rejects malformed schedules and growth reports during hydration', () => {
+    const hydrated = hydrateGameState({
+      ...initialState,
+      schedule: ['hunt'],
+      lastGrowthReport: { quality: 'PERFECT' },
+    });
+
+    expect(hydrated.schedule).toEqual(initialState.schedule);
+    expect(hydrated.lastGrowthReport).toBeNull();
+  });
+
   it('maps result quality at stable score boundaries', () => {
     expect(resultQuality(0)).toBe('NORMAL');
     expect(resultQuality(399)).toBe('NORMAL');
@@ -100,6 +111,7 @@ describe('game engine', () => {
     const trained = reducer({ ...initialState, trainingScore: 920 }, { type: 'FINISH_TRAINING' });
     expect(trained.memories).toContain('first_perfect');
     expect(trained.memories).toContain('first_s_grade');
+    expect(trained.lastGrowthReport?.newMemories).toEqual(['first_perfect']);
   });
 
   it('applies dialogue personality effects and creates a growth report', () => {
@@ -112,6 +124,16 @@ describe('game engine', () => {
     expect(result.lastGrowthReport?.grade).toBe('A');
     expect(result.lastGrowthReport?.quality).toBe('GREAT');
     expect(result.lastGrowthReport?.newMemories.length).toBeLessThanOrEqual(1);
+  });
+
+  it('includes training and dialogue personality changes in the monthly report', () => {
+    const trained = reducer({ ...initialState, trainingScore: 700 }, { type: 'FINISH_TRAINING' });
+    const result = reducer(trained, { type: 'CHOOSE', choice: 'scold' });
+
+    expect(result.lastGrowthReport?.personalityDeltas.courage).toBe(5);
+    expect(result.lastGrowthReport?.personalityDeltas.curiosity).toBe(5);
+    expect(result.lastGrowthReport?.personalityDeltas.calmness).toBe(5);
+    expect(result.lastGrowthReport?.newMemories).toEqual(['first_training']);
   });
 
   it('clamps personality values during hydration', () => {
