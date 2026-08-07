@@ -1,34 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import App from './App';
 import LayeredHome from './LayeredHome';
+import { initialState, type GameState, type Screen } from './game';
 import './layered-home.css';
 import './home-panels.css';
 
 export default function Root() {
-  const [showHome, setShowHome] = useState(true);
+  const [gameState, setGameState] = useState<GameState>(initialState);
+  const [navigate, setNavigate] = useState<((screen: Screen) => void) | null>(null);
 
-  useEffect(() => {
-    const syncHomeVisibility = () => {
-      const isHubVisible = Boolean(document.querySelector('.hub-screen'));
-      setShowHome(isHubVisible);
-    };
-
-    syncHomeVisibility();
-
-    const observer = new MutationObserver(syncHomeVisibility);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
+  const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => {
+    setNavigate(() => nextNavigate);
   }, []);
 
-  const openSchedule = () => {
-    const scheduleButton = document.querySelector<HTMLButtonElement>('.hub-screen .bottom-nav button');
-    scheduleButton?.click();
-    setShowHome(false);
-  };
+  const openSchedule = useCallback(() => {
+    navigate?.('schedule');
+  }, [navigate]);
 
   return <>
-    <App />
-    {showHome && <LayeredHome onSchedule={openSchedule} />}
+    <App onStateChange={setGameState} onNavigateReady={captureNavigate} />
+    {gameState.screen === 'hub' && <LayeredHome state={gameState} onSchedule={openSchedule} />}
   </>;
 }
