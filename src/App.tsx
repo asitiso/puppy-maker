@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
-import { activities, hydrateGameState, initialState, reducer, trainingGrade, type ActivityId } from './game';
+import { activities, hydrateGameState, initialState, reducer, trainingGrade, type ActivityId, type MemoryId } from './game';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -96,9 +96,48 @@ function Dialogue({ dispatch }: { dispatch: React.Dispatch<any> }) {
   return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>오늘 사냥 수업, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</p><div className="choices"><button onClick={() => dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ 스트레스 ↓</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>100G · 스트레스 크게 ↓</small></button></div></div></section>;
 }
 
+const statLabels: Record<string, string> = {
+  strength: '근력', intelligence: '지식', magic: '마력', morality: '도덕성', affection: '호감도', stress: '스트레스', fatigue: '피로',
+};
+
+const personalityLabels = {
+  courage: '용감함', kindness: '다정함', curiosity: '호기심', calmness: '침착함',
+} as const;
+
+const memoryLabels: Record<MemoryId, string> = {
+  first_training: '첫 훈련',
+  first_perfect: '첫 PERFECT',
+  first_hug: '처음 나눈 포옹',
+  first_snack: '처음 건넨 간식',
+  first_s_grade: '첫 S등급',
+  first_month_complete: '첫 달의 성장',
+};
+
 function Result({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const grade = trainingGrade(state.trainingScore);
-  return <section className="screen result-screen"><div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1><p>루나는 이번 달에도 한 뼘 더 성장했어요.</p><div className="result-card"><div><span>근력</span><b>{state.stats.strength}</b></div><div><span>마력</span><b>{state.stats.magic}</b></div><div><span>호감도</span><b>{state.stats.affection}</b></div><div><span>스트레스</span><b>{state.stats.stress}</b></div></div><div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt="" /><span>월간 보상</span><b>350 G</b></div><button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button></section>;
+  const report = state.lastGrowthReport;
+  const topPersonality = report
+    ? (Object.entries(report.personalityDeltas) as Array<[keyof typeof personalityLabels, number]>).sort((a, b) => b[1] - a[1])[0]
+    : undefined;
+  const topMastery = report
+    ? (Object.entries(report.masteryLevels) as Array<[ActivityId, number]>).sort((a, b) => b[1] - a[1])[0]
+    : undefined;
+  const memory = report?.newMemories[0];
+
+  return <section className="screen result-screen">
+    <div className="result-rays"/>
+    <div className={`grade grade-${grade}`}>{grade}</div>
+    <h1>{state.month}월 성장 기록</h1>
+    <p>{report ? `${report.quality} · 이번 달 루나의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
+    <div className="result-card">
+      <div><span>가장 큰 성장</span><b>{report?.topStat ? `${statLabels[report.topStat.key]} +${report.topStat.delta}` : `근력 ${state.stats.strength}`}</b></div>
+      <div><span>훈련 숙련도</span><b>{topMastery ? `${activities[topMastery[0]].name} Lv.${topMastery[1]}` : `마력 ${state.stats.magic}`}</b></div>
+      <div><span>성향 변화</span><b>{topPersonality ? `${personalityLabels[topPersonality[0]]} +${topPersonality[1]}` : `호감도 ${state.stats.affection}`}</b></div>
+      <div><span>{memory ? '새로운 기억' : '현재 컨디션'}</span><b>{memory ? memoryLabels[memory] : state.condition}</b></div>
+    </div>
+    <div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt="" /><span>월간 보상</span><b>350 G</b></div>
+    <button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button>
+  </section>;
 }
 
 export default function App() {
