@@ -3,6 +3,7 @@ import { seasonArchiveRecords } from './season-archive';
 import { seasonJourneyKey, seasonJourneyTiers } from './season-journey';
 import { seasonKeepsakeCollection, seasonKeepsakeMilestones } from './season-keepsakes';
 import { seasonCompletionHonors, seasonHonorProgress } from './season-completion-honors';
+import { seasonMasteryRank, seasonMasteryScore } from './season-mastery-rank';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
 
@@ -37,6 +38,12 @@ export function liveOpsUiSummary(state:GameState) {
     current:honorProgress[item.metric],
     claimed:claimedHonors.includes(item.id),
   }));
+  const masteryScore = seasonMasteryScore({
+    completedSeasons:honorProgress.completedSeasons,
+    keepsakes:collection.total,
+    honors:claimedHonors.length,
+  });
+  const mastery = seasonMasteryRank(masteryScore);
   return {
     season:{
       key,
@@ -50,6 +57,7 @@ export function liveOpsUiSummary(state:GameState) {
     shop,
     keepsakes:{ ...collection, claimed:claimedKeepsakes, nextMilestone },
     honors:{ progress:honorProgress, items:honorItems, claimed:claimedHonors },
+    mastery,
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
 }
