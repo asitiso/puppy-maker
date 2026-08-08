@@ -8,6 +8,7 @@ import {
   trainingGrade,
   type AchievementId,
   type ActivityId,
+  type ExpeditionActionCounts,
   type ExpeditionCraftingRecipeId,
   type ExpeditionRelicId,
   type ExpeditionStageId,
@@ -165,7 +166,7 @@ type AppProps = {
   onMailReady?: (claim: (mail: MailRewardId) => void) => void;
   onMonthlyFocusReady?: (setFocus: (focus: GameState['monthlyFocus']) => void) => void;
   onYearlyAmbitionReady?: (setAmbition: (ambition: YearlyAmbitionId) => void) => void;
-  onExpeditionFinishReady?: (finish: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) => void;
+  onExpeditionFinishReady?: (finish: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => void;
   onExpeditionEquipReady?: (equip: (relic: ExpeditionRelicId) => void) => void;
   onExpeditionUnequipReady?: (unequip: (relic: ExpeditionRelicId) => void) => void;
   onExpeditionCraftReady?: (craft: (recipe: ExpeditionCraftingRecipeId) => void) => void;
@@ -192,7 +193,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const claimMail = useCallback((mail: MailRewardId) => dispatch({ type: 'CLAIM_MAIL', mail }), []);
   const setMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => dispatch({ type: 'SET_MONTHLY_FOCUS', focus }), []);
   const setYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => dispatch({ type: 'SET_YEARLY_AMBITION', ambition }), []);
-  const finishExpedition = useCallback((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => dispatch({ type: 'FINISH_EXPEDITION_STAGE', stageId, score, fatigueDelta, stressDelta }), []);
+  const finishExpedition = useCallback((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => dispatch({ type: 'FINISH_EXPEDITION_STAGE', stageId, score, fatigueDelta, stressDelta, actionKinds }), []);
   const equipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'EQUIP_EXPEDITION_RELIC', relic }), []);
   const unequipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'UNEQUIP_EXPEDITION_RELIC', relic }), []);
   const craftExpeditionRecipe = useCallback((recipe: ExpeditionCraftingRecipeId) => dispatch({ type: 'CRAFT_EXPEDITION_RECIPE', recipe }), []);
