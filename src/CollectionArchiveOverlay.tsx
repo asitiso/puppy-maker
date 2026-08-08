@@ -10,6 +10,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     stories: currentStoryChapters(state).length,
     talents: currentAdvancedTalents(state).length,
     titles: currentCareerTitles(state).length,
+    seasonStamps: state.seasonStamps.length,
   });
 
   return <>
@@ -33,7 +34,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               <i><em style={{ width: `${Math.round((category.current / category.total) * 100)}%` }} /></i>
             </div>)}
           </div>
-          <p>훈련·외출·이야기·숙련을 이어가며 루나의 성장 기록을 완성하세요.</p>
+          <p>훈련·외출·이야기·계절을 이어가며 루나의 성장 기록을 완성하세요.</p>
         </div>
       </section>
     </div>}
