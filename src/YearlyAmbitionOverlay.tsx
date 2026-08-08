@@ -3,28 +3,11 @@ import { currentGuardianStatus, unlockedSkills, type GameState } from './game';
 import { ambitionDisplay } from './yearly-ambition-display';
 import { currentYearAmbitionRecord } from './yearly-ambition-progress';
 import { ambitionRecommendation } from './yearly-ambition-recommendation';
-import {
-  readAmbitionSelections,
-  selectionForYear,
-  setAmbitionForYear,
-  type YearlyAmbitionSelections,
-} from './yearly-ambition-selection';
 import { ambitionDefinitions, ambitionProgress, type YearlyAmbitionId } from './yearly-ambitions';
 
-const storageKey = 'puppy-maker-yearly-ambitions';
-
-function storedSelections(): YearlyAmbitionSelections {
-  try {
-    return readAmbitionSelections(JSON.parse(localStorage.getItem(storageKey) || '{}'));
-  } catch {
-    return {};
-  }
-}
-
-export default function YearlyAmbitionOverlay({ state }: { state: GameState }) {
-  const [selections, setSelections] = useState<YearlyAmbitionSelections>(storedSelections);
+export default function YearlyAmbitionOverlay({ state, onSelect }: { state: GameState; onSelect: (ambition: YearlyAmbitionId) => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const selected = selectionForYear(selections, state.year);
+  const selected = state.yearlyAmbitions[state.year] ?? null;
   const definition = selected ? ambitionDefinitions.find(item => item.id === selected) ?? null : null;
   const liveRecord = useMemo(() => currentYearAmbitionRecord({
     year: state.year,
@@ -48,10 +31,8 @@ export default function YearlyAmbitionOverlay({ state }: { state: GameState }) {
   const chooserOpen = !selected;
 
   const choose = (ambition: YearlyAmbitionId) => {
-    const next = setAmbitionForYear(selections, state.year, ambition);
-    setSelections(next);
+    onSelect(ambition);
     setDetailsOpen(false);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
   };
 
   return <>
