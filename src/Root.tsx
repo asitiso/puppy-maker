@@ -6,6 +6,7 @@ import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import LayeredHome from './LayeredHome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
+import SeasonLiveOpsOverlay from './SeasonLiveOpsOverlay';
 import WorldProgressOverlay from './WorldProgressOverlay';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
@@ -24,9 +25,11 @@ import {
   type YearlyAmbitionId,
 } from './game';
 import type { HomeMenuId } from './home-panels';
+import type { SeasonShopOfferId } from './season-shop';
 import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
+import './season-live-ops.css';
 import './collection-archive.css';
 import './world-progress.css';
 import './year-end-ceremony.css';
@@ -47,6 +50,7 @@ export default function Root() {
   const [setYearlyAmbition, setSetYearlyAmbition] = useState<((ambition: YearlyAmbitionId) => void) | null>(null);
   const [setGuardianCalling, setSetGuardianCalling] = useState<((calling: GuardianCallingId) => void) | null>(null);
   const [purchaseGrowthTrait, setPurchaseGrowthTrait] = useState<((trait: GrowthTraitId) => void) | null>(null);
+  const [purchaseSeasonOffer, setPurchaseSeasonOffer] = useState<((offer: SeasonShopOfferId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
   const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) | null>(null);
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
@@ -54,6 +58,7 @@ export default function Root() {
   const [craftExpedition, setCraftExpedition] = useState<((recipe: ExpeditionCraftingRecipeId) => void) | null>(null);
   const [expeditionOpen, setExpeditionOpen] = useState(false);
   const [raisingOpen, setRaisingOpen] = useState(false);
+  const [seasonLiveOpen, setSeasonLiveOpen] = useState(false);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -65,6 +70,7 @@ export default function Root() {
   const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
   const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setSetGuardianCalling(() => nextSetCalling), []);
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
+  const captureSeasonPurchase = useCallback((nextPurchase: (offer: SeasonShopOfferId) => void) => setPurchaseSeasonOffer(() => nextPurchase), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
   const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => setFinishExpedition(() => next), []);
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
@@ -81,6 +87,7 @@ export default function Root() {
   const handleYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => setYearlyAmbition?.(ambition), [setYearlyAmbition]);
   const handleArchiveNavigate = useCallback((id: HomeMenuId) => openHomeMenu?.(id), [openHomeMenu]);
   const handleOpenExpedition = useCallback(() => setExpeditionOpen(true), []);
+  const handleSeasonPurchase = useCallback((offer: SeasonShopOfferId) => purchaseSeasonOffer?.(offer), [purchaseSeasonOffer]);
 
   return <>
     <App
@@ -99,6 +106,7 @@ export default function Root() {
       onExpeditionCraftReady={captureExpeditionCraft}
       onGuardianCallingReady={captureGuardianCalling}
       onGrowthTraitReady={captureGrowthTrait}
+      onSeasonPurchaseReady={captureSeasonPurchase}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -113,6 +121,13 @@ export default function Root() {
         onMenuReady={captureHomeMenu}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
+      <SeasonLiveOpsOverlay
+        state={gameState}
+        open={seasonLiveOpen}
+        onOpen={() => setSeasonLiveOpen(true)}
+        onClose={() => setSeasonLiveOpen(false)}
+        onPurchase={handleSeasonPurchase}
+      />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
       <WorldProgressOverlay state={gameState} />
