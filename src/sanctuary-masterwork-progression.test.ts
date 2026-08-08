@@ -31,6 +31,7 @@ describe('sanctuary masterwork progression', () => {
       expeditionMaterials:materials,
       sanctuaryLevels:levelThree,
       sanctuarySpecializations:specializations,
+      claimedSanctuaryGrandRanks:['haven','sanctum'] as ('haven'|'sanctum')[],
     };
     const next = reducer(ready,{ type:'BUILD_SANCTUARY_MASTERWORK', masterwork:'guardian_arena' });
     expect(next.sanctuaryMasterworks).toEqual(['guardian_arena']);
@@ -49,6 +50,7 @@ describe('sanctuary masterwork progression', () => {
       sanctuaryLevels:levelThree,
       sanctuarySpecializations:specializations,
       sanctuaryMasterworks:['guardian_arena','living_archive','moonwell_conservatory'] as const,
+      claimedSanctuaryGrandRanks:['haven','sanctum','citadel'] as ('haven'|'sanctum'|'citadel')[],
     };
     const next = reducer(ready,{ type:'BUILD_SANCTUARY_MASTERWORK', masterwork:'astral_nexus' });
     expect(next.sanctuaryMasterworks).toHaveLength(4);
