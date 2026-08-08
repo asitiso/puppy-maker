@@ -1,5 +1,7 @@
 import type { GameState } from './game';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
+import { sanctuaryGrandProgress, sanctuaryGrandRank } from './sanctuary-grand-milestones';
+import { canBuildSanctuaryMasterwork, sanctuaryMasterworks, type SanctuaryMasterworkId } from './sanctuary-masterworks';
 import type { SanctuarySpecializationId, SanctuarySpecializationSynergyId } from './sanctuary-specializations';
 import { sanctuaryUiSummary } from './sanctuary-ui';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
@@ -11,6 +13,9 @@ const synergyLabels:Record<SanctuarySpecializationSynergyId,{ label:string; desc
   star_route_network:{ label:'별길 원정망', description:'적응 훈련과 원정 항로가 연결되어 원정 여정 효율이 상승해요.' },
   season_oracle:{ label:'계절의 예언소', description:'달샘과 계절 관측이 연결되어 회복과 시즌 흐름이 강화돼요.' },
 };
+const masterworkReason = {
+  level:'시설 Lv.3 필요', specialization:'전문화 선택 필요', resources:'자원 부족', completed:'완성됨', invalid:'잠김',
+} as const;
 
 export default function SanctuaryOverlay({
   state,
@@ -19,6 +24,7 @@ export default function SanctuaryOverlay({
   onClose,
   onUpgrade,
   onSpecialization,
+  onMasterwork,
 }:{
   state:GameState;
   open:boolean;
@@ -26,9 +32,18 @@ export default function SanctuaryOverlay({
   onClose:()=>void;
   onUpgrade:(facility:SanctuaryFacilityId)=>void;
   onSpecialization:(specialization:SanctuarySpecializationId)=>void;
+  onMasterwork:(masterwork:SanctuaryMasterworkId)=>void;
 }) {
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
+  const masterworkIds = state.sanctuaryMasterworks ?? [];
+  const grandScore = sanctuaryGrandProgress({
+    levels:state.sanctuaryLevels,
+    specializationCount:Object.keys(state.sanctuarySpecializations ?? {}).length,
+    masterworkCount:masterworkIds.length,
+    prestige:state.sanctuaryPrestige ?? 0,
+  });
+  const grand = sanctuaryGrandRank(grandScore);
   const prestigeProgress = contractSummary.prestige.nextThreshold
     ? `${contractSummary.prestige.prestige}/${contractSummary.prestige.nextThreshold}`
     : `${contractSummary.prestige.prestige} MAX`;
@@ -36,7 +51,7 @@ export default function SanctuaryOverlay({
     return <button className="sanctuary-entry" onClick={onOpen} aria-label="별빛 성소 열기">
       <small>STARLIGHT SANCTUARY</small>
       <strong>별빛 성소</strong>
-      <span>{contractSummary.prestige.label} · 시설 {summary.levelTotal}/{summary.maxLevelTotal}</span>
+      <span>{grand.label} · Masterwork {masterworkIds.length}/4</span>
     </button>;
   }
   return <div className="sanctuary-backdrop" role="presentation" onClick={onClose}>
@@ -44,9 +59,14 @@ export default function SanctuaryOverlay({
       <img className="sanctuary-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="sanctuary-content">
         <header>
-          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>원정 재료로 시설을 성장시키고 Lv.3 시설의 영구 전문화를 선택해요.</p></div>
+          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork 완성으로 성역을 완성해요.</p></div>
           <button onClick={onClose} aria-label="닫기">×</button>
         </header>
+
+        <div className="sanctuary-grand-card">
+          <div><small>SANCTUARY GRAND RANK</small><strong>{grand.label}</strong><span>{grand.description}</span></div>
+          <b>{grand.nextThreshold ? `${grand.score}/${grand.nextThreshold}` : `${grand.score} MAX`}</b>
+        </div>
 
         <div className="sanctuary-prestige-card">
           <div><small>SANCTUARY PRESTIGE</small><strong>{contractSummary.prestige.label}</strong><span>주간 성역 의뢰를 완료해 성소의 위상을 높여요.</span></div>
@@ -81,6 +101,22 @@ export default function SanctuaryOverlay({
             </div>}
           </article>)}
         </div>
+
+        <article className="sanctuary-masterwork-block">
+          <div className="sanctuary-masterwork-heading"><div><small>MASTERWORKS</small><h3>성역 최종 프로젝트</h3></div><strong>{masterworkIds.length}/4 완성</strong></div>
+          <div className="sanctuary-masterwork-list">
+            {sanctuaryMasterworks.map(project => {
+              const status = canBuildSanctuaryMasterwork({ id:project.id, levels:state.sanctuaryLevels, specializations:state.sanctuarySpecializations ?? {}, completed:masterworkIds, gold:state.gold, materials:state.expeditionMaterials });
+              const completed = masterworkIds.includes(project.id);
+              return <div className={completed ? 'is-complete' : ''} key={project.id}>
+                <span><b>{completed ? '✓ ' : ''}{project.label}</b><small>{project.description}</small></span>
+                <p>{project.cost.gold.toLocaleString()}G · {(Object.entries(project.cost.materials) as Array<[keyof typeof materialLabels,number]>).filter(([,amount]) => amount > 0).map(([id,amount]) => `${materialLabels[id]}×${amount}`).join(' · ')}</p>
+                <button disabled={!status.accepted} onClick={() => onMasterwork(project.id)}>{status.accepted ? 'Masterwork 완성' : completed ? '완성됨' : masterworkReason[status.reason]}</button>
+              </div>;
+            })}
+          </div>
+          <p>4개 모두 완성 시 성역 완성 보상 · 1,000G + ◆5</p>
+        </article>
 
         {summary.specializationSynergies.length > 0 && <article className="sanctuary-synergy-block">
           <div><small>SANCTUARY SYNERGY</small><h3>활성 성소 시너지</h3></div>
