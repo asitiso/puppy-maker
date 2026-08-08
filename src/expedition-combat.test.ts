@@ -10,6 +10,7 @@ const base = {
   huntMastery: 2,
   magicMastery: 2,
   restMastery: 2,
+  talents: [] as const,
   relics: { attack: 0, charge: 0, dodge: 0, all: 0 },
 };
 
@@ -43,6 +44,18 @@ describe('expedition combat', () => {
     const relic = applyExpeditionAction(startExpeditionBattle('forest_path'), 'attack', 1, { ...base, relics: { attack: 0.06, charge: 0, dodge: 0, all: 0.03 } });
     expect(relic.score).toBeGreaterThan(plain.score);
     expect(relic.score).toBeLessThan(plain.score * 1.2);
+  });
+
+  it('converts existing advanced talents into small expedition bonuses', () => {
+    const attackPlain = applyExpeditionAction(startExpeditionBattle('forest_path'), 'attack', 0.9, base);
+    const attackTalented = applyExpeditionAction(startExpeditionBattle('forest_path'), 'attack', 0.9, { ...base, talents: ['hunter_instinct', 'guardian_strike'] });
+    const chargePlain = applyExpeditionAction(startExpeditionBattle('forest_path'), 'charge', 0.9, base);
+    const chargeTalented = applyExpeditionAction(startExpeditionBattle('forest_path'), 'charge', 0.9, { ...base, talents: ['arcane_rhythm', 'star_channel'] });
+    const dodgePlain = applyExpeditionAction(startExpeditionBattle('forest_path'), 'dodge', 0.9, base);
+    const dodgeTalented = applyExpeditionAction(startExpeditionBattle('forest_path'), 'dodge', 0.9, { ...base, talents: ['steady_recovery', 'deep_rest'] });
+    expect(attackTalented.score).toBeGreaterThan(attackPlain.score);
+    expect(chargeTalented.score).toBeGreaterThan(chargePlain.score);
+    expect(dodgeTalented.pressureGuard).toBeGreaterThan(dodgePlain.pressureGuard);
   });
 
   it('finishes with stage pressure converted to fatigue and stress deltas', () => {
