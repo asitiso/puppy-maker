@@ -53,7 +53,7 @@ export default function Root() {
         onAttendance={handleAttendance}
         onMail={handleMail}
       />
-      <SeasonalHomeBadge month={gameState.month} />
+      <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <CollectionArchiveOverlay state={gameState} />
     </>}
   </>;
