@@ -1,8 +1,11 @@
 import type { MemoryId } from './game-core';
 import type { OutingLocationId } from './adventure';
+import { expeditionStoryDefinitions } from './expedition-story';
+import type { ExpeditionStageId } from './expedition-regions';
 import type { GuardianRankId } from './guardian-rank';
 
-export type StoryChapterId = 'first_step' | 'wide_world' | 'trusted_bond' | 'guardian_oath' | 'starlight_road';
+export type CoreStoryChapterId = 'first_step' | 'wide_world' | 'trusted_bond' | 'guardian_oath' | 'starlight_road';
+export type StoryChapterId = CoreStoryChapterId | ExpeditionStageId;
 
 export type StoryChapterDefinition = {
   id: StoryChapterId;
@@ -18,9 +21,10 @@ export type StoryProgress = {
   affection: number;
   guardianRank: GuardianRankId;
   discoveries: number;
+  expeditionStoryEntries?: ExpeditionStageId[] | string[];
 };
 
-export const storyChapterDefinitions: StoryChapterDefinition[] = [
+const coreStoryChapterDefinitions: StoryChapterDefinition[] = [
   { id: 'first_step', title: '첫 발걸음', summary: '루나는 처음으로 수호자 훈련을 마쳤다. 작은 한 걸음이 앞으로 이어질 긴 여정의 시작이 되었다.', unlockHint: '첫 훈련을 완료하면 열려요.', rewardGems: 0 },
   { id: 'wide_world', title: '넓어진 세계', summary: '별빛 숲과 마법 마을, 바람 호숫가를 돌아본 루나는 집 밖의 세계가 생각보다 훨씬 넓다는 걸 알게 되었다.', unlockHint: '세 곳의 외출 장소를 모두 방문하면 열려요.', rewardGems: 1 },
   { id: 'trusted_bond', title: '마음을 나누는 사이', summary: '함께 보낸 시간이 쌓이며 루나는 조심스럽게 마음속 이야기를 꺼내기 시작했다.', unlockHint: '루나와 가까운 친구가 되면 열려요.', rewardGems: 1 },
@@ -28,6 +32,17 @@ export const storyChapterDefinitions: StoryChapterDefinition[] = [
   { id: 'starlight_road', title: '별빛으로 가는 길', summary: '숨겨진 흔적들이 하나의 방향을 가리킨다. 루나는 더 먼 곳에서 자신을 부르는 별빛을 느낀다.', unlockHint: '숙련 수호자 이상 + 숨겨진 발견물 4개가 필요해요.', rewardGems: 3 },
 ];
 
+export const coreStoryChapterIds = coreStoryChapterDefinitions.map(chapter => chapter.id as CoreStoryChapterId);
+
+const expeditionChapters: StoryChapterDefinition[] = expeditionStoryDefinitions.map(entry => ({
+  id: entry.stageId,
+  title: entry.title,
+  summary: entry.summary,
+  unlockHint: `${entry.bossChapter ? '보스 원정' : '원정 스테이지'} ${entry.title}을(를) 최초 클리어하면 열려요.`,
+  rewardGems: 0,
+}));
+
+export const storyChapterDefinitions: StoryChapterDefinition[] = [...coreStoryChapterDefinitions, ...expeditionChapters];
 export const storyChapterIds = storyChapterDefinitions.map(chapter => chapter.id);
 const guardianRankOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
 const requiredOutings: OutingLocationId[] = ['forest', 'village', 'lakeside'];
@@ -43,5 +58,8 @@ export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[]
   if (progress.affection >= 75) unlocked.add('trusted_bond');
   if (rankAtLeast(progress.guardianRank, 'guardian')) unlocked.add('guardian_oath');
   if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4) unlocked.add('starlight_road');
+  for (const id of progress.expeditionStoryEntries ?? []) {
+    if (expeditionStoryDefinitions.some(entry => entry.stageId === id)) unlocked.add(id as ExpeditionStageId);
+  }
   return storyChapterIds.filter(id => unlocked.has(id));
 }
