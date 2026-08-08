@@ -1,12 +1,14 @@
 import type { GameState } from './game';
 import { expeditionSeasonClaimKey, expeditionSeasonKey, expeditionSeasonTiers, type ExpeditionSeasonTier } from './expedition-season';
 import { expeditionRegionDefinitions, type ExpeditionRegionId } from './expedition-regions';
-import { regionalRenownLevel, regionalRenownThresholds } from './regional-renown';
+import { regionalRenownLevel } from './regional-renown';
 import { monthlyWorldContracts, worldContractRewardKey, type WorldContractId } from './world-contracts';
 import { worldEvent } from './world-event';
 
 const clampPercent = (value:number) => Math.max(0, Math.min(100, Math.round(Number.isFinite(value) ? value : 0)));
 const regionLabel = (id:ExpeditionRegionId) => expeditionRegionDefinitions.find(region => region.id === id)?.name ?? id;
+const currentRenownThreshold = (level:number) => level === 1 ? 0 : level === 2 ? 5 : level === 3 ? 12 : level === 4 ? 22 : 35;
+const nextRenownThreshold = (level:number):number|null => level === 1 ? 5 : level === 2 ? 12 : level === 3 ? 22 : level === 4 ? 35 : null;
 
 export type WorldUiSummary = {
   event:{
@@ -69,8 +71,8 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
   const regions = expeditionRegionDefinitions.map(region => {
     const renown = Math.max(0, Math.floor(state.regionalRenown[region.id] ?? 0));
     const level = regionalRenownLevel(renown);
-    const nextThreshold = level >= 5 ? null : regionalRenownThresholds[level];
-    const currentThreshold = regionalRenownThresholds[level - 1];
+    const nextThreshold = nextRenownThreshold(level);
+    const currentThreshold = currentRenownThreshold(level);
     const percent = nextThreshold === null
       ? 100
       : clampPercent(((renown - currentThreshold) / Math.max(1, nextThreshold - currentThreshold)) * 100);
