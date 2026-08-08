@@ -24,13 +24,12 @@ describe('weekly directives', () => {
     const expedition = directives.find(item => item.counter === 'expedition');
     const progress = Object.fromEntries(directives.map(item => [item.id, 0]));
     if (!expedition) return;
-    const next = advanceWeeklyDirectives(directives, progress, { kind:'expedition', grade:'S' });
-    expect(next.progress[expedition.id]).toBe(1);
-    const capped = Array.from({ length:expedition.target + 3 }).reduce(
-      current => advanceWeeklyDirectives(directives, current.progress, { kind:'expedition', grade:'S' }),
-      next,
-    );
-    expect(capped.progress[expedition.id]).toBe(expedition.target);
+    let current = advanceWeeklyDirectives(directives, progress, { kind:'expedition', grade:'S' });
+    expect(current.progress[expedition.id]).toBe(1);
+    for (let index = 0; index < expedition.target + 3; index += 1) {
+      current = advanceWeeklyDirectives(directives, current.progress, { kind:'expedition', grade:'S' });
+    }
+    expect(current.progress[expedition.id]).toBe(expedition.target);
   });
 
   it('reports newly completed directives once per weekly reward key', () => {
