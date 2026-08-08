@@ -1,9 +1,16 @@
 import type { GameState } from './game';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
+import type { SanctuarySpecializationId, SanctuarySpecializationSynergyId } from './sanctuary-specializations';
 import { sanctuaryUiSummary } from './sanctuary-ui';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
 
 const materialLabels = { star_bark:'별빛 나무껍질', arcane_shard:'비전 파편', wind_pearl:'바람 진주' } as const;
+const synergyLabels:Record<SanctuarySpecializationSynergyId,{ label:string; description:string }> = {
+  guardian_academy:{ label:'수호자 아카데미', description:'훈련 교본과 숙련 연구가 연결되어 성장 효율이 상승해요.' },
+  living_haven:{ label:'살아있는 안식처', description:'유대의 숲과 연대기가 이어져 교감 중심 성장이 강화돼요.' },
+  star_route_network:{ label:'별길 원정망', description:'적응 훈련과 원정 항로가 연결되어 원정 여정 효율이 상승해요.' },
+  season_oracle:{ label:'계절의 예언소', description:'달샘과 계절 관측이 연결되어 회복과 시즌 흐름이 강화돼요.' },
+};
 
 export default function SanctuaryOverlay({
   state,
@@ -11,12 +18,14 @@ export default function SanctuaryOverlay({
   onOpen,
   onClose,
   onUpgrade,
+  onSpecialization,
 }:{
   state:GameState;
   open:boolean;
   onOpen:()=>void;
   onClose:()=>void;
   onUpgrade:(facility:SanctuaryFacilityId)=>void;
+  onSpecialization:(specialization:SanctuarySpecializationId)=>void;
 }) {
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
@@ -35,7 +44,7 @@ export default function SanctuaryOverlay({
       <img className="sanctuary-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="sanctuary-content">
         <header>
-          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>원정 재료로 시설을 성장시키고 주간 성역 의뢰로 명성을 높여요.</p></div>
+          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>원정 재료로 시설을 성장시키고 Lv.3 시설의 영구 전문화를 선택해요.</p></div>
           <button onClick={onClose} aria-label="닫기">×</button>
         </header>
 
@@ -58,9 +67,27 @@ export default function SanctuaryOverlay({
               {(Object.entries(facility.nextCost.materials) as Array<[keyof typeof materialLabels,number]>).filter(([,amount]) => amount > 0).map(([id,amount]) => <span key={id}>{materialLabels[id]} ×{amount}</span>)}
             </div>}
             {facility.blockReason && <em>{facility.blockReason}</em>}
-            <button disabled={!facility.canUpgrade} onClick={() => onUpgrade(facility.id)}>{facility.complete ? '최대 성장' : facility.canUpgrade ? '시설 업그레이드' : '조건 미충족'}</button>
+            {!facility.complete && <button disabled={!facility.canUpgrade} onClick={() => onUpgrade(facility.id)}>{facility.canUpgrade ? '시설 업그레이드' : '조건 미충족'}</button>}
+            {facility.complete && facility.specialization && <div className="sanctuary-specialization-selected">
+              <small>PERMANENT SPECIALIZATION</small>
+              <strong>{facility.specialization.label}</strong>
+              <span>{facility.specialization.description}</span>
+            </div>}
+            {facility.canChooseSpecialization && <div className="sanctuary-specialization-choices">
+              <small>전문화 선택 · 선택 후 변경할 수 없어요</small>
+              {facility.specializationChoices.map(choice => <button key={choice.id} onClick={() => onSpecialization(choice.id as SanctuarySpecializationId)}>
+                <b>{choice.label}</b><span>{choice.description}</span>
+              </button>)}
+            </div>}
           </article>)}
         </div>
+
+        {summary.specializationSynergies.length > 0 && <article className="sanctuary-synergy-block">
+          <div><small>SANCTUARY SYNERGY</small><h3>활성 성소 시너지</h3></div>
+          <div className="sanctuary-synergy-list">{summary.specializationSynergies.map(id => <span key={id}>
+            <b>{synergyLabels[id].label}</b><small>{synergyLabels[id].description}</small>
+          </span>)}</div>
+        </article>}
 
         <article className="sanctuary-contract-block">
           <div className="sanctuary-contract-heading">
