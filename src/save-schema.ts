@@ -1,10 +1,27 @@
 import { hydrateGameState, type GameState } from './game';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 1 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 2 as const;
 
 export type GameSaveEnvelope = {
   schemaVersion: typeof CURRENT_SAVE_SCHEMA_VERSION;
+  integrity:string;
   state: GameState;
+};
+
+export type SaveInspectionStatus =
+  | 'missing'
+  | 'invalid-json'
+  | 'malformed-envelope'
+  | 'integrity-failed'
+  | 'legacy'
+  | 'migrated-v1'
+  | 'future-version'
+  | 'valid';
+
+export type SaveInspection = {
+  status:SaveInspectionStatus;
+  state:GameState;
+  schemaVersion:number | null;
 };
 
 type UnknownRecord = Record<string, unknown>;
@@ -14,35 +31,57 @@ const schemaVersionOf = (value:UnknownRecord) => typeof value.schemaVersion === 
   ? Math.max(0, Math.floor(value.schemaVersion))
   : null;
 
+function integrityForState(state:unknown): string {
+  const serialized = JSON.stringify(state);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
 export function createSaveEnvelope(state:GameState): GameSaveEnvelope {
-  return { schemaVersion:CURRENT_SAVE_SCHEMA_VERSION, state };
+  return {
+    schemaVersion:CURRENT_SAVE_SCHEMA_VERSION,
+    integrity:integrityForState(state),
+    state,
+  };
 }
 
-function migrateLegacySave(raw:unknown): unknown {
-  return raw;
-}
-
-function knownStatePayload(raw:unknown): unknown {
-  if (!isRecord(raw)) return migrateLegacySave(raw);
+function inspectRawSavedGame(raw:unknown): SaveInspection {
+  if (!isRecord(raw)) return { status:'legacy', state:hydrateGameState(raw), schemaVersion:null };
   const version = schemaVersionOf(raw);
-  if (version === null) return migrateLegacySave(raw);
-  if (!('state' in raw)) return null;
-  return raw.state;
+  if (version === null) return { status:'legacy', state:hydrateGameState(raw), schemaVersion:null };
+  if (!('state' in raw)) return { status:'malformed-envelope', state:hydrateGameState(null), schemaVersion:version };
+  if (version === CURRENT_SAVE_SCHEMA_VERSION) {
+    if (typeof raw.integrity !== 'string' || raw.integrity !== integrityForState(raw.state)) {
+      return { status:'integrity-failed', state:hydrateGameState(null), schemaVersion:version };
+    }
+    return { status:'valid', state:hydrateGameState(raw.state), schemaVersion:version };
+  }
+  if (version === 1) return { status:'migrated-v1', state:hydrateGameState(raw.state), schemaVersion:version };
+  if (version > CURRENT_SAVE_SCHEMA_VERSION) return { status:'future-version', state:hydrateGameState(raw.state), schemaVersion:version };
+  return { status:'legacy', state:hydrateGameState(raw.state), schemaVersion:version };
 }
 
 export function hydrateSavedGame(raw:unknown): GameState {
-  return hydrateGameState(knownStatePayload(raw));
+  return inspectRawSavedGame(raw).state;
 }
 
 export function serializeSavedGame(state:GameState): string {
   return JSON.stringify(createSaveEnvelope(state));
 }
 
-export function parseSavedGame(serialized:string|null|undefined): GameState {
-  if (!serialized) return hydrateSavedGame(null);
+export function inspectSavedGame(serialized:string|null|undefined): SaveInspection {
+  if (!serialized) return { status:'missing', state:hydrateGameState(null), schemaVersion:null };
   try {
-    return hydrateSavedGame(JSON.parse(serialized));
+    return inspectRawSavedGame(JSON.parse(serialized));
   } catch {
-    return hydrateSavedGame(null);
+    return { status:'invalid-json', state:hydrateGameState(null), schemaVersion:null };
   }
+}
+
+export function parseSavedGame(serialized:string|null|undefined): GameState {
+  return inspectSavedGame(serialized).state;
 }
