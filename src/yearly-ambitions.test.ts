@@ -5,7 +5,7 @@ import type { AnnualRecord } from './annual-records';
 function record(overrides: Partial<AnnualRecord> = {}): AnnualRecord {
   return {
     id:'year-1', year:1, trainings:0, outings:0, gifts:0, sGrades:0, bestScore:0,
-    memories:0, skills:0, discoveries:0, seasonStamps:0, guardianRank:'apprentice',
+    memories:0, skills:0, discoveries:0, seasonStamps:0, guardianRank:'trainee',
     ...overrides,
   };
 }
