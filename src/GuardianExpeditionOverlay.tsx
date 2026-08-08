@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { currentAdvancedTalents, masteryLevel, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
+import { currentAdvancedTalents, masteryLevel, type ExpeditionActionCounts, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
 import { applyExpeditionAction, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
 import { craftingRecipes } from './expedition-crafting';
 import { expeditionDiscoveryDefinitions } from './expedition-discoveries';
 import { expeditionRegionDefinitions, expeditionStageDefinitions, isExpeditionStageCleared, isExpeditionStageUnlocked, nextExpeditionStage } from './expedition-regions';
 import { expeditionRelicDefinitions, relicModifiers } from './expedition-relics';
-import { expeditionStoryDefinitions } from './expedition-story';
+import { callingSignatures } from './calling-signatures';
+import { guardianCallingDefinitions } from './guardian-callings';
+import { callingMasteryLevel } from './calling-mastery';
 import { expeditionIdentityModifiers } from './raising-expedition-effects';
 
 export type GuardianExpeditionOverlayProps = {
@@ -13,7 +15,7 @@ export type GuardianExpeditionOverlayProps = {
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
-  onFinish: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void;
+  onFinish: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void;
   onEquip: (relic: ExpeditionRelicId) => void;
   onUnequip: (relic: ExpeditionRelicId) => void;
   onCraft: (recipe: ExpeditionCraftingRecipeId) => void;
@@ -29,7 +31,8 @@ function stageDefinition(stageId: ExpeditionStageId) {
   return stage;
 }
 
-function combatInput(state: GameState) {
+function combatInput(state: GameState, stageId: ExpeditionStageId) {
+  const stage = stageDefinition(stageId);
   return {
     strength: state.stats.strength,
     magic: state.stats.magic,
@@ -42,6 +45,8 @@ function combatInput(state: GameState) {
     talents: currentAdvancedTalents(state),
     relics: relicModifiers(state.equippedExpeditionRelics),
     identity: expeditionIdentityModifiers(state.activeCalling, state.purchasedTraits),
+    signatures: callingSignatures(state.activeCalling, state.purchasedTraits),
+    boss: stage.boss,
   };
 }
 
@@ -55,7 +60,7 @@ function Battle({ state, stageId, onFinish, onCancel }: {
   const [battle, setBattle] = useState(() => startExpeditionBattle(stageId));
   const [needle, setNeedle] = useState(0.12);
   const [flash, setFlash] = useState('');
-  const input = useMemo(() => combatInput(state), [state]);
+  const input = useMemo(() => combatInput(state, stageId), [state, stageId]);
   useEffect(() => {
     const timer = window.setInterval(() => setNeedle(value => (value + 0.033) % 1), 40);
     return () => window.clearInterval(timer);
@@ -66,12 +71,14 @@ function Battle({ state, stageId, onFinish, onCancel }: {
     setFlash(accuracy > 0.72 ? 'PERFECT!' : accuracy > 0.45 ? 'GOOD!' : 'MISS');
     window.setTimeout(() => setFlash(''), 450);
   };
+  const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
   return <section className="expedition-battle">
     <header><button onClick={onCancel}>‹ 원정 지도</button><div><small>{stage.boss ? 'REGION BOSS' : 'EXPEDITION TRIAL'}</small><h2>{stage.name}</h2></div><span>목표 {stage.target}</span></header>
+    {calling && <div className="expedition-calling-strip"><b>{calling.label}</b><span>전문 행동 · {calling.activity === 'hunt' ? '공격' : calling.activity === 'magic' ? '기 모으기' : calling.activity === 'rest' ? '회피' : '발견/재료 수집'}</span></div>}
     <div className="expedition-battle-stage">
       <div className="expedition-pressure"><small>PRESSURE</small><b>{stage.pressure}</b><span>회피로 원정 부담을 줄이세요.</span></div>
       <img className="expedition-runa" src="/assets/runa/runa_training_ready.png" alt="훈련 준비 중인 루나" />
-      <div className="expedition-score"><small>SCORE</small><strong>{battle.score}</strong><span>행동 {battle.actionCount}회 · 방어 {Math.round(battle.pressureGuard)}</span></div>
+      <div className="expedition-score"><small>SCORE</small><strong>{battle.score}</strong><span>공격 {battle.actionKinds.attack} · 회피 {battle.actionKinds.dodge} · 기 {battle.actionKinds.charge}</span></div>
       <div className="expedition-timing"><i className="sweet"/><em style={{ transform: `rotate(${needle * 360}deg)` }}/>{flash && <img src="/assets/effects/success_burst.png" alt=""/>}<b>{flash}</b></div>
     </div>
     <div className="expedition-actions">
@@ -99,7 +106,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
 
   const finishBattle = (battle: ExpeditionBattleState) => {
     const result = finishExpeditionBattle(battle);
-    onFinish(result.stageId, result.score, result.fatigueDelta, result.stressDelta);
+    onFinish(result.stageId, result.score, result.fatigueDelta, result.stressDelta, result.actionKinds);
     setView('result');
   };
 
@@ -111,6 +118,8 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     const result = state.lastExpeditionResult;
     const stage = stageDefinition(activeStage);
     const discovery = result?.discovery ? expeditionDiscoveryDefinitions.find(item => item.id === result.discovery) : null;
+    const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
+    const mastery = state.activeCalling ? callingMasteryLevel(state.callingMastery[state.activeCalling]) : null;
     return <div className="expedition-overlay"><section className="expedition-result">
       <img className="expedition-result-burst" src="/assets/effects/success_burst.png" alt=""/>
       <small>EXPEDITION RECORD</small><h2>{stage.name}</h2>
@@ -123,6 +132,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
         <span><b>발견</b>{discovery?.label ?? '없음'}</span>
         <span><b>보스 휘장</b>{result.bossBadge ? '획득' : '-'}</span>
         <span><b>유물</b>{result.relicsUnlocked.length ? result.relicsUnlocked.length + '개' : '-'}</span>
+        {calling && <span><b>Calling</b>{calling.label} · Lv.{mastery}</span>}
       </div>}
       <button onClick={() => setView('map')}>원정 지도로 돌아가기</button>
     </section></div>;
