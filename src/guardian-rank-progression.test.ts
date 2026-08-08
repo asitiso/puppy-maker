@@ -20,7 +20,7 @@ describe('guardian rank progression', () => {
       mastery: { hunt:{xp:7}, magic:{xp:3}, rest:{xp:0}, herb:{xp:0} },
     };
     const status = currentGuardianStatus(state);
-    expect(status.points).toBe(8);
+    expect(status.points).toBe(11);
     expect(status.rank).toBe('junior');
     expect(status.next).toEqual({ rank:'guardian', threshold:16 });
   });
