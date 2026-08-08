@@ -5,6 +5,18 @@ import { collectionArchive } from './collection-archive';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
+import { readAmbitionSelections } from './yearly-ambition-selection';
+import { ambitionStreak, ambitionStreakHonor } from './yearly-ambition-streak';
+
+const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
+
+function storedAmbitions() {
+  try {
+    return readAmbitionSelections(JSON.parse(localStorage.getItem(ambitionStorageKey) || '{}'));
+  } catch {
+    return {};
+  }
+}
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -19,6 +31,8 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     legacyRelics: unlockedRelics.size,
   });
   const legacy = guardianLegacy(state.annualRecords);
+  const streak = ambitionStreak(state.annualRecords, storedAmbitions());
+  const streakHonor = ambitionStreakHonor(streak);
 
   return <>
     <button
@@ -39,6 +53,10 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
             <b>{legacy.points} LEGACY</b>
             <p>{legacy.description}</p>
             <small>{legacy.next ? `다음 ${legacy.next.label}까지 ${legacy.next.remaining}점` : '최고 레거시 등급 달성'}</small>
+            <div className="legacy-ambition-streak">
+              <b>야망 연속 {streak}년</b>
+              <span>{streakHonor ? `✦ ${streakHonor.label}` : '2년 연속 달성부터 명예 휘장이 열려요.'}</span>
+            </div>
           </div>
           <div className="collection-archive-total"><strong>{archive.percent}%</strong><span>{archive.current} / {archive.total} 수집</span></div>
           <div className="collection-archive-list">
