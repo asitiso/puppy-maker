@@ -36,6 +36,9 @@ export default function SeasonLiveOpsOverlay({
   const masteryProgress = summary.mastery.nextThreshold
     ? `${summary.mastery.score}/${summary.mastery.nextThreshold}`
     : `${summary.mastery.score} MAX`;
+  const lifetimeProgress = summary.lifetimeLegacy.milestone.nextThreshold
+    ? `${summary.lifetimeLegacy.points}/${summary.lifetimeLegacy.milestone.nextThreshold}`
+    : `${summary.lifetimeLegacy.points} MAX`;
 
   if (!open) {
     return <button className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
@@ -72,6 +75,21 @@ export default function SeasonLiveOpsOverlay({
         <p className="season-mastery-next">{summary.masteryRewards.next
           ? `다음 Mastery 보상 · ${masteryRewardNames[summary.masteryRewards.next.rank]} ${summary.mastery.score}/${summary.masteryRewards.next.threshold}`
           : '모든 Season Mastery 보상을 획득했어요.'}</p>
+
+        <article className="season-lifetime-legacy-block">
+          <div className="season-lifetime-legacy-heading">
+            <div><small>LIFETIME LEGACY</small><h3>{summary.lifetimeLegacy.milestone.label}</h3></div>
+            <strong>{lifetimeProgress}</strong>
+          </div>
+          <p>완료한 시즌의 품질과 기념품 기록에서 자동 계산되는 평생 계절 유산이에요. 별도 소비 없이 다음 시즌에 계속 적용됩니다.</p>
+          <div className="season-lifetime-bonuses">
+            <span>훈련 <b>+{summary.lifetimeLegacy.bonuses.trainingPercent}%</b></span>
+            <span>숙련 XP <b>+{summary.lifetimeLegacy.bonuses.masteryXp}</b></span>
+            <span>보상 <b>+{summary.lifetimeLegacy.bonuses.rewardPercent}%</b></span>
+            <span>초기 컨디션 <b>+{summary.lifetimeLegacy.bonuses.startingCondition}</b></span>
+          </div>
+          <em>{summary.lifetimeLegacy.completedSeasons}개 시즌 완주 기록 기반</em>
+        </article>
 
         <article className="season-legacy-block">
           <div className="season-legacy-heading">
