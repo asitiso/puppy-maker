@@ -25,6 +25,8 @@ export function guardianEvolution(input: GuardianEvolutionInput): GuardianEvolut
   if (!guardianOrHigher) return 'apprentice';
   const starReady = input.bossClears >= 3 && input.archiveCurrent >= 75;
   if (!starReady) return 'guardian';
-  const legendaryReady = input.allStagesS && input.archiveCurrent >= 100 && input.legacyId === 'eternal_guardian';
+  // Legendary Guardian is itself the final archive milestone. Requiring 100 before
+  // awarding it would deadlock the archive at 99/100, so 99 is the pre-award gate.
+  const legendaryReady = input.allStagesS && input.archiveCurrent >= 99 && input.legacyId === 'eternal_guardian';
   return legendaryReady ? 'legendary_guardian' : 'star_guardian';
 }
