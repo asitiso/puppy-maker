@@ -7,8 +7,11 @@ import { guardianLegacy } from './guardian-legacy';
 import { newlyUnlockedLegacyRelics } from './legacy-relic-discovery';
 import { legacyRelicDefinitions } from './legacy-relics';
 import { ceremonyRecord, shouldShowYearEndCeremony } from './year-end-ceremony';
+import { completedYearAmbition } from './yearly-ambition-history';
+import { readAmbitionSelections } from './yearly-ambition-selection';
 
 const storageKey = 'puppy-maker-year-ceremonies';
+const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
 
 function storedAcknowledgements(): string[] {
   try {
@@ -16,6 +19,14 @@ function storedAcknowledgements(): string[] {
     return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
   } catch {
     return [];
+  }
+}
+
+function storedAmbitions() {
+  try {
+    return readAmbitionSelections(JSON.parse(localStorage.getItem(ambitionStorageKey) || '{}'));
+  } catch {
+    return {};
   }
 }
 
@@ -28,6 +39,7 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   const honor = annualHonor(record);
   const epilogue = annualEpilogue(record);
   const legacy = guardianLegacy(state.annualRecords);
+  const ambition = completedYearAmbition(state.annualRecords, storedAmbitions(), record.year);
   const newRelics = newlyUnlockedLegacyRelics(state.annualRecords, record.id)
     .map(id => legacyRelicDefinitions.find(item => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -49,6 +61,11 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
         <strong className="year-end-honor">✦ {honor.label}</strong>
         <span>{epilogue.narration}</span>
         <div className="year-end-headline">{annualRecordHeadline(record)}</div>
+        {ambition && <div className={`year-end-ambition ${ambition.progress.complete ? 'complete' : 'incomplete'}`}>
+          <small>{ambition.progress.complete ? 'YEARLY AMBITION COMPLETE' : 'YEARLY AMBITION RECORD'}</small>
+          <b>{ambition.definition.label}</b>
+          <span>{ambition.progress.complete ? '올해의 야망을 완수했어요.' : `${ambition.progress.current} / ${ambition.progress.target} · ${ambition.progress.percent}%`}</span>
+        </div>}
         {newRelics.length > 0 && <div className="year-end-relics">
           <small>NEW LEGACY RELIC</small>
           {newRelics.map(relic => <div key={relic.id}><b>✦ {relic.label}</b><span>{relic.description}</span></div>)}
