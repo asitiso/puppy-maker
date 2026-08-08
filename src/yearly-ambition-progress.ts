@@ -30,7 +30,7 @@ export function currentYearAmbitionRecord(input: {
     trainings:0, outings:0, gifts:0, sGrades:0, memories:0, skills:0, discoveries:0, seasonStamps:0,
   };
   return {
-    id:`year-${input.year}-live`,
+    id:`year-${input.year}`,
     year:input.year,
     trainings:delta(input.cumulative.trainings, baseline.trainings),
     outings:delta(input.cumulative.outings, baseline.outings),
