@@ -19,21 +19,24 @@ describe('season legacy passive progression', () => {
     const key = seasonJourneyKey(initialState.year,initialState.month);
     const ready = {
       ...initialState,
+      week:3,
       unlockedSeasonLegacyNodes:['bond_seed'] as ('bond_seed')[],
-      weeklyDirectiveKey:'1-4-1',
+      weeklyDirectiveKey:'1-4-3',
       weeklyDirectiveProgress:{ steady_training:1 },
     };
     const next = reducer(ready,{ type:'FINISH_TRAINING', eventRoll:0.99 });
-    expect(next.lastLiveOpsProgress?.weeklyCompleted.length).toBeGreaterThanOrEqual(1);
-    expect(next.seasonTokenBalances[key]).toBeGreaterThanOrEqual(1);
+    expect(next.lastLiveOpsProgress?.weeklyCompleted).toContain('steady_training');
+    expect(next.seasonTokenBalances[key]).toBe(5);
+    expect(next.lastLiveOpsProgress?.tokensEarned).toBe(5);
   });
 
   it('includes chronicle legacy journey bonus in the archived completed month season', () => {
-    const key = seasonJourneyKey(initialState.year,initialState.month);
+    const month = 2;
+    const key = seasonJourneyKey(initialState.year,month);
     const ready = {
       ...initialState,
       screen:'result' as const,
-      month:2,
+      month,
       unlockedSeasonLegacyNodes:['chronicle_seed'] as ('chronicle_seed')[],
       seasonJourneyScores:{ [key]:100 },
     };
