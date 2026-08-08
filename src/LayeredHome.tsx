@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   discoveryIds,
   explorationLevel,
@@ -105,9 +105,10 @@ type LayeredHomeProps = {
   onAttendance: () => void;
   onMail: (mail: MailRewardId) => void;
   onMonthlyFocus: (focus: GameState['monthlyFocus']) => void;
+  onMenuReady?: (openMenu: (id: HomeMenuId) => void) => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onMenuReady }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -148,12 +149,14 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     setTilt({ x: ((event.clientX - rect.left) / rect.width - 0.5) * 2, y: ((event.clientY - rect.top) / rect.height - 0.5) * 2 });
   };
 
-  const openMenu = (id: HomeMenuId, index?: number) => {
+  const openMenu = useCallback((id: HomeMenuId, index?: number) => {
     if (typeof index === 'number') setActiveNav(index);
     if (id === 'schedule') return onSchedule();
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
-  };
+  }, [onSchedule]);
+
+  useEffect(() => onMenuReady?.((id: HomeMenuId) => openMenu(id)), [openMenu, onMenuReady]);
 
   return <section
     className="layered-home"
