@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
-import { activities, hydrateGameState, initialState, masteryLevel, reducer, trainingQuality, type Action, type ActivityId, type GameState } from './game';
+import { activities, initialState, masteryLevel, reducer, trainingQuality, type Action, type ActivityId, type GameState } from './game';
+import { deserializeSave, serializeSave } from './game/save-v2';
 import { runaPoseAsset } from './runa-presentation';
 import { StoryEvent } from './components/StoryEvent';
 import { GrowthReport } from './components/GrowthReport';
 import { EndingScreen } from './components/EndingScreen';
-
 const iconPaths:Record<string,string>={sword:'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',spark:'M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z',moon:'M18 16.8A8 8 0 118.2 5a6.5 6.5 0 009.8 11.8z',leaf:'M5 19c7 0 12-5 14-14C10 6 5 11 5 19zm0 0c3-4 6-7 10-9',calendar:'M5 5h14v14H5zM8 3v4m8-4v4M5 9h14',bag:'M7 8h10l1 11H6L7 8zm3 0V6a2 2 0 014 0v2',quest:'M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4',map:'M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6zm5-2v14m6-12v14',heart:'M12 20S4 15 4 9a4 4 0 017-2 4 4 0 017 2c0 6-6 11-6 11z'};
 function Icon({name}:{name:string}){return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={iconPaths[name]}/></svg>}
 const petArt={happy:runaPoseAsset('idle'),focus:runaPoseAsset('training-ready'),shy:runaPoseAsset('talk'),tired:runaPoseAsset('tired')} as const;
@@ -19,5 +19,5 @@ function Training({state,dispatch}:{state:GameState;dispatch:React.Dispatch<Acti
 function Dialogue({state,dispatch}:{state:GameState;dispatch:React.Dispatch<Action>}){const snackDisabled=state.gold<100;return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>오늘 훈련, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</p><div className="choices"><button onClick={()=>dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ · 다정함 ↑</small></button><button onClick={()=>dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑ · 용기 ↑</small></button><button disabled={snackDisabled} onClick={()=>dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>{snackDisabled?'100G 필요':'100G · 스트레스 크게 ↓'}</small></button></div></div></section>}
 export interface AppProps{state:GameState;dispatch:React.Dispatch<Action>;renderHub?:boolean}
 export function GameApp({state,dispatch,renderHub=true}:AppProps){return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{renderHub&&state.screen==='hub'&&<Hub state={state} go={()=>dispatch({type:'GO',screen:'schedule'})}/>} {state.screen==='schedule'&&<Schedule state={state} dispatch={dispatch}/>} {state.screen==='training'&&<Training state={state} dispatch={dispatch}/>} {state.screen==='dialogue'&&<Dialogue state={state} dispatch={dispatch}/>} {state.screen==='event'&&<StoryEvent state={state} dispatch={dispatch}/>} {state.screen==='result'&&<GrowthReport state={state} dispatch={dispatch}/>} {state.screen==='ending'&&<EndingScreen state={state} dispatch={dispatch}/>}</div></main>}
-export function useGameState(){const[state,dispatch]=useReducer(reducer,initialState,()=>hydrateGameState(localStorage.getItem('puppy-maker-save')));useEffect(()=>localStorage.setItem('puppy-maker-save',JSON.stringify(state)),[state]);return{state,dispatch}}
+export function useGameState(){const[state,dispatch]=useReducer(reducer,initialState,()=>deserializeSave(localStorage.getItem('puppy-maker-save')));useEffect(()=>localStorage.setItem('puppy-maker-save',serializeSave(state)),[state]);return{state,dispatch}}
 export default function App(){const game=useGameState();return <GameApp {...game}/>}
