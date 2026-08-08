@@ -102,4 +102,20 @@ describe('live ops ui summary', () => {
     expect(summary.masteryRewards.claimed).toEqual(['traveler','chronicler']);
     expect(summary.masteryRewards.next).toEqual(expect.objectContaining({ rank:'guardian', threshold:24 }));
   });
+
+  it('summarizes legacy points, spent points and branch unlock state', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonJourneyHistory:[
+        { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+        { key:'1-summer', score:1300, tiersCompleted:10, tokensEarned:120 },
+      ],
+      claimedSeasonCompletionHonors:['first_complete','four_seasons'],
+      unlockedSeasonLegacyNodes:['chronicle_seed'],
+    });
+    expect(summary.legacy).toEqual(expect.objectContaining({ earned:4, spent:1, available:3 }));
+    expect(summary.legacy.nodes.find(node => node.id === 'chronicle_seed')).toEqual(expect.objectContaining({ unlocked:true }));
+    expect(summary.legacy.nodes.find(node => node.id === 'chronicle_keeper')).toEqual(expect.objectContaining({ available:true, affordable:true }));
+    expect(summary.legacy.nodes.find(node => node.id === 'chronicle_crown')).toEqual(expect.objectContaining({ available:false }));
+  });
 });
