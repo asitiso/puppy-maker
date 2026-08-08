@@ -7,6 +7,7 @@ import SeasonalHomeBadge from './SeasonalHomeBadge';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
 import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen, type YearlyAmbitionId } from './game';
+import type { HomeMenuId } from './home-panels';
 import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
@@ -24,6 +25,7 @@ export default function Root() {
   const [claimMail, setClaimMail] = useState<((mail: MailRewardId) => void) | null>(null);
   const [setMonthlyFocus, setSetMonthlyFocus] = useState<((focus: GameState['monthlyFocus']) => void) | null>(null);
   const [setYearlyAmbition, setSetYearlyAmbition] = useState<((ambition: YearlyAmbitionId) => void) | null>(null);
+  const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -33,6 +35,7 @@ export default function Root() {
   const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
   const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
   const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
+  const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -42,6 +45,7 @@ export default function Root() {
   const handleMail = useCallback((mail: MailRewardId) => claimMail?.(mail), [claimMail]);
   const handleMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => setMonthlyFocus?.(focus), [setMonthlyFocus]);
   const handleYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => setYearlyAmbition?.(ambition), [setYearlyAmbition]);
+  const handleArchiveNavigate = useCallback((id: HomeMenuId) => openHomeMenu?.(id), [openHomeMenu]);
 
   return <>
     <App
@@ -65,10 +69,11 @@ export default function Root() {
         onAttendance={handleAttendance}
         onMail={handleMail}
         onMonthlyFocus={handleMonthlyFocus}
+        onMenuReady={captureHomeMenu}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
-      <CollectionArchiveOverlay state={gameState} />
+      <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} />
       <YearEndCeremonyOverlay state={gameState} />
     </>}
   </>;
