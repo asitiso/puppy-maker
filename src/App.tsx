@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import type { GiftItemId, OutingLocationId } from './adventure';
 import {
   activities,
   hydrateGameState,
@@ -106,6 +107,7 @@ const personalityLabels = { courage: '용감함', kindness: '다정함', curiosi
 const memoryLabels: Record<MemoryId, string> = {
   first_training: '첫 훈련', first_perfect: '첫 PERFECT', first_hug: '처음 나눈 포옹', first_snack: '처음 건넨 간식',
   first_s_grade: '첫 S등급', first_month_complete: '첫 달의 성장', first_skill: '처음 익힌 기술', close_bond: '가까워진 마음',
+  first_outing: '첫 외출', forest_memory: '별빛 숲의 추억', village_memory: '마법 마을의 추억', lakeside_memory: '바람 호숫가의 추억', first_gift: '첫 선물',
 };
 const eventLabels: Record<RandomEventId, string> = {
   rare_herb: '희귀 약초 발견', new_move: '새로운 동작 발견', magic_flow: '마력의 흐름', second_wind: '두 번째 호흡', quiet_focus: '고요한 집중', fox_curiosity: '여우의 호기심',
@@ -138,9 +140,11 @@ type AppProps = {
   onStateChange?: (state: GameState) => void;
   onNavigateReady?: (navigate: (screen: Screen) => void) => void;
   onClaimAchievementReady?: (claim: (achievement: AchievementId) => void) => void;
+  onOutingReady?: (outing: (location: OutingLocationId) => void) => void;
+  onGiftReady?: (gift: (item: GiftItemId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -151,10 +155,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   });
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
+  const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
+  const giveGift = useCallback((item: GiftItemId) => dispatch({ type: 'GIVE_GIFT', item }), []);
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
   useEffect(() => onClaimAchievementReady?.(claimAchievement), [claimAchievement, onClaimAchievementReady]);
+  useEffect(() => onOutingReady?.(goOuting), [goOuting, onOutingReady]);
+  useEffect(() => onGiftReady?.(giveGift), [giveGift, onGiftReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
