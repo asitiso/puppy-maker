@@ -28,6 +28,7 @@ import {
   seasonLegacyNodes,
   type SeasonLegacyNodeId,
 } from './season-legacy-board';
+import { seasonLegacyEffects } from './season-legacy-effects';
 
 export type GameState = Live.GameState & {
   claimedSeasonCompletionHonors:SeasonCompletionHonorId[];
@@ -114,6 +115,48 @@ function applySeasonMasteryRewards(previous:GameState, next:GameState):GameState
   };
 }
 
+function applyLegacyJourneyBonus(state:GameState, key:ReturnType<typeof seasonJourneyKey>, bonus:number):GameState {
+  if (bonus <= 0) return state;
+  const previousScore = state.seasonJourneyScores[key] ?? 0;
+  const nextScore = previousScore + bonus;
+  const earnedTiers = newlyEarnedJourneyTiers(previousScore,nextScore,state.claimedSeasonJourneyTiers,key);
+  const claimedSeasonJourneyTiers = [...state.claimedSeasonJourneyTiers];
+  let gold = 0;
+  let gems = 0;
+  let tierTokens = 0;
+  for (const tier of earnedTiers) {
+    claimedSeasonJourneyTiers.push(journeyTierClaimKey(key,tier.tier));
+    gold += tier.reward.gold;
+    gems += tier.reward.gems;
+    tierTokens += tier.reward.tokens;
+  }
+  const seasonTokenBalances = {
+    ...state.seasonTokenBalances,
+    [key]:(state.seasonTokenBalances[key] ?? 0) + tierTokens,
+  };
+  const seasonJourneyHistory = state.seasonJourneyHistory.map(entry => entry.key === key ? {
+    ...entry,
+    score:nextScore,
+    tiersCompleted:claimedSeasonJourneyTiers.filter(claim => claim.startsWith(`${key}:`)).length,
+    tokensEarned:seasonTokenBalances[key],
+  } : entry);
+  return {
+    ...state,
+    seasonJourneyScores:{ ...state.seasonJourneyScores, [key]:nextScore },
+    claimedSeasonJourneyTiers,
+    seasonTokenBalances,
+    seasonJourneyHistory,
+    gold:state.gold + gold,
+    gems:state.gems + gems,
+    lastLiveOpsProgress:state.lastLiveOpsProgress ? {
+      ...state.lastLiveOpsProgress,
+      journeyPoints:state.lastLiveOpsProgress.journeyPoints + bonus,
+      seasonTiersClaimed:[...state.lastLiveOpsProgress.seasonTiersClaimed,...earnedTiers.map(tier => tier.tier)],
+      tokensEarned:state.lastLiveOpsProgress.tokensEarned + tierTokens,
+    } : state.lastLiveOpsProgress,
+  };
+}
+
 export function reducer(state:GameState, action:Action):GameState {
   if (action.type === 'RESET') return initialState;
 
@@ -175,8 +218,15 @@ export function reducer(state:GameState, action:Action):GameState {
   if (action.type !== 'FINISH_TRAINING') {
     const liveNext = Live.reducer(state,action);
     if (liveNext === state) return state;
-    const preserved = preserveSeasonMeta(state,liveNext);
+    let preserved = preserveSeasonMeta(state,liveNext);
+    const legacy = seasonLegacyEffects(state.unlockedSeasonLegacyNodes ?? []);
+    const journeyKey = seasonJourneyKey(state.year,state.month);
+    if (action.type === 'FINISH_EXPEDITION_STAGE') {
+      preserved = applyLegacyJourneyBonus(preserved,journeyKey,legacy.expeditionJourneyBonus);
+      return preserved;
+    }
     if (action.type !== 'NEXT_MONTH') return preserved;
+    preserved = applyLegacyJourneyBonus(preserved,journeyKey,legacy.monthlyJourneyBonus);
     const honored = applySeasonCompletionHonors(state,preserved);
     return applySeasonMasteryRewards(state,honored);
   }
@@ -219,7 +269,9 @@ export function reducer(state:GameState, action:Action):GameState {
     const rewardKey = `${weekKey}:${directive.id}`;
     if (!rewardedWeekly.includes(rewardKey)) rewardedWeekly.push(rewardKey);
   }
-  const tokensEarned = tierTokens + weekly.reward.tokens;
+  const legacy = seasonLegacyEffects(state.unlockedSeasonLegacyNodes ?? []);
+  const legacyTokens = weekly.completed.length > 0 ? legacy.weeklyTokenBonus * weekly.completed.length : 0;
+  const tokensEarned = tierTokens + weekly.reward.tokens + legacyTokens;
   return {
     ...next,
     seasonJourneyScores:{ ...state.seasonJourneyScores, [journeyKey]:nextScore },
