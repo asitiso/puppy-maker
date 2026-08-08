@@ -14,7 +14,7 @@ describe('current year ambition progress snapshot', () => {
       annualRecords:[previous],
       cumulative:{ trainings:27, outings:9, gifts:7, sGrades:5, bestScore:920, memories:8, skills:4, discoveries:4, seasonStamps:3, guardianRank:'guardian' },
     })).toEqual({
-      id:'year-2-live', year:2, trainings:7, outings:3, gifts:3, sGrades:2, bestScore:920,
+      id:'year-2', year:2, trainings:7, outings:3, gifts:3, sGrades:2, bestScore:920,
       memories:3, skills:2, discoveries:2, seasonStamps:1, guardianRank:'guardian',
     });
   });
