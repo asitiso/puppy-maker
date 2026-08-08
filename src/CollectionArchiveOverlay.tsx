@@ -6,7 +6,7 @@ import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type
 import { guardianLegacy } from './guardian-legacy';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
 import { readAmbitionSelections } from './yearly-ambition-selection';
-import { ambitionStreak, ambitionStreakHonor } from './yearly-ambition-streak';
+import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
 
 const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
 
@@ -21,6 +21,8 @@ function storedAmbitions() {
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
+  const streak = ambitionStreak(state.annualRecords, storedAmbitions());
+  const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
   const archive = collectionArchive({
     memories: state.memories.length,
     discoveries: state.discoveries.length,
@@ -29,9 +31,9 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     titles: currentCareerTitles(state).length,
     seasonStamps: state.seasonStamps.length,
     legacyRelics: unlockedRelics.size,
+    ambitionHonors: unlockedAmbitionHonors.length,
   });
   const legacy = guardianLegacy(state.annualRecords);
-  const streak = ambitionStreak(state.annualRecords, storedAmbitions());
   const streakHonor = ambitionStreakHonor(streak);
 
   return <>
@@ -45,7 +47,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
         <img className="collection-archive-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
         <div className="collection-archive-content">
           <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
-          <small>GROWTH ARCHIVE</small>
+          <small>GROWTH ARCHIVE · 50 SLOTS</small>
           <h2>성장 도감</h2>
           <div className="legacy-card">
             <span>GUARDIAN LEGACY</span>
@@ -65,6 +67,18 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               <b>{category.current} / {category.total}</b>
               <i><em style={{ width: `${Math.round((category.current / category.total) * 100)}%` }} /></i>
             </div>)}
+          </div>
+          <div className="ambition-honors">
+            <h3>야망 명예 휘장</h3>
+            <p>한 해의 목표를 연속으로 완수해 수호자의 약속을 증명하세요.</p>
+            {ambitionStreakHonors.map((honor, index) => {
+              const unlocked = streak >= honor.required;
+              return <article key={honor.id} className={unlocked ? 'is-unlocked' : ''}>
+                <span>{unlocked ? '✦' : index + 1}</span>
+                <b>{unlocked ? honor.label : `${honor.required}년 연속 야망 완수`}<small>{honor.description}</small></b>
+                <i>{unlocked ? '획득' : `${Math.min(streak, honor.required)} / ${honor.required}`}</i>
+              </article>;
+            })}
           </div>
           <div className="legacy-relics">
             <h3>레거시 유물</h3>
@@ -90,7 +104,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               </article>;
             })}
           </div>
-          <p>한 해의 선택이 기록이 되고, 여러 해의 기록은 레거시와 유물로 남습니다.</p>
+          <p>50개의 성장 흔적을 완성하면 루나와 보낸 시간 전체가 하나의 수호 연대기로 남습니다.</p>
         </div>
       </section>
     </div>}
