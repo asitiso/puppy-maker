@@ -32,6 +32,12 @@ import {
   storyChapterIds,
   type StoryChapterId,
 } from './story-chapters';
+import {
+  applyScheduleSynergyBonuses,
+  scheduleSynergies,
+  scheduleSynergyDefinitions,
+  type ScheduleSynergyId,
+} from './schedule-synergies';
 
 export {
   achievementDefinitions,
@@ -72,6 +78,7 @@ export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } fr
 export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
 export type { GuardianRankId } from './guardian-rank';
 export type { StoryChapterId } from './story-chapters';
+export type { ScheduleSynergyId } from './schedule-synergies';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -88,6 +95,7 @@ export interface GameState extends Core.GameState {
   growthStreak: number;
   rewardedGuardianRanks: GuardianRankId[];
   rewardedStoryChapters: StoryChapterId[];
+  lastScheduleSynergies: ScheduleSynergyId[];
 }
 
 export type Action =
@@ -105,6 +113,7 @@ export const initialState: GameState = {
   growthStreak: 0,
   rewardedGuardianRanks: [],
   rewardedStoryChapters: [],
+  lastScheduleSynergies: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -142,6 +151,12 @@ function hydrateRewardedStoryChapters(raw: unknown): StoryChapterId[] {
   return storyChapterIds.filter(id => raw.includes(id));
 }
 
+function hydrateScheduleSynergies(raw: unknown): ScheduleSynergyId[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = scheduleSynergyDefinitions.map(definition => definition.id);
+  return ids.filter(id => raw.includes(id));
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -155,6 +170,7 @@ export function hydrateGameState(raw: unknown): GameState {
     growthStreak: Math.max(0, Math.floor(finiteNumber(source.growthStreak, 0))),
     rewardedGuardianRanks: hydrateRewardedGuardianRanks(source.rewardedGuardianRanks),
     rewardedStoryChapters: hydrateRewardedStoryChapters(source.rewardedStoryChapters),
+    lastScheduleSynergies: hydrateScheduleSynergies(source.lastScheduleSynergies),
   };
 }
 
@@ -245,6 +261,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     growthStreak: state.growthStreak,
     rewardedGuardianRanks: state.rewardedGuardianRanks,
     rewardedStoryChapters: state.rewardedStoryChapters,
+    lastScheduleSynergies: state.lastScheduleSynergies,
   };
 }
 
@@ -266,13 +283,23 @@ export function reducer(state: GameState, action: Action): GameState {
       growthStreak: state.growthStreak,
       rewardedGuardianRanks: state.rewardedGuardianRanks,
       rewardedStoryChapters: state.rewardedStoryChapters,
+      lastScheduleSynergies: state.lastScheduleSynergies,
     };
     return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
 
   if (action.type === 'FINISH_TRAINING') {
-    const next = Core.reducer(state, action as Core.Action);
-    return reconcileProgressRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'trainings'));
+    const next = preserveExtendedState(state, Core.reducer(state, action as Core.Action));
+    const synergies = scheduleSynergies(state.schedule);
+    const bonus = applyScheduleSynergyBonuses(next.stats, next.personality, synergies);
+    const synergized: GameState = {
+      ...next,
+      stats: bonus.stats,
+      personality: bonus.personality,
+      condition: Core.deriveCondition(bonus.stats),
+      lastScheduleSynergies: synergies,
+    };
+    return reconcileProgressRewards(applyMonthlyProgress(synergized, 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
@@ -297,6 +324,7 @@ export function reducer(state: GameState, action: Action): GameState {
       growthStreak,
       rewardedGuardianRanks: state.rewardedGuardianRanks,
       rewardedStoryChapters: state.rewardedStoryChapters,
+      lastScheduleSynergies: [],
     });
   }
 
