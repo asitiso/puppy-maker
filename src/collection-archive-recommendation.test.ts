@@ -22,6 +22,16 @@ describe('growth archive recommendation', () => {
     expect(archiveRecommendation([category('talents','고급 재능',0,8)])).toMatchObject({ action:'training' });
   });
 
+  it('routes every expedition collection category back to Guardian Expedition', () => {
+    const expeditionIds: CollectionArchiveCategory['id'][] = [
+      'expeditionStages','expeditionBosses','expeditionRelics','expeditionStories','expeditionDiscoveries',
+      'guardianEvolution','expeditionCrafting','expeditionRegions','expeditionSMilestones',
+    ];
+    for (const id of expeditionIds) {
+      expect(archiveRecommendation([category(id, id, 0, 3)])).toMatchObject({ action:'expedition' });
+    }
+  });
+
   it('returns celebration guidance when all categories are complete', () => {
     const result = archiveRecommendation([
       category('memories','기억',13,13),
