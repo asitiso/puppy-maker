@@ -14,8 +14,61 @@ import {
 } from './weekly-directives';
 import { resolveSeasonPurchase, type SeasonShopOfferId } from './season-shop';
 import { newlyEarnedKeepsakeMilestones } from './season-keepsakes';
+import {
+  newlyEarnedSeasonHonors,
+  type SeasonCompletionHonorId,
+} from './season-completion-honors';
 
-export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId }):Live.GameState {
+export type GameState = Live.GameState & {
+  claimedSeasonCompletionHonors:SeasonCompletionHonorId[];
+};
+
+export type Action = Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId };
+
+export const initialState:GameState = {
+  ...Live.initialState,
+  claimedSeasonCompletionHonors:[],
+};
+
+const honorIds:SeasonCompletionHonorId[] = ['first_complete','four_seasons','perfect_year','eight_complete'];
+const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+function hydrateSeasonCompletionHonors(raw:unknown):SeasonCompletionHonorId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is SeasonCompletionHonorId => typeof value === 'string' && honorIds.includes(value as SeasonCompletionHonorId)))];
+}
+
+export function hydrateGameState(raw:unknown):GameState {
+  const source = isRecord(raw) ? raw : {};
+  return {
+    ...Live.hydrateGameState(raw),
+    claimedSeasonCompletionHonors:hydrateSeasonCompletionHonors(source.claimedSeasonCompletionHonors),
+  };
+}
+
+function preserveSeasonMeta(state:GameState, next:Live.GameState):GameState {
+  if (next === state) return state;
+  return {
+    ...next,
+    claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
+  };
+}
+
+function applySeasonCompletionHonors(previous:GameState, next:GameState):GameState {
+  const claimed = previous.claimedSeasonCompletionHonors ?? [];
+  const earned = newlyEarnedSeasonHonors(next.seasonJourneyHistory,claimed);
+  if (!earned.length) return next;
+  return {
+    ...next,
+    gold:next.gold + earned.reduce((sum,item) => sum + item.reward.gold,0),
+    gems:next.gems + earned.reduce((sum,item) => sum + item.reward.gems,0),
+    claimedSeasonCompletionHonors:[...claimed,...earned.map(item => item.id)],
+  };
+}
+
+export function reducer(state:GameState, action:Action):GameState {
+  if (action.type === 'RESET') return initialState;
+
   if (action.type === 'PURCHASE_SEASON_OFFER') {
     const journeyKey = seasonJourneyKey(state.year,state.month);
     const result = resolveSeasonPurchase({
@@ -55,15 +108,17 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
   if (action.type !== 'FINISH_TRAINING') {
     const liveNext = Live.reducer(state,action);
     if (liveNext === state) return state;
-    return {
-      ...liveNext,
-      claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
-    };
+    const preserved = preserveSeasonMeta(state,liveNext);
+    return action.type === 'NEXT_MONTH' ? applySeasonCompletionHonors(state,preserved) : preserved;
   }
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  const next:Live.GameState = { ...state, ...baseNext };
+  const next:GameState = {
+    ...state,
+    ...baseNext,
+    claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
+  };
   const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
   const directives = weeklyDirectives(state.year,state.month,state.week);
   const progress = state.weeklyDirectiveKey === weekKey ? state.weeklyDirectiveProgress : {};
@@ -105,6 +160,7 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
     seasonJourneyHistory:state.seasonJourneyHistory,
     seasonShopPurchases:state.seasonShopPurchases,
     claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
+    claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
