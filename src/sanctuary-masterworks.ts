@@ -27,7 +27,7 @@ export function canBuildSanctuaryMasterwork(input:{
   id:SanctuaryMasterworkId;
   levels:SanctuaryLevels;
   specializations:SanctuarySpecializationState;
-  completed:SanctuaryMasterworkId[];
+  completed:ReadonlyArray<SanctuaryMasterworkId>;
   gold:number;
   materials:SanctuaryMaterials;
 }) {
@@ -42,7 +42,7 @@ export function canBuildSanctuaryMasterwork(input:{
   return { accepted:true as const, definition };
 }
 
-export function sanctuaryMasterworkEffects(completed:SanctuaryMasterworkId[]) {
+export function sanctuaryMasterworkEffects(completed:ReadonlyArray<SanctuaryMasterworkId>) {
   const ids = new Set(completed);
   return {
     trainingPercent:ids.has('guardian_arena') ? 1 : 0,
@@ -54,7 +54,7 @@ export function sanctuaryMasterworkEffects(completed:SanctuaryMasterworkId[]) {
   };
 }
 
-export function sanctuaryMasterworkSetReward(completed:SanctuaryMasterworkId[]) {
+export function sanctuaryMasterworkSetReward(completed:ReadonlyArray<SanctuaryMasterworkId>) {
   const ids = new Set(completed);
   return sanctuaryMasterworks.every(item => ids.has(item.id)) ? { gold:1000, gems:5 } : null;
 }
