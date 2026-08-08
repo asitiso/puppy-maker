@@ -10,6 +10,7 @@ import {
   type OutingLocationId,
 } from './adventure';
 import { attendanceKey, attendanceReward } from './attendance';
+import { availableMail, mailDefinitions, type MailRewardId } from './mail-rewards';
 import {
   completedMonthlyMissions,
   emptyMonthlyCounters,
@@ -94,6 +95,7 @@ export type { StoryChapterId } from './story-chapters';
 export type { ScheduleSynergyId } from './schedule-synergies';
 export type { AdvancedTalentId } from './advanced-talents';
 export type { CareerRecords, CareerTitleId } from './career-records';
+export type { MailRewardId } from './mail-rewards';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -113,12 +115,14 @@ export interface GameState extends Core.GameState {
   lastScheduleSynergies: ScheduleSynergyId[];
   careerRecords: CareerRecords;
   claimedAttendanceMonths: string[];
+  claimedMailRewards: MailRewardId[];
 }
 
 export type Action =
   | Exclude<Core.Action, { type: 'GO_OUTING' } | { type: 'RESET' }>
   | { type: 'GO_OUTING'; location: OutingLocationId; eventRoll?: number }
   | { type: 'CLAIM_ATTENDANCE' }
+  | { type: 'CLAIM_MAIL'; mail: MailRewardId }
   | { type: 'RESET' };
 
 export const initialState: GameState = {
@@ -134,6 +138,7 @@ export const initialState: GameState = {
   lastScheduleSynergies: [],
   careerRecords: emptyCareerRecords(),
   claimedAttendanceMonths: [],
+  claimedMailRewards: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -203,6 +208,12 @@ function hydrateAttendanceClaims(raw: unknown): string[] {
   return [...new Set(valid)];
 }
 
+function hydrateMailClaims(raw: unknown): MailRewardId[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = mailDefinitions.map(item => item.id);
+  return ids.filter(id => raw.includes(id));
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -219,6 +230,7 @@ export function hydrateGameState(raw: unknown): GameState {
     lastScheduleSynergies: hydrateScheduleSynergies(source.lastScheduleSynergies),
     careerRecords: hydrateCareerRecords(source.careerRecords),
     claimedAttendanceMonths: hydrateAttendanceClaims(source.claimedAttendanceMonths),
+    claimedMailRewards: hydrateMailClaims(source.claimedMailRewards),
   };
 }
 
@@ -256,6 +268,14 @@ export function currentCareerTitles(state: GameState): CareerTitleId[] {
     records: state.careerRecords,
     guardianRank: currentGuardianStatus(state).rank,
     openedStories: currentStoryChapters(state).length,
+  });
+}
+
+export function currentAvailableMail(state: GameState): MailRewardId[] {
+  return availableMail({
+    memories: state.memories,
+    visitedOutings: state.visitedOutings,
+    guardianRank: currentGuardianStatus(state).rank,
   });
 }
 
@@ -329,6 +349,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     lastScheduleSynergies: state.lastScheduleSynergies,
     careerRecords: state.careerRecords,
     claimedAttendanceMonths: state.claimedAttendanceMonths,
+    claimedMailRewards: state.claimedMailRewards,
   };
 }
 
@@ -344,6 +365,18 @@ export function reducer(state: GameState, action: Action): GameState {
       gold: state.gold + reward.gold,
       gems: state.gems + reward.gems,
       claimedAttendanceMonths: [...state.claimedAttendanceMonths, key],
+    };
+  }
+
+  if (action.type === 'CLAIM_MAIL') {
+    if (state.claimedMailRewards.includes(action.mail) || !currentAvailableMail(state).includes(action.mail)) return state;
+    const definition = mailDefinitions.find(item => item.id === action.mail);
+    if (!definition) return state;
+    return {
+      ...state,
+      gold: state.gold + definition.reward.gold,
+      gems: state.gems + definition.reward.gems,
+      claimedMailRewards: [...state.claimedMailRewards, action.mail],
     };
   }
 
@@ -365,6 +398,7 @@ export function reducer(state: GameState, action: Action): GameState {
       lastScheduleSynergies: state.lastScheduleSynergies,
       careerRecords: recordCareerAction(state.careerRecords, { type: 'outing' }),
       claimedAttendanceMonths: state.claimedAttendanceMonths,
+      claimedMailRewards: state.claimedMailRewards,
     };
     return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
@@ -427,6 +461,7 @@ export function reducer(state: GameState, action: Action): GameState {
       lastScheduleSynergies: [],
       careerRecords: recordCareerAction(state.careerRecords, { type: 'month' }),
       claimedAttendanceMonths: state.claimedAttendanceMonths,
+      claimedMailRewards: state.claimedMailRewards,
     });
   }
 
