@@ -25,6 +25,7 @@ import {
   type AchievementId,
   type GameState,
 } from './game';
+import { attendanceKey, attendanceReward } from './attendance';
 import { talentDefinitions } from './advanced-talents';
 import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
@@ -97,9 +98,10 @@ type LayeredHomeProps = {
   onClaimAchievement: (achievement: AchievementId) => void;
   onOuting: (location: OutingLocationId) => void;
   onGift: (item: GiftItemId) => void;
+  onAttendance: () => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -118,15 +120,19 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const currentTitle = careerTitleDefinitions.find(item => item.id === titles[titles.length - 1]);
   const talentLabels = talents.map(id => talentDefinitions.find(item => item.id === id)?.label).filter(Boolean);
   const highestMastery = Math.max(...Object.values(state.mastery).map(entry => masteryLevel(entry.xp)));
+  const attendanceId = attendanceKey(state.year, state.month);
+  const attendanceClaimed = state.claimedAttendanceMonths.includes(attendanceId);
+  const attendance = attendanceReward(state.year, state.month);
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
   const isBagPanel = activePanel === 'bag';
   const isOutingPanel = activePanel === 'outing';
   const isMissionPanel = activePanel === 'mission';
   const isEventPanel = activePanel === 'event';
-  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel);
-  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : staticPanel?.title ?? '';
-  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : staticPanel?.eyebrow ?? '';
+  const isAttendancePanel = activePanel === 'attendance';
+  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel || isAttendancePanel);
+  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : staticPanel?.title ?? '';
+  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : staticPanel?.eyebrow ?? '';
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -182,7 +188,14 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             <b>{item.title}<small>{item.description} · {reward}</small></b>
             <i>{claimed ? '완료' : canClaim ? '받기' : '진행중'}</i>
           </button>;
-        })}</div> : isEventPanel ? <div className="lh-panel-list">{storyChapterDefinitions.map((chapter, index) => {
+        })}</div> : isAttendancePanel ? <div className="lh-panel-list">
+          <button disabled={attendanceClaimed} onClick={() => !attendanceClaimed && onAttendance()}>
+            <span>{attendanceClaimed ? '✓' : '!'}</span>
+            <b>{state.year}년차 {state.month}월 출석 보상<small>기본 150G{attendance.gems > 0 ? ` · 분기 보너스 보석 ${attendance.gems}개` : ' · 다음 분기월에는 보석 보너스'}</small></b>
+            <i>{attendanceClaimed ? '수령 완료' : '받기'}</i>
+          </button>
+          <button disabled><span>◆</span><b>누적 출석 기록<small>월이 바뀌어도 이전 수령 기록은 유지돼요.</small></b><i>{state.claimedAttendanceMonths.length}개월</i></button>
+        </div> : isEventPanel ? <div className="lh-panel-list">{storyChapterDefinitions.map((chapter, index) => {
           const opened = storyOpen.has(chapter.id);
           const reward = chapter.rewardGems > 0 ? ` · 보상 보석 ${chapter.rewardGems}` : '';
           return <button key={chapter.id} disabled>
