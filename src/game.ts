@@ -88,6 +88,7 @@ import {
   incrementCallingMonthMastery,
   monthGrowthPointReward,
   reconcileBondSceneRewards,
+  type BondRewardProgress,
 } from './raising-depth-rewards';
 
 export {
@@ -419,9 +420,9 @@ function reconcileStoryRewards(state: GameState): GameState {
   };
 }
 
-function reconcileBondRewards(state: GameState): GameState {
+function bondRewardProgress(state: GameState): BondRewardProgress {
   const bossClears = expeditionStageDefinitions.filter(stage => stage.boss && isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
-  const result = reconcileBondSceneRewards({
+  return {
     affection:state.stats.affection,
     outings:state.careerRecords.outings,
     trainings:state.careerRecords.trainings,
@@ -433,7 +434,11 @@ function reconcileBondRewards(state: GameState): GameState {
     rewarded:state.rewardedBondScenes,
     gold:state.gold,
     gems:state.gems,
-  });
+  };
+}
+
+function reconcileBondRewards(previous: GameState, state: GameState): GameState {
+  const result = reconcileBondSceneRewards(bondRewardProgress(previous), bondRewardProgress(state));
   if (!result.changed) return state;
   return {
     ...state,
@@ -444,8 +449,9 @@ function reconcileBondRewards(state: GameState): GameState {
   };
 }
 
-function reconcileProgressRewards(state: GameState): GameState {
-  return reconcileBondRewards(reconcileStoryRewards(reconcileGuardianRewards(state)));
+function reconcileProgressRewards(previous: GameState, state: GameState): GameState {
+  const progressed = reconcileStoryRewards(reconcileGuardianRewards(state));
+  return reconcileBondRewards(previous, progressed);
 }
 
 function applyExplorationEventReward(state: GameState, event: ExplorationEventId | null): GameState {
@@ -518,16 +524,17 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESET') return hydrateGameState(null);
 
   if (action.type === 'AUTO_SCHEDULE') {
-    return reconcileProgressRewards({ ...state, schedule: smartSchedule({ month: state.month, condition: state.condition, focus: state.monthlyFocus }) });
+    const next = { ...state, schedule: smartSchedule({ month: state.month, condition: state.condition, focus: state.monthlyFocus }) };
+    return reconcileProgressRewards(state, next);
   }
 
   if (action.type === 'SET_MONTHLY_FOCUS') {
-    return reconcileProgressRewards({ ...state, monthlyFocus: action.focus });
+    return reconcileProgressRewards(state, { ...state, monthlyFocus: action.focus });
   }
 
   if (action.type === 'SET_YEARLY_AMBITION') {
     if (state.yearlyAmbitions[state.year]) return state;
-    return reconcileProgressRewards({ ...state, yearlyAmbitions: { ...state.yearlyAmbitions, [state.year]: action.ambition } });
+    return reconcileProgressRewards(state, { ...state, yearlyAmbitions: { ...state.yearlyAmbitions, [state.year]: action.ambition } });
   }
 
   if (action.type === 'SET_GUARDIAN_CALLING') {
@@ -542,7 +549,7 @@ export function reducer(state: GameState, action: Action): GameState {
       history:state.callingHistory,
     });
     if (!result.changed) return state;
-    return reconcileProgressRewards({
+    return reconcileProgressRewards(state, {
       ...state,
       activeCalling:result.current,
       gold:result.gold,
@@ -554,7 +561,7 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'PURCHASE_GROWTH_TRAIT') {
     const result = purchaseGrowthTrait(action.trait, state.purchasedTraits, state.growthPoints);
     if (!result.purchased) return state;
-    return reconcileProgressRewards({ ...state, purchasedTraits:result.traits, growthPoints:result.points });
+    return reconcileProgressRewards(state, { ...state, purchasedTraits:result.traits, growthPoints:result.points });
   }
 
   if (action.type === 'FINISH_EXPEDITION_STAGE') {
@@ -570,7 +577,7 @@ export function reducer(state: GameState, action: Action): GameState {
     const stress = clampStat(state.stats.stress + Math.max(0, action.stressDelta ?? 0));
     const nextStats = { ...state.stats, affection: resolved.state.affection, fatigue, stress };
     const bossReward = applyBossGrowthPointReward(action.stageId, resolved.summary.firstClear, state.growthPointBossRewards, state.growthPoints);
-    return reconcileProgressRewards({
+    const next: GameState = {
       ...state,
       ...pickExpeditionPersistentState(resolved.state),
       gold: resolved.state.gold,
@@ -581,19 +588,20 @@ export function reducer(state: GameState, action: Action): GameState {
       lastExpeditionResult: resolved.summary,
       growthPoints:bossReward.points,
       growthPointBossRewards:bossReward.rewarded,
-    });
+    };
+    return reconcileProgressRewards(state, next);
   }
 
   if (action.type === 'EQUIP_EXPEDITION_RELIC') {
     const equipped = equipExpeditionRelic(state.equippedExpeditionRelics, state.ownedExpeditionRelics, action.relic);
     if (equipped.length === state.equippedExpeditionRelics.length && equipped.every((id, index) => id === state.equippedExpeditionRelics[index])) return state;
-    return reconcileProgressRewards({ ...state, equippedExpeditionRelics: equipped });
+    return reconcileProgressRewards(state, { ...state, equippedExpeditionRelics: equipped });
   }
 
   if (action.type === 'UNEQUIP_EXPEDITION_RELIC') {
     const equipped = unequipExpeditionRelic(state.equippedExpeditionRelics, action.relic);
     if (equipped.length === state.equippedExpeditionRelics.length) return state;
-    return reconcileProgressRewards({ ...state, equippedExpeditionRelics: equipped });
+    return reconcileProgressRewards(state, { ...state, equippedExpeditionRelics: equipped });
   }
 
   if (action.type === 'CRAFT_EXPEDITION_RECIPE') {
@@ -606,31 +614,33 @@ export function reducer(state: GameState, action: Action): GameState {
     const craftingMilestones = state.craftingMilestones.includes(result.milestone)
       ? state.craftingMilestones
       : [...state.craftingMilestones, result.milestone];
-    return reconcileProgressRewards({ ...state, expeditionMaterials: result.materials, inventory, ownedExpeditionRelics, craftingMilestones });
+    return reconcileProgressRewards(state, { ...state, expeditionMaterials: result.materials, inventory, ownedExpeditionRelics, craftingMilestones });
   }
 
   if (action.type === 'CLAIM_ATTENDANCE') {
     const key = attendanceKey(state.year, state.month);
     if (state.claimedAttendanceMonths.includes(key)) return state;
     const reward = attendanceReward(state.year, state.month);
-    return reconcileProgressRewards({
+    const next = {
       ...state,
       gold: state.gold + reward.gold,
       gems: state.gems + reward.gems,
       claimedAttendanceMonths: [...state.claimedAttendanceMonths, key],
-    });
+    };
+    return reconcileProgressRewards(state, next);
   }
 
   if (action.type === 'CLAIM_MAIL') {
     if (state.claimedMailRewards.includes(action.mail) || !currentAvailableMail(state).includes(action.mail)) return state;
     const definition = mailDefinitions.find(item => item.id === action.mail);
     if (!definition) return state;
-    return reconcileProgressRewards({
+    const next = {
       ...state,
       gold: state.gold + definition.reward.gold,
       gems: state.gems + definition.reward.gems,
       claimedMailRewards: [...state.claimedMailRewards, action.mail],
-    });
+    };
+    return reconcileProgressRewards(state, next);
   }
 
   if (action.type === 'GO_OUTING') {
@@ -661,7 +671,7 @@ export function reducer(state: GameState, action: Action): GameState {
       ...pickRaisingDepthState(state),
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
-    return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
+    return reconcileProgressRewards(state, applyMonthlyProgress(rewarded, 'outings'));
   }
 
   if (action.type === 'FINISH_TRAINING') {
@@ -693,7 +703,7 @@ export function reducer(state: GameState, action: Action): GameState {
         grade: Core.trainingGrade(state.trainingScore),
       }),
     };
-    return reconcileProgressRewards(applyMonthlyProgress(talented, 'trainings'));
+    return reconcileProgressRewards(state, applyMonthlyProgress(talented, 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
@@ -701,7 +711,7 @@ export function reducer(state: GameState, action: Action): GameState {
     if (next === state) return state;
     const gifted = preserveExtendedState(state, next);
     gifted.careerRecords = recordCareerAction(state.careerRecords, { type: 'gift' });
-    return reconcileProgressRewards(applyMonthlyProgress(gifted, 'gifts'));
+    return reconcileProgressRewards(state, applyMonthlyProgress(gifted, 'gifts'));
   }
 
   if (action.type === 'NEXT_MONTH') {
@@ -726,7 +736,7 @@ export function reducer(state: GameState, action: Action): GameState {
     const streakBonus = growthStreak > 0 && growthStreak % 3 === 0 ? 3 : 0;
     const growthPoints = state.growthPoints + monthGrowthPointReward(state.trainingScore);
     const callingMastery = incrementCallingMonthMastery(state.callingMastery, state.activeCalling);
-    return reconcileProgressRewards({
+    const next: GameState = {
       ...coreNext,
       gems: coreNext.gems + streakBonus,
       explorationXp: state.explorationXp,
@@ -750,10 +760,11 @@ export function reducer(state: GameState, action: Action): GameState {
       ...pickRaisingDepthState(state),
       growthPoints,
       callingMastery,
-    });
+    };
+    return reconcileProgressRewards(state, next);
   }
 
   const next = Core.reducer(state, action as Core.Action);
   if (next === state) return state;
-  return reconcileProgressRewards(preserveExtendedState(state, next));
+  return reconcileProgressRewards(state, preserveExtendedState(state, next));
 }
