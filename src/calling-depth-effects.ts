@@ -74,6 +74,11 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     }
   }
 
+  if (input.calling === 'caretaker' && signatures.has('heart_anchor')) {
+    stressDelta = Math.max(0, stressDelta - 2);
+    applied.push('heart_anchor');
+  }
+
   if (input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
     const key = legendRewardKey(input.year, input.month, 'vanguard_legend');
     if (!legendRewardKeys.includes(key)) {
