@@ -9,7 +9,7 @@ describe('expedition crafting', () => {
   it('rejects insufficient materials without mutation', () => {
     const materials = emptyExpeditionMaterials();
     expect(canCraft('star_cookie_recipe', materials)).toBe(false);
-    expect(applyCrafting('star_cookie_recipe', materials)).toEqual({ crafted: false, materials, gift: null, relic: null });
+    expect(applyCrafting('star_cookie_recipe', materials)).toEqual({ crafted: false, materials, gift: null, relic: null, milestone: null });
   });
 
   it('spends exactly two regional materials for gifts', () => {
@@ -18,6 +18,7 @@ describe('expedition crafting', () => {
     expect(star.crafted).toBe(true);
     expect(star.materials.star_bark).toBe(1);
     expect(star.gift).toBe('star_cookie');
+    expect(star.milestone).toBe('crafted_star_cookie');
   });
 
   it('requires three of every regional material for guardian thread', () => {
@@ -25,5 +26,6 @@ describe('expedition crafting', () => {
     expect(result.crafted).toBe(true);
     expect(result.materials).toEqual({ star_bark: 0, arcane_shard: 0, wind_pearl: 0 });
     expect(result.relic).toBe('guardian_thread');
+    expect(result.milestone).toBe('crafted_guardian_thread');
   });
 });
