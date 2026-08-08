@@ -23,6 +23,7 @@ export function seasonLifetimeAward(input:{ tiersCompleted:number; score:number;
   const tokens = Number.isFinite(input.tokensEarned) ? Math.max(0,Math.floor(input.tokensEarned)) : 0;
   if (tiers < 5) return 0;
   let points = tiers >= 10 ? 2 : 1;
+  if (score >= 600) points += 1;
   if (score >= 1000) points += 1;
   if (tokens >= 100) points += 1;
   if (input.keepsake) points += 1;
