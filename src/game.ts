@@ -23,11 +23,35 @@ import {
   type WorldContractProgress,
 } from './world-contracts';
 import { worldEvent, worldEventExpeditionBonus } from './world-event';
+import {
+  journeyTierClaimKey,
+  newlyEarnedJourneyTiers,
+  seasonJourneyKey,
+  seasonJourneyPoints,
+  type SeasonJourneyAction,
+  type SeasonJourneyTierId,
+} from './season-journey';
+import {
+  emptyLiveOpsState,
+  hydrateLiveOpsState,
+  type LiveOpsPersistentState,
+  type SeasonJourneyHistoryEntry,
+} from './live-ops-state';
+import {
+  advanceWeeklyDirectives,
+  weeklyDirectiveKey,
+  weeklyDirectives,
+  type WeeklyDirectiveEvent,
+  type WeeklyDirectiveId,
+} from './weekly-directives';
 
 export type { ExpeditionSeasonKey, ExpeditionSeasonTier } from './expedition-season';
 export type { RegionalRenownState, RegionalRenownLevel } from './regional-renown';
 export type { WorldContractId, WorldContractProgress } from './world-contracts';
 export type { WorldEventDefinition, WorldEventId } from './world-event';
+export type { LiveOpsPersistentState, SeasonJourneyHistoryEntry } from './live-ops-state';
+export type { SeasonJourneyKey, SeasonJourneyTierId } from './season-journey';
+export type { WeeklyDirectiveId } from './weekly-directives';
 
 export type WorldProgressFeedback = {
   region: ExpeditionRegionId;
@@ -40,7 +64,14 @@ export type WorldProgressFeedback = {
   completedContracts: WorldContractId[];
 };
 
-export interface GameState extends Base.GameState {
+export type LiveOpsProgressFeedback = {
+  journeyPoints:number;
+  seasonTiersClaimed:SeasonJourneyTierId[];
+  weeklyCompleted:WeeklyDirectiveId[];
+  tokensEarned:number;
+};
+
+export interface GameState extends Base.GameState, LiveOpsPersistentState {
   regionalRenown: RegionalRenownState;
   rewardedRenownLevels: string[];
   expeditionSeasonScores: Record<string, number>;
@@ -48,6 +79,7 @@ export interface GameState extends Base.GameState {
   worldContractProgress: WorldContractProgress;
   rewardedWorldContracts: string[];
   lastWorldProgress: WorldProgressFeedback | null;
+  lastLiveOpsProgress:LiveOpsProgressFeedback | null;
 }
 
 export type Action = Base.Action | { type:'CLAIM_EXPEDITION_SEASON_TIER'; tier:ExpeditionSeasonTier };
@@ -61,6 +93,8 @@ export const initialState: GameState = {
   worldContractProgress:emptyWorldContractProgress(),
   rewardedWorldContracts:[],
   lastWorldProgress:null,
+  ...emptyLiveOpsState(),
+  lastLiveOpsProgress:null,
 };
 
 const regionIds: ExpeditionRegionId[] = ['starlight_forest','ancient_city','wind_lakes'];
@@ -135,10 +169,12 @@ export function hydrateGameState(raw:unknown): GameState {
     worldContractProgress:hydrateWorldContractProgress(source.worldContractProgress),
     rewardedWorldContracts:hydrateWorldContractRewards(source.rewardedWorldContracts),
     lastWorldProgress:null,
+    ...hydrateLiveOpsState(source),
+    lastLiveOpsProgress:null,
   };
 }
 
-function worldState(state:GameState) {
+function persistentState(state:GameState) {
   return {
     regionalRenown:state.regionalRenown,
     rewardedRenownLevels:state.rewardedRenownLevels,
@@ -146,12 +182,24 @@ function worldState(state:GameState) {
     claimedExpeditionSeasonTiers:state.claimedExpeditionSeasonTiers,
     worldContractProgress:state.worldContractProgress,
     rewardedWorldContracts:state.rewardedWorldContracts,
+    seasonJourneyScores:state.seasonJourneyScores,
+    claimedSeasonJourneyTiers:state.claimedSeasonJourneyTiers,
+    seasonTokenBalances:state.seasonTokenBalances,
+    weeklyDirectiveKey:state.weeklyDirectiveKey,
+    weeklyDirectiveProgress:state.weeklyDirectiveProgress,
+    rewardedWeeklyDirectives:state.rewardedWeeklyDirectives,
+    seasonJourneyHistory:state.seasonJourneyHistory,
   };
 }
 
-function preserveWorldState(state:GameState, next:Base.GameState): GameState {
+function preservePersistentState(state:GameState, next:Base.GameState): GameState {
   if (next === state) return state;
-  return { ...next, ...worldState(state), lastWorldProgress:state.lastWorldProgress };
+  return {
+    ...next,
+    ...persistentState(state),
+    lastWorldProgress:state.lastWorldProgress,
+    lastLiveOpsProgress:state.lastLiveOpsProgress,
+  };
 }
 
 function applyRenownRewards(state:GameState, region:ExpeditionRegionId, nextRenown:number, gain:number) {
@@ -189,6 +237,73 @@ function applySeasonTierRewards(state:GameState, seasonKey:string, nextScore:num
   return { claims, claimed, gold, gems };
 }
 
+function applyLiveOpsAction(state:GameState, next:GameState, journeyAction:SeasonJourneyAction, weeklyEvent?:WeeklyDirectiveEvent):GameState {
+  const journeyKey = seasonJourneyKey(state.year,state.month);
+  const previousScore = state.seasonJourneyScores[journeyKey] ?? 0;
+  const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
+  const directives = weeklyDirectives(state.year,state.month,state.week);
+  const weekProgress = state.weeklyDirectiveKey === weekKey ? state.weeklyDirectiveProgress : {};
+  const weekly = weeklyEvent
+    ? advanceWeeklyDirectives(directives,weekProgress,weeklyEvent,state.rewardedWeeklyDirectives,weekKey)
+    : { progress:weekProgress, completed:[], reward:{ journeyPoints:0, tokens:0 } };
+  const basePoints = seasonJourneyPoints(journeyAction);
+  const gainedPoints = basePoints + weekly.reward.journeyPoints;
+  const nextScore = previousScore + gainedPoints;
+  const earnedTiers = newlyEarnedJourneyTiers(previousScore,nextScore,state.claimedSeasonJourneyTiers,journeyKey);
+  const claims = [...state.claimedSeasonJourneyTiers];
+  const rewardedWeekly = [...state.rewardedWeeklyDirectives];
+  let gold = 0;
+  let gems = 0;
+  let tierTokens = 0;
+  for (const tier of earnedTiers) {
+    claims.push(journeyTierClaimKey(journeyKey,tier.tier));
+    gold += tier.reward.gold;
+    gems += tier.reward.gems;
+    tierTokens += tier.reward.tokens;
+  }
+  for (const directive of weekly.completed) {
+    const rewardKey = `${weekKey}:${directive.id}`;
+    if (!rewardedWeekly.includes(rewardKey)) rewardedWeekly.push(rewardKey);
+  }
+  const tokensEarned = tierTokens + weekly.reward.tokens;
+  return {
+    ...next,
+    seasonJourneyScores:{ ...state.seasonJourneyScores, [journeyKey]:nextScore },
+    claimedSeasonJourneyTiers:claims,
+    seasonTokenBalances:{ ...state.seasonTokenBalances, [journeyKey]:(state.seasonTokenBalances[journeyKey] ?? 0) + tokensEarned },
+    weeklyDirectiveKey:weekKey,
+    weeklyDirectiveProgress:weekly.progress,
+    rewardedWeeklyDirectives:rewardedWeekly,
+    seasonJourneyHistory:state.seasonJourneyHistory,
+    gold:next.gold + gold,
+    gems:next.gems + gems,
+    lastLiveOpsProgress:{
+      journeyPoints:gainedPoints,
+      seasonTiersClaimed:earnedTiers.map(tier => tier.tier),
+      weeklyCompleted:weekly.completed.map(item => item.id),
+      tokensEarned,
+    },
+  };
+}
+
+function archiveSeasonIfChanged(previous:GameState, next:GameState):GameState {
+  const oldKey = seasonJourneyKey(previous.year,previous.month);
+  const newKey = seasonJourneyKey(next.year,next.month);
+  if (oldKey === newKey || next.seasonJourneyHistory.some(entry => entry.key === oldKey)) return next;
+  const entry:SeasonJourneyHistoryEntry = {
+    key:oldKey,
+    score:next.seasonJourneyScores[oldKey] ?? 0,
+    tiersCompleted:next.claimedSeasonJourneyTiers.filter(key => key.startsWith(`${oldKey}:`)).length,
+    tokensEarned:next.seasonTokenBalances[oldKey] ?? 0,
+  };
+  return {
+    ...next,
+    seasonJourneyHistory:[...next.seasonJourneyHistory,entry],
+    weeklyDirectiveKey:null,
+    weeklyDirectiveProgress:{},
+  };
+}
+
 export function reducer(state:GameState, action:Action): GameState {
   if (action.type === 'RESET') return initialState;
 
@@ -210,7 +325,7 @@ export function reducer(state:GameState, action:Action): GameState {
     const baseNext = Base.reducer(state, action);
     if (baseNext === state || !baseNext.lastExpeditionResult?.accepted) return state;
     const stage = expeditionStageDefinitions.find(item => item.id === action.stageId);
-    if (!stage) return preserveWorldState(state, baseNext);
+    if (!stage) return preservePersistentState(state, baseNext);
 
     const summary = baseNext.lastExpeditionResult;
     const firstBossClear = Boolean(stage.boss && summary.firstClear);
@@ -250,8 +365,9 @@ export function reducer(state:GameState, action:Action): GameState {
       lastExpeditionResult = { ...summary, materialReward:summary.materialReward + eventBonus.materialBonus };
     }
 
-    return {
+    const worldNext:GameState = {
       ...baseNext,
+      ...persistentState(state),
       regionalRenown:nextRegionalRenown,
       rewardedRenownLevels:renownRewards.rewarded,
       expeditionSeasonScores,
@@ -272,20 +388,30 @@ export function reducer(state:GameState, action:Action): GameState {
         seasonTiersClaimed:seasonRewards.claimed,
         completedContracts:contracts.newlyCompleted,
       },
+      lastLiveOpsProgress:state.lastLiveOpsProgress,
     };
+    return applyLiveOpsAction(state,worldNext,{ kind:'expedition', grade:summary.grade, bossFirstClear:firstBossClear },{ kind:'expedition', grade:summary.grade });
   }
 
   if (action.type === 'NEXT_MONTH') {
     const baseNext = Base.reducer(state, action);
     if (baseNext === state) return state;
-    return {
+    const preserved:GameState = {
       ...baseNext,
-      ...worldState(state),
+      ...persistentState(state),
       worldContractProgress:emptyWorldContractProgress(),
       lastWorldProgress:null,
+      lastLiveOpsProgress:state.lastLiveOpsProgress,
     };
+    const grade = Base.trainingGrade(state.trainingScore);
+    return archiveSeasonIfChanged(state,applyLiveOpsAction(state,preserved,{ kind:'month_complete', grade }));
   }
 
-  const next = Base.reducer(state, action as Base.Action);
-  return preserveWorldState(state, next);
+  const baseNext = Base.reducer(state, action as Base.Action);
+  const next = preservePersistentState(state,baseNext);
+  if (next === state) return state;
+  if (action.type === 'GO_OUTING') return applyLiveOpsAction(state,next,{ kind:'outing' },{ kind:'outing' });
+  if (action.type === 'GIVE_GIFT') return applyLiveOpsAction(state,next,{ kind:'gift' },{ kind:'gift' });
+  if (action.type === 'FINISH_TRAINING') return applyLiveOpsAction(state,next,{ kind:'month_complete', grade:Base.trainingGrade(next.trainingScore) },{ kind:'training' });
+  return next;
 }
