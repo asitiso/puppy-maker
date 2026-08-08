@@ -3,6 +3,25 @@ import type { Personality, Stats } from './game';
 export type OutingLocationId = 'forest' | 'village' | 'lakeside';
 export type GiftItemId = 'star_cookie' | 'herb_tea' | 'fox_charm';
 export type Inventory = Record<GiftItemId, number>;
+export type ExplorationEventId =
+  | 'glowing_tracks'
+  | 'ancient_tree'
+  | 'street_performance'
+  | 'wand_repair'
+  | 'silver_fish'
+  | 'quiet_breeze';
+export type DiscoveryId =
+  | 'moon_feather'
+  | 'star_mushroom'
+  | 'tiny_bell'
+  | 'old_spellbook'
+  | 'glass_shell'
+  | 'wind_crystal';
+
+export type ExplorationOutcome = {
+  event: ExplorationEventId | null;
+  discovery: DiscoveryId | null;
+};
 
 type OutingDefinition = {
   name: string;
@@ -66,9 +85,72 @@ export const giftDefinitions: Record<GiftItemId, GiftDefinition> = {
 
 export const outingLocationIds: OutingLocationId[] = ['forest', 'village', 'lakeside'];
 export const giftItemIds: GiftItemId[] = ['star_cookie', 'herb_tea', 'fox_charm'];
+export const discoveryIds: DiscoveryId[] = [
+  'moon_feather', 'star_mushroom', 'tiny_bell', 'old_spellbook', 'glass_shell', 'wind_crystal',
+];
+
+const commonEvents: Record<OutingLocationId, ExplorationEventId> = {
+  forest: 'glowing_tracks',
+  village: 'street_performance',
+  lakeside: 'silver_fish',
+};
+
+const advancedEvents: Record<OutingLocationId, ExplorationEventId> = {
+  forest: 'ancient_tree',
+  village: 'wand_repair',
+  lakeside: 'quiet_breeze',
+};
+
+const locationDiscoveries: Record<OutingLocationId, [DiscoveryId, DiscoveryId]> = {
+  forest: ['moon_feather', 'star_mushroom'],
+  village: ['tiny_bell', 'old_spellbook'],
+  lakeside: ['glass_shell', 'wind_crystal'],
+};
 
 export function startingInventory(): Inventory {
   return { star_cookie: 2, herb_tea: 1, fox_charm: 1 };
+}
+
+export function startingExplorationXp(): Record<OutingLocationId, number> {
+  return { forest: 0, village: 0, lakeside: 0 };
+}
+
+export function explorationLevel(xp: number): number {
+  if (xp >= 18) return 5;
+  if (xp >= 12) return 4;
+  if (xp >= 7) return 3;
+  if (xp >= 3) return 2;
+  return 1;
+}
+
+export function explorationXpForNextLevel(xp: number): number | null {
+  const level = explorationLevel(xp);
+  if (level >= 5) return null;
+  return [3, 7, 12, 18][level - 1];
+}
+
+export function pickExplorationOutcome(
+  location: OutingLocationId,
+  xp: number,
+  discoveries: DiscoveryId[],
+  roll: number,
+): ExplorationOutcome {
+  const level = explorationLevel(xp);
+  const safeRoll = Math.max(0, Math.min(0.999999, roll));
+
+  if (safeRoll < 0.3) return { event: commonEvents[location], discovery: null };
+  if (level >= 3 && safeRoll < 0.45) return { event: advancedEvents[location], discovery: null };
+
+  const [first, second] = locationDiscoveries[location];
+  const discovery = level >= 4 && !discoveries.includes(first) && safeRoll < 0.65
+    ? first
+    : level >= 4 && !discoveries.includes(second) && safeRoll < 0.65
+      ? second
+      : level >= 2 && !discoveries.includes(first) && safeRoll < 0.65
+        ? first
+        : null;
+
+  return { event: null, discovery };
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value));
