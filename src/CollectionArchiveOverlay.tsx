@@ -3,6 +3,7 @@ import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
 import { archiveRank } from './collection-archive-rank';
+import { archiveRecommendation } from './collection-archive-recommendation';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
@@ -24,8 +25,10 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     ambitionHonors: unlockedAmbitionHonors.length,
   });
   const archiveStatus = archiveRank(archive.current);
+  const recommendation = archiveRecommendation(archive.categories);
   const legacy = guardianLegacy(state.annualRecords);
   const streakHonor = ambitionStreakHonor(streak);
+  const recommendedCategory = recommendation.categoryId ? archive.categories.find(item => item.id === recommendation.categoryId) ?? null : null;
 
   return <>
     <button
@@ -47,6 +50,12 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
             <p>{archiveStatus.description}</p>
             <small>{archiveStatus.next ? `다음 ${archiveStatus.next.label}까지 ${archiveStatus.next.remaining}칸` : '50슬롯 완성 · 최종 명예 달성'}</small>
           </div>
+          <div className={`archive-recommendation archive-recommendation-${recommendation.action}`}>
+            <span>{recommendation.action === 'complete' ? 'ARCHIVE COMPLETE' : 'NEXT COLLECTION TARGET'}</span>
+            <strong>{recommendation.label}</strong>
+            <b>{recommendedCategory ? `${recommendedCategory.label} ${recommendedCategory.current} / ${recommendedCategory.total}` : '50 / 50'}</b>
+            <p>{recommendation.reason}</p>
+          </div>
           <div className="legacy-card">
             <span>GUARDIAN LEGACY</span>
             <strong>{legacy.label}</strong>
@@ -60,7 +69,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
           </div>
           <div className="collection-archive-total"><strong>{archive.percent}%</strong><span>{archive.current} / {archive.total} 수집</span></div>
           <div className="collection-archive-list">
-            {archive.categories.map(category => <div key={category.id}>
+            {archive.categories.map(category => <div key={category.id} className={category.id === recommendation.categoryId ? 'is-recommended' : ''}>
               <span>{category.label}</span>
               <b>{category.current} / {category.total}</b>
               <i><em style={{ width: `${Math.round((category.current / category.total) * 100)}%` }} /></i>
