@@ -8,11 +8,9 @@ import { newlyUnlockedLegacyRelics } from './legacy-relic-discovery';
 import { legacyRelicDefinitions } from './legacy-relics';
 import { ceremonyRecord, shouldShowYearEndCeremony } from './year-end-ceremony';
 import { completedYearAmbition } from './yearly-ambition-history';
-import { readAmbitionSelections } from './yearly-ambition-selection';
 import { ambitionStreak, ambitionStreakHonors } from './yearly-ambition-streak';
 
 const storageKey = 'puppy-maker-year-ceremonies';
-const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
 
 function storedAcknowledgements(): string[] {
   try {
@@ -20,14 +18,6 @@ function storedAcknowledgements(): string[] {
     return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
   } catch {
     return [];
-  }
-}
-
-function storedAmbitions() {
-  try {
-    return readAmbitionSelections(JSON.parse(localStorage.getItem(ambitionStorageKey) || '{}'));
-  } catch {
-    return {};
   }
 }
 
@@ -40,9 +30,8 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   const honor = annualHonor(record);
   const epilogue = annualEpilogue(record);
   const legacy = guardianLegacy(state.annualRecords);
-  const selections = storedAmbitions();
-  const ambition = completedYearAmbition(state.annualRecords, selections, record.year);
-  const streak = ambitionStreak(state.annualRecords, selections);
+  const ambition = completedYearAmbition(state.annualRecords, state.yearlyAmbitions, record.year);
+  const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const newStreakHonor = ambitionStreakHonors.find(item => item.required === streak) ?? null;
   const newRelics = newlyUnlockedLegacyRelics(state.annualRecords, record.id)
     .map(id => legacyRelicDefinitions.find(item => item.id === id))
