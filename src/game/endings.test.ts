@@ -1,9 +1,1 @@
-import { describe, expect, it } from 'vitest';
-import { endingScores, leadingEndingSeed } from './endings';
-import { initialState } from '../game';
-
-describe('ending tendencies',()=>{
- it('leans guardian for courageous hunt-focused Runa',()=>{const state={...initialState,personality:{...initialState.personality,courage:95},mastery:{...initialState.mastery,hunt:{xp:30}}};expect(leadingEndingSeed(state)).toBe('guardian');});
- it('leans mage for curious magic-focused Runa',()=>{const state={...initialState,personality:{...initialState.personality,curiosity:95},mastery:{...initialState.mastery,magic:{xp:30}}};expect(leadingEndingSeed(state)).toBe('sage');});
- it('returns finite scores for all six endings',()=>{const scores=endingScores(initialState);expect(Object.keys(scores)).toHaveLength(6);expect(Object.values(scores).every(Number.isFinite)).toBe(true);});
-});
+import {describe,expect,it} from 'vitest';import {ENDING_META,endingScores,leadingEndingSeed,rankedEndingSeeds} from './endings';import {initialState} from '../game';describe('ending tendencies',()=>{it('leans guardian for courageous hunt-focused Runa',()=>{const state={...initialState,personality:{...initialState.personality,courage:95},mastery:{...initialState.mastery,hunt:{xp:30}}};expect(leadingEndingSeed(state)).toBe('guardian')});it('leans sage for curious magic-focused Runa',()=>{const state={...initialState,personality:{...initialState.personality,curiosity:95},mastery:{...initialState.mastery,magic:{xp:30}}};expect(leadingEndingSeed(state)).toBe('sage')});it('returns finite scores and a complete ranking for all six endings',()=>{const scores=endingScores(initialState),ranked=rankedEndingSeeds(initialState);expect(Object.keys(scores)).toHaveLength(6);expect(Object.values(scores).every(Number.isFinite)).toBe(true);expect(new Set(ranked).size).toBe(6)});it('provides player-readable hints without exposing numeric formula',()=>{expect(ENDING_META.guardian.title).toBe('별빛의 수호자');expect(ENDING_META.guardian.hint).toContain('용기');expect(Object.keys(ENDING_META)).toHaveLength(6)})});
