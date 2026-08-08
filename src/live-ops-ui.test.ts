@@ -30,4 +30,22 @@ describe('live ops ui summary', () => {
     expect(summary.season.nextTier).toBeNull();
     expect(summary.season.progressPercent).toBe(100);
   });
+
+  it('summarizes keepsake collection and next long-term milestone', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonShopPurchases:[
+        '1-spring:seasonal_keepsake:1',
+        '1-summer:seasonal_keepsake:1',
+        '1-autumn:seasonal_keepsake:1',
+      ],
+      claimedSeasonKeepsakeMilestones:['first_keepsake'],
+    });
+    expect(summary.keepsakes).toEqual(expect.objectContaining({
+      total:3,
+      seasons:{ spring:1, summer:1, autumn:1, winter:0 },
+      claimed:['first_keepsake'],
+    }));
+    expect(summary.keepsakes.nextMilestone).toEqual(expect.objectContaining({ id:'four_seasons', threshold:4 }));
+  });
 });
