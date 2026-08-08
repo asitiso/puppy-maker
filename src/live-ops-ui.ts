@@ -4,6 +4,7 @@ import { seasonJourneyKey, seasonJourneyTiers } from './season-journey';
 import { seasonKeepsakeCollection, seasonKeepsakeMilestones } from './season-keepsakes';
 import { seasonCompletionHonors, seasonHonorProgress } from './season-completion-honors';
 import { seasonMasteryRank, seasonMasteryScore } from './season-mastery-rank';
+import { seasonMasteryRewards } from './season-mastery-rewards';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
 
@@ -44,6 +45,13 @@ export function liveOpsUiSummary(state:GameState) {
     honors:claimedHonors.length,
   });
   const mastery = seasonMasteryRank(masteryScore);
+  const claimedMasteryRewards = state.claimedSeasonMasteryRanks ?? [];
+  const masteryRewardItems = seasonMasteryRewards.map(item => ({
+    ...item,
+    claimed:claimedMasteryRewards.includes(item.rank),
+    unlocked:masteryScore >= item.threshold,
+  }));
+  const nextMasteryReward = masteryRewardItems.find(item => !item.claimed) ?? null;
   return {
     season:{
       key,
@@ -58,6 +66,7 @@ export function liveOpsUiSummary(state:GameState) {
     keepsakes:{ ...collection, claimed:claimedKeepsakes, nextMilestone },
     honors:{ progress:honorProgress, items:honorItems, claimed:claimedHonors },
     mastery,
+    masteryRewards:{ claimed:claimedMasteryRewards, items:masteryRewardItems, next:nextMasteryReward },
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
 }
