@@ -23,22 +23,32 @@ import {
   newlyEarnedSeasonMasteryRewards,
   type SeasonMasteryRewardRank,
 } from './season-mastery-rewards';
+import {
+  resolveSeasonLegacyUnlock,
+  seasonLegacyNodes,
+  type SeasonLegacyNodeId,
+} from './season-legacy-board';
 
 export type GameState = Live.GameState & {
   claimedSeasonCompletionHonors:SeasonCompletionHonorId[];
   claimedSeasonMasteryRanks:SeasonMasteryRewardRank[];
+  unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
 };
 
-export type Action = Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId };
+export type Action = Live.Action
+  | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId }
+  | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
 
 export const initialState:GameState = {
   ...Live.initialState,
   claimedSeasonCompletionHonors:[],
   claimedSeasonMasteryRanks:[],
+  unlockedSeasonLegacyNodes:[],
 };
 
 const honorIds:SeasonCompletionHonorId[] = ['first_complete','four_seasons','perfect_year','eight_complete'];
 const masteryRewardRanks:SeasonMasteryRewardRank[] = ['traveler','chronicler','guardian','eternal'];
+const legacyNodeIds = seasonLegacyNodes.map(node => node.id);
 const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function hydrateSeasonCompletionHonors(raw:unknown):SeasonCompletionHonorId[] {
@@ -51,12 +61,18 @@ function hydrateSeasonMasteryRanks(raw:unknown):SeasonMasteryRewardRank[] {
   return [...new Set(raw.filter((value):value is SeasonMasteryRewardRank => typeof value === 'string' && masteryRewardRanks.includes(value as SeasonMasteryRewardRank)))];
 }
 
+function hydrateSeasonLegacyNodes(raw:unknown):SeasonLegacyNodeId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is SeasonLegacyNodeId => typeof value === 'string' && legacyNodeIds.includes(value as SeasonLegacyNodeId)))];
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
     ...Live.hydrateGameState(raw),
     claimedSeasonCompletionHonors:hydrateSeasonCompletionHonors(source.claimedSeasonCompletionHonors),
     claimedSeasonMasteryRanks:hydrateSeasonMasteryRanks(source.claimedSeasonMasteryRanks),
+    unlockedSeasonLegacyNodes:hydrateSeasonLegacyNodes(source.unlockedSeasonLegacyNodes),
   };
 }
 
@@ -66,6 +82,7 @@ function preserveSeasonMeta(state:GameState, next:Live.GameState):GameState {
     ...next,
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
+    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
   };
 }
 
@@ -99,6 +116,22 @@ function applySeasonMasteryRewards(previous:GameState, next:GameState):GameState
 
 export function reducer(state:GameState, action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+
+  if (action.type === 'UNLOCK_SEASON_LEGACY_NODE') {
+    const result = resolveSeasonLegacyUnlock({
+      nodeId:action.nodeId,
+      history:state.seasonJourneyHistory,
+      honors:state.claimedSeasonCompletionHonors,
+      unlocked:state.unlockedSeasonLegacyNodes ?? [],
+    });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      gold:state.gold + result.reward.gold,
+      gems:state.gems + result.reward.gems,
+      unlockedSeasonLegacyNodes:result.unlocked,
+    };
+  }
 
   if (action.type === 'PURCHASE_SEASON_OFFER') {
     const journeyKey = seasonJourneyKey(state.year,state.month);
@@ -134,6 +167,7 @@ export function reducer(state:GameState, action:Action):GameState {
       seasonShopPurchases,
       claimedSeasonKeepsakeMilestones:[...claimedMilestones,...keepsakeMilestones.map(item => item.id)],
       claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
+      unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
     };
     return applySeasonMasteryRewards(state,purchased);
   }
@@ -154,6 +188,7 @@ export function reducer(state:GameState, action:Action):GameState {
     ...baseNext,
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
+    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
   };
   const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
   const directives = weeklyDirectives(state.year,state.month,state.week);
@@ -198,6 +233,7 @@ export function reducer(state:GameState, action:Action):GameState {
     claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
+    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
