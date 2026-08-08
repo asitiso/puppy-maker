@@ -14,6 +14,7 @@ import {
   type Screen,
   type SkillId,
 } from './game';
+import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -65,12 +66,17 @@ function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') =>
 
 function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const ids = Object.keys(activities) as ActivityId[];
+  const synergies = scheduleSynergies(state.schedule);
   return <section className="screen diary-screen">
     <div className="diary-bg"/>
     <div className="screen-title"><small>MONTHLY PLAN</small><h1>{state.month}월 성장 다이어리</h1></div>
     <div className="book"><div className="book-ring"/><div className="week-list">
       {state.schedule.map((id, index) => <div className="week-row" key={index}><span className="week-label">{index + 1}<small>WEEK</small></span><div className={`activity-card activity-${id}`}><span><Icon name={activities[id].icon}/></span><div><b>{activities[id].name}</b><small>{id === 'rest' ? '피로와 스트레스 회복' : id === 'herb' ? '골드와 지식 획득' : '핵심 능력치 성장'}</small></div></div><button className="cycle" onClick={() => dispatch({ type:'SET_SCHEDULE', index, activity: ids[(ids.indexOf(id)+1)%ids.length] })}>↻</button></div>)}
     </div><div className="activity-palette">{ids.map(id => <button key={id} onClick={() => dispatch({ type:'SET_SCHEDULE', index: 0, activity:id })}><Icon name={activities[id].icon}/><span>{activities[id].name}</span></button>)}</div></div>
+    <div className="schedule-synergy-summary"><small>PLAN SYNERGY</small>{synergies.length ? synergies.map(id => {
+      const synergy = scheduleSynergyDefinitions.find(item => item.id === id);
+      return <span key={id}><b>{synergy?.label}</b>{synergy?.description}</span>;
+    }) : <span><b>기본 계획</b>활동 조합을 바꾸면 추가 성장 보너스가 생겨요.</span>}</div>
     <Pet mood="focus"/>
     <div className="planner-actions"><button className="secondary" onClick={() => dispatch({type:'AUTO_SCHEDULE'})}>자동 배치</button><button className="primary" onClick={() => dispatch({type:'GO',screen:'training'})}>일정 시작</button></div>
   </section>;
@@ -122,6 +128,7 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
   const memory = report?.newMemories[0];
   const discoveryLabel = report?.unlockedSkill ? '새 기술 해금' : report?.randomEvent ? '새로운 발견' : memory ? '새로운 기억' : '현재 컨디션';
   const discoveryValue = report?.unlockedSkill ? skillLabels[report.unlockedSkill] : report?.randomEvent ? eventLabels[report.randomEvent] : memory ? memoryLabels[memory] : state.condition;
+  const synergyLabels = state.lastScheduleSynergies.map(id => scheduleSynergyDefinitions.find(item => item.id === id)?.label).filter(Boolean);
   return <section className="screen result-screen">
     <div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1>
     <p>{report ? `${report.quality} · 이번 달 루나의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
@@ -130,6 +137,7 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
       <div><span>훈련 숙련도</span><b>{topMastery ? `${activities[topMastery[0]].name} Lv.${topMastery[1]}` : `마력 ${state.stats.magic}`}</b></div>
       <div><span>성향 변화</span><b>{topPersonality ? `${personalityLabels[topPersonality[0]]} +${topPersonality[1]}` : `호감도 ${state.stats.affection}`}</b></div>
       <div><span>{discoveryLabel}</span><b>{discoveryValue}</b></div>
+      <div><span>발동한 계획 시너지</span><b>{synergyLabels.length ? synergyLabels.join(' · ') : '없음'}</b></div>
     </div>
     <div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt=""/><span>월간 보상</span><b>350 G</b></div>
     <button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button>
