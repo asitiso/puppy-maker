@@ -12,6 +12,8 @@ import {
   type ExpeditionRelicId,
   type ExpeditionStageId,
   type GameState,
+  type GrowthTraitId,
+  type GuardianCallingId,
   type MailRewardId,
   type MemoryId,
   type RandomEventId,
@@ -167,9 +169,11 @@ type AppProps = {
   onExpeditionEquipReady?: (equip: (relic: ExpeditionRelicId) => void) => void;
   onExpeditionUnequipReady?: (unequip: (relic: ExpeditionRelicId) => void) => void;
   onExpeditionCraftReady?: (craft: (recipe: ExpeditionCraftingRecipeId) => void) => void;
+  onGuardianCallingReady?: (setCalling: (calling: GuardianCallingId) => void) => void;
+  onGrowthTraitReady?: (purchase: (trait: GrowthTraitId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -192,6 +196,8 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const equipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'EQUIP_EXPEDITION_RELIC', relic }), []);
   const unequipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'UNEQUIP_EXPEDITION_RELIC', relic }), []);
   const craftExpeditionRecipe = useCallback((recipe: ExpeditionCraftingRecipeId) => dispatch({ type: 'CRAFT_EXPEDITION_RECIPE', recipe }), []);
+  const setGuardianCalling = useCallback((calling: GuardianCallingId) => dispatch({ type:'SET_GUARDIAN_CALLING', calling }), []);
+  const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
   useEffect(() => {
     localStorage.setItem('puppy-maker-save', JSON.stringify(state));
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -209,6 +215,8 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onExpeditionEquipReady?.(equipExpeditionRelic), [equipExpeditionRelic, onExpeditionEquipReady]);
   useEffect(() => onExpeditionUnequipReady?.(unequipExpeditionRelic), [unequipExpeditionRelic, onExpeditionUnequipReady]);
   useEffect(() => onExpeditionCraftReady?.(craftExpeditionRecipe), [craftExpeditionRecipe, onExpeditionCraftReady]);
+  useEffect(() => onGuardianCallingReady?.(setGuardianCalling), [setGuardianCalling, onGuardianCallingReady]);
+  useEffect(() => onGrowthTraitReady?.(purchaseGrowthTrait), [purchaseGrowthTrait, onGrowthTraitReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
