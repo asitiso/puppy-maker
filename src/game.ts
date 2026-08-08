@@ -38,6 +38,11 @@ import {
   scheduleSynergyDefinitions,
   type ScheduleSynergyId,
 } from './schedule-synergies';
+import {
+  advancedTalents,
+  applyAdvancedTalentBonuses,
+  type AdvancedTalentId,
+} from './advanced-talents';
 
 export {
   achievementDefinitions,
@@ -79,6 +84,7 @@ export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
 export type { GuardianRankId } from './guardian-rank';
 export type { StoryChapterId } from './story-chapters';
 export type { ScheduleSynergyId } from './schedule-synergies';
+export type { AdvancedTalentId } from './advanced-talents';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -194,6 +200,15 @@ export function currentStoryChapters(state: GameState): StoryChapterId[] {
   });
 }
 
+export function currentAdvancedTalents(state: GameState): AdvancedTalentId[] {
+  return advancedTalents({
+    hunt: Core.masteryLevel(state.mastery.hunt.xp),
+    magic: Core.masteryLevel(state.mastery.magic.xp),
+    rest: Core.masteryLevel(state.mastery.rest.xp),
+    herb: Core.masteryLevel(state.mastery.herb.xp),
+  });
+}
+
 function reconcileGuardianRewards(state: GameState): GameState {
   const { points } = currentGuardianStatus(state);
   const newlyEarned = guardianRankDefinitions
@@ -291,15 +306,27 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'FINISH_TRAINING') {
     const next = preserveExtendedState(state, Core.reducer(state, action as Core.Action));
     const synergies = scheduleSynergies(state.schedule);
-    const bonus = applyScheduleSynergyBonuses(next.stats, next.personality, synergies);
+    const synergyBonus = applyScheduleSynergyBonuses(next.stats, next.personality, synergies);
     const synergized: GameState = {
       ...next,
-      stats: bonus.stats,
-      personality: bonus.personality,
-      condition: Core.deriveCondition(bonus.stats),
+      stats: synergyBonus.stats,
+      personality: synergyBonus.personality,
+      condition: Core.deriveCondition(synergyBonus.stats),
       lastScheduleSynergies: synergies,
     };
-    return reconcileProgressRewards(applyMonthlyProgress(synergized, 'trainings'));
+    const talentBonus = applyAdvancedTalentBonuses(
+      synergized.stats,
+      synergized.personality,
+      currentAdvancedTalents(synergized),
+      state.schedule,
+    );
+    const talented: GameState = {
+      ...synergized,
+      stats: talentBonus.stats,
+      personality: talentBonus.personality,
+      condition: Core.deriveCondition(talentBonus.stats),
+    };
+    return reconcileProgressRewards(applyMonthlyProgress(talented, 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
