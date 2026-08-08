@@ -18,6 +18,7 @@ export default function Root() {
   const [giveGift, setGiveGift] = useState<((item: GiftItemId) => void) | null>(null);
   const [claimAttendance, setClaimAttendance] = useState<(() => void) | null>(null);
   const [claimMail, setClaimMail] = useState<((mail: MailRewardId) => void) | null>(null);
+  const [setMonthlyFocus, setSetMonthlyFocus] = useState<((focus: GameState['monthlyFocus']) => void) | null>(null);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -25,6 +26,7 @@ export default function Root() {
   const captureGift = useCallback((nextGift: (item: GiftItemId) => void) => setGiveGift(() => nextGift), []);
   const captureAttendance = useCallback((nextClaim: () => void) => setClaimAttendance(() => nextClaim), []);
   const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
+  const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -32,6 +34,7 @@ export default function Root() {
   const handleGift = useCallback((item: GiftItemId) => giveGift?.(item), [giveGift]);
   const handleAttendance = useCallback(() => claimAttendance?.(), [claimAttendance]);
   const handleMail = useCallback((mail: MailRewardId) => claimMail?.(mail), [claimMail]);
+  const handleMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => setMonthlyFocus?.(focus), [setMonthlyFocus]);
 
   return <>
     <App
@@ -42,6 +45,7 @@ export default function Root() {
       onGiftReady={captureGift}
       onAttendanceReady={captureAttendance}
       onMailReady={captureMail}
+      onMonthlyFocusReady={captureMonthlyFocus}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -52,6 +56,7 @@ export default function Root() {
         onGift={handleGift}
         onAttendance={handleAttendance}
         onMail={handleMail}
+        onMonthlyFocus={handleMonthlyFocus}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <CollectionArchiveOverlay state={gameState} />
