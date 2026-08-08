@@ -16,6 +16,7 @@ import {
   achievementDefinitions,
   collectionProgress,
   currentGuardianStatus,
+  currentStoryChapters,
   eligibleAchievements,
   masteryLevel,
   relationshipRank,
@@ -24,6 +25,7 @@ import {
 } from './game';
 import { guardianRankDefinitions } from './guardian-rank';
 import { monthlyMissionDefinitions } from './monthly-missions';
+import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
@@ -106,15 +108,17 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const guardian = currentGuardianStatus(state);
   const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
   const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
+  const storyOpen = new Set(currentStoryChapters(state));
   const highestMastery = Math.max(...Object.values(state.mastery).map(entry => masteryLevel(entry.xp)));
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
   const isBagPanel = activePanel === 'bag';
   const isOutingPanel = activePanel === 'outing';
   const isMissionPanel = activePanel === 'mission';
-  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel);
-  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : staticPanel?.title ?? '';
-  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : staticPanel?.eyebrow ?? '';
+  const isEventPanel = activePanel === 'event';
+  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel);
+  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : staticPanel?.title ?? '';
+  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : staticPanel?.eyebrow ?? '';
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -151,7 +155,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
-    <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
+    <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
 
     <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · ${guardianDefinition.label}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
 
@@ -169,6 +173,14 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             <span>{claimed ? '✓' : canClaim ? '!' : index + 1}</span>
             <b>{item.title}<small>{item.description} · {reward}</small></b>
             <i>{claimed ? '완료' : canClaim ? '받기' : '진행중'}</i>
+          </button>;
+        })}</div> : isEventPanel ? <div className="lh-panel-list">{storyChapterDefinitions.map((chapter, index) => {
+          const opened = storyOpen.has(chapter.id);
+          const reward = chapter.rewardGems > 0 ? ` · 보상 보석 ${chapter.rewardGems}` : '';
+          return <button key={chapter.id} disabled>
+            <span>{opened ? '✓' : index + 1}</span>
+            <b>{chapter.title}<small>{opened ? chapter.summary : chapter.unlockHint}{reward}</small></b>
+            <i>{opened ? '열림' : '잠김'}</i>
           </button>;
         })}</div> : isMissionPanel ? <div className="lh-panel-list">
           <button disabled><span>🔥</span><b>연속 성장<small>3개월마다 보석 3개 추가 보상</small></b><i>{state.growthStreak}개월</i></button>
