@@ -15,6 +15,7 @@ import {
   type Screen,
   type SkillId,
 } from './game';
+import { monthlyFocusDefinitions } from './monthly-focus';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
 
 const iconPaths: Record<string, string> = {
@@ -130,6 +131,7 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
   const discoveryLabel = report?.unlockedSkill ? '새 기술 해금' : report?.randomEvent ? '새로운 발견' : memory ? '새로운 기억' : '현재 컨디션';
   const discoveryValue = report?.unlockedSkill ? skillLabels[report.unlockedSkill] : report?.randomEvent ? eventLabels[report.randomEvent] : memory ? memoryLabels[memory] : state.condition;
   const synergyLabels = state.lastScheduleSynergies.map(id => scheduleSynergyDefinitions.find(item => item.id === id)?.label).filter(Boolean);
+  const focus = monthlyFocusDefinitions.find(item => item.id === state.monthlyFocus) ?? monthlyFocusDefinitions[0];
   return <section className="screen result-screen">
     <div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1>
     <p>{report ? `${report.quality} · 이번 달 루나의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
@@ -138,6 +140,7 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
       <div><span>훈련 숙련도</span><b>{topMastery ? `${activities[topMastery[0]].name} Lv.${topMastery[1]}` : `마력 ${state.stats.magic}`}</b></div>
       <div><span>성향 변화</span><b>{topPersonality ? `${personalityLabels[topPersonality[0]]} +${topPersonality[1]}` : `호감도 ${state.stats.affection}`}</b></div>
       <div><span>{discoveryLabel}</span><b>{discoveryValue}</b></div>
+      <div><span>월간 성장 방침</span><b>{focus.label}</b></div>
       <div><span>발동한 계획 시너지</span><b>{synergyLabels.length ? synergyLabels.join(' · ') : '없음'}</b></div>
     </div>
     <div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt=""/><span>월간 보상</span><b>350 G</b></div>
@@ -153,9 +156,10 @@ type AppProps = {
   onGiftReady?: (gift: (item: GiftItemId) => void) => void;
   onAttendanceReady?: (claim: () => void) => void;
   onMailReady?: (claim: (mail: MailRewardId) => void) => void;
+  onMonthlyFocusReady?: (setFocus: (focus: GameState['monthlyFocus']) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -170,6 +174,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const giveGift = useCallback((item: GiftItemId) => dispatch({ type: 'GIVE_GIFT', item }), []);
   const claimAttendance = useCallback(() => dispatch({ type: 'CLAIM_ATTENDANCE' }), []);
   const claimMail = useCallback((mail: MailRewardId) => dispatch({ type: 'CLAIM_MAIL', mail }), []);
+  const setMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => dispatch({ type: 'SET_MONTHLY_FOCUS', focus }), []);
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
@@ -178,6 +183,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onGiftReady?.(giveGift), [giveGift, onGiftReady]);
   useEffect(() => onAttendanceReady?.(claimAttendance), [claimAttendance, onAttendanceReady]);
   useEffect(() => onMailReady?.(claimMail), [claimMail, onMailReady]);
+  useEffect(() => onMonthlyFocusReady?.(setMonthlyFocus), [setMonthlyFocus, onMonthlyFocusReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
