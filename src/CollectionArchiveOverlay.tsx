@@ -4,12 +4,14 @@ import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
 import { archiveRank } from './collection-archive-rank';
 import { archiveRecommendation } from './collection-archive-recommendation';
+import { archiveRecommendationRoute } from './collection-archive-route';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
+import type { HomeMenuId } from './home-panels';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
 import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
 
-export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
+export default function CollectionArchiveOverlay({ state, onNavigate }: { state: GameState; onNavigate?: (id: HomeMenuId) => void }) {
   const [open, setOpen] = useState(false);
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
@@ -26,9 +28,19 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
   });
   const archiveStatus = archiveRank(archive.current);
   const recommendation = archiveRecommendation(archive.categories);
+  const recommendationRoute = archiveRecommendationRoute(recommendation.action);
+  const homeRoute = recommendationRoute && recommendationRoute !== 'ambition' && recommendationRoute !== 'archive'
+    ? recommendationRoute
+    : null;
   const legacy = guardianLegacy(state.annualRecords);
   const streakHonor = ambitionStreakHonor(streak);
   const recommendedCategory = recommendation.categoryId ? archive.categories.find(item => item.id === recommendation.categoryId) ?? null : null;
+
+  const followRecommendation = () => {
+    if (!homeRoute) return;
+    setOpen(false);
+    onNavigate?.(homeRoute);
+  };
 
   return <>
     <button
@@ -55,6 +67,9 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
             <strong>{recommendation.label}</strong>
             <b>{recommendedCategory ? `${recommendedCategory.label} ${recommendedCategory.current} / ${recommendedCategory.total}` : '50 / 50'}</b>
             <p>{recommendation.reason}</p>
+            {homeRoute && <button onClick={followRecommendation}>바로 이동</button>}
+            {!homeRoute && recommendationRoute === 'ambition' && <small>홈의 올해의 야망 카드에서 현재 진행률과 다음 행동을 확인하세요.</small>}
+            {!homeRoute && recommendationRoute === 'archive' && <small>연간 수호 기록을 쌓으면 이 도감에서 레거시 유물이 열려요.</small>}
           </div>
           <div className="legacy-card">
             <span>GUARDIAN LEGACY</span>
