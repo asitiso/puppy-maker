@@ -91,6 +91,7 @@ import {
   type BondRewardProgress,
 } from './raising-depth-rewards';
 import { applyGiftIdentityEffects, applyTrainingIdentityEffects } from './raising-depth-effects';
+import { pathfinderSupplyBonus } from './raising-expedition-effects';
 
 export {
   achievementDefinitions,
@@ -578,15 +579,22 @@ export function reducer(state: GameState, action: Action): GameState {
     const stress = clampStat(state.stats.stress + Math.max(0, action.stressDelta ?? 0));
     const nextStats = { ...state.stats, affection: resolved.state.affection, fatigue, stress };
     const bossReward = applyBossGrowthPointReward(action.stageId, resolved.summary.firstClear, state.growthPointBossRewards, state.growthPoints);
+    const supplyMaterial = pathfinderSupplyBonus(state.activeCalling, state.purchasedTraits, action.stageId, resolved.summary.grade);
+    const persistent = pickExpeditionPersistentState(resolved.state);
+    if (supplyMaterial) persistent.expeditionMaterials = {
+      ...persistent.expeditionMaterials,
+      [supplyMaterial]: persistent.expeditionMaterials[supplyMaterial] + 1,
+    };
+    const summary = supplyMaterial ? { ...resolved.summary, materialReward: resolved.summary.materialReward + 1 } : resolved.summary;
     const next: GameState = {
       ...state,
-      ...pickExpeditionPersistentState(resolved.state),
+      ...persistent,
       gold: resolved.state.gold,
       gems: resolved.state.gems,
       inventory: resolved.state.inventory,
       stats: nextStats,
       condition: Core.deriveCondition(nextStats),
-      lastExpeditionResult: resolved.summary,
+      lastExpeditionResult: summary,
       growthPoints:bossReward.points,
       growthPointBossRewards:bossReward.rewarded,
     };
