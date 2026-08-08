@@ -3,6 +3,7 @@ import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
+import { guardianLegacy } from './guardian-legacy';
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     titles: currentCareerTitles(state).length,
     seasonStamps: state.seasonStamps.length,
   });
+  const legacy = guardianLegacy(state.annualRecords);
 
   return <>
     <button
@@ -28,6 +30,13 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
           <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
           <small>GROWTH ARCHIVE</small>
           <h2>성장 도감</h2>
+          <div className="legacy-card">
+            <span>GUARDIAN LEGACY</span>
+            <strong>{legacy.label}</strong>
+            <b>{legacy.points} LEGACY</b>
+            <p>{legacy.description}</p>
+            <small>{legacy.next ? `다음 ${legacy.next.label}까지 ${legacy.next.remaining}점` : '최고 레거시 등급 달성'}</small>
+          </div>
           <div className="collection-archive-total"><strong>{archive.percent}%</strong><span>{archive.current} / {archive.total} 수집</span></div>
           <div className="collection-archive-list">
             {archive.categories.map(category => <div key={category.id}>
@@ -49,7 +58,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               </article>;
             })}
           </div>
-          <p>훈련·외출·이야기·계절을 이어가며 루나의 성장 기록을 완성하세요.</p>
+          <p>한 해의 선택이 연간 기록이 되고, 여러 해의 기록은 루나의 레거시가 됩니다.</p>
         </div>
       </section>
     </div>}
