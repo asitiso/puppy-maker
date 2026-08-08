@@ -128,6 +128,7 @@ export function reducer(state: GameState, action: Action): GameState {
   }
 
   const next = Core.reducer(state, action as Core.Action) as GameState;
+  if (next === state) return state;
   return {
     ...next,
     explorationXp: state.explorationXp,
