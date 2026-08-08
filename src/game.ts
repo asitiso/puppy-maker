@@ -90,6 +90,7 @@ import {
   reconcileBondSceneRewards,
   type BondRewardProgress,
 } from './raising-depth-rewards';
+import { applyGiftIdentityEffects, applyTrainingIdentityEffects } from './raising-depth-effects';
 
 export {
   achievementDefinitions,
@@ -703,13 +704,38 @@ export function reducer(state: GameState, action: Action): GameState {
         grade: Core.trainingGrade(state.trainingScore),
       }),
     };
-    return reconcileProgressRewards(state, applyMonthlyProgress(talented, 'trainings'));
+    const identity = applyTrainingIdentityEffects({
+      stats:talented.stats,
+      personality:talented.personality,
+      mastery:talented.mastery,
+      schedule:state.schedule,
+      trainingScore:state.trainingScore,
+      activeCalling:state.activeCalling,
+      purchasedTraits:state.purchasedTraits,
+    });
+    const raised: GameState = {
+      ...talented,
+      stats:identity.stats,
+      personality:identity.personality,
+      mastery:identity.mastery,
+      condition:Core.deriveCondition(identity.stats),
+    };
+    return reconcileProgressRewards(state, applyMonthlyProgress(raised, 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
     const next = Core.reducer(state, action as Core.Action);
     if (next === state) return state;
     const gifted = preserveExtendedState(state, next);
+    const identity = applyGiftIdentityEffects({
+      stats:gifted.stats,
+      personality:state.personality,
+      item:action.item,
+      activeCalling:state.activeCalling,
+      purchasedTraits:state.purchasedTraits,
+    });
+    gifted.stats = identity.stats;
+    gifted.condition = Core.deriveCondition(identity.stats);
     gifted.careerRecords = recordCareerAction(state.careerRecords, { type: 'gift' });
     return reconcileProgressRewards(state, applyMonthlyProgress(gifted, 'gifts'));
   }
