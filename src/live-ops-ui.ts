@@ -1,6 +1,7 @@
 import type { GameState } from './game-live-base';
 import { seasonArchiveRecords } from './season-archive';
 import { seasonJourneyKey, seasonJourneyTiers } from './season-journey';
+import { seasonKeepsakeCollection, seasonKeepsakeMilestones } from './season-keepsakes';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
 
@@ -25,6 +26,9 @@ export function liveOpsUiSummary(state:GameState) {
     const remaining = Math.max(0,offer.limit - purchased);
     return { ...offer, purchased, remaining, canBuy:remaining > 0 && tokens >= offer.cost };
   });
+  const collection = seasonKeepsakeCollection(state.seasonShopPurchases);
+  const claimed = state.claimedSeasonKeepsakeMilestones ?? [];
+  const nextMilestone = seasonKeepsakeMilestones.find(item => !claimed.includes(item.id)) ?? null;
   return {
     season:{
       key,
@@ -36,6 +40,7 @@ export function liveOpsUiSummary(state:GameState) {
     },
     directives,
     shop,
+    keepsakes:{ ...collection, claimed, nextMilestone },
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
 }
