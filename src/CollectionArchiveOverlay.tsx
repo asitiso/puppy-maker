@@ -5,18 +5,42 @@ import { collectionArchive } from './collection-archive';
 import { archiveRank } from './collection-archive-rank';
 import { archiveRecommendation } from './collection-archive-recommendation';
 import { archiveRecommendationRoute } from './collection-archive-route';
-import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
+import { expeditionArchiveProgress } from './expedition-archive-progress';
+import { currentAdvancedTalents, currentCareerTitles, currentGuardianStatus, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import type { HomeMenuId } from './home-panels';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
 import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
 
-export default function CollectionArchiveOverlay({ state, onNavigate }: { state: GameState; onNavigate?: (id: HomeMenuId) => void }) {
+const emptyExpeditionArchive = {
+  expeditionStages:0,
+  expeditionBosses:0,
+  expeditionRelics:0,
+  expeditionStories:0,
+  expeditionDiscoveries:0,
+  guardianEvolution:0,
+  expeditionCrafting:0,
+  expeditionRegions:0,
+  expeditionSMilestones:0,
+};
+
+export default function CollectionArchiveOverlay({
+  state,
+  onNavigate,
+  onExpedition,
+}: {
+  state: GameState;
+  onNavigate?: (id: HomeMenuId) => void;
+  onExpedition?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
-  const archive = collectionArchive({
+  const legacy = guardianLegacy(state.annualRecords);
+  const guardianStatus = currentGuardianStatus(state);
+
+  const baseInput = {
     memories: state.memories.length,
     discoveries: state.discoveries.length,
     stories: currentStoryChapters(state).length,
@@ -25,18 +49,34 @@ export default function CollectionArchiveOverlay({ state, onNavigate }: { state:
     seasonStamps: state.seasonStamps.length,
     legacyRelics: unlockedRelics.size,
     ambitionHonors: unlockedAmbitionHonors.length,
+  };
+  const baseArchive = collectionArchive({ ...baseInput, ...emptyExpeditionArchive });
+  const expeditionProgress = expeditionArchiveProgress({
+    baseArchiveCurrent: baseArchive.current,
+    records: state.expeditionRecords,
+    ownedRelics: state.ownedExpeditionRelics,
+    storyEntries: state.expeditionStoryEntries,
+    discoveries: state.expeditionDiscoveries,
+    craftingMilestones: state.craftingMilestones,
+    guardianRank: guardianStatus.rank,
+    legacyId: legacy.id,
   });
+  const archive = collectionArchive({ ...baseInput, ...expeditionProgress });
   const archiveStatus = archiveRank(archive.current);
   const recommendation = archiveRecommendation(archive.categories);
   const recommendationRoute = archiveRecommendationRoute(recommendation.action);
   const homeRoute = recommendationRoute && recommendationRoute !== 'ambition' && recommendationRoute !== 'archive'
     ? recommendationRoute
     : null;
-  const legacy = guardianLegacy(state.annualRecords);
   const streakHonor = ambitionStreakHonor(streak);
   const recommendedCategory = recommendation.categoryId ? archive.categories.find(item => item.id === recommendation.categoryId) ?? null : null;
 
   const followRecommendation = () => {
+    if (recommendation.action === 'expedition') {
+      setOpen(false);
+      onExpedition?.();
+      return;
+    }
     if (!homeRoute) return;
     setOpen(false);
     onNavigate?.(homeRoute);
@@ -53,21 +93,21 @@ export default function CollectionArchiveOverlay({ state, onNavigate }: { state:
         <img className="collection-archive-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
         <div className="collection-archive-content">
           <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
-          <small>GROWTH ARCHIVE · 50 SLOTS</small>
+          <small>GROWTH ARCHIVE · 100 SLOTS</small>
           <h2>성장 도감</h2>
           <div className={`archive-rank-card archive-rank-${archiveStatus.id}`}>
             <span>ARCHIVE RANK</span>
             <strong>{archiveStatus.label}</strong>
-            <b>{archive.current} / 50</b>
+            <b>{archive.current} / 100</b>
             <p>{archiveStatus.description}</p>
-            <small>{archiveStatus.next ? `다음 ${archiveStatus.next.label}까지 ${archiveStatus.next.remaining}칸` : '50슬롯 완성 · 최종 명예 달성'}</small>
+            <small>{archiveStatus.next ? `다음 ${archiveStatus.next.label}까지 ${archiveStatus.next.remaining}칸` : '100슬롯 완성 · 최종 명예 달성'}</small>
           </div>
           <div className={`archive-recommendation archive-recommendation-${recommendation.action}`}>
             <span>{recommendation.action === 'complete' ? 'ARCHIVE COMPLETE' : 'NEXT COLLECTION TARGET'}</span>
             <strong>{recommendation.label}</strong>
-            <b>{recommendedCategory ? `${recommendedCategory.label} ${recommendedCategory.current} / ${recommendedCategory.total}` : '50 / 50'}</b>
+            <b>{recommendedCategory ? `${recommendedCategory.label} ${recommendedCategory.current} / ${recommendedCategory.total}` : '100 / 100'}</b>
             <p>{recommendation.reason}</p>
-            {homeRoute && <button onClick={followRecommendation}>바로 이동</button>}
+            {(homeRoute || recommendation.action === 'expedition') && <button onClick={followRecommendation}>바로 이동</button>}
             {!homeRoute && recommendationRoute === 'ambition' && <small>홈의 올해의 야망 카드에서 현재 진행률과 다음 행동을 확인하세요.</small>}
             {!homeRoute && recommendationRoute === 'archive' && <small>연간 수호 기록을 쌓으면 이 도감에서 레거시 유물이 열려요.</small>}
           </div>
@@ -126,7 +166,7 @@ export default function CollectionArchiveOverlay({ state, onNavigate }: { state:
               </article>;
             })}
           </div>
-          <p>50개의 성장 흔적을 완성하면 루나와 보낸 시간 전체가 하나의 수호 연대기로 남습니다.</p>
+          <p>100개의 성장과 원정 흔적을 완성하면 루나와 보낸 모든 시간이 하나의 수호 연대기로 남습니다.</p>
         </div>
       </section>
     </div>}
