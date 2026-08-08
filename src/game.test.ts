@@ -24,4 +24,7 @@ describe('game engine', () => {
     state=reducer(state,{type:'CHOOSE',choice:'hug'}); expect(state.screen).toBe('result'); expect(state.lastGrowthReport?.masteryGains.hunt).toBeGreaterThan(0); expect(state.lastGrowthReport?.masteryGains.herb).toBeGreaterThan(0);
     state=reducer(state,{type:'NEXT_MONTH'}); expect(state.screen).toBe('hub'); expect(state.week).toBe(1); expect(state.month).toBe(5);
   });
+  it('keeps schedule edits inside the four visible weeks', () => { const next=reducer(initialState,{type:'SET_SCHEDULE',index:9,activity:'rest'}); expect(next.schedule).toHaveLength(4); expect(next.schedule).toEqual(initialState.schedule); });
+  it('does not charge for a snack when gold is insufficient', () => { const poor={...initialState,gold:50}; const next=applyDialogueChoice(poor,'snack'); expect(next.gold).toBe(50); expect(next.lastChoice).not.toBe('snack'); });
+  it('hydrates duplicate memories only once', () => { const duplicate={...initialState,memories:[{id:'first_training',year:1,month:4},{id:'first_training',year:1,month:4}]}; const hydrated=hydrateGameState(JSON.stringify(duplicate)); expect(hydrated.memories.filter(memory=>memory.id==='first_training')).toHaveLength(1); });
 });
