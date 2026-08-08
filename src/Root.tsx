@@ -2,9 +2,11 @@ import { useCallback, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
 import LayeredHome from './LayeredHome';
+import SeasonalHomeBadge from './SeasonalHomeBadge';
 import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen } from './game';
 import './layered-home.css';
 import './home-panels.css';
+import './seasonal-home.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -39,14 +41,17 @@ export default function Root() {
       onAttendanceReady={captureAttendance}
       onMailReady={captureMail}
     />
-    {gameState.screen === 'hub' && <LayeredHome
-      state={gameState}
-      onSchedule={openSchedule}
-      onClaimAchievement={handleClaimAchievement}
-      onOuting={handleOuting}
-      onGift={handleGift}
-      onAttendance={handleAttendance}
-      onMail={handleMail}
-    />}
+    {gameState.screen === 'hub' && <>
+      <LayeredHome
+        state={gameState}
+        onSchedule={openSchedule}
+        onClaimAchievement={handleClaimAchievement}
+        onOuting={handleOuting}
+        onGift={handleGift}
+        onAttendance={handleAttendance}
+        onMail={handleMail}
+      />
+      <SeasonalHomeBadge month={gameState.month} />
+    </>}
   </>;
 }
