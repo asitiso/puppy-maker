@@ -45,6 +45,7 @@ export const mailDefinitions: MailDefinition[] = [
 ];
 
 const guardianRankOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
+const explorerLocations: OutingLocationId[] = ['forest', 'village', 'lakeside'];
 
 function rankAtLeast(rank: GuardianRankId, target: GuardianRankId): boolean {
   return guardianRankOrder.indexOf(rank) >= guardianRankOrder.indexOf(target);
@@ -53,7 +54,7 @@ function rankAtLeast(rank: GuardianRankId, target: GuardianRankId): boolean {
 export function availableMail(progress: MailProgress): MailRewardId[] {
   const result: MailRewardId[] = ['welcome'];
   if (progress.memories.includes('first_training')) result.push('first_training');
-  if (['forest', 'village', 'lakeside'].every(id => progress.visitedOutings.includes(id))) result.push('explorer');
+  if (explorerLocations.every(id => progress.visitedOutings.includes(id))) result.push('explorer');
   if (rankAtLeast(progress.guardianRank, 'guardian')) result.push('guardian_appointment');
   return result;
 }
