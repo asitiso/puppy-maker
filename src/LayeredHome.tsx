@@ -21,6 +21,7 @@ import {
   type AchievementId,
   type GameState,
 } from './game';
+import { monthlyMissionDefinitions } from './monthly-missions';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
@@ -105,9 +106,10 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const isBondPanel = activePanel === 'bond';
   const isBagPanel = activePanel === 'bag';
   const isOutingPanel = activePanel === 'outing';
-  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel);
-  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : staticPanel?.title ?? '';
-  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : staticPanel?.eyebrow ?? '';
+  const isMissionPanel = activePanel === 'mission';
+  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel);
+  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : staticPanel?.title ?? '';
+  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : staticPanel?.eyebrow ?? '';
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -163,7 +165,19 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             <b>{item.title}<small>{item.description} · {reward}</small></b>
             <i>{claimed ? '완료' : canClaim ? '받기' : '진행중'}</i>
           </button>;
-        })}</div> : isBondPanel ? <div className="lh-panel-list">
+        })}</div> : isMissionPanel ? <div className="lh-panel-list">
+          <button disabled><span>🔥</span><b>연속 성장<small>3개월마다 보석 3개 추가 보상</small></b><i>{state.growthStreak}개월</i></button>
+          {monthlyMissionDefinitions.map((item, index) => {
+            const value = state.monthlyCounters[item.counter];
+            const completed = state.rewardedMonthlyMissions.includes(item.id);
+            const reward = item.reward.gold ? `${item.reward.gold}G` : `보석 ${item.reward.gems}`;
+            return <button key={item.id} disabled>
+              <span>{completed ? '✓' : index + 1}</span>
+              <b>{item.title}<small>{Math.min(value, item.target)} / {item.target} · 보상 {reward}</small></b>
+              <i>{completed ? '보상 완료' : '진행중'}</i>
+            </button>;
+          })}
+        </div> : isBondPanel ? <div className="lh-panel-list">
           <button disabled><span>♥</span><b>현재 관계</b><i>{relationshipLabels[rank]}</i></button>
           <button disabled><span>1</span><b>호감도</b><i>{state.stats.affection} / 100</i></button>
           <button disabled><span>2</span><b>수집한 기억</b><i>{collection.memories}개</i></button>
