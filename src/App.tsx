@@ -22,7 +22,7 @@ import {
   type YearlyAmbitionId,
 } from './game';
 import { monthlyFocusDefinitions } from './monthly-focus';
-import { parseSavedGame, serializeSavedGame } from './save-schema';
+import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
 import { readAmbitionSelections } from './yearly-ambition-selection';
 
@@ -176,7 +176,9 @@ type AppProps = {
 
 export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
-    const hydrated = parseSavedGame(localStorage.getItem('puppy-maker-save'));
+    const loaded = loadResilientSave(localStorage);
+    if (loaded.recovered) repairPrimarySave(localStorage, loaded);
+    const hydrated = loaded.state;
     try {
       const legacyAmbitions = readAmbitionSelections(JSON.parse(localStorage.getItem('puppy-maker-yearly-ambitions') || '{}'));
       return { ...hydrated, yearlyAmbitions: { ...legacyAmbitions, ...hydrated.yearlyAmbitions } };
@@ -199,7 +201,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const setGuardianCalling = useCallback((calling: GuardianCallingId) => dispatch({ type:'SET_GUARDIAN_CALLING', calling }), []);
   const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
   useEffect(() => {
-    localStorage.setItem('puppy-maker-save', serializeSavedGame(state));
+    writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
   }, [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
