@@ -18,6 +18,11 @@ export type WorldUiSummary = {
     seasonLabel:string;
     contractLabel:string;
   };
+  expeditionMap:{
+    eventStrip:string;
+    featuredRegionId:ExpeditionRegionId;
+    regionRenownLabels:Record<ExpeditionRegionId,string>;
+  };
   event:{
     label:string;
     description:string;
@@ -103,6 +108,7 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
     };
   });
   const completedContracts = contracts.filter(contract => contract.rewarded).length;
+  const regionRenownLabels = Object.fromEntries(regions.map(region => [region.id, `명성 Lv.${region.level} · ${region.renown}`])) as Record<ExpeditionRegionId,string>;
 
   return {
     homeCard:{
@@ -110,6 +116,11 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
       title:event.label,
       seasonLabel:`${seasonProfile.label} 원정 ${score} / ${nextTier?.threshold ?? expeditionSeasonTiers[expeditionSeasonTiers.length - 1].threshold}`,
       contractLabel:`월간 의뢰 ${completedContracts} / ${contracts.length}`,
+    },
+    expeditionMap:{
+      eventStrip:`월드 이벤트 · ${event.label} · 추천 ${regionLabel(event.region)}`,
+      featuredRegionId:event.region,
+      regionRenownLabels,
     },
     event:{
       label:event.label,
