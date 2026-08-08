@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyLiveOpsState, hydrateLiveOpsState } from './live-ops-state';
 
 describe('live ops persistent state', () => {
-  it('starts with empty journey, token, weekly, archive, and shop state', () => {
+  it('starts with empty journey, token, weekly, archive, shop, and keepsake state', () => {
     expect(emptyLiveOpsState()).toEqual({
       seasonJourneyScores:{},
       claimedSeasonJourneyTiers:[],
@@ -12,6 +12,7 @@ describe('live ops persistent state', () => {
       rewardedWeeklyDirectives:[],
       seasonJourneyHistory:[],
       seasonShopPurchases:[],
+      claimedSeasonKeepsakeMilestones:[],
     });
   });
 
@@ -28,6 +29,7 @@ describe('live ops persistent state', () => {
         { key:'bad', score:999, tiersCompleted:99, tokensEarned:-1 },
       ],
       seasonShopPurchases:['1-spring:gold_pouch:1','bad','1-spring:gold_pouch:1','1-spring:seasonal_keepsake:2'],
+      claimedSeasonKeepsakeMilestones:['first_keepsake','bad','first_keepsake','eight_seasons'],
     })).toEqual({
       seasonJourneyScores:{ '1-spring':88 },
       claimedSeasonJourneyTiers:['1-spring:1'],
@@ -37,6 +39,7 @@ describe('live ops persistent state', () => {
       rewardedWeeklyDirectives:['1-4-2:steady_training'],
       seasonJourneyHistory:[{ key:'1-spring', score:500, tiersCompleted:5, tokensEarned:44 }],
       seasonShopPurchases:['1-spring:gold_pouch:1'],
+      claimedSeasonKeepsakeMilestones:['first_keepsake','eight_seasons'],
     });
   });
 });
