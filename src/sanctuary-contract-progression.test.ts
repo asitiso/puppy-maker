@@ -46,11 +46,11 @@ describe('sanctuary contract reducer progression', () => {
     const ready = {
       ...initialState,
       sanctuaryLevels:unlockedSanctuary,
-      inventory:{ herb_tea:0, star_cookie:0, guardian_charm:0 },
+      inventory:{ herb_tea:0, star_cookie:0, fox_charm:0 },
       sanctuaryContractWeekKey:weekKey,
       sanctuaryContractProgress:{ [gift.id]:0 },
     };
-    const next = reducer(ready,{ type:'GIVE_GIFT', itemId:'herb_tea' });
+    const next = reducer(ready,{ type:'GIVE_GIFT', item:'herb_tea' });
     expect(next).toBe(ready);
   });
 
@@ -87,7 +87,7 @@ describe('sanctuary contract reducer progression', () => {
       : target.kind === 'outing'
         ? ({ type:'GO_OUTING', location:'forest' } as const)
         : target.kind === 'gift'
-          ? ({ type:'GIVE_GIFT', itemId:'herb_tea' } as const)
+          ? ({ type:'GIVE_GIFT', item:'herb_tea' } as const)
           : ({ type:'FINISH_EXPEDITION_STAGE', stageId:'forest_path', score:700 } as const);
     const next = reducer(ready,action);
     expect(next.claimedSanctuaryPrestigeRanks).toContain('haven');
