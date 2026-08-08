@@ -16,8 +16,9 @@ describe('guardian expedition evolution', () => {
     expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: false, archiveCurrent: 75, legacyId: 'living_legend' })).toBe('star_guardian');
   });
 
-  it('requires all stages S, archive 100 and top legacy for legendary guardian', () => {
-    expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: true, archiveCurrent: 100, legacyId: 'living_legend' })).toBe('star_guardian');
-    expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: true, archiveCurrent: 100, legacyId: 'eternal_guardian' })).toBe('legendary_guardian');
+  it('lets the legendary evolution itself fill the final 100th archive slot', () => {
+    expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: true, archiveCurrent: 99, legacyId: 'living_legend' })).toBe('star_guardian');
+    expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: true, archiveCurrent: 98, legacyId: 'eternal_guardian' })).toBe('star_guardian');
+    expect(guardianEvolution({ guardianRank: 'starlight', bossClears: 3, allStagesS: true, archiveCurrent: 99, legacyId: 'eternal_guardian' })).toBe('legendary_guardian');
   });
 });
