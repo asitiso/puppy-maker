@@ -36,7 +36,8 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
       expeditionMaterials[key] += amount ?? 0;
     }
     const seasonShopPurchases = [...state.seasonShopPurchases,result.purchaseKey];
-    const keepsakeMilestones = newlyEarnedKeepsakeMilestones(seasonShopPurchases,state.claimedSeasonKeepsakeMilestones);
+    const claimedMilestones = state.claimedSeasonKeepsakeMilestones ?? [];
+    const keepsakeMilestones = newlyEarnedKeepsakeMilestones(seasonShopPurchases,claimedMilestones);
     const keepsakeGold = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gold,0);
     const keepsakeGems = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gems,0);
     return {
@@ -47,11 +48,18 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
       expeditionMaterials,
       seasonTokenBalances:{ ...state.seasonTokenBalances, [journeyKey]:result.tokens },
       seasonShopPurchases,
-      claimedSeasonKeepsakeMilestones:[...state.claimedSeasonKeepsakeMilestones,...keepsakeMilestones.map(item => item.id)],
+      claimedSeasonKeepsakeMilestones:[...claimedMilestones,...keepsakeMilestones.map(item => item.id)],
     };
   }
 
-  if (action.type !== 'FINISH_TRAINING') return Live.reducer(state,action);
+  if (action.type !== 'FINISH_TRAINING') {
+    const liveNext = Live.reducer(state,action);
+    if (liveNext === state) return state;
+    return {
+      ...liveNext,
+      claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
+    };
+  }
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
@@ -96,7 +104,7 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
     rewardedWeeklyDirectives:rewardedWeekly,
     seasonJourneyHistory:state.seasonJourneyHistory,
     seasonShopPurchases:state.seasonShopPurchases,
-    claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones,
+    claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
