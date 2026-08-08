@@ -34,4 +34,33 @@ describe('sanctuary ui summary', () => {
     const state = { ...initialState, sanctuaryLevels:{ training_hall:3 as const, archive_library:3 as const, herb_garden:3 as const, observatory:3 as const } };
     expect(sanctuaryUiSummary(state).facilities.every(item => item.complete)).toBe(true);
   });
+
+  it('shows two specialization choices for an unselected level-three facility', () => {
+    const state = {
+      ...initialState,
+      sanctuaryLevels:{ ...initialState.sanctuaryLevels, training_hall:3 as const },
+    };
+    const summary = sanctuaryUiSummary(state);
+    const hall = summary.facilities.find(item => item.id === 'training_hall')!;
+    expect(hall.specialization).toBeNull();
+    expect(hall.canChooseSpecialization).toBe(true);
+    expect(hall.specializationChoices).toHaveLength(2);
+    expect(hall.specializationChoices.map(item => item.id)).toEqual(['warrior_doctrine','adaptive_drills']);
+  });
+
+  it('shows permanent choice and active cross-facility synergies', () => {
+    const state = {
+      ...initialState,
+      sanctuaryLevels:{ training_hall:3 as const, archive_library:3 as const, herb_garden:3 as const, observatory:3 as const },
+      sanctuarySpecializations:{
+        training_hall:'warrior_doctrine' as const,
+        archive_library:'mastery_codex' as const,
+      },
+    };
+    const summary = sanctuaryUiSummary(state);
+    const hall = summary.facilities.find(item => item.id === 'training_hall')!;
+    expect(hall.specialization).toEqual(expect.objectContaining({ id:'warrior_doctrine' }));
+    expect(hall.canChooseSpecialization).toBe(false);
+    expect(summary.specializationSynergies).toContain('guardian_academy');
+  });
 });
