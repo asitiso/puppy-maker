@@ -52,7 +52,7 @@ describe('Calling depth effects', () => {
 
     const arcanist = applyExpeditionCallingRewards({
       year:1, month:4, calling:'arcanist', traits:['arcanist_legend'], signatures:[], legendRewardKeys:[],
-      stageId:'city_archive', grade:'S', firstClear:true, discovery:'city_rune', regionCompleted:null, materialReward:2, fatigueDelta:8, stressDelta:6,
+      stageId:'city_square', grade:'S', firstClear:true, discovery:'city_rune', regionCompleted:null, materialReward:2, fatigueDelta:8, stressDelta:6,
     });
     expect(arcanist.stressDelta).toBe(4);
     expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
@@ -61,7 +61,7 @@ describe('Calling depth effects', () => {
   it('applies heart anchor stress protection whenever its signature is active', () => {
     const result = applyExpeditionCallingRewards({
       year:1, month:4, calling:'caretaker', traits:['caretaker_legend'], signatures:['heart_anchor'], legendRewardKeys:[],
-      stageId:'lake_shore', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1, fatigueDelta:8, stressDelta:6,
+      stageId:'lake_channel', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1, fatigueDelta:8, stressDelta:6,
     });
     expect(result.stressDelta).toBe(4);
     expect(result.applied).toContain('heart_anchor');
