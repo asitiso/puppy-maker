@@ -25,6 +25,7 @@ import {
   type YearlyAmbitionId,
 } from './game';
 import type { HomeMenuId } from './home-panels';
+import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import './layered-home.css';
 import './home-panels.css';
@@ -51,6 +52,7 @@ export default function Root() {
   const [setGuardianCalling, setSetGuardianCalling] = useState<((calling: GuardianCallingId) => void) | null>(null);
   const [purchaseGrowthTrait, setPurchaseGrowthTrait] = useState<((trait: GrowthTraitId) => void) | null>(null);
   const [purchaseSeasonOffer, setPurchaseSeasonOffer] = useState<((offer: SeasonShopOfferId) => void) | null>(null);
+  const [unlockSeasonLegacyNode, setUnlockSeasonLegacyNode] = useState<((nodeId: SeasonLegacyNodeId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
   const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) | null>(null);
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
@@ -71,6 +73,7 @@ export default function Root() {
   const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setSetGuardianCalling(() => nextSetCalling), []);
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
   const captureSeasonPurchase = useCallback((nextPurchase: (offer: SeasonShopOfferId) => void) => setPurchaseSeasonOffer(() => nextPurchase), []);
+  const captureSeasonLegacyUnlock = useCallback((nextUnlock: (nodeId: SeasonLegacyNodeId) => void) => setUnlockSeasonLegacyNode(() => nextUnlock), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
   const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => setFinishExpedition(() => next), []);
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
@@ -88,6 +91,7 @@ export default function Root() {
   const handleArchiveNavigate = useCallback((id: HomeMenuId) => openHomeMenu?.(id), [openHomeMenu]);
   const handleOpenExpedition = useCallback(() => setExpeditionOpen(true), []);
   const handleSeasonPurchase = useCallback((offer: SeasonShopOfferId) => purchaseSeasonOffer?.(offer), [purchaseSeasonOffer]);
+  const handleSeasonLegacyUnlock = useCallback((nodeId: SeasonLegacyNodeId) => unlockSeasonLegacyNode?.(nodeId), [unlockSeasonLegacyNode]);
 
   return <>
     <App
@@ -107,6 +111,7 @@ export default function Root() {
       onGuardianCallingReady={captureGuardianCalling}
       onGrowthTraitReady={captureGrowthTrait}
       onSeasonPurchaseReady={captureSeasonPurchase}
+      onSeasonLegacyUnlockReady={captureSeasonLegacyUnlock}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -127,6 +132,7 @@ export default function Root() {
         onOpen={() => setSeasonLiveOpen(true)}
         onClose={() => setSeasonLiveOpen(false)}
         onPurchase={handleSeasonPurchase}
+        onLegacyUnlock={handleSeasonLegacyUnlock}
       />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
