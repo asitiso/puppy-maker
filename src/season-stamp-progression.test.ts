@@ -14,7 +14,12 @@ describe('seasonal stamp progression', () => {
   });
 
   it('does not reward the same seasonal stamp twice', () => {
-    const first = reducer(initialState, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
+    const base = {
+      ...initialState,
+      monthlyCounters: { ...initialState.monthlyCounters, outings: 2 },
+      rewardedMonthlyMissions: ['outing_twice'] as typeof initialState.rewardedMonthlyMissions,
+    };
+    const first = reducer(base, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
     const second = reducer(first, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
     expect(second.seasonStamps).toEqual(['spring']);
     expect(second.gems).toBe(first.gems);
