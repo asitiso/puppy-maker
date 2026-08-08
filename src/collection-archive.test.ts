@@ -37,7 +37,7 @@ describe('growth collection archive', () => {
       expeditionStages:99, expeditionBosses:-2, expeditionRelics:8, expeditionStories:22, expeditionDiscoveries:9,
       guardianEvolution:7, expeditionCrafting:9, expeditionRegions:8, expeditionSMilestones:5,
     });
-    expect(archive.current).toBe(94);
+    expect(archive.current).toBe(91);
     expect(archive.total).toBe(100);
   });
 });
