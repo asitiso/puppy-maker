@@ -9,6 +9,7 @@ import {
   type GiftItemId,
   type OutingLocationId,
 } from './adventure';
+import { attendanceKey, attendanceReward } from './attendance';
 import {
   completedMonthlyMissions,
   emptyMonthlyCounters,
@@ -111,11 +112,13 @@ export interface GameState extends Core.GameState {
   rewardedStoryChapters: StoryChapterId[];
   lastScheduleSynergies: ScheduleSynergyId[];
   careerRecords: CareerRecords;
+  claimedAttendanceMonths: string[];
 }
 
 export type Action =
   | Exclude<Core.Action, { type: 'GO_OUTING' } | { type: 'RESET' }>
   | { type: 'GO_OUTING'; location: OutingLocationId; eventRoll?: number }
+  | { type: 'CLAIM_ATTENDANCE' }
   | { type: 'RESET' };
 
 export const initialState: GameState = {
@@ -130,6 +133,7 @@ export const initialState: GameState = {
   rewardedStoryChapters: [],
   lastScheduleSynergies: [],
   careerRecords: emptyCareerRecords(),
+  claimedAttendanceMonths: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -186,6 +190,19 @@ function hydrateCareerRecords(raw: unknown): CareerRecords {
   };
 }
 
+function hydrateAttendanceClaims(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const valid = raw.filter((value): value is string => {
+    if (typeof value !== 'string') return false;
+    const match = /^(\d+)-(\d+)$/.exec(value);
+    if (!match) return false;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    return year >= 1 && month >= 1 && month <= 12 && attendanceKey(year, month) === value;
+  });
+  return [...new Set(valid)];
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -201,6 +218,7 @@ export function hydrateGameState(raw: unknown): GameState {
     rewardedStoryChapters: hydrateRewardedStoryChapters(source.rewardedStoryChapters),
     lastScheduleSynergies: hydrateScheduleSynergies(source.lastScheduleSynergies),
     careerRecords: hydrateCareerRecords(source.careerRecords),
+    claimedAttendanceMonths: hydrateAttendanceClaims(source.claimedAttendanceMonths),
   };
 }
 
@@ -310,11 +328,24 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     rewardedStoryChapters: state.rewardedStoryChapters,
     lastScheduleSynergies: state.lastScheduleSynergies,
     careerRecords: state.careerRecords,
+    claimedAttendanceMonths: state.claimedAttendanceMonths,
   };
 }
 
 export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESET') return hydrateGameState(null);
+
+  if (action.type === 'CLAIM_ATTENDANCE') {
+    const key = attendanceKey(state.year, state.month);
+    if (state.claimedAttendanceMonths.includes(key)) return state;
+    const reward = attendanceReward(state.year, state.month);
+    return {
+      ...state,
+      gold: state.gold + reward.gold,
+      gems: state.gems + reward.gems,
+      claimedAttendanceMonths: [...state.claimedAttendanceMonths, key],
+    };
+  }
 
   if (action.type === 'GO_OUTING') {
     const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
@@ -333,6 +364,7 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedStoryChapters: state.rewardedStoryChapters,
       lastScheduleSynergies: state.lastScheduleSynergies,
       careerRecords: recordCareerAction(state.careerRecords, { type: 'outing' }),
+      claimedAttendanceMonths: state.claimedAttendanceMonths,
     };
     return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
@@ -394,6 +426,7 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedStoryChapters: state.rewardedStoryChapters,
       lastScheduleSynergies: [],
       careerRecords: recordCareerAction(state.careerRecords, { type: 'month' }),
+      claimedAttendanceMonths: state.claimedAttendanceMonths,
     });
   }
 
