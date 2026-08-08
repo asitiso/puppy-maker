@@ -43,6 +43,13 @@ import {
   applyAdvancedTalentBonuses,
   type AdvancedTalentId,
 } from './advanced-talents';
+import {
+  careerTitles,
+  emptyCareerRecords,
+  recordCareerAction,
+  type CareerRecords,
+  type CareerTitleId,
+} from './career-records';
 
 export {
   achievementDefinitions,
@@ -85,6 +92,7 @@ export type { GuardianRankId } from './guardian-rank';
 export type { StoryChapterId } from './story-chapters';
 export type { ScheduleSynergyId } from './schedule-synergies';
 export type { AdvancedTalentId } from './advanced-talents';
+export type { CareerRecords, CareerTitleId } from './career-records';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -102,6 +110,7 @@ export interface GameState extends Core.GameState {
   rewardedGuardianRanks: GuardianRankId[];
   rewardedStoryChapters: StoryChapterId[];
   lastScheduleSynergies: ScheduleSynergyId[];
+  careerRecords: CareerRecords;
 }
 
 export type Action =
@@ -120,6 +129,7 @@ export const initialState: GameState = {
   rewardedGuardianRanks: [],
   rewardedStoryChapters: [],
   lastScheduleSynergies: [],
+  careerRecords: emptyCareerRecords(),
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -163,6 +173,19 @@ function hydrateScheduleSynergies(raw: unknown): ScheduleSynergyId[] {
   return ids.filter(id => raw.includes(id));
 }
 
+function hydrateCareerRecords(raw: unknown): CareerRecords {
+  const source = isRecord(raw) ? raw : {};
+  const base = emptyCareerRecords();
+  return {
+    trainings: Math.max(0, Math.floor(finiteNumber(source.trainings, base.trainings))),
+    bestScore: Math.max(0, Math.floor(finiteNumber(source.bestScore, base.bestScore))),
+    sGrades: Math.max(0, Math.floor(finiteNumber(source.sGrades, base.sGrades))),
+    outings: Math.max(0, Math.floor(finiteNumber(source.outings, base.outings))),
+    gifts: Math.max(0, Math.floor(finiteNumber(source.gifts, base.gifts))),
+    monthsCompleted: Math.max(0, Math.floor(finiteNumber(source.monthsCompleted, base.monthsCompleted))),
+  };
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -177,6 +200,7 @@ export function hydrateGameState(raw: unknown): GameState {
     rewardedGuardianRanks: hydrateRewardedGuardianRanks(source.rewardedGuardianRanks),
     rewardedStoryChapters: hydrateRewardedStoryChapters(source.rewardedStoryChapters),
     lastScheduleSynergies: hydrateScheduleSynergies(source.lastScheduleSynergies),
+    careerRecords: hydrateCareerRecords(source.careerRecords),
   };
 }
 
@@ -206,6 +230,14 @@ export function currentAdvancedTalents(state: GameState): AdvancedTalentId[] {
     magic: Core.masteryLevel(state.mastery.magic.xp),
     rest: Core.masteryLevel(state.mastery.rest.xp),
     herb: Core.masteryLevel(state.mastery.herb.xp),
+  });
+}
+
+export function currentCareerTitles(state: GameState): CareerTitleId[] {
+  return careerTitles({
+    records: state.careerRecords,
+    guardianRank: currentGuardianStatus(state).rank,
+    openedStories: currentStoryChapters(state).length,
   });
 }
 
@@ -277,6 +309,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     rewardedGuardianRanks: state.rewardedGuardianRanks,
     rewardedStoryChapters: state.rewardedStoryChapters,
     lastScheduleSynergies: state.lastScheduleSynergies,
+    careerRecords: state.careerRecords,
   };
 }
 
@@ -299,6 +332,7 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedGuardianRanks: state.rewardedGuardianRanks,
       rewardedStoryChapters: state.rewardedStoryChapters,
       lastScheduleSynergies: state.lastScheduleSynergies,
+      careerRecords: recordCareerAction(state.careerRecords, { type: 'outing' }),
     };
     return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
@@ -325,6 +359,11 @@ export function reducer(state: GameState, action: Action): GameState {
       stats: talentBonus.stats,
       personality: talentBonus.personality,
       condition: Core.deriveCondition(talentBonus.stats),
+      careerRecords: recordCareerAction(state.careerRecords, {
+        type: 'training',
+        score: state.trainingScore,
+        grade: Core.trainingGrade(state.trainingScore),
+      }),
     };
     return reconcileProgressRewards(applyMonthlyProgress(talented, 'trainings'));
   }
@@ -332,7 +371,9 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'GIVE_GIFT') {
     const next = Core.reducer(state, action as Core.Action);
     if (next === state) return state;
-    return reconcileProgressRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'gifts'));
+    const gifted = preserveExtendedState(state, next);
+    gifted.careerRecords = recordCareerAction(state.careerRecords, { type: 'gift' });
+    return reconcileProgressRewards(applyMonthlyProgress(gifted, 'gifts'));
   }
 
   if (action.type === 'NEXT_MONTH') {
@@ -352,6 +393,7 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedGuardianRanks: state.rewardedGuardianRanks,
       rewardedStoryChapters: state.rewardedStoryChapters,
       lastScheduleSynergies: [],
+      careerRecords: recordCareerAction(state.careerRecords, { type: 'month' }),
     });
   }
 
