@@ -26,6 +26,7 @@ function totalFacilityLevels(levels:SanctuaryLevels) {
 
 export function sanctuaryContractSet(year:number,month:number,week:number,levels:SanctuaryLevels):SanctuaryContract[] {
   const total = totalFacilityLevels(levels);
+  if (total <= 0) return [];
   const start = Math.abs((Math.floor(year) * 17 + Math.floor(month) * 7 + Math.floor(week) * 3 + total)) % baseContracts.length;
   const difficulty = Math.floor(total / 4);
   return Array.from({ length:3 },(_,index) => {
