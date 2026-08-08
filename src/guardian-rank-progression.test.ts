@@ -25,7 +25,7 @@ describe('guardian rank progression', () => {
     expect(status.next).toEqual({ rank:'guardian', threshold:16 });
   });
 
-  it('automatically grants missing rank rewards once after progress crosses a threshold', () => {
+  it('automatically grants missing rank and story rewards once after progress crosses thresholds', () => {
     const nearRank = {
       ...initialState,
       memories: ['first_training', 'first_hug', 'first_month_complete', 'first_skill', 'close_bond', 'forest_memory', 'first_perfect'] as typeof initialState.memories,
@@ -34,15 +34,16 @@ describe('guardian rank progression', () => {
     expect(currentGuardianStatus(nearRank).points).toBe(7);
     const ranked = reducer(nearRank, { type:'GIVE_GIFT', item:'star_cookie' });
     expect(currentGuardianStatus(ranked).rank).toBe('junior');
-    expect(ranked.gems).toBe(initialState.gems + 1);
+    expect(ranked.gems).toBe(initialState.gems + 2);
     expect(ranked.rewardedGuardianRanks).toEqual(['junior']);
+    expect(ranked.rewardedStoryChapters).toContain('trusted_bond');
 
     const again = reducer(ranked, { type:'GO', screen:'schedule' });
     expect(again.gems).toBe(ranked.gems);
     expect(again.rewardedGuardianRanks).toEqual(['junior']);
   });
 
-  it('grants all missing lower-rank rewards when a save already qualifies for a higher rank', () => {
+  it('grants all missing lower-rank and eligible story rewards when a save already qualifies for a higher rank', () => {
     const advanced = {
       ...initialState,
       memories: Array(13).fill('first_training') as typeof initialState.memories,
@@ -52,7 +53,8 @@ describe('guardian rank progression', () => {
     const reconciled = reducer(advanced, { type:'GO', screen:'schedule' });
     expect(currentGuardianStatus(reconciled).rank).toBe('veteran');
     expect(reconciled.rewardedGuardianRanks).toEqual(['junior','guardian','veteran']);
-    expect(reconciled.gems).toBe(initialState.gems + 6);
+    expect(reconciled.rewardedStoryChapters).toContain('guardian_oath');
+    expect(reconciled.gems).toBe(initialState.gems + 8);
   });
 
   it('preserves guardian reward claims across month advancement', () => {
