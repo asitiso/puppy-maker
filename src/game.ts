@@ -61,6 +61,7 @@ import {
   stampForOuting,
   type SeasonStampId,
 } from './season-stamps';
+import { applyMonthlyFocusBonus, monthlyFocusIds, type MonthlyFocusId } from './monthly-focus';
 
 export {
   achievementDefinitions,
@@ -106,6 +107,7 @@ export type { AdvancedTalentId } from './advanced-talents';
 export type { CareerRecords, CareerTitleId } from './career-records';
 export type { MailRewardId } from './mail-rewards';
 export type { SeasonStampId } from './season-stamps';
+export type { MonthlyFocusId } from './monthly-focus';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -127,6 +129,7 @@ export interface GameState extends Core.GameState {
   claimedAttendanceMonths: string[];
   claimedMailRewards: MailRewardId[];
   seasonStamps: SeasonStampId[];
+  monthlyFocus: MonthlyFocusId;
 }
 
 export type Action =
@@ -134,6 +137,7 @@ export type Action =
   | { type: 'GO_OUTING'; location: OutingLocationId; eventRoll?: number }
   | { type: 'CLAIM_ATTENDANCE' }
   | { type: 'CLAIM_MAIL'; mail: MailRewardId }
+  | { type: 'SET_MONTHLY_FOCUS'; focus: MonthlyFocusId }
   | { type: 'RESET' };
 
 export const initialState: GameState = {
@@ -151,6 +155,7 @@ export const initialState: GameState = {
   claimedAttendanceMonths: [],
   claimedMailRewards: [],
   seasonStamps: [],
+  monthlyFocus: 'balanced',
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -231,6 +236,10 @@ function hydrateSeasonStamps(raw: unknown): SeasonStampId[] {
   return seasonStampIds.filter(id => raw.includes(id));
 }
 
+function hydrateMonthlyFocus(raw: unknown): MonthlyFocusId {
+  return typeof raw === 'string' && monthlyFocusIds.includes(raw as MonthlyFocusId) ? raw as MonthlyFocusId : 'balanced';
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -249,6 +258,7 @@ export function hydrateGameState(raw: unknown): GameState {
     claimedAttendanceMonths: hydrateAttendanceClaims(source.claimedAttendanceMonths),
     claimedMailRewards: hydrateMailClaims(source.claimedMailRewards),
     seasonStamps: hydrateSeasonStamps(source.seasonStamps),
+    monthlyFocus: hydrateMonthlyFocus(source.monthlyFocus),
   };
 }
 
@@ -381,6 +391,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     claimedAttendanceMonths: state.claimedAttendanceMonths,
     claimedMailRewards: state.claimedMailRewards,
     seasonStamps: state.seasonStamps,
+    monthlyFocus: state.monthlyFocus,
   };
 }
 
@@ -389,6 +400,10 @@ export function reducer(state: GameState, action: Action): GameState {
 
   if (action.type === 'AUTO_SCHEDULE') {
     return { ...state, schedule: smartSchedule({ month: state.month, condition: state.condition }) };
+  }
+
+  if (action.type === 'SET_MONTHLY_FOCUS') {
+    return { ...state, monthlyFocus: action.focus };
   }
 
   if (action.type === 'CLAIM_ATTENDANCE') {
@@ -435,6 +450,7 @@ export function reducer(state: GameState, action: Action): GameState {
       claimedAttendanceMonths: state.claimedAttendanceMonths,
       claimedMailRewards: state.claimedMailRewards,
       seasonStamps: state.seasonStamps,
+      monthlyFocus: state.monthlyFocus,
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
@@ -457,11 +473,12 @@ export function reducer(state: GameState, action: Action): GameState {
       currentAdvancedTalents(synergized),
       state.schedule,
     );
+    const focusedStats = applyMonthlyFocusBonus(talentBonus.stats, state.monthlyFocus);
     const talented: GameState = {
       ...synergized,
-      stats: talentBonus.stats,
+      stats: focusedStats,
       personality: talentBonus.personality,
-      condition: Core.deriveCondition(talentBonus.stats),
+      condition: Core.deriveCondition(focusedStats),
       careerRecords: recordCareerAction(state.careerRecords, {
         type: 'training',
         score: state.trainingScore,
@@ -500,6 +517,7 @@ export function reducer(state: GameState, action: Action): GameState {
       claimedAttendanceMonths: state.claimedAttendanceMonths,
       claimedMailRewards: state.claimedMailRewards,
       seasonStamps: state.seasonStamps,
+      monthlyFocus: 'balanced',
     });
   }
 
