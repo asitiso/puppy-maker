@@ -16,6 +16,7 @@ import {
   achievementDefinitions,
   collectionProgress,
   currentAdvancedTalents,
+  currentAvailableMail,
   currentCareerTitles,
   currentGuardianStatus,
   currentStoryChapters,
@@ -24,11 +25,13 @@ import {
   relationshipRank,
   type AchievementId,
   type GameState,
+  type MailRewardId,
 } from './game';
 import { attendanceKey, attendanceReward } from './attendance';
 import { talentDefinitions } from './advanced-talents';
 import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
+import { mailDefinitions } from './mail-rewards';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
@@ -99,9 +102,10 @@ type LayeredHomeProps = {
   onOuting: (location: OutingLocationId) => void;
   onGift: (item: GiftItemId) => void;
   onAttendance: () => void;
+  onMail: (mail: MailRewardId) => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -123,6 +127,8 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const attendanceId = attendanceKey(state.year, state.month);
   const attendanceClaimed = state.claimedAttendanceMonths.includes(attendanceId);
   const attendance = attendanceReward(state.year, state.month);
+  const availableMail = new Set(currentAvailableMail(state));
+  const unclaimedMail = [...availableMail].filter(id => !state.claimedMailRewards.includes(id));
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
   const isBagPanel = activePanel === 'bag';
@@ -130,9 +136,10 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const isMissionPanel = activePanel === 'mission';
   const isEventPanel = activePanel === 'event';
   const isAttendancePanel = activePanel === 'attendance';
-  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel || isAttendancePanel);
-  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : staticPanel?.title ?? '';
-  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : staticPanel?.eyebrow ?? '';
+  const isMailPanel = activePanel === 'mail';
+  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel || isAttendancePanel || isMailPanel);
+  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : isMailPanel ? '우편함' : staticPanel?.title ?? '';
+  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : isMailPanel ? 'MILESTONE MAIL' : staticPanel?.eyebrow ?? '';
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -167,7 +174,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin gold">●</i><b>{state.gold.toLocaleString()}</b></span><span><i className="coin gem">◆</i><b>{state.gems.toLocaleString()}</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i style={{ width: `${stamina}%` }} /><b>{stamina} / 100</b></div></div>
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
 
-    <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
+    <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}{id === 'mail' && unclaimedMail.length > 0 ? ` ${unclaimedMail.length}` : ''}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
 
@@ -195,7 +202,16 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             <i>{attendanceClaimed ? '수령 완료' : '받기'}</i>
           </button>
           <button disabled><span>◆</span><b>누적 출석 기록<small>월이 바뀌어도 이전 수령 기록은 유지돼요.</small></b><i>{state.claimedAttendanceMonths.length}개월</i></button>
-        </div> : isEventPanel ? <div className="lh-panel-list">{storyChapterDefinitions.map((chapter, index) => {
+        </div> : isMailPanel ? <div className="lh-panel-list">{mailDefinitions.map((mail, index) => {
+          const unlocked = availableMail.has(mail.id);
+          const claimed = state.claimedMailRewards.includes(mail.id);
+          const reward = [mail.reward.gold ? `${mail.reward.gold}G` : '', mail.reward.gems ? `보석 ${mail.reward.gems}` : ''].filter(Boolean).join(' · ');
+          return <button key={mail.id} disabled={!unlocked || claimed} onClick={() => unlocked && !claimed && onMail(mail.id)}>
+            <span>{claimed ? '✓' : unlocked ? '!' : index + 1}</span>
+            <b>{mail.title}<small>{unlocked ? `${mail.message} · ${reward}` : '진행 조건을 달성하면 편지가 도착해요.'}</small></b>
+            <i>{claimed ? '수령 완료' : unlocked ? '받기' : '잠김'}</i>
+          </button>;
+        })}</div> : isEventPanel ? <div className="lh-panel-list">{storyChapterDefinitions.map((chapter, index) => {
           const opened = storyOpen.has(chapter.id);
           const reward = chapter.rewardGems > 0 ? ` · 보상 보석 ${chapter.rewardGems}` : '';
           return <button key={chapter.id} disabled>
