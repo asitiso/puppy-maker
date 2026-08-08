@@ -2,6 +2,7 @@ import type { GameState } from './game';
 import { expeditionSeasonClaimKey, expeditionSeasonKey, expeditionSeasonTiers, type ExpeditionSeasonTier } from './expedition-season';
 import { expeditionRegionDefinitions, type ExpeditionRegionId } from './expedition-regions';
 import { regionalRenownLevel } from './regional-renown';
+import { seasonalProfile } from './seasonal-cycle';
 import { monthlyWorldContracts, worldContractRewardKey, type WorldContractId } from './world-contracts';
 import { worldEvent } from './world-event';
 
@@ -11,6 +12,12 @@ const currentRenownThreshold = (level:number) => level === 1 ? 0 : level === 2 ?
 const nextRenownThreshold = (level:number):number|null => level === 1 ? 5 : level === 2 ? 12 : level === 3 ? 22 : level === 4 ? 35 : null;
 
 export type WorldUiSummary = {
+  homeCard:{
+    eyebrow:string;
+    title:string;
+    seasonLabel:string;
+    contractLabel:string;
+  };
   event:{
     label:string;
     description:string;
@@ -53,6 +60,7 @@ export type WorldUiSummary = {
 
 export function worldUiSummary(state:GameState): WorldUiSummary {
   const event = worldEvent(state.year, state.month);
+  const seasonProfile = seasonalProfile(state.month);
   const seasonKey = expeditionSeasonKey(state.year, state.month);
   const score = Math.max(0, Math.floor(state.expeditionSeasonScores[seasonKey] ?? 0));
   const nextTier = expeditionSeasonTiers.find(tier => score < tier.threshold) ?? null;
@@ -94,8 +102,15 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
       rewarded:state.rewardedWorldContracts.includes(rewardKey),
     };
   });
+  const completedContracts = contracts.filter(contract => contract.rewarded).length;
 
   return {
+    homeCard:{
+      eyebrow:'WORLD PROGRESS',
+      title:event.label,
+      seasonLabel:`${seasonProfile.label} 원정 ${score} / ${nextTier?.threshold ?? expeditionSeasonTiers[expeditionSeasonTiers.length - 1].threshold}`,
+      contractLabel:`월간 의뢰 ${completedContracts} / ${contracts.length}`,
+    },
     event:{
       label:event.label,
       description:event.description,
@@ -112,7 +127,7 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
     },
     regions,
     contracts,
-    completedContracts:contracts.filter(contract => contract.rewarded).length,
+    completedContracts,
   };
 }
 
