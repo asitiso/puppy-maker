@@ -4,9 +4,11 @@ import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
+import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
+  const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const archive = collectionArchive({
     memories: state.memories.length,
     discoveries: state.discoveries.length,
@@ -14,6 +16,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     talents: currentAdvancedTalents(state).length,
     titles: currentCareerTitles(state).length,
     seasonStamps: state.seasonStamps.length,
+    legacyRelics: unlockedRelics.size,
   });
   const legacy = guardianLegacy(state.annualRecords);
 
@@ -45,6 +48,17 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               <i><em style={{ width: `${Math.round((category.current / category.total) * 100)}%` }} /></i>
             </div>)}
           </div>
+          <div className="legacy-relics">
+            <h3>레거시 유물</h3>
+            {legacyRelicDefinitions.map((relic, index) => {
+              const unlocked = unlockedRelics.has(relic.id);
+              return <article key={relic.id} className={unlocked ? 'is-unlocked' : ''}>
+                <span>{unlocked ? '✦' : index + 1}</span>
+                <b>{unlocked ? relic.label : '미발견 유물'}<small>{relic.description}</small></b>
+                <i>{unlocked ? '획득' : '도전 중'}</i>
+              </article>;
+            })}
+          </div>
           <div className="annual-records">
             <h3>연간 수호 기록</h3>
             {state.annualRecords.length === 0 ? <p>1년차 12월을 마치면 첫 연간 기록이 남아요.</p> : [...state.annualRecords].reverse().map(record => {
@@ -58,7 +72,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               </article>;
             })}
           </div>
-          <p>한 해의 선택이 연간 기록이 되고, 여러 해의 기록은 루나의 레거시가 됩니다.</p>
+          <p>한 해의 선택이 기록이 되고, 여러 해의 기록은 레거시와 유물로 남습니다.</p>
         </div>
       </section>
     </div>}
