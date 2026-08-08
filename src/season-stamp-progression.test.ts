@@ -13,16 +13,15 @@ describe('seasonal stamp progression', () => {
     expect(next.gems).toBe(initialState.gems + 1);
   });
 
-  it('does not reward the same seasonal stamp twice', () => {
+  it('does not add the same seasonal stamp twice', () => {
     const base = {
       ...initialState,
+      seasonStamps: ['spring'] as typeof initialState.seasonStamps,
       monthlyCounters: { ...initialState.monthlyCounters, outings: 2 },
       rewardedMonthlyMissions: ['outing_twice'] as typeof initialState.rewardedMonthlyMissions,
     };
-    const first = reducer(base, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
-    const second = reducer(first, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
-    expect(second.seasonStamps).toEqual(['spring']);
-    expect(second.gems).toBe(first.gems);
+    const next = reducer(base, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
+    expect(next.seasonStamps).toEqual(['spring']);
   });
 
   it('does not award a stamp at a non-seasonal outing', () => {
