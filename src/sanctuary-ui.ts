@@ -1,5 +1,9 @@
 import type { GameState } from './game';
 import {
+  sanctuarySpecializations,
+  sanctuarySpecializationSynergies,
+} from './sanctuary-specializations';
+import {
   resolveSanctuaryUpgrade,
   sanctuaryEffects,
   sanctuaryFacilities,
@@ -26,6 +30,7 @@ function effectLabel(id:SanctuaryFacilityId,levels:SanctuaryLevels) {
 }
 
 export function sanctuaryUiSummary(state:GameState) {
+  const selected = state.sanctuarySpecializations ?? {};
   const facilities = sanctuaryFacilities.map(facility => {
     const level = state.sanctuaryLevels[facility.id];
     const complete = level >= 3;
@@ -47,6 +52,11 @@ export function sanctuaryUiSummary(state:GameState) {
       } else if (resolution.reason === 'resources') blockReason = '골드 또는 원정 재료 부족';
       else if (resolution.reason === 'max') blockReason = '최대 레벨';
     }
+    const specializationId = selected[facility.id] ?? null;
+    const specialization = specializationId
+      ? sanctuarySpecializations.find(item => item.id === specializationId) ?? null
+      : null;
+    const specializationChoices = sanctuarySpecializations.filter(item => item.facility === facility.id);
     return {
       ...facility,
       level,
@@ -57,11 +67,15 @@ export function sanctuaryUiSummary(state:GameState) {
       blockReason,
       currentEffect:effectLabel(facility.id,state.sanctuaryLevels),
       nextEffect:nextLevel ? effectLabel(facility.id,nextLevels) : null,
+      specialization,
+      specializationChoices,
+      canChooseSpecialization:complete && !specialization,
     };
   });
   return {
     levelTotal:facilities.reduce((sum,item) => sum + item.level,0),
     maxLevelTotal:12,
     facilities,
+    specializationSynergies:sanctuarySpecializationSynergies(selected),
   };
 }
