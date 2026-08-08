@@ -31,6 +31,19 @@ describe('world UI summaries', () => {
     });
   });
 
+  it('provides Guardian Expedition map labels for event and renown context', () => {
+    const summary = worldUiSummary(initialState);
+    expect(summary.expeditionMap).toEqual({
+      eventStrip:'월드 이벤트 · 별똥별 흔적 · 추천 별빛 숲',
+      featuredRegionId:'starlight_forest',
+      regionRenownLabels:{
+        starlight_forest:'명성 Lv.1 · 0',
+        ancient_city:'명성 Lv.1 · 0',
+        wind_lakes:'명성 Lv.1 · 0',
+      },
+    });
+  });
+
   it('reports tier progress and already claimed rewards', () => {
     const state: GameState = {
       ...initialState,
