@@ -23,7 +23,7 @@ import {
 } from './season-legacy-board';
 import {
   resolveSanctuarySpecialization,
-  sanctuarySpecializationEffects,
+  sanctuarySpecializationGameplayEffects,
   sanctuarySpecializations as sanctuarySpecializationDefinitions,
   type SanctuarySpecializationId,
   type SanctuarySpecializationState,
@@ -217,14 +217,14 @@ function applySpecializationJourneyBonus(next:GameState,key:ReturnType<typeof se
     lastLiveOpsProgress:next.lastLiveOpsProgress ? {
       ...next.lastLiveOpsProgress,
       journeyPoints:next.lastLiveOpsProgress.journeyPoints + bonus,
-      seasonTiersClaimed:[...next.lastLiveOpsProgress.seasonTiersClaimed,...earned.map(item => item.tier)],
+      seasonTiersClaimed:[...new Set([...next.lastLiveOpsProgress.seasonTiersClaimed,...earned.map(item => item.tier)])],
       tokensEarned:next.lastLiveOpsProgress.tokensEarned + tokens,
     } : next.lastLiveOpsProgress,
   };
 }
 
 function applySpecializationEffects(previous:GameState,next:GameState,action:Action):GameState {
-  const effects = sanctuarySpecializationEffects(previous.sanctuarySpecializations ?? {});
+  const effects = sanctuarySpecializationGameplayEffects(previous.sanctuarySpecializations ?? {});
   let result = next;
 
   if (action.type === 'FINISH_TRAINING') {
@@ -244,6 +244,17 @@ function applySpecializationEffects(previous:GameState,next:GameState,action:Act
       if (target) result = {
         ...result,
         mastery:{ ...result.mastery, [target]:{ ...result.mastery[target], xp:result.mastery[target].xp + effects.masteryXp } },
+      };
+    }
+    if (effects.weeklyTokenBonus > 0 && (result.lastLiveOpsProgress?.weeklyCompleted.length ?? 0) > 0) {
+      const key = seasonJourneyKey(previous.year,previous.month);
+      result = {
+        ...result,
+        seasonTokenBalances:{ ...result.seasonTokenBalances, [key]:(result.seasonTokenBalances[key] ?? 0) + effects.weeklyTokenBonus },
+        lastLiveOpsProgress:result.lastLiveOpsProgress ? {
+          ...result.lastLiveOpsProgress,
+          tokensEarned:result.lastLiveOpsProgress.tokensEarned + effects.weeklyTokenBonus,
+        } : result.lastLiveOpsProgress,
       };
     }
   }
@@ -297,8 +308,13 @@ export function reducer(state:GameState,action:Action):GameState {
     return { ...state, sanctuarySpecializations:result.selected };
   }
 
-  const baseNext = Base.reducer(state,action as Base.Action);
-  if (baseNext === state) return state;
+  const effects = sanctuarySpecializationGameplayEffects(state.sanctuarySpecializations ?? {});
+  const oldSeasonKey = seasonJourneyKey(state.year,state.month);
+  const baseInput = action.type === 'NEXT_MONTH' && effects.monthlyJourneyBonus > 0
+    ? applySpecializationJourneyBonus(state,oldSeasonKey,effects.monthlyJourneyBonus)
+    : state;
+  const baseNext = Base.reducer(baseInput,action as Base.Action);
+  if (baseNext === baseInput) return state;
   let next:GameState = { ...baseNext, ...persistentMeta(state) };
   next = applySpecializationEffects(state,next,action);
   const kind = actionKind(action);
