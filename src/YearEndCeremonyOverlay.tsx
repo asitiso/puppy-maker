@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { annualEpilogue } from './annual-epilogues';
 import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import type { GameState } from './game';
@@ -23,6 +24,7 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   if (!record || !visible) return null;
 
   const honor = annualHonor(record);
+  const epilogue = annualEpilogue(record);
   const legacy = guardianLegacy(state.annualRecords);
   const close = () => {
     const next = [...new Set([...acknowledged, record.id])];
@@ -37,9 +39,10 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
       <div className="year-end-content">
         <small>GUARDIAN CEREMONY</small>
         <h2>{record.year}년차 수호식</h2>
-        <p>루나와 함께한 한 해의 기록이 연대기에 새겨졌어요.</p>
+        <p className="year-end-epilogue-title">{epilogue.title}</p>
+        <p className="year-end-runa">“{epilogue.runaLine}”</p>
         <strong className="year-end-honor">✦ {honor.label}</strong>
-        <span>{honor.description}</span>
+        <span>{epilogue.narration}</span>
         <div className="year-end-headline">{annualRecordHeadline(record)}</div>
         <div className="year-end-stats">
           <b>훈련 <i>{record.trainings}</i></b><b>외출 <i>{record.outings}</i></b><b>S등급 <i>{record.sGrades}</i></b>
