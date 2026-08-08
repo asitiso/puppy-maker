@@ -8,7 +8,7 @@ export default function Root() {
   const showHome = state.screen === 'hub';
 
   return <>
-    <GameApp state={state} dispatch={dispatch} />
+    <GameApp state={state} dispatch={dispatch} renderHub={!showHome} />
     {showHome && <LayeredHome state={state} onSchedule={() => dispatch({ type: 'GO', screen: 'schedule' })} />}
   </>;
 }
