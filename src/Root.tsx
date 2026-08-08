@@ -6,7 +6,7 @@ import LayeredHome from './LayeredHome';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
-import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen } from './game';
+import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen, type YearlyAmbitionId } from './game';
 import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
@@ -23,6 +23,7 @@ export default function Root() {
   const [claimAttendance, setClaimAttendance] = useState<(() => void) | null>(null);
   const [claimMail, setClaimMail] = useState<((mail: MailRewardId) => void) | null>(null);
   const [setMonthlyFocus, setSetMonthlyFocus] = useState<((focus: GameState['monthlyFocus']) => void) | null>(null);
+  const [setYearlyAmbition, setSetYearlyAmbition] = useState<((ambition: YearlyAmbitionId) => void) | null>(null);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -31,6 +32,7 @@ export default function Root() {
   const captureAttendance = useCallback((nextClaim: () => void) => setClaimAttendance(() => nextClaim), []);
   const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
   const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
+  const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -39,6 +41,7 @@ export default function Root() {
   const handleAttendance = useCallback(() => claimAttendance?.(), [claimAttendance]);
   const handleMail = useCallback((mail: MailRewardId) => claimMail?.(mail), [claimMail]);
   const handleMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => setMonthlyFocus?.(focus), [setMonthlyFocus]);
+  const handleYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => setYearlyAmbition?.(ambition), [setYearlyAmbition]);
 
   return <>
     <App
@@ -50,6 +53,7 @@ export default function Root() {
       onAttendanceReady={captureAttendance}
       onMailReady={captureMail}
       onMonthlyFocusReady={captureMonthlyFocus}
+      onYearlyAmbitionReady={captureYearlyAmbition}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -63,7 +67,7 @@ export default function Root() {
         onMonthlyFocus={handleMonthlyFocus}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
-      <YearlyAmbitionOverlay state={gameState} />
+      <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} />
       <YearEndCeremonyOverlay state={gameState} />
     </>}
