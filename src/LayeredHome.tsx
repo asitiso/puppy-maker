@@ -121,7 +121,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const guardian = currentGuardianStatus(state);
   const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
   const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
-  const storyOpen = new Set(currentStoryChapters(state));
+  const storyOpen = new Set([...currentStoryChapters(state), ...state.expeditionStoryEntries]);
   const talents = currentAdvancedTalents(state);
   const titles = currentCareerTitles(state);
   const currentTitle = careerTitleDefinitions.find(item => item.id === titles[titles.length - 1]);
