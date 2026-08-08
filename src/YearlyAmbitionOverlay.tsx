@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { currentGuardianStatus, unlockedSkills, type GameState } from './game';
 import { ambitionDisplay } from './yearly-ambition-display';
 import { currentYearAmbitionRecord } from './yearly-ambition-progress';
+import { ambitionRecommendation } from './yearly-ambition-recommendation';
 import {
   readAmbitionSelections,
   selectionForYear,
@@ -42,6 +43,7 @@ export default function YearlyAmbitionOverlay({ state }: { state: GameState }) {
     },
   }), [state]);
   const progress = selected ? ambitionProgress(selected, liveRecord) : null;
+  const recommendation = selected ? ambitionRecommendation(selected, state.condition) : null;
   const display = ambitionDisplay(definition, progress);
   const chooserOpen = !selected;
 
@@ -60,6 +62,7 @@ export default function YearlyAmbitionOverlay({ state }: { state: GameState }) {
         <strong>{display.label}</strong>
         <span>{display.detail}</span>
         {progress && <i><em style={{ width: `${progress.percent}%` }} /></i>}
+        {recommendation && <em className="yearly-ambition-quick">추천 · {recommendation.label}</em>}
       </div>
     </button>
 
@@ -71,6 +74,11 @@ export default function YearlyAmbitionOverlay({ state }: { state: GameState }) {
           <small>YEAR {state.year} · GUARDIAN AMBITION</small>
           <h2>{selected ? '올해의 야망' : '올해 어떤 루나를 키울까요?'}</h2>
           <p>{selected ? '선택한 야망은 이 해가 끝날 때까지 유지됩니다.' : '한 해 동안 집중할 성장 방향을 하나 선택하세요.'}</p>
+          {selected && recommendation && <div className="yearly-ambition-recommendation">
+            <small>NEXT RECOMMENDED ACTION</small>
+            <b>{recommendation.label}</b>
+            <span>{recommendation.reason}</span>
+          </div>}
           <div className="yearly-ambition-options">
             {ambitionDefinitions.map(item => {
               const itemProgress = selected === item.id ? progress : null;
