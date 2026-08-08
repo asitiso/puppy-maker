@@ -11,6 +11,11 @@ import {
   type SanctuaryPrestigeRankId,
 } from './sanctuary-contracts';
 import { sanctuaryWeeklyChestReady, sanctuaryWeeklyChestReward } from './sanctuary-weekly-chest';
+import {
+  resolveSeasonLegacyUnlock,
+  seasonLegacyNodes,
+  type SeasonLegacyNodeId,
+} from './season-legacy-board';
 
 export type GameState = Base.GameState & {
   sanctuaryContractWeekKey:string|null;
@@ -19,9 +24,10 @@ export type GameState = Base.GameState & {
   sanctuaryPrestige:number;
   claimedSanctuaryPrestigeRanks:SanctuaryPrestigeRankId[];
   claimedSanctuaryWeeklyChests:string[];
+  unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
 };
 
-export type Action = Base.Action;
+export type Action = Base.Action | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
 
 export const initialState:GameState = {
   ...Base.initialState,
@@ -31,6 +37,7 @@ export const initialState:GameState = {
   sanctuaryPrestige:0,
   claimedSanctuaryPrestigeRanks:[],
   claimedSanctuaryWeeklyChests:[],
+  unlockedSeasonLegacyNodes:[],
 };
 
 const contractIds:SanctuaryContractId[] = ['training_focus','field_patrol','warm_bond','guardian_sortie'];
@@ -40,6 +47,7 @@ const prestigeRanks:{ id:Exclude<SanctuaryPrestigeRankId,'outpost'>; threshold:n
   { id:'citadel', threshold:100 },
   { id:'celestial', threshold:180 },
 ];
+const seasonLegacyNodeIds = seasonLegacyNodes.map(node => node.id);
 const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
 const rewardKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(training_focus|field_patrol|warm_bond|guardian_sortie)$/;
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -68,6 +76,11 @@ function sanitizeWeeklyChestKeys(raw:unknown):string[] {
   return [...new Set(raw.filter((value):value is string => typeof value === 'string' && weekKeyPattern.test(value)))];
 }
 
+function sanitizeSeasonLegacyNodes(raw:unknown):SeasonLegacyNodeId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is SeasonLegacyNodeId => typeof value === 'string' && seasonLegacyNodeIds.includes(value as SeasonLegacyNodeId)))];
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
@@ -78,6 +91,7 @@ export function hydrateGameState(raw:unknown):GameState {
     sanctuaryPrestige:safeInt(source.sanctuaryPrestige),
     claimedSanctuaryPrestigeRanks:sanitizePrestigeRanks(source.claimedSanctuaryPrestigeRanks),
     claimedSanctuaryWeeklyChests:sanitizeWeeklyChestKeys(source.claimedSanctuaryWeeklyChests),
+    unlockedSeasonLegacyNodes:sanitizeSeasonLegacyNodes(source.unlockedSeasonLegacyNodes),
   };
 }
 
@@ -89,6 +103,7 @@ function persistentMeta(state:GameState) {
     sanctuaryPrestige:state.sanctuaryPrestige ?? 0,
     claimedSanctuaryPrestigeRanks:state.claimedSanctuaryPrestigeRanks ?? [],
     claimedSanctuaryWeeklyChests:state.claimedSanctuaryWeeklyChests ?? [],
+    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
   };
 }
 
@@ -147,7 +162,24 @@ function applyContractAction(previous:GameState,next:GameState,kind:SanctuaryCon
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
-  const baseNext = Base.reducer(state,action);
+
+  if (action.type === 'UNLOCK_SEASON_LEGACY_NODE') {
+    const result = resolveSeasonLegacyUnlock({
+      nodeId:action.nodeId,
+      history:state.seasonJourneyHistory,
+      honors:state.claimedSeasonCompletionHonors ?? [],
+      unlocked:state.unlockedSeasonLegacyNodes ?? [],
+    });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      unlockedSeasonLegacyNodes:result.unlocked,
+      gold:state.gold + result.reward.gold,
+      gems:state.gems + result.reward.gems,
+    };
+  }
+
+  const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
   const next:GameState = { ...baseNext, ...persistentMeta(state) };
   const kind = actionKind(action);
