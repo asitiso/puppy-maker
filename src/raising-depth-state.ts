@@ -14,6 +14,7 @@ export type RaisingDepthPersistentState = {
   unlockedBondScenes: BondSceneId[];
   rewardedBondScenes: BondSceneId[];
   growthPointBossRewards: ExpeditionStageId[];
+  legendRewardKeys: string[];
 };
 
 const bossStageIds = expeditionStageDefinitions.filter(item => item.boss).map(item => item.id);
@@ -31,6 +32,7 @@ export function emptyRaisingDepthState(): RaisingDepthPersistentState {
     unlockedBondScenes:[],
     rewardedBondScenes:[],
     growthPointBossRewards:[],
+    legendRewardKeys:[],
   };
 }
 
@@ -46,6 +48,12 @@ function hydrateSwitchKey(raw: unknown): string | null {
   const year = Number(match[1]);
   const month = Number(match[2]);
   return year >= 1 && month >= 1 && month <= 12 ? `${year}-${month}` : null;
+}
+
+function hydrateLegendRewardKeys(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const valid = raw.filter((value): value is string => typeof value === 'string' && /^\d+-\d+:[a-z0-9_:-]+$/.test(value));
+  return [...new Set(valid)];
 }
 
 export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentState {
@@ -66,6 +74,7 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
     unlockedBondScenes,
     rewardedBondScenes,
     growthPointBossRewards:uniqueAllowed(source.growthPointBossRewards, bossStageIds),
+    legendRewardKeys:hydrateLegendRewardKeys(source.legendRewardKeys),
   };
 }
 
@@ -80,5 +89,6 @@ export function pickRaisingDepthState(state: RaisingDepthPersistentState): Raisi
     unlockedBondScenes:state.unlockedBondScenes,
     rewardedBondScenes:state.rewardedBondScenes,
     growthPointBossRewards:state.growthPointBossRewards,
+    legendRewardKeys:state.legendRewardKeys,
   };
 }
