@@ -1,4 +1,4 @@
-import { hydrateSavedGame, serializeSavedGame } from './save-schema';
+import { hydrateSavedGame, inspectSavedGame, serializeSavedGame } from './save-schema';
 import type { GameState } from './game';
 
 export type SaveStorage = {
@@ -21,17 +21,13 @@ export type ResilientSaveLoad = {
 };
 
 type Candidate = { state:GameState; serialized:string };
+const acceptableStatuses = new Set(['valid','legacy','migrated-v1','future-version']);
 
 function decodeCandidate(serialized:string|null): Candidate | null {
   if (!serialized) return null;
-  try {
-    const raw = JSON.parse(serialized);
-    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
-    if ('schemaVersion' in raw && !('state' in raw)) return null;
-    return { state:hydrateSavedGame(raw), serialized };
-  } catch {
-    return null;
-  }
+  const inspection = inspectSavedGame(serialized);
+  if (!acceptableStatuses.has(inspection.status)) return null;
+  return { state:inspection.state, serialized };
 }
 
 export function loadResilientSave(storage:SaveStorage): ResilientSaveLoad {
