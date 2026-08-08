@@ -9,6 +9,7 @@ import { legacyRelicDefinitions } from './legacy-relics';
 import { ceremonyRecord, shouldShowYearEndCeremony } from './year-end-ceremony';
 import { completedYearAmbition } from './yearly-ambition-history';
 import { readAmbitionSelections } from './yearly-ambition-selection';
+import { ambitionStreak, ambitionStreakHonors } from './yearly-ambition-streak';
 
 const storageKey = 'puppy-maker-year-ceremonies';
 const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
@@ -39,7 +40,10 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   const honor = annualHonor(record);
   const epilogue = annualEpilogue(record);
   const legacy = guardianLegacy(state.annualRecords);
-  const ambition = completedYearAmbition(state.annualRecords, storedAmbitions(), record.year);
+  const selections = storedAmbitions();
+  const ambition = completedYearAmbition(state.annualRecords, selections, record.year);
+  const streak = ambitionStreak(state.annualRecords, selections);
+  const newStreakHonor = ambitionStreakHonors.find(item => item.required === streak) ?? null;
   const newRelics = newlyUnlockedLegacyRelics(state.annualRecords, record.id)
     .map(id => legacyRelicDefinitions.find(item => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -65,6 +69,11 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
           <small>{ambition.progress.complete ? 'YEARLY AMBITION COMPLETE' : 'YEARLY AMBITION RECORD'}</small>
           <b>{ambition.definition.label}</b>
           <span>{ambition.progress.complete ? '올해의 야망을 완수했어요.' : `${ambition.progress.current} / ${ambition.progress.target} · ${ambition.progress.percent}%`}</span>
+        </div>}
+        {newStreakHonor && <div className="year-end-streak-honor">
+          <small>NEW AMBITION STREAK HONOR</small>
+          <b>✦ {newStreakHonor.label}</b>
+          <span>{newStreakHonor.description}</span>
         </div>}
         {newRelics.length > 0 && <div className="year-end-relics">
           <small>NEW LEGACY RELIC</small>
