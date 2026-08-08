@@ -6,6 +6,7 @@ import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import LayeredHome from './LayeredHome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
+import WorldProgressOverlay from './WorldProgressOverlay';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
 import {
@@ -27,6 +28,7 @@ import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
 import './collection-archive.css';
+import './world-progress.css';
 import './year-end-ceremony.css';
 import './yearly-ambition.css';
 import './expedition-ui.css';
@@ -112,6 +114,7 @@ export default function Root() {
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
+      <WorldProgressOverlay state={gameState} />
       <YearEndCeremonyOverlay state={gameState} />
       <RaisingIdentityOverlay
         state={gameState}
