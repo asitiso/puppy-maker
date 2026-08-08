@@ -32,6 +32,7 @@ import {
   emptySanctuaryLevels,
   resolveSanctuaryUpgrade,
   sanitizeSanctuaryLevels,
+  sanctuaryEffects,
   type SanctuaryFacilityId,
   type SanctuaryLevels,
 } from './starlight-sanctuary';
@@ -126,6 +127,74 @@ function applySeasonMasteryRewards(previous:GameState, next:GameState):GameState
   };
 }
 
+function applySanctuaryTraining(previous:GameState,next:GameState):GameState {
+  const effects = sanctuaryEffects(previous.sanctuaryLevels ?? emptySanctuaryLevels());
+  let result = next;
+  if (effects.trainingPercent > 0) {
+    const stats = { ...next.stats };
+    const growthStats = ['strength','intelligence','magic','morality'] as const;
+    for (const key of growthStats) {
+      const delta = Math.max(0,next.stats[key] - previous.stats[key]);
+      if (delta > 0) stats[key] = Math.min(100,next.stats[key] + delta * effects.trainingPercent / 100);
+    }
+    result = { ...result, stats };
+  }
+  const grade = Base.trainingGrade(previous.trainingScore);
+  const masteryBonus = effects.masteryAllMonth || ((grade === 'A' || grade === 'S') ? effects.masteryStrongMonth : 0);
+  if (masteryBonus > 0) {
+    const ids = Object.keys(next.mastery) as Array<keyof typeof next.mastery>;
+    const target = ids
+      .filter(id => next.mastery[id].xp > previous.mastery[id].xp)
+      .sort((a,b) => (next.mastery[b].xp - previous.mastery[b].xp) - (next.mastery[a].xp - previous.mastery[a].xp))[0];
+    if (target) result = { ...result, mastery:{ ...result.mastery, [target]:{ ...result.mastery[target], xp:result.mastery[target].xp + 1 } } };
+  }
+  return result;
+}
+
+function applySanctuaryRecovery(state:GameState):GameState {
+  const effects = sanctuaryEffects(state.sanctuaryLevels ?? emptySanctuaryLevels());
+  if (!effects.fatigueRecovery && !effects.stressRecovery) return state;
+  const stats = {
+    ...state.stats,
+    fatigue:Math.max(0,state.stats.fatigue - effects.fatigueRecovery),
+    stress:Math.max(0,state.stats.stress - effects.stressRecovery),
+  };
+  return { ...state, stats, condition:Base.deriveCondition(stats) };
+}
+
+function applySanctuaryObservatory(previous:GameState,next:GameState):GameState {
+  const bonus = sanctuaryEffects(previous.sanctuaryLevels ?? emptySanctuaryLevels()).expeditionJourneyBonus;
+  if (!bonus || !next.lastExpeditionResult?.accepted) return next;
+  const key = seasonJourneyKey(previous.year,previous.month);
+  const previousBonusScore = next.seasonJourneyScores[key] ?? 0;
+  const score = previousBonusScore + bonus;
+  const earned = newlyEarnedJourneyTiers(previousBonusScore,score,next.claimedSeasonJourneyTiers,key);
+  const claims = [...next.claimedSeasonJourneyTiers];
+  let gold = 0;
+  let gems = 0;
+  let tokens = 0;
+  for (const tier of earned) {
+    claims.push(journeyTierClaimKey(key,tier.tier));
+    gold += tier.reward.gold;
+    gems += tier.reward.gems;
+    tokens += tier.reward.tokens;
+  }
+  return {
+    ...next,
+    seasonJourneyScores:{ ...next.seasonJourneyScores, [key]:score },
+    claimedSeasonJourneyTiers:claims,
+    seasonTokenBalances:{ ...next.seasonTokenBalances, [key]:(next.seasonTokenBalances[key] ?? 0) + tokens },
+    gold:next.gold + gold,
+    gems:next.gems + gems,
+    lastLiveOpsProgress:next.lastLiveOpsProgress ? {
+      ...next.lastLiveOpsProgress,
+      journeyPoints:next.lastLiveOpsProgress.journeyPoints + bonus,
+      seasonTiersClaimed:[...next.lastLiveOpsProgress.seasonTiersClaimed,...earned.map(item => item.tier)],
+      tokensEarned:next.lastLiveOpsProgress.tokensEarned + tokens,
+    } : next.lastLiveOpsProgress,
+  };
+}
+
 export function reducer(state:GameState, action:Action):GameState {
   if (action.type === 'RESET') return initialState;
 
@@ -209,15 +278,17 @@ export function reducer(state:GameState, action:Action):GameState {
   if (action.type !== 'FINISH_TRAINING') {
     const liveNext = Live.reducer(state,action);
     if (liveNext === state) return state;
-    const preserved = preserveSeasonMeta(state,liveNext);
+    let preserved = preserveSeasonMeta(state,liveNext);
+    if (action.type === 'FINISH_EXPEDITION_STAGE') preserved = applySanctuaryObservatory(state,preserved);
     if (action.type !== 'NEXT_MONTH') return preserved;
+    preserved = applySanctuaryRecovery(preserved);
     const honored = applySeasonCompletionHonors(state,preserved);
     return applySeasonMasteryRewards(state,honored);
   }
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  const next:GameState = {
+  const rawNext:GameState = {
     ...state,
     ...baseNext,
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
@@ -225,6 +296,7 @@ export function reducer(state:GameState, action:Action):GameState {
     unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
     sanctuaryLevels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
   };
+  const next = applySanctuaryTraining(state,rawNext);
   const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
   const directives = weeklyDirectives(state.year,state.month,state.week);
   const progress = state.weeklyDirectiveKey === weekKey ? state.weeklyDirectiveProgress : {};
