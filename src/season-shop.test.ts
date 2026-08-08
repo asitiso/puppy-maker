@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { resolveSeasonPurchase, seasonPurchaseKey, seasonShopOffers } from './season-shop';
 
 describe('season shop', () => {
-  it('exposes four fixed offers with seasonal limits', () => {
+  it('exposes four core offers plus one season-exclusive offer', () => {
     expect(seasonShopOffers('1-spring').map(offer => [offer.id, offer.cost, offer.limit])).toEqual([
       ['gold_pouch',20,2],
       ['recovery_bundle',25,1],
       ['expedition_cache',30,1],
       ['seasonal_keepsake',40,1],
+      ['spring_garden_pack',18,1],
     ]);
+    expect(seasonShopOffers('1-summer').at(-1)?.id).toBe('summer_lake_cache');
+    expect(seasonShopOffers('1-autumn').at(-1)?.id).toBe('autumn_arcane_cache');
+    expect(seasonShopOffers('1-winter').at(-1)?.id).toBe('winter_starlight_cache');
   });
 
   it('resolves a valid purchase and emits a deterministic purchase key', () => {
@@ -43,6 +47,18 @@ describe('season shop', () => {
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'seasonal_keepsake', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
       accepted:true,
       reward:{ gold:0, inventory:{}, materials:{}, keepsake:true },
+    }));
+  });
+
+  it('limits season-exclusive offers to their matching season', () => {
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'spring_garden_pack', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
+      accepted:true,
+      reward:{ gold:0, inventory:{ herb_tea:2 }, materials:{}, keepsake:false },
+    }));
+    expect(resolveSeasonPurchase({ seasonKey:'1-summer', offerId:'spring_garden_pack', tokens:99, purchaseKeys:[] })).toEqual({ accepted:false });
+    expect(resolveSeasonPurchase({ seasonKey:'1-summer', offerId:'summer_lake_cache', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
+      accepted:true,
+      reward:{ gold:0, inventory:{}, materials:{ wind_pearl:3 }, keepsake:false },
     }));
   });
 });
