@@ -202,7 +202,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const craftExpeditionRecipe = useCallback((recipe: ExpeditionCraftingRecipeId) => dispatch({ type: 'CRAFT_EXPEDITION_RECIPE', recipe }), []);
   const setGuardianCalling = useCallback((calling: GuardianCallingId) => dispatch({ type:'SET_GUARDIAN_CALLING', calling }), []);
   const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
-  const purchaseSeasonOffer = useCallback((offer: SeasonShopOfferId) => dispatch({ type:'PURCHASE_SEASON_OFFER', offer }), []);
+  const purchaseSeasonOffer = useCallback((offerId: SeasonShopOfferId) => dispatch({ type:'PURCHASE_SEASON_OFFER', offerId }), []);
   useEffect(() => {
     writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
