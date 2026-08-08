@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import {
   activities,
-  hydrateGameState,
   initialState,
   reducer,
   trainingGrade,
@@ -23,6 +22,7 @@ import {
   type YearlyAmbitionId,
 } from './game';
 import { monthlyFocusDefinitions } from './monthly-focus';
+import { parseSavedGame, serializeSavedGame } from './save-schema';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
 import { readAmbitionSelections } from './yearly-ambition-selection';
 
@@ -176,13 +176,12 @@ type AppProps = {
 
 export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
+    const hydrated = parseSavedGame(localStorage.getItem('puppy-maker-save'));
     try {
-      const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
-      const hydrated = hydrateGameState(raw);
       const legacyAmbitions = readAmbitionSelections(JSON.parse(localStorage.getItem('puppy-maker-yearly-ambitions') || '{}'));
       return { ...hydrated, yearlyAmbitions: { ...legacyAmbitions, ...hydrated.yearlyAmbitions } };
     } catch {
-      return hydrateGameState(null);
+      return hydrated;
     }
   });
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
@@ -200,7 +199,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const setGuardianCalling = useCallback((calling: GuardianCallingId) => dispatch({ type:'SET_GUARDIAN_CALLING', calling }), []);
   const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
   useEffect(() => {
-    localStorage.setItem('puppy-maker-save', JSON.stringify(state));
+    localStorage.setItem('puppy-maker-save', serializeSavedGame(state));
     localStorage.removeItem('puppy-maker-yearly-ambitions');
   }, [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
