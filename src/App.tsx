@@ -1,110 +1,21 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
-import { activities, initialState, reducer, trainingGrade, type ActivityId } from './game';
+import { activities, hydrateGameState, initialState, masteryLevel, reducer, trainingGrade, type ActivityId } from './game';
 
 const iconPaths: Record<string, string> = {
-  sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
-  spark: 'M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z',
-  moon: 'M18 16.8A8 8 0 118.2 5a6.5 6.5 0 009.8 11.8z',
-  leaf: 'M5 19c7 0 12-5 14-14C10 6 5 11 5 19zm0 0c3-4 6-7 10-9',
-  calendar: 'M5 5h14v14H5zM8 3v4m8-4v4M5 9h14',
-  bag: 'M7 8h10l1 11H6L7 8zm3 0V6a2 2 0 014 0v2',
-  quest: 'M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4',
-  map: 'M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6zm5-2v14m6-12v14',
-  heart: 'M12 20S4 15 4 9a4 4 0 017-2 4 4 0 017 2c0 6-6 11-6 11z'
+  sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3', spark: 'M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z', moon: 'M18 16.8A8 8 0 118.2 5a6.5 6.5 0 009.8 11.8z', leaf: 'M5 19c7 0 12-5 14-14C10 6 5 11 5 19zm0 0c3-4 6-7 10-9', calendar: 'M5 5h14v14H5zM8 3v4m8-4v4M5 9h14', bag: 'M7 8h10l1 11H6L7 8zm3 0V6a2 2 0 014 0v2', quest: 'M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4', map: 'M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6zm5-2v14m6-12v14', heart: 'M12 20S4 15 4 9a4 4 0 017-2 4 4 0 017 2c0 6-6 11-6 11z'
 };
+function Icon({ name }: { name: string }) { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={iconPaths[name]} /></svg>; }
+const petArt: Record<'happy' | 'focus' | 'shy', string> = { happy: '/assets/home/runa_idle_layer.png', focus: '/assets/runa/runa_training_ready.png', shy: '/assets/runa/runa_talk.png' };
+function Pet({ mood = 'happy' }: { mood?: 'happy' | 'focus' | 'shy' }) { return <div className={`pet pet-${mood}`} aria-label="수호 여우 루나"><div className="pet-aura"/><img src={petArt[mood]} alt="수호 여우 루나"/></div>; }
 
-function Icon({ name }: { name: string }) {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={iconPaths[name]} /></svg>;
-}
+function Hud({ state }: { state: typeof initialState }) { return <header className="top-hud"><div className="profile-medallion"><span>Lv.{Math.max(...Object.values(state.mastery).map(v => masteryLevel(v.xp)))}</span><b>루나</b></div><div className="calendar-pill"><small>{state.year}년차</small><strong>{state.month}월 {state.week}주차</strong><em>{state.condition === 'energetic' ? '활기참' : state.condition === 'focused' ? '집중' : state.condition === 'tired' ? '피곤' : '평온'}</em></div><div className="currencies"><span className="currency gold">◈ {state.gold.toLocaleString()}</span><span className="currency gem">◆ {state.gems}</span></div></header>; }
+function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') => void }) { const [petted,setPetted]=useState(false); return <section className="screen hub-screen"><div className="cabin-backdrop"><div className="window-light"/><div className="fireplace"><i/><i/><i/></div><div className="shelf"/><div className="sparkles"/></div><Hud state={state}/><div className="side-stats">{([['체력',state.stats.strength],['마력',state.stats.magic],['호감',state.stats.affection],['피로',state.stats.fatigue]] as const).map(([label,value])=><div key={label}><span>{label}</span><b><i style={{width:`${value}%`}}/></b></div>)}</div><button className="pet-stage" onClick={()=>setPetted(true)} aria-label="루나 쓰다듬기"><Pet mood={petted?'shy':'happy'}/>{petted&&<span className="heart-pop">♥</span>}</button><div className="speech">{petted?'헤헤… 주인님의 손은 따뜻해요!':state.condition==='tired'?'조금 쉬면 다음 훈련이 더 잘 될 것 같아요.':state.condition==='focused'?'지금이라면 집중 훈련이 잘 될 것 같아요!':'오늘은 어떤 모험을 시작할까요?'}</div><nav className="bottom-nav">{[['calendar','스케줄',()=>go('schedule')],['bag','가방',()=>undefined],['quest','퀘스트',()=>undefined],['map','외출',()=>undefined],['heart','교감',()=>setPetted(true)]].map(([icon,label,fn])=><button key={label as string} onClick={fn as ()=>void}><span><Icon name={icon as string}/></span><b>{label as string}</b></button>)}</nav></section>; }
+function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) { const ids=Object.keys(activities) as ActivityId[]; return <section className="screen diary-screen"><div className="diary-bg"/><div className="screen-title"><small>MONTHLY PLAN</small><h1>{state.month}월 성장 다이어리</h1></div><div className="book"><div className="book-ring"/><div className="week-list">{state.schedule.map((id,index)=><div className="week-row" key={index}><span className="week-label">{index+1}<small>WEEK</small></span><div className={`activity-card activity-${id}`}><span><Icon name={activities[id].icon}/></span><div><b>{activities[id].name}</b><small>{id==='rest'?'피로와 스트레스 회복':id==='herb'?'지식과 안정 성장':'핵심 능력치 성장'}</small></div></div><button className="cycle" onClick={()=>dispatch({type:'SET_SCHEDULE',index,activity:ids[(ids.indexOf(id)+1)%ids.length]})}>↻</button></div>)}</div><div className="activity-palette">{ids.map(id=><button key={id} onClick={()=>dispatch({type:'SET_SCHEDULE',index:0,activity:id})}><Icon name={activities[id].icon}/><span>{activities[id].name}</span></button>)}</div></div><Pet mood="focus"/><div className="planner-actions"><button className="secondary" onClick={()=>dispatch({type:'AUTO_SCHEDULE'})}>자동 배치</button><button className="primary" onClick={()=>dispatch({type:'GO',screen:'training'})}>일정 시작</button></div></section>; }
+function Training({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) { const [needle,setNeedle]=useState(.1); const [flash,setFlash]=useState(''); useEffect(()=>{const id=setInterval(()=>setNeedle(v=>(v+.037)%1),40);return()=>clearInterval(id)},[]); const accuracy=useMemo(()=>1-Math.min(1,Math.abs(.5-needle)*2),[needle]); const hit=(kind:'attack'|'dodge'|'charge')=>{dispatch({type:'TRAIN',kind,accuracy});setFlash(accuracy>.7?'PERFECT!':accuracy>.45?'GOOD!':'MISS');setTimeout(()=>setFlash(''),500)}; return <section className="screen training-screen"><div className="forest-arena"><div className="moon-orb"/><div className="trees"/><div className="mist"/></div><div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={()=>dispatch({type:'FINISH_TRAINING'})}>훈련 종료</button></div><div className="dummy"><span/><i/><b/></div><div className="fighter"><Pet mood="focus"/></div><div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/>{flash&&<img className="training-burst" src="/assets/effects/success_burst.png" alt=""/>}<span>{flash}</span></div><div className="action-bar"><button className="attack" onClick={()=>hit('attack')}><Icon name="sword"/><b>공격</b></button><button className="dodge" onClick={()=>hit('dodge')}><span>◒</span><b>회피</b></button><button className="charge" onClick={()=>hit('charge')}><Icon name="spark"/><b>기 모으기</b></button></div></section>; }
+function Dialogue({ dispatch }: { dispatch: React.Dispatch<any> }) { return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>오늘 훈련, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</p><div className="choices"><button onClick={()=>dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ · 다정함 ↑</small></button><button onClick={()=>dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑ · 용기 ↑</small></button><button onClick={()=>dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>100G · 스트레스 크게 ↓</small></button></div></div></section>; }
 
-const petArt: Record<'happy' | 'focus' | 'shy', string> = {
-  // runa_happy.png hasn't been supplied yet — falls back to the idle art until it is.
-  happy: '/assets/home/runa_idle_layer.png',
-  focus: '/assets/runa/runa_training_ready.png',
-  shy: '/assets/runa/runa_talk.png',
-};
+const statNames: Record<string,string>={strength:'근력',intelligence:'지능',magic:'마력',morality:'도덕성',affection:'호감도',stress:'스트레스',fatigue:'피로'};
+const memoryNames: Record<string,string>={first_training:'첫 훈련의 기억',first_perfect:'완벽한 순간',first_hug:'따뜻한 포옹',first_snack:'별빛 간식',first_s_grade:'첫 S등급',first_month_complete:'첫 달의 성장'};
+function Result({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) { const grade=trainingGrade(state.trainingScore); const report=state.lastGrowthReport; const masteryText=report?Object.entries(report.masteryGains).filter(([,gain])=>gain>0).map(([id,gain])=>`${activities[id as ActivityId].name} +${gain}XP`).join(' · '):''; const personalityText=report?Object.entries(report.personalityChanges).map(([key,value])=>`${key==='kindness'?'다정함':key==='courage'?'용기':key==='curiosity'?'호기심':'침착함'} +${value}`).join(' · '):''; return <section className="screen result-screen"><div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1><p>{report?.quality ?? 'NORMAL'} · 루나는 이번 달에도 한 뼘 더 성장했어요.</p><div className="result-card"><div><span>가장 큰 변화</span><b>{report?statNames[report.mostImprovedStat]:'근력'}</b></div><div><span>숙련도</span><b>{masteryText||'성장 중'}</b></div><div><span>성향</span><b>{personalityText||'차분하게 유지'}</b></div><div><span>다음 컨디션</span><b>{report?.nextCondition==='tired'?'피곤':report?.nextCondition==='focused'?'집중':report?.nextCondition==='energetic'?'활기참':'평온'}</b></div></div>{report?.newMemory&&<div className="reward"><span>새로운 기억</span><b>{memoryNames[report.newMemory]}</b></div>}<div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt=""/><span>월간 보상</span><b>{report?.goldReward??350} G</b></div><button className="primary next-month" onClick={()=>dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button></section>; }
 
-function Pet({ mood = 'happy' }: { mood?: 'happy' | 'focus' | 'shy' }) {
-  return (
-    <div className={`pet pet-${mood}`} aria-label="수호 여우 루나">
-      <div className="pet-aura" />
-      <img src={petArt[mood]} alt="수호 여우 루나" />
-    </div>
-  );
-}
-
-function Hud({ state }: { state: typeof initialState }) {
-  return <header className="top-hud">
-    <div className="profile-medallion"><span>Lv.10</span><b>루나</b></div>
-    <div className="calendar-pill"><small>{state.year}년차</small><strong>{state.month}월 {state.week}주차</strong><em>맑음</em></div>
-    <div className="currencies"><span className="currency gold">◈ {state.gold.toLocaleString()}</span><span className="currency gem">◆ {state.gems}</span></div>
-  </header>;
-}
-
-function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') => void }) {
-  const [petted, setPetted] = useState(false);
-  return <section className="screen hub-screen">
-    <div className="cabin-backdrop"><div className="window-light"/><div className="fireplace"><i/><i/><i/></div><div className="shelf"/><div className="sparkles"/></div>
-    <Hud state={state}/>
-    <div className="side-stats">
-      {([['체력', state.stats.strength], ['마력', state.stats.magic], ['호감', state.stats.affection], ['피로', state.stats.fatigue]] as const).map(([label, value]) => <div key={label}><span>{label}</span><b><i style={{ width: `${value}%` }}/></b></div>)}
-    </div>
-    <button className="pet-stage" onClick={() => setPetted(true)} aria-label="루나 쓰다듬기"><Pet mood={petted ? 'shy' : 'happy'}/>{petted && <span className="heart-pop">♥</span>}</button>
-    <div className="speech">{petted ? '헤헤… 주인님의 손은 따뜻해요!' : '오늘은 어떤 모험을 시작할까요?'}</div>
-    <nav className="bottom-nav">
-      {[
-        ['calendar','스케줄',() => go('schedule')], ['bag','가방',() => undefined], ['quest','퀘스트',() => undefined], ['map','외출',() => undefined], ['heart','교감',() => setPetted(true)]
-      ].map(([icon,label,fn]) => <button key={label as string} onClick={fn as () => void}><span><Icon name={icon as string}/></span><b>{label as string}</b></button>)}
-    </nav>
-  </section>;
-}
-
-function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
-  const ids = Object.keys(activities) as ActivityId[];
-  return <section className="screen diary-screen">
-    <div className="diary-bg"/>
-    <div className="screen-title"><small>MONTHLY PLAN</small><h1>{state.month}월 성장 다이어리</h1></div>
-    <div className="book">
-      <div className="book-ring"/>
-      <div className="week-list">
-        {state.schedule.map((id, index) => <div className="week-row" key={index}><span className="week-label">{index + 1}<small>WEEK</small></span><div className={`activity-card activity-${id}`}><span><Icon name={activities[id].icon}/></span><div><b>{activities[id].name}</b><small>{id === 'rest' ? '피로와 스트레스 회복' : id === 'herb' ? '골드와 지식 획득' : '핵심 능력치 성장'}</small></div></div><button className="cycle" onClick={() => dispatch({ type:'SET_SCHEDULE', index, activity: ids[(ids.indexOf(id)+1)%ids.length] })}>↻</button></div>)}
-      </div>
-      <div className="activity-palette">{ids.map(id => <button key={id} onClick={() => dispatch({ type:'SET_SCHEDULE', index: 0, activity:id })}><Icon name={activities[id].icon}/><span>{activities[id].name}</span></button>)}</div>
-    </div>
-    <Pet mood="focus"/>
-    <div className="planner-actions"><button className="secondary" onClick={() => dispatch({type:'AUTO_SCHEDULE'})}>자동 배치</button><button className="primary" onClick={() => dispatch({type:'GO',screen:'training'})}>일정 시작</button></div>
-  </section>;
-}
-
-function Training({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
-  const [needle, setNeedle] = useState(0.1);
-  const [flash, setFlash] = useState('');
-  useEffect(() => { const id = setInterval(() => setNeedle(v => (v + .037) % 1), 40); return () => clearInterval(id); }, []);
-  const accuracy = useMemo(() => 1 - Math.min(1, Math.abs(.5 - needle) * 2), [needle]);
-  const hit = (kind: 'attack'|'dodge'|'charge') => { dispatch({type:'TRAIN',kind,accuracy}); setFlash(accuracy > .7 ? 'PERFECT!' : accuracy > .45 ? 'GOOD!' : 'MISS'); setTimeout(() => setFlash(''), 500); };
-  return <section className="screen training-screen">
-    <div className="forest-arena"><div className="moon-orb"/><div className="trees"/><div className="mist"/></div>
-    <div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={() => dispatch({type:'FINISH_TRAINING'})}>훈련 종료</button></div>
-    <div className="dummy"><span/><i/><b/></div>
-    <div className="fighter"><Pet mood="focus"/></div>
-    <div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/>{flash && <img className="training-burst" src="/assets/effects/success_burst.png" alt="" />}<span>{flash}</span></div>
-    <div className="action-bar"><button className="attack" onClick={() => hit('attack')}><Icon name="sword"/><b>공격</b></button><button className="dodge" onClick={() => hit('dodge')}><span>◒</span><b>회피</b></button><button className="charge" onClick={() => hit('charge')}><Icon name="spark"/><b>기 모으기</b></button></div>
-  </section>;
-}
-
-function Dialogue({ dispatch }: { dispatch: React.Dispatch<any> }) {
-  return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>오늘 사냥 수업, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</p><div className="choices"><button onClick={() => dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ 스트레스 ↓</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>100G · 스트레스 크게 ↓</small></button></div></div></section>;
-}
-
-function Result({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
-  const grade = trainingGrade(state.trainingScore);
-  return <section className="screen result-screen"><div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1><p>루나는 이번 달에도 한 뼘 더 성장했어요.</p><div className="result-card"><div><span>근력</span><b>{state.stats.strength}</b></div><div><span>마력</span><b>{state.stats.magic}</b></div><div><span>호감도</span><b>{state.stats.affection}</b></div><div><span>스트레스</span><b>{state.stats.stress}</b></div></div><div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt="" /><span>월간 보상</span><b>350 G</b></div><button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button></section>;
-}
-
-export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState, init => {
-    try { return JSON.parse(localStorage.getItem('puppy-maker-save') || '') || init; } catch { return init; }
-  });
-  useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
-  return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => dispatch({type:'GO',screen:'schedule'})}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
-}
+export default function App() { const [state,dispatch]=useReducer(reducer,initialState,()=>hydrateGameState(localStorage.getItem('puppy-maker-save'))); useEffect(()=>localStorage.setItem('puppy-maker-save',JSON.stringify(state)),[state]); return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen==='hub'&&<Hub state={state} go={()=>dispatch({type:'GO',screen:'schedule'})}/>} {state.screen==='schedule'&&<Schedule state={state} dispatch={dispatch}/>} {state.screen==='training'&&<Training state={state} dispatch={dispatch}/>} {state.screen==='dialogue'&&<Dialogue dispatch={dispatch}/>} {state.screen==='result'&&<Result state={state} dispatch={dispatch}/>}</div></main>; }
