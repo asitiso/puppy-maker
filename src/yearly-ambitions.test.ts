@@ -26,4 +26,9 @@ describe('yearly ambitions', () => {
     expect(ambitionProgress('bond', record({ gifts:8, memories:8 }))).toEqual({ current:16, target:18, percent:89, complete:false });
     expect(ambitionProgress('season', record({ seasonStamps:4 }))).toEqual({ current:4, target:4, percent:100, complete:true });
   });
+
+  it('keeps the seasonal ambition repeatable in later years through steady outings', () => {
+    expect(ambitionProgress('season', record({ seasonStamps:0, outings:12 }))).toEqual({ current:4, target:4, percent:100, complete:true });
+    expect(ambitionProgress('season', record({ seasonStamps:0, outings:7 }))).toEqual({ current:2, target:4, percent:50, complete:false });
+  });
 });
