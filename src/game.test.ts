@@ -211,14 +211,15 @@ describe('game engine', () => {
     expect(reducer(restState, { type: 'TRAIN', kind: 'attack', accuracy: 1 }).trainingScore).toBe(133);
   });
 
-  it('adds trail instinct intelligence once for each herb schedule slot', () => {
+  it('adds trail instinct and herb focus intelligence bonuses', () => {
     const state = {
       ...initialState,
       schedule: ['herb', 'herb', 'herb', 'herb'] as typeof initialState.schedule,
       mastery: { ...initialState.mastery, herb: { xp: 3 } },
     };
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
-    expect(trained.stats.intelligence).toBe(initialState.stats.intelligence + 12);
+    expect(trained.stats.intelligence).toBe(initialState.stats.intelligence + 15);
+    expect(trained.lastScheduleSynergies).toContain('herb_focus');
   });
 
   it('clears transient discovery report next month while preserving derived skills', () => {
