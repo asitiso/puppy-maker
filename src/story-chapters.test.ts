@@ -18,13 +18,13 @@ describe('story chapter rules', () => {
     })).toEqual(['first_step']);
 
     expect(eligibleStoryChapters({
-      memories: ['first_training'], visitedOutings: ['forest', 'village', 'lake'], affection: 90, guardianRank: 'guardian', discoveries: 2,
+      memories: ['first_training'], visitedOutings: ['forest', 'village', 'lakeside'], affection: 90, guardianRank: 'guardian', discoveries: 2,
     })).toEqual(['first_step', 'wide_world', 'trusted_bond', 'guardian_oath']);
   });
 
   it('requires veteran rank and four discoveries for the final chapter', () => {
     const base = {
-      memories: ['first_training'], visitedOutings: ['forest', 'village', 'lake'], affection: 90, guardianRank: 'veteran' as const,
+      memories: ['first_training'], visitedOutings: ['forest', 'village', 'lakeside'], affection: 90, guardianRank: 'veteran' as const,
     };
     expect(eligibleStoryChapters({ ...base, discoveries: 3 })).not.toContain('starlight_road');
     expect(eligibleStoryChapters({ ...base, discoveries: 4 })).toContain('starlight_road');
