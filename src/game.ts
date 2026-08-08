@@ -1,13 +1,46 @@
+import {
+  applyGiftEffects,
+  applyOutingEffects,
+  giftItemIds,
+  outingDefinitions,
+  outingLocationIds,
+  startingInventory,
+  type GiftItemId,
+  type Inventory,
+  type OutingLocationId,
+} from './adventure';
+
 export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result';
 export type ActivityId = 'hunt' | 'magic' | 'rest' | 'herb';
 export type Condition = 'energetic' | 'normal' | 'focused' | 'tired';
 export type ResultQuality = 'NORMAL' | 'GOOD' | 'GREAT' | 'PERFECT';
-export type MemoryId = 'first_training' | 'first_perfect' | 'first_hug' | 'first_snack' | 'first_s_grade' | 'first_month_complete' | 'first_skill' | 'close_bond';
+export type MemoryId =
+  | 'first_training'
+  | 'first_perfect'
+  | 'first_hug'
+  | 'first_snack'
+  | 'first_s_grade'
+  | 'first_month_complete'
+  | 'first_skill'
+  | 'close_bond'
+  | 'first_outing'
+  | 'forest_memory'
+  | 'village_memory'
+  | 'lakeside_memory'
+  | 'first_gift';
 export type DialogueChoice = 'hug' | 'scold' | 'snack';
 export type SkillId = 'quick_strike' | 'mana_focus' | 'steady_breath' | 'trail_instinct';
 export type RandomEventId = 'rare_herb' | 'new_move' | 'magic_flow' | 'second_wind' | 'quiet_focus' | 'fox_curiosity';
 export type RelationshipRank = 'acquaintance' | 'familiar' | 'friend' | 'close_friend' | 'precious';
-export type AchievementId = 'first_steps' | 'skill_beginner' | 'memory_keeper' | 'close_bond' | 'mastery_specialist' | 'perfect_growth';
+export type AchievementId =
+  | 'first_steps'
+  | 'skill_beginner'
+  | 'memory_keeper'
+  | 'close_bond'
+  | 'mastery_specialist'
+  | 'perfect_growth'
+  | 'little_explorer'
+  | 'thoughtful_giver';
 
 export interface Stats {
   strength: number;
@@ -57,6 +90,8 @@ export interface GameState {
   personality: Personality;
   memories: MemoryId[];
   claimedAchievements: AchievementId[];
+  inventory: Inventory;
+  visitedOutings: OutingLocationId[];
   lastGrowthReport: GrowthReport | null;
 }
 
@@ -74,6 +109,8 @@ export const achievementDefinitions: AchievementDefinition[] = [
   { id: 'close_bond', title: '가까워진 마음', description: '루나와 가까운 친구가 되세요.', reward: { gems: 2 } },
   { id: 'mastery_specialist', title: '숙련의 길', description: '훈련 하나를 Lv.4까지 올리세요.', reward: { gold: 400 } },
   { id: 'perfect_growth', title: '완벽한 성장', description: '첫 PERFECT를 달성하세요.', reward: { gems: 3 } },
+  { id: 'little_explorer', title: '작은 탐험가', description: '세 곳의 외출 장소를 모두 방문하세요.', reward: { gold: 300 } },
+  { id: 'thoughtful_giver', title: '마음을 담은 선물', description: '루나에게 첫 선물을 건네세요.', reward: { gems: 2 } },
 ];
 
 export const activities: Record<ActivityId, { name: string; icon: string; effect: Partial<Stats> }> = {
@@ -90,7 +127,8 @@ export const initialState: GameState = {
   screen: 'hub', year: 1, month: 4, week: 2, gold: 5000, gems: 220,
   schedule: ['hunt', 'magic', 'rest', 'herb'], combo: 0, trainingScore: 0,
   stats: { strength: 28, intelligence: 34, magic: 42, morality: 61, affection: 72, stress: 24, fatigue: 18 },
-  condition: 'normal', mastery: defaultMastery(), personality: defaultPersonality(), memories: [], claimedAchievements: [], lastGrowthReport: null,
+  condition: 'normal', mastery: defaultMastery(), personality: defaultPersonality(), memories: [], claimedAchievements: [],
+  inventory: startingInventory(), visitedOutings: [], lastGrowthReport: null,
 };
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value));
@@ -101,8 +139,14 @@ const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result'];
 const conditions: Condition[] = ['energetic', 'normal', 'focused', 'tired'];
 const resultQualities: ResultQuality[] = ['NORMAL', 'GOOD', 'GREAT', 'PERFECT'];
 const grades: Array<GrowthReport['grade']> = ['S', 'A', 'B', 'C'];
-const memoryIds: MemoryId[] = ['first_training', 'first_perfect', 'first_hug', 'first_snack', 'first_s_grade', 'first_month_complete', 'first_skill', 'close_bond'];
-const memoryPriority: MemoryId[] = ['first_skill', 'close_bond', 'first_perfect', 'first_s_grade', 'first_training', 'first_hug', 'first_snack', 'first_month_complete'];
+const memoryIds: MemoryId[] = [
+  'first_training', 'first_perfect', 'first_hug', 'first_snack', 'first_s_grade', 'first_month_complete', 'first_skill', 'close_bond',
+  'first_outing', 'forest_memory', 'village_memory', 'lakeside_memory', 'first_gift',
+];
+const memoryPriority: MemoryId[] = [
+  'first_skill', 'close_bond', 'first_perfect', 'first_s_grade', 'first_training', 'first_hug', 'first_snack', 'first_month_complete',
+  'first_outing', 'forest_memory', 'village_memory', 'lakeside_memory', 'first_gift',
+];
 const skillIds: SkillId[] = ['quick_strike', 'mana_focus', 'steady_breath', 'trail_instinct'];
 const randomEventIds: RandomEventId[] = ['rare_herb', 'new_move', 'magic_flow', 'second_wind', 'quiet_focus', 'fox_curiosity'];
 const achievementIds: AchievementId[] = achievementDefinitions.map(item => item.id);
@@ -115,6 +159,8 @@ const cloneInitialState = (): GameState => ({
   personality: { ...initialState.personality },
   memories: [...initialState.memories],
   claimedAchievements: [...initialState.claimedAchievements],
+  inventory: { ...initialState.inventory },
+  visitedOutings: [...initialState.visitedOutings],
   lastGrowthReport: null,
 });
 
@@ -187,6 +233,8 @@ export function eligibleAchievements(state: GameState): AchievementId[] {
   if (rank === 'close_friend' || rank === 'precious') eligible.add('close_bond');
   if (progress.masteredActivities >= 1) eligible.add('mastery_specialist');
   if (state.memories.includes('first_perfect')) eligible.add('perfect_growth');
+  if (state.visitedOutings.length >= outingLocationIds.length) eligible.add('little_explorer');
+  if (state.memories.includes('first_gift')) eligible.add('thoughtful_giver');
   return achievementIds.filter(id => eligible.has(id));
 }
 
@@ -382,6 +430,13 @@ export function hydrateGameState(raw: unknown): GameState {
     ? [...new Set(raw.memories.filter((id): id is MemoryId => typeof id === 'string' && memoryIds.includes(id as MemoryId)))] : fallback.memories;
   const claimedAchievements = Array.isArray(raw.claimedAchievements)
     ? [...new Set(raw.claimedAchievements.filter((id): id is AchievementId => typeof id === 'string' && achievementIds.includes(id as AchievementId)))] : [];
+  const inventoryRaw = isRecord(raw.inventory) ? raw.inventory : null;
+  const inventory = inventoryRaw
+    ? Object.fromEntries(giftItemIds.map(id => [id, Math.max(0, Math.floor(finiteNumber(inventoryRaw[id], fallback.inventory[id])))])) as Inventory
+    : { ...fallback.inventory };
+  const visitedOutings = Array.isArray(raw.visitedOutings)
+    ? [...new Set(raw.visitedOutings.filter((id): id is OutingLocationId => typeof id === 'string' && outingLocationIds.includes(id as OutingLocationId)))]
+    : [];
 
   return {
     ...fallback,
@@ -392,7 +447,7 @@ export function hydrateGameState(raw: unknown): GameState {
     combo: Math.max(0, Math.floor(finiteNumber(raw.combo, fallback.combo))), trainingScore: Math.max(0, Math.floor(finiteNumber(raw.trainingScore, fallback.trainingScore))),
     lastChoice: raw.lastChoice === 'hug' || raw.lastChoice === 'scold' || raw.lastChoice === 'snack' ? raw.lastChoice : undefined,
     condition: typeof raw.condition === 'string' && conditions.includes(raw.condition as Condition) ? raw.condition as Condition : fallback.condition,
-    mastery, personality, memories, claimedAchievements, lastGrowthReport: hydrateGrowthReport(raw.lastGrowthReport),
+    mastery, personality, memories, claimedAchievements, inventory, visitedOutings, lastGrowthReport: hydrateGrowthReport(raw.lastGrowthReport),
   };
 }
 
@@ -412,6 +467,8 @@ export type Action =
   | { type: 'FINISH_TRAINING'; eventRoll?: number }
   | { type: 'CHOOSE'; choice: DialogueChoice }
   | { type: 'CLAIM_ACHIEVEMENT'; achievement: AchievementId }
+  | { type: 'GO_OUTING'; location: OutingLocationId }
+  | { type: 'GIVE_GIFT'; item: GiftItemId }
   | { type: 'NEXT_MONTH' }
   | { type: 'RESET' };
 
@@ -490,6 +547,42 @@ export function reducer(state: GameState, action: Action): GameState {
           state.lastGrowthReport?.randomEvent ?? null,
           state.lastGrowthReport?.unlockedSkill ?? null,
         ),
+      };
+    }
+    case 'GO_OUTING': {
+      const effects = applyOutingEffects(state.stats, state.personality, action.location);
+      const rewardItem = outingDefinitions[action.location].rewardItem;
+      let memories = addMemory(state.memories, 'first_outing');
+      const locationMemory: Record<OutingLocationId, MemoryId> = {
+        forest: 'forest_memory', village: 'village_memory', lakeside: 'lakeside_memory',
+      };
+      memories = addMemory(memories, locationMemory[action.location]);
+      const visitedOutings = state.visitedOutings.includes(action.location)
+        ? state.visitedOutings
+        : [...state.visitedOutings, action.location];
+      const inventory = { ...state.inventory, [rewardItem]: state.inventory[rewardItem] + 1 };
+      return {
+        ...state,
+        stats: effects.stats,
+        personality: effects.personality,
+        memories,
+        visitedOutings,
+        inventory,
+        condition: deriveCondition(effects.stats),
+      };
+    }
+    case 'GIVE_GIFT': {
+      if (state.inventory[action.item] <= 0) return state;
+      const effects = applyGiftEffects(state.stats, state.personality, action.item);
+      const inventory = { ...state.inventory, [action.item]: state.inventory[action.item] - 1 };
+      const memories = addMemory(state.memories, 'first_gift');
+      return {
+        ...state,
+        stats: effects.stats,
+        personality: effects.personality,
+        inventory,
+        memories,
+        condition: deriveCondition(effects.stats),
       };
     }
     case 'CLAIM_ACHIEVEMENT': {
