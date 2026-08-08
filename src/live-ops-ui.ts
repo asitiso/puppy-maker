@@ -1,7 +1,8 @@
-import type { GameState } from './game-live-base';
+import type { GameState } from './game';
 import { seasonArchiveRecords } from './season-archive';
 import { seasonJourneyKey, seasonJourneyTiers } from './season-journey';
 import { seasonKeepsakeCollection, seasonKeepsakeMilestones } from './season-keepsakes';
+import { seasonCompletionHonors, seasonHonorProgress } from './season-completion-honors';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
 
@@ -27,8 +28,15 @@ export function liveOpsUiSummary(state:GameState) {
     return { ...offer, purchased, remaining, canBuy:remaining > 0 && tokens >= offer.cost };
   });
   const collection = seasonKeepsakeCollection(state.seasonShopPurchases);
-  const claimed = state.claimedSeasonKeepsakeMilestones ?? [];
-  const nextMilestone = seasonKeepsakeMilestones.find(item => !claimed.includes(item.id)) ?? null;
+  const claimedKeepsakes = state.claimedSeasonKeepsakeMilestones ?? [];
+  const nextMilestone = seasonKeepsakeMilestones.find(item => !claimedKeepsakes.includes(item.id)) ?? null;
+  const honorProgress = seasonHonorProgress(state.seasonJourneyHistory);
+  const claimedHonors = state.claimedSeasonCompletionHonors ?? [];
+  const honorItems = seasonCompletionHonors.map(item => ({
+    ...item,
+    current:honorProgress[item.metric],
+    claimed:claimedHonors.includes(item.id),
+  }));
   return {
     season:{
       key,
@@ -40,7 +48,8 @@ export function liveOpsUiSummary(state:GameState) {
     },
     directives,
     shop,
-    keepsakes:{ ...collection, claimed, nextMilestone },
+    keepsakes:{ ...collection, claimed:claimedKeepsakes, nextMilestone },
+    honors:{ progress:honorProgress, items:honorItems, claimed:claimedHonors },
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
 }
