@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import {
+  discoveryIds,
+  explorationLevel,
+  explorationXpForNextLevel,
   giftDefinitions,
   giftItemIds,
   outingDefinitions,
   outingLocationIds,
+  type DiscoveryId,
+  type ExplorationEventId,
   type GiftItemId,
   type OutingLocationId,
 } from './adventure';
@@ -62,6 +67,20 @@ const recommendations: Record<GameState['condition'], string> = {
 const relationshipLabels = {
   acquaintance: '낯선 사이', familiar: '익숙한 사이', friend: '친구', close_friend: '가까운 친구', precious: '소중한 사람',
 } as const;
+
+const explorationEventLabels: Record<ExplorationEventId, string> = {
+  glowing_tracks: '빛나는 발자국을 따라가 50G를 발견했어요.',
+  ancient_tree: '오래된 나무의 선물로 별빛 쿠키를 얻었어요.',
+  street_performance: '마을 공연을 도와 50G를 받았어요.',
+  wand_repair: '마법 지팡이를 고쳐주고 여우 부적을 받았어요.',
+  silver_fish: '은빛 물고기가 숨겨둔 50G를 발견했어요.',
+  quiet_breeze: '고요한 바람 속에서 허브티를 발견했어요.',
+};
+
+const discoveryLabels: Record<DiscoveryId, string> = {
+  moon_feather: '달빛 깃털', star_mushroom: '별무늬 버섯', tiny_bell: '작은 마법 종', old_spellbook: '낡은 주문서',
+  glass_shell: '유리빛 조개', wind_crystal: '바람 결정',
+};
 
 type LayeredHomeProps = {
   state: GameState;
@@ -124,7 +143,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
-    <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>외출 <b>{state.visitedOutings.length} / {outingLocationIds.length}</b></p></div></div>
+    <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
 
     <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · 컨디션 ${conditionLabels[state.condition]}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
@@ -150,16 +169,27 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
           <button disabled><span>2</span><b>수집한 기억</b><i>{collection.memories}개</i></button>
           <button disabled><span>3</span><b>해금한 기술</b><i>{collection.skills}개</i></button>
           <button disabled><span>4</span><b>외출 기억</b><i>{state.visitedOutings.length} / {outingLocationIds.length}</i></button>
-          <button disabled><span>5</span><b>최고 숙련도</b><i>Lv.{highestMastery}</i></button>
-        </div> : isOutingPanel ? <div className="lh-panel-list">{outingLocationIds.map((id, index) => {
-          const location = outingDefinitions[id];
-          const visited = state.visitedOutings.includes(id);
-          return <button key={id} onClick={() => onOuting(id)}>
-            <span>{visited ? '✓' : index + 1}</span>
-            <b>{location.name}<small>{location.description} · 선물 아이템 발견</small></b>
-            <i>{visited ? '다시 가기' : '출발'}</i>
-          </button>;
-        })}</div> : isBagPanel ? <div className="lh-panel-list">{giftItemIds.map((id, index) => {
+          <button disabled><span>5</span><b>숨겨진 발견물</b><i>{state.discoveries.length} / {discoveryIds.length}</i></button>
+          <button disabled><span>6</span><b>최고 숙련도</b><i>Lv.{highestMastery}</i></button>
+        </div> : isOutingPanel ? <div className="lh-panel-list">
+          {state.lastExploration && <button disabled>
+            <span>★</span>
+            <b>{outingDefinitions[state.lastExploration.location].name} 탐험 기록<small>{state.lastExploration.discovery ? `숨겨진 발견 · ${discoveryLabels[state.lastExploration.discovery]}` : state.lastExploration.event ? explorationEventLabels[state.lastExploration.event] : '이번에는 특별한 일 없이 평화롭게 다녀왔어요.'}</small></b>
+            <i>{state.lastExploration.discovery ? '발견!' : state.lastExploration.event ? '사건' : '기록'}</i>
+          </button>}
+          {outingLocationIds.map((id, index) => {
+            const location = outingDefinitions[id];
+            const visited = state.visitedOutings.includes(id);
+            const xp = state.explorationXp[id];
+            const level = explorationLevel(xp);
+            const nextXp = explorationXpForNextLevel(xp);
+            return <button key={id} onClick={() => onOuting(id)}>
+              <span>{visited ? '✓' : index + 1}</span>
+              <b>{location.name}<small>탐험 Lv.{level} · {nextXp === null ? 'MAX' : `${xp} / ${nextXp} XP`} · {location.description}</small></b>
+              <i>{visited ? '탐험' : '출발'}</i>
+            </button>;
+          })}
+        </div> : isBagPanel ? <div className="lh-panel-list">{giftItemIds.map((id, index) => {
           const item = giftDefinitions[id];
           const quantity = state.inventory[id];
           return <button key={id} disabled={quantity <= 0} onClick={() => quantity > 0 && onGift(id)}>
