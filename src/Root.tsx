@@ -32,6 +32,7 @@ import './world-progress.css';
 import './year-end-ceremony.css';
 import './yearly-ambition.css';
 import './expedition-ui.css';
+import './expedition-world.css';
 import './raising-identity.css';
 
 export default function Root() {
