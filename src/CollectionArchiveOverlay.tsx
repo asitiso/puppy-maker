@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
+import { archiveRank } from './collection-archive-rank';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
@@ -33,6 +34,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     legacyRelics: unlockedRelics.size,
     ambitionHonors: unlockedAmbitionHonors.length,
   });
+  const archiveStatus = archiveRank(archive.current);
   const legacy = guardianLegacy(state.annualRecords);
   const streakHonor = ambitionStreakHonor(streak);
 
@@ -40,7 +42,7 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
     <button
       className="collection-archive-trigger"
       onClick={() => setOpen(true)}
-      aria-label={`성장 도감 ${archive.percent}% 완성`}
+      aria-label={`성장 도감 ${archive.percent}% 완성 · ${archiveStatus.label}`}
     />
     {open && <div className="collection-archive-backdrop" onClick={() => setOpen(false)}>
       <section className="collection-archive-panel" role="dialog" aria-modal="true" aria-label="성장 도감" onClick={event => event.stopPropagation()}>
@@ -49,6 +51,13 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
           <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
           <small>GROWTH ARCHIVE · 50 SLOTS</small>
           <h2>성장 도감</h2>
+          <div className={`archive-rank-card archive-rank-${archiveStatus.id}`}>
+            <span>ARCHIVE RANK</span>
+            <strong>{archiveStatus.label}</strong>
+            <b>{archive.current} / 50</b>
+            <p>{archiveStatus.description}</p>
+            <small>{archiveStatus.next ? `다음 ${archiveStatus.next.label}까지 ${archiveStatus.next.remaining}칸` : '50슬롯 완성 · 최종 명예 달성'}</small>
+          </div>
           <div className="legacy-card">
             <span>GUARDIAN LEGACY</span>
             <strong>{legacy.label}</strong>
