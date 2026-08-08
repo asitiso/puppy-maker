@@ -150,9 +150,10 @@ type AppProps = {
   onClaimAchievementReady?: (claim: (achievement: AchievementId) => void) => void;
   onOutingReady?: (outing: (location: OutingLocationId) => void) => void;
   onGiftReady?: (gift: (item: GiftItemId) => void) => void;
+  onAttendanceReady?: (claim: () => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -165,12 +166,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
   const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
   const giveGift = useCallback((item: GiftItemId) => dispatch({ type: 'GIVE_GIFT', item }), []);
+  const claimAttendance = useCallback(() => dispatch({ type: 'CLAIM_ATTENDANCE' }), []);
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
   useEffect(() => onClaimAchievementReady?.(claimAchievement), [claimAchievement, onClaimAchievementReady]);
   useEffect(() => onOutingReady?.(goOuting), [goOuting, onOutingReady]);
   useEffect(() => onGiftReady?.(giveGift), [giveGift, onGiftReady]);
+  useEffect(() => onAttendanceReady?.(claimAttendance), [claimAttendance, onAttendanceReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
