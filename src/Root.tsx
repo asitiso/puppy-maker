@@ -67,6 +67,7 @@ export default function Root() {
   const handleMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => setMonthlyFocus?.(focus), [setMonthlyFocus]);
   const handleYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => setYearlyAmbition?.(ambition), [setYearlyAmbition]);
   const handleArchiveNavigate = useCallback((id: HomeMenuId) => openHomeMenu?.(id), [openHomeMenu]);
+  const handleOpenExpedition = useCallback(() => setExpeditionOpen(true), []);
 
   return <>
     <App
@@ -98,12 +99,12 @@ export default function Root() {
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
-      <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} />
+      <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
       <YearEndCeremonyOverlay state={gameState} />
       <GuardianExpeditionOverlay
         state={gameState}
         open={expeditionOpen}
-        onOpen={() => setExpeditionOpen(true)}
+        onOpen={handleOpenExpedition}
         onClose={() => setExpeditionOpen(false)}
         onFinish={(stageId, score, fatigueDelta, stressDelta) => finishExpedition?.(stageId, score, fatigueDelta, stressDelta)}
         onEquip={relic => equipExpedition?.(relic)}
