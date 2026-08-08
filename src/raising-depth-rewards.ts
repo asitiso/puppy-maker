@@ -19,8 +19,8 @@ export type BondRewardProgress = {
   gems:number;
 };
 
-export function reconcileBondSceneRewards(progress: BondRewardProgress) {
-  const eligible = eligibleBondScenes({
+function eligible(progress: BondRewardProgress): BondSceneId[] {
+  return eligibleBondScenes({
     affection:progress.affection,
     outings:progress.outings,
     trainings:progress.trainings,
@@ -30,18 +30,25 @@ export function reconcileBondSceneRewards(progress: BondRewardProgress) {
     annualRecords:progress.annualRecords,
     alreadyUnlocked:progress.unlocked,
   });
-  const unlocked = bondSceneIds.filter(id => progress.unlocked.includes(id) || eligible.includes(id));
-  const newlyRewarded = unlocked.filter(id => !progress.rewarded.includes(id));
-  if (!newlyRewarded.length) return {
-    changed:unlocked.length !== progress.unlocked.length,
-    unlocked,
-    rewarded:progress.rewarded,
-    gold:progress.gold,
-    gems:progress.gems,
-    newlyUnlocked:eligible.filter(id => !progress.unlocked.includes(id)),
+}
+
+export function reconcileBondSceneRewards(previous: BondRewardProgress, current: BondRewardProgress) {
+  const beforeEligible = new Set(eligible(previous));
+  const afterEligible = eligible(current);
+  const newlyUnlocked = afterEligible.filter(id => !beforeEligible.has(id) && !current.unlocked.includes(id));
+  if (!newlyUnlocked.length) return {
+    changed:false,
+    unlocked:current.unlocked,
+    rewarded:current.rewarded,
+    gold:current.gold,
+    gems:current.gems,
+    newlyUnlocked:[] as BondSceneId[],
   };
-  let gold = progress.gold;
-  let gems = progress.gems;
+
+  const unlocked = bondSceneIds.filter(id => current.unlocked.includes(id) || newlyUnlocked.includes(id));
+  const newlyRewarded = newlyUnlocked.filter(id => !current.rewarded.includes(id));
+  let gold = current.gold;
+  let gems = current.gems;
   for (const id of newlyRewarded) {
     const reward = bondSceneDefinitions.find(item => item.id === id)?.reward;
     gold += reward?.gold ?? 0;
@@ -50,10 +57,10 @@ export function reconcileBondSceneRewards(progress: BondRewardProgress) {
   return {
     changed:true,
     unlocked,
-    rewarded:bondSceneIds.filter(id => progress.rewarded.includes(id) || newlyRewarded.includes(id)),
+    rewarded:bondSceneIds.filter(id => current.rewarded.includes(id) || newlyRewarded.includes(id)),
     gold,
     gems,
-    newlyUnlocked:eligible.filter(id => !progress.unlocked.includes(id)),
+    newlyUnlocked,
   };
 }
 
