@@ -8,6 +8,10 @@ import {
 import { emptySanctuaryLevels } from './starlight-sanctuary';
 
 describe('sanctuary contracts', () => {
+  it('keeps weekly contracts locked until the first sanctuary facility is built', () => {
+    expect(sanctuaryContractSet(1,4,1,emptySanctuaryLevels())).toEqual([]);
+  });
+
   it('generates three deterministic weekly contracts from sanctuary levels', () => {
     const levels = { ...emptySanctuaryLevels(), training_hall:2 as const, observatory:1 as const };
     const first = sanctuaryContractSet(2,5,3,levels);
@@ -19,7 +23,7 @@ describe('sanctuary contracts', () => {
   });
 
   it('advances only matching actions, caps progress and reports newly completed contracts', () => {
-    const levels = emptySanctuaryLevels();
+    const levels = { ...emptySanctuaryLevels(), training_hall:1 as const };
     const contracts = sanctuaryContractSet(1,4,1,levels);
     const target = contracts[0];
     let progress:Record<string,number> = {};
