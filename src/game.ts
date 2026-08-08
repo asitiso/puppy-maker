@@ -71,6 +71,10 @@ import {
   pickExpeditionPersistentState,
   type ExpeditionPersistentState,
 } from './expedition-state';
+import { resolveExpeditionFinish, type ExpeditionFinishSummary } from './expedition-rewards';
+import { equipExpeditionRelic, unequipExpeditionRelic, type ExpeditionRelicId } from './expedition-relics';
+import { applyCrafting, type ExpeditionCraftingRecipeId } from './expedition-crafting';
+import type { ExpeditionStageId } from './expedition-regions';
 
 export {
   achievementDefinitions,
@@ -125,6 +129,7 @@ export type { ExpeditionRelicId } from './expedition-relics';
 export type { ExpeditionMaterialId, ExpeditionCraftingRecipeId, CraftingMilestoneId } from './expedition-crafting';
 export type { ExpeditionDiscoveryId } from './expedition-discoveries';
 export type { ExpeditionRegionId, ExpeditionStageId, ExpeditionStageRecord, ExpeditionGrade } from './expedition-regions';
+export type { ExpeditionFinishSummary } from './expedition-rewards';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -149,6 +154,7 @@ export interface GameState extends Core.GameState, ExpeditionPersistentState {
   monthlyFocus: MonthlyFocusId;
   annualRecords: AnnualRecord[];
   yearlyAmbitions: YearlyAmbitionSelections;
+  lastExpeditionResult: ExpeditionFinishSummary | null;
 }
 
 export type Action =
@@ -158,6 +164,10 @@ export type Action =
   | { type: 'CLAIM_MAIL'; mail: MailRewardId }
   | { type: 'SET_MONTHLY_FOCUS'; focus: MonthlyFocusId }
   | { type: 'SET_YEARLY_AMBITION'; ambition: YearlyAmbitionId }
+  | { type: 'FINISH_EXPEDITION_STAGE'; stageId: ExpeditionStageId; score: number; fatigueDelta?: number; stressDelta?: number }
+  | { type: 'EQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
+  | { type: 'UNEQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
+  | { type: 'CRAFT_EXPEDITION_RECIPE'; recipe: ExpeditionCraftingRecipeId }
   | { type: 'RESET' };
 
 export const initialState: GameState = {
@@ -178,11 +188,13 @@ export const initialState: GameState = {
   monthlyFocus: 'balanced',
   annualRecords: [],
   yearlyAmbitions: {},
+  lastExpeditionResult: null,
   ...emptyExpeditionPersistentState(),
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const finiteNumber = (value: unknown, fallback: number) => typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+const clampStat = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 
 function hydrateExplorationXp(raw: unknown): Record<OutingLocationId, number> {
   const source = isRecord(raw) ? raw : {};
@@ -312,6 +324,7 @@ export function hydrateGameState(raw: unknown): GameState {
     monthlyFocus: hydrateMonthlyFocus(source.monthlyFocus),
     annualRecords: hydrateAnnualRecords(source.annualRecords),
     yearlyAmbitions: readAmbitionSelections(source.yearlyAmbitions),
+    lastExpeditionResult: null,
     ...hydrateExpeditionPersistentState(source),
   };
 }
@@ -448,6 +461,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     monthlyFocus: state.monthlyFocus,
     annualRecords: state.annualRecords,
     yearlyAmbitions: state.yearlyAmbitions,
+    lastExpeditionResult: state.lastExpeditionResult,
     ...pickExpeditionPersistentState(state),
   };
 }
@@ -466,6 +480,55 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'SET_YEARLY_AMBITION') {
     if (state.yearlyAmbitions[state.year]) return state;
     return { ...state, yearlyAmbitions: { ...state.yearlyAmbitions, [state.year]: action.ambition } };
+  }
+
+  if (action.type === 'FINISH_EXPEDITION_STAGE') {
+    const resolved = resolveExpeditionFinish({
+      ...pickExpeditionPersistentState(state),
+      gold: state.gold,
+      gems: state.gems,
+      affection: state.stats.affection,
+      inventory: state.inventory,
+    }, action.stageId, action.score);
+    if (!resolved.summary.accepted) return state;
+    const fatigue = clampStat(state.stats.fatigue + Math.max(0, action.fatigueDelta ?? 0));
+    const stress = clampStat(state.stats.stress + Math.max(0, action.stressDelta ?? 0));
+    const nextStats = { ...state.stats, affection: resolved.state.affection, fatigue, stress };
+    return {
+      ...state,
+      ...pickExpeditionPersistentState(resolved.state),
+      gold: resolved.state.gold,
+      gems: resolved.state.gems,
+      inventory: resolved.state.inventory,
+      stats: nextStats,
+      condition: Core.deriveCondition(nextStats),
+      lastExpeditionResult: resolved.summary,
+    };
+  }
+
+  if (action.type === 'EQUIP_EXPEDITION_RELIC') {
+    const equipped = equipExpeditionRelic(state.equippedExpeditionRelics, state.ownedExpeditionRelics, action.relic);
+    if (equipped.length === state.equippedExpeditionRelics.length && equipped.every((id, index) => id === state.equippedExpeditionRelics[index])) return state;
+    return { ...state, equippedExpeditionRelics: equipped };
+  }
+
+  if (action.type === 'UNEQUIP_EXPEDITION_RELIC') {
+    const equipped = unequipExpeditionRelic(state.equippedExpeditionRelics, action.relic);
+    if (equipped.length === state.equippedExpeditionRelics.length) return state;
+    return { ...state, equippedExpeditionRelics: equipped };
+  }
+
+  if (action.type === 'CRAFT_EXPEDITION_RECIPE') {
+    const result = applyCrafting(action.recipe, state.expeditionMaterials);
+    if (!result.crafted || !result.milestone) return state;
+    const inventory = result.gift ? { ...state.inventory, [result.gift]: state.inventory[result.gift] + 1 } : state.inventory;
+    const ownedExpeditionRelics = result.relic && !state.ownedExpeditionRelics.includes(result.relic)
+      ? [...state.ownedExpeditionRelics, result.relic]
+      : state.ownedExpeditionRelics;
+    const craftingMilestones = state.craftingMilestones.includes(result.milestone)
+      ? state.craftingMilestones
+      : [...state.craftingMilestones, result.milestone];
+    return { ...state, expeditionMaterials: result.materials, inventory, ownedExpeditionRelics, craftingMilestones };
   }
 
   if (action.type === 'CLAIM_ATTENDANCE') {
@@ -515,6 +578,7 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyFocus: state.monthlyFocus,
       annualRecords: state.annualRecords,
       yearlyAmbitions: state.yearlyAmbitions,
+      lastExpeditionResult: state.lastExpeditionResult,
       ...pickExpeditionPersistentState(state),
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
@@ -600,6 +664,7 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyFocus: 'balanced',
       annualRecords,
       yearlyAmbitions: state.yearlyAmbitions,
+      lastExpeditionResult: null,
       ...pickExpeditionPersistentState(state),
     });
   }
