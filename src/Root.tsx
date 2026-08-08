@@ -5,6 +5,7 @@ import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import LayeredHome from './LayeredHome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
+import SanctuaryOverlay from './SanctuaryOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
 import SeasonLiveOpsOverlay from './SeasonLiveOpsOverlay';
 import WorldProgressOverlay from './WorldProgressOverlay';
@@ -25,6 +26,9 @@ import {
   type YearlyAmbitionId,
 } from './game';
 import type { HomeMenuId } from './home-panels';
+import type { SanctuaryMasterworkId } from './sanctuary-masterworks';
+import type { SanctuarySpecializationId } from './sanctuary-specializations';
+import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import './layered-home.css';
@@ -38,6 +42,7 @@ import './yearly-ambition.css';
 import './expedition-ui.css';
 import './expedition-world.css';
 import './raising-identity.css';
+import './sanctuary.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -53,6 +58,9 @@ export default function Root() {
   const [purchaseGrowthTrait, setPurchaseGrowthTrait] = useState<((trait: GrowthTraitId) => void) | null>(null);
   const [purchaseSeasonOffer, setPurchaseSeasonOffer] = useState<((offer: SeasonShopOfferId) => void) | null>(null);
   const [unlockSeasonLegacyNode, setUnlockSeasonLegacyNode] = useState<((nodeId: SeasonLegacyNodeId) => void) | null>(null);
+  const [upgradeSanctuary, setUpgradeSanctuary] = useState<((facility: SanctuaryFacilityId) => void) | null>(null);
+  const [selectSanctuarySpecialization, setSelectSanctuarySpecialization] = useState<((specialization: SanctuarySpecializationId) => void) | null>(null);
+  const [buildSanctuaryMasterwork, setBuildSanctuaryMasterwork] = useState<((masterwork: SanctuaryMasterworkId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
   const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) | null>(null);
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
@@ -61,6 +69,7 @@ export default function Root() {
   const [expeditionOpen, setExpeditionOpen] = useState(false);
   const [raisingOpen, setRaisingOpen] = useState(false);
   const [seasonLiveOpen, setSeasonLiveOpen] = useState(false);
+  const [sanctuaryOpen, setSanctuaryOpen] = useState(false);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -74,6 +83,9 @@ export default function Root() {
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
   const captureSeasonPurchase = useCallback((nextPurchase: (offer: SeasonShopOfferId) => void) => setPurchaseSeasonOffer(() => nextPurchase), []);
   const captureSeasonLegacyUnlock = useCallback((nextUnlock: (nodeId: SeasonLegacyNodeId) => void) => setUnlockSeasonLegacyNode(() => nextUnlock), []);
+  const captureSanctuaryUpgrade = useCallback((nextUpgrade: (facility: SanctuaryFacilityId) => void) => setUpgradeSanctuary(() => nextUpgrade), []);
+  const captureSanctuarySpecialization = useCallback((nextSelect: (specialization: SanctuarySpecializationId) => void) => setSelectSanctuarySpecialization(() => nextSelect), []);
+  const captureSanctuaryMasterwork = useCallback((nextBuild: (masterwork: SanctuaryMasterworkId) => void) => setBuildSanctuaryMasterwork(() => nextBuild), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
   const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => setFinishExpedition(() => next), []);
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
@@ -92,6 +104,9 @@ export default function Root() {
   const handleOpenExpedition = useCallback(() => setExpeditionOpen(true), []);
   const handleSeasonPurchase = useCallback((offer: SeasonShopOfferId) => purchaseSeasonOffer?.(offer), [purchaseSeasonOffer]);
   const handleSeasonLegacyUnlock = useCallback((nodeId: SeasonLegacyNodeId) => unlockSeasonLegacyNode?.(nodeId), [unlockSeasonLegacyNode]);
+  const handleSanctuaryUpgrade = useCallback((facility: SanctuaryFacilityId) => upgradeSanctuary?.(facility), [upgradeSanctuary]);
+  const handleSanctuarySpecialization = useCallback((specialization: SanctuarySpecializationId) => selectSanctuarySpecialization?.(specialization), [selectSanctuarySpecialization]);
+  const handleSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => buildSanctuaryMasterwork?.(masterwork), [buildSanctuaryMasterwork]);
 
   return <>
     <App
@@ -112,6 +127,9 @@ export default function Root() {
       onGrowthTraitReady={captureGrowthTrait}
       onSeasonPurchaseReady={captureSeasonPurchase}
       onSeasonLegacyUnlockReady={captureSeasonLegacyUnlock}
+      onSanctuaryUpgradeReady={captureSanctuaryUpgrade}
+      onSanctuarySpecializationReady={captureSanctuarySpecialization}
+      onSanctuaryMasterworkReady={captureSanctuaryMasterwork}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -133,6 +151,15 @@ export default function Root() {
         onClose={() => setSeasonLiveOpen(false)}
         onPurchase={handleSeasonPurchase}
         onLegacyUnlock={handleSeasonLegacyUnlock}
+      />
+      <SanctuaryOverlay
+        state={gameState}
+        open={sanctuaryOpen}
+        onOpen={() => setSanctuaryOpen(true)}
+        onClose={() => setSanctuaryOpen(false)}
+        onUpgrade={handleSanctuaryUpgrade}
+        onSpecialization={handleSanctuarySpecialization}
+        onMasterwork={handleSanctuaryMasterwork}
       />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
