@@ -1,5 +1,13 @@
 import { useState } from 'react';
 import {
+  giftDefinitions,
+  giftItemIds,
+  outingDefinitions,
+  outingLocationIds,
+  type GiftItemId,
+  type OutingLocationId,
+} from './adventure';
+import {
   achievementDefinitions,
   collectionProgress,
   eligibleAchievements,
@@ -45,10 +53,10 @@ const conditionLabels: Record<GameState['condition'], string> = {
 };
 
 const recommendations: Record<GameState['condition'], string> = {
-  energetic: '몸이 가벼워요. 사냥 훈련에 잘 맞는 날이에요.',
-  normal: '오늘은 원하는 훈련을 골라도 좋아요.',
+  energetic: '몸이 가벼워요. 사냥 훈련이나 외출에 잘 맞는 날이에요.',
+  normal: '오늘은 원하는 훈련이나 외출을 골라도 좋아요.',
   focused: '집중력이 좋아요. 마법 수업을 해볼까요?',
-  tired: '오늘은 휴식을 넣어보는 게 좋아요.',
+  tired: '오늘은 휴식을 넣거나 호숫가에 다녀오는 게 좋아요.',
 };
 
 const relationshipLabels = {
@@ -59,9 +67,11 @@ type LayeredHomeProps = {
   state: GameState;
   onSchedule: () => void;
   onClaimAchievement: (achievement: AchievementId) => void;
+  onOuting: (location: OutingLocationId) => void;
+  onGift: (item: GiftItemId) => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -74,9 +84,11 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement }: L
   const highestMastery = Math.max(...Object.values(state.mastery).map(entry => masteryLevel(entry.xp)));
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
-  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel);
-  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : staticPanel?.title ?? '';
-  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : staticPanel?.eyebrow ?? '';
+  const isBagPanel = activePanel === 'bag';
+  const isOutingPanel = activePanel === 'outing';
+  const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel);
+  const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : staticPanel?.title ?? '';
+  const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : staticPanel?.eyebrow ?? '';
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -86,11 +98,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement }: L
   const openMenu = (id: HomeMenuId, index?: number) => {
     if (typeof index === 'number') setActiveNav(index);
     if (id === 'schedule') return onSchedule();
-    if (id === 'bond') {
-      setPetted(true);
-      setActivePanel('bond');
-      return;
-    }
+    if (id === 'bond') setPetted(true);
     setActivePanel(id);
   };
 
@@ -116,7 +124,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement }: L
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}</b></button>)}</div>
-    <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>숙련 Lv.4+ <b>{collection.masteredActivities}개</b></p></div></div>
+    <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>외출 <b>{state.visitedOutings.length} / {outingLocationIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
 
     <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · 컨디션 ${conditionLabels[state.condition]}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
@@ -141,8 +149,25 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement }: L
           <button disabled><span>1</span><b>호감도</b><i>{state.stats.affection} / 100</i></button>
           <button disabled><span>2</span><b>수집한 기억</b><i>{collection.memories}개</i></button>
           <button disabled><span>3</span><b>해금한 기술</b><i>{collection.skills}개</i></button>
-          <button disabled><span>4</span><b>최고 숙련도</b><i>Lv.{highestMastery}</i></button>
-        </div> : <div className="lh-panel-list">{staticPanel?.items.map((item, index) => <button key={item}><span>{index + 1}</span><b>{item}</b><i>›</i></button>)}</div>}
+          <button disabled><span>4</span><b>외출 기억</b><i>{state.visitedOutings.length} / {outingLocationIds.length}</i></button>
+          <button disabled><span>5</span><b>최고 숙련도</b><i>Lv.{highestMastery}</i></button>
+        </div> : isOutingPanel ? <div className="lh-panel-list">{outingLocationIds.map((id, index) => {
+          const location = outingDefinitions[id];
+          const visited = state.visitedOutings.includes(id);
+          return <button key={id} onClick={() => onOuting(id)}>
+            <span>{visited ? '✓' : index + 1}</span>
+            <b>{location.name}<small>{location.description} · 선물 아이템 발견</small></b>
+            <i>{visited ? '다시 가기' : '출발'}</i>
+          </button>;
+        })}</div> : isBagPanel ? <div className="lh-panel-list">{giftItemIds.map((id, index) => {
+          const item = giftDefinitions[id];
+          const quantity = state.inventory[id];
+          return <button key={id} disabled={quantity <= 0} onClick={() => quantity > 0 && onGift(id)}>
+            <span>{index + 1}</span>
+            <b>{item.name}<small>{item.description}</small></b>
+            <i>{quantity > 0 ? `선물하기 · ${quantity}개` : '없음'}</i>
+          </button>;
+        })}</div> : <div className="lh-panel-list">{staticPanel?.items.map((item, index) => <button key={item}><span>{index + 1}</span><b>{item}</b><i>›</i></button>)}</div>}
       </section>
     </div>}
   </section>;
