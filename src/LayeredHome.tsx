@@ -32,6 +32,7 @@ import { talentDefinitions } from './advanced-talents';
 import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
 import { mailDefinitions } from './mail-rewards';
+import { monthlyFocusDefinitions } from './monthly-focus';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
@@ -103,9 +104,10 @@ type LayeredHomeProps = {
   onGift: (item: GiftItemId) => void;
   onAttendance: () => void;
   onMail: (mail: MailRewardId) => void;
+  onMonthlyFocus: (focus: GameState['monthlyFocus']) => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(2);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -220,6 +222,14 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             <i>{opened ? '열림' : '잠김'}</i>
           </button>;
         })}</div> : isMissionPanel ? <div className="lh-panel-list">
+          {monthlyFocusDefinitions.map((focus, index) => {
+            const selected = state.monthlyFocus === focus.id;
+            return <button key={focus.id} onClick={() => onMonthlyFocus(focus.id)} aria-pressed={selected}>
+              <span>{selected ? '✓' : index + 1}</span>
+              <b>{focus.label}<small>{focus.description}</small></b>
+              <i>{selected ? '선택됨' : '선택'}</i>
+            </button>;
+          })}
           <button disabled><span>🔥</span><b>연속 성장<small>3개월마다 보석 3개 추가 보상</small></b><i>{state.growthStreak}개월</i></button>
           {monthlyMissionDefinitions.map((item, index) => {
             const value = state.monthlyCounters[item.counter];
