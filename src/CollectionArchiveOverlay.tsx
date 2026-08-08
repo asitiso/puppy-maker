@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { collectionArchive } from './collection-archive';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
+import { guardianRankDefinitions } from './guardian-rank';
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +34,17 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
               <b>{category.current} / {category.total}</b>
               <i><em style={{ width: `${Math.round((category.current / category.total) * 100)}%` }} /></i>
             </div>)}
+          </div>
+          <div className="annual-records">
+            <h3>연간 수호 기록</h3>
+            {state.annualRecords.length === 0 ? <p>1년차 12월을 마치면 첫 연간 기록이 남아요.</p> : [...state.annualRecords].reverse().map(record => {
+              const rank = guardianRankDefinitions.find(item => item.id === record.guardianRank)?.label ?? record.guardianRank;
+              return <article key={record.id}>
+                <b>{record.year}년차 · {rank}</b>
+                <span>훈련 {record.trainings} · 외출 {record.outings} · 선물 {record.gifts} · S등급 {record.sGrades}</span>
+                <span>BEST {record.bestScore} · 기억 {record.memories} · 발견 {record.discoveries} · 계절 인장 {record.seasonStamps}/4</span>
+              </article>;
+            })}
           </div>
           <p>훈련·외출·이야기·계절을 이어가며 루나의 성장 기록을 완성하세요.</p>
         </div>
