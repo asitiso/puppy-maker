@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './game';
-import { serializeSavedGame } from './save-schema';
+import { parseSavedGame, serializeSavedGame } from './save-schema';
 import {
   loadResilientSave,
   saveStorageKeys,
@@ -54,9 +54,9 @@ describe('save resilience', () => {
     storage.setItem(saveStorageKeys.backups[2], serializeSavedGame({ ...initialState, gold:70 }));
     writeResilientSave(storage, { ...initialState, gold:110 });
     expect(loadResilientSave(storage).state.gold).toBe(110);
-    const backup1 = loadResilientSave({ ...storage, getItem:key => key === saveStorageKeys.primary ? null : storage.getItem(key) });
-    expect(backup1.state.gold).toBe(100);
-    expect(storage.getItem(saveStorageKeys.backups[2])).toContain('80');
+    expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[0])).gold).toBe(100);
+    expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[1])).gold).toBe(90);
+    expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[2])).gold).toBe(80);
   });
 
   it('does not promote a corrupt primary into backup history', () => {
@@ -64,7 +64,7 @@ describe('save resilience', () => {
     storage.setItem(saveStorageKeys.primary, '{broken');
     storage.setItem(saveStorageKeys.backups[0], serializeSavedGame({ ...initialState, gold:90 }));
     writeResilientSave(storage, { ...initialState, gold:120 });
-    expect(storage.getItem(saveStorageKeys.backups[0])).toContain('90');
+    expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[0])).gold).toBe(90);
     expect(loadResilientSave(storage).state.gold).toBe(120);
   });
 });
