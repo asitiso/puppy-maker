@@ -28,22 +28,32 @@ import {
   seasonLegacyNodes,
   type SeasonLegacyNodeId,
 } from './season-legacy-board';
+import {
+  emptySanctuaryLevels,
+  resolveSanctuaryUpgrade,
+  sanitizeSanctuaryLevels,
+  type SanctuaryFacilityId,
+  type SanctuaryLevels,
+} from './starlight-sanctuary';
 
 export type GameState = Live.GameState & {
   claimedSeasonCompletionHonors:SeasonCompletionHonorId[];
   claimedSeasonMasteryRanks:SeasonMasteryRewardRank[];
   unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
+  sanctuaryLevels:SanctuaryLevels;
 };
 
 export type Action = Live.Action
   | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId }
-  | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
+  | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId }
+  | { type:'UPGRADE_SANCTUARY'; facility:SanctuaryFacilityId };
 
 export const initialState:GameState = {
   ...Live.initialState,
   claimedSeasonCompletionHonors:[],
   claimedSeasonMasteryRanks:[],
   unlockedSeasonLegacyNodes:[],
+  sanctuaryLevels:emptySanctuaryLevels(),
 };
 
 const honorIds:SeasonCompletionHonorId[] = ['first_complete','four_seasons','perfect_year','eight_complete'];
@@ -73,6 +83,7 @@ export function hydrateGameState(raw:unknown):GameState {
     claimedSeasonCompletionHonors:hydrateSeasonCompletionHonors(source.claimedSeasonCompletionHonors),
     claimedSeasonMasteryRanks:hydrateSeasonMasteryRanks(source.claimedSeasonMasteryRanks),
     unlockedSeasonLegacyNodes:hydrateSeasonLegacyNodes(source.unlockedSeasonLegacyNodes),
+    sanctuaryLevels:sanitizeSanctuaryLevels(source.sanctuaryLevels),
   };
 }
 
@@ -83,6 +94,7 @@ function preserveSeasonMeta(state:GameState, next:Live.GameState):GameState {
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
     unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
+    sanctuaryLevels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
   };
 }
 
@@ -116,6 +128,27 @@ function applySeasonMasteryRewards(previous:GameState, next:GameState):GameState
 
 export function reducer(state:GameState, action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+
+  if (action.type === 'UPGRADE_SANCTUARY') {
+    const result = resolveSanctuaryUpgrade({
+      facility:action.facility,
+      levels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
+      gold:state.gold,
+      materials:state.expeditionMaterials,
+      renown:state.regionalRenown,
+    });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      gold:state.gold - result.cost.gold,
+      expeditionMaterials:{
+        star_bark:state.expeditionMaterials.star_bark - result.cost.materials.star_bark,
+        arcane_shard:state.expeditionMaterials.arcane_shard - result.cost.materials.arcane_shard,
+        wind_pearl:state.expeditionMaterials.wind_pearl - result.cost.materials.wind_pearl,
+      },
+      sanctuaryLevels:{ ...state.sanctuaryLevels, [action.facility]:result.nextLevel },
+    };
+  }
 
   if (action.type === 'UNLOCK_SEASON_LEGACY_NODE') {
     const result = resolveSeasonLegacyUnlock({
@@ -168,6 +201,7 @@ export function reducer(state:GameState, action:Action):GameState {
       claimedSeasonKeepsakeMilestones:[...claimedMilestones,...keepsakeMilestones.map(item => item.id)],
       claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
       unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
+      sanctuaryLevels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
     };
     return applySeasonMasteryRewards(state,purchased);
   }
@@ -189,6 +223,7 @@ export function reducer(state:GameState, action:Action):GameState {
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
     unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
+    sanctuaryLevels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
   };
   const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
   const directives = weeklyDirectives(state.year,state.month,state.week);
@@ -234,6 +269,7 @@ export function reducer(state:GameState, action:Action):GameState {
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
     claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
     unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
+    sanctuaryLevels:state.sanctuaryLevels ?? emptySanctuaryLevels(),
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
