@@ -2,6 +2,11 @@ export * from './game-sanctuary-base';
 
 import * as Base from './game-sanctuary-base';
 import {
+  journeyTierClaimKey,
+  newlyEarnedJourneyTiers,
+  seasonJourneyKey,
+} from './season-journey';
+import {
   advanceSanctuaryContracts,
   sanctuaryContractSet,
   sanctuaryPrestigeRank,
@@ -18,6 +23,7 @@ import {
 } from './season-legacy-board';
 import {
   resolveSanctuarySpecialization,
+  sanctuarySpecializationEffects,
   sanctuarySpecializations as sanctuarySpecializationDefinitions,
   type SanctuarySpecializationId,
   type SanctuarySpecializationState,
@@ -186,6 +192,82 @@ function applyContractAction(previous:GameState,next:GameState,kind:SanctuaryCon
   };
 }
 
+function applySpecializationJourneyBonus(next:GameState,key:ReturnType<typeof seasonJourneyKey>,bonus:number):GameState {
+  if (bonus <= 0) return next;
+  const before = next.seasonJourneyScores[key] ?? 0;
+  const score = before + bonus;
+  const earned = newlyEarnedJourneyTiers(before,score,next.claimedSeasonJourneyTiers,key);
+  const claims = [...next.claimedSeasonJourneyTiers];
+  let gold = 0;
+  let gems = 0;
+  let tokens = 0;
+  for (const tier of earned) {
+    claims.push(journeyTierClaimKey(key,tier.tier));
+    gold += tier.reward.gold;
+    gems += tier.reward.gems;
+    tokens += tier.reward.tokens;
+  }
+  return {
+    ...next,
+    seasonJourneyScores:{ ...next.seasonJourneyScores, [key]:score },
+    claimedSeasonJourneyTiers:claims,
+    seasonTokenBalances:{ ...next.seasonTokenBalances, [key]:(next.seasonTokenBalances[key] ?? 0) + tokens },
+    gold:next.gold + gold,
+    gems:next.gems + gems,
+    lastLiveOpsProgress:next.lastLiveOpsProgress ? {
+      ...next.lastLiveOpsProgress,
+      journeyPoints:next.lastLiveOpsProgress.journeyPoints + bonus,
+      seasonTiersClaimed:[...next.lastLiveOpsProgress.seasonTiersClaimed,...earned.map(item => item.tier)],
+      tokensEarned:next.lastLiveOpsProgress.tokensEarned + tokens,
+    } : next.lastLiveOpsProgress,
+  };
+}
+
+function applySpecializationEffects(previous:GameState,next:GameState,action:Action):GameState {
+  const effects = sanctuarySpecializationEffects(previous.sanctuarySpecializations ?? {});
+  let result = next;
+
+  if (action.type === 'FINISH_TRAINING') {
+    if (effects.trainingPercent > 0) {
+      const stats = { ...result.stats };
+      for (const key of ['strength','intelligence','magic','morality'] as const) {
+        const delta = Math.max(0,next.stats[key] - previous.stats[key]);
+        if (delta > 0) stats[key] = Math.min(100,result.stats[key] + delta * effects.trainingPercent / 100);
+      }
+      result = { ...result, stats };
+    }
+    if (effects.masteryXp > 0) {
+      const ids = Object.keys(result.mastery) as Array<keyof typeof result.mastery>;
+      const target = ids
+        .filter(id => result.mastery[id].xp > previous.mastery[id].xp)
+        .sort((a,b) => (result.mastery[b].xp - previous.mastery[b].xp) - (result.mastery[a].xp - previous.mastery[a].xp))[0];
+      if (target) result = {
+        ...result,
+        mastery:{ ...result.mastery, [target]:{ ...result.mastery[target], xp:result.mastery[target].xp + effects.masteryXp } },
+      };
+    }
+  }
+
+  if (action.type === 'NEXT_MONTH' && (effects.fatigueRecovery || effects.stressRecovery)) {
+    const stats = {
+      ...result.stats,
+      fatigue:Math.max(0,result.stats.fatigue - effects.fatigueRecovery),
+      stress:Math.max(0,result.stats.stress - effects.stressRecovery),
+    };
+    result = { ...result, stats, condition:Base.deriveCondition(stats) };
+  }
+
+  if ((action.type === 'GIVE_GIFT' || action.type === 'GO_OUTING') && effects.bondAffectionBonus > 0) {
+    result = { ...result, stats:{ ...result.stats, affection:Math.min(100,result.stats.affection + effects.bondAffectionBonus) } };
+  }
+
+  if (action.type === 'FINISH_EXPEDITION_STAGE' && result.lastExpeditionResult?.accepted && effects.expeditionJourneyBonus > 0) {
+    result = applySpecializationJourneyBonus(result,seasonJourneyKey(previous.year,previous.month),effects.expeditionJourneyBonus);
+  }
+
+  return result;
+}
+
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
 
@@ -217,7 +299,8 @@ export function reducer(state:GameState,action:Action):GameState {
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  const next:GameState = { ...baseNext, ...persistentMeta(state) };
+  let next:GameState = { ...baseNext, ...persistentMeta(state) };
+  next = applySpecializationEffects(state,next,action);
   const kind = actionKind(action);
   if (!kind) return next;
   if (kind === 'expedition' && !next.lastExpeditionResult?.accepted) return next;
