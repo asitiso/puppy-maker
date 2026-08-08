@@ -1,10 +1,12 @@
 import type { AdvancedTalentId } from './advanced-talents';
+import type { CallingSignatureId } from './calling-signatures';
 import { expeditionGrade, expeditionStageDefinitions, type ExpeditionGrade, type ExpeditionStageId } from './expedition-regions';
 import type { ExpeditionIdentityModifiers } from './raising-expedition-effects';
 
 export type ExpeditionActionKind = 'attack' | 'dodge' | 'charge';
 export type ExpeditionCombatCondition = 'energetic' | 'normal' | 'focused' | 'tired';
 export type ExpeditionRelicModifierSummary = { attack: number; charge: number; dodge: number; all: number };
+export type ExpeditionActionCounts = Record<ExpeditionActionKind, number>;
 
 export type ExpeditionCombatInput = {
   strength: number;
@@ -18,6 +20,8 @@ export type ExpeditionCombatInput = {
   talents: readonly AdvancedTalentId[];
   relics: ExpeditionRelicModifierSummary;
   identity?: ExpeditionIdentityModifiers;
+  signatures?: readonly CallingSignatureId[];
+  boss?: boolean;
 };
 
 export type ExpeditionBattleState = {
@@ -25,6 +29,7 @@ export type ExpeditionBattleState = {
   score: number;
   pressureGuard: number;
   actionCount: number;
+  actionKinds: ExpeditionActionCounts;
 };
 
 export type ExpeditionBattleResult = {
@@ -33,6 +38,7 @@ export type ExpeditionBattleResult = {
   grade: ExpeditionGrade;
   fatigueDelta: number;
   stressDelta: number;
+  actionKinds: ExpeditionActionCounts;
 };
 
 const conditionMultiplier: Record<ExpeditionCombatCondition, number> = {
@@ -63,8 +69,31 @@ function talentBonus(talents: readonly AdvancedTalentId[], kind: ExpeditionActio
   return (active.has('steady_recovery') ? 0.04 : 0) + (active.has('deep_rest') ? 0.03 : 0);
 }
 
+function signatureBonus(battle: ExpeditionBattleState, kind: ExpeditionActionKind, input: ExpeditionCombatInput): number {
+  const signatures = new Set(input.signatures ?? []);
+  const boss = input.boss ?? stageFor(battle.stageId).boss;
+  let bonus = 0;
+  if (kind === 'attack') {
+    if (battle.actionKinds.attack === 0 && signatures.has('rally_strike')) bonus += 0.08;
+    if (boss && signatures.has('guardian_breaker')) bonus += 0.06;
+  } else if (kind === 'charge') {
+    if (battle.actionKinds.charge === 0 && signatures.has('mana_echo')) bonus += 0.08;
+    if (boss && signatures.has('astral_core')) bonus += 0.06;
+  } else if (battle.actionKinds.dodge === 0 && signatures.has('gentle_guard')) {
+    bonus += 0.10;
+  }
+  return clamp(bonus, 0, 0.16);
+}
+
+function withActionCount(battle: ExpeditionBattleState, kind: ExpeditionActionKind): Pick<ExpeditionBattleState, 'actionCount' | 'actionKinds'> {
+  return {
+    actionCount: battle.actionCount + 1,
+    actionKinds: { ...battle.actionKinds, [kind]: battle.actionKinds[kind] + 1 },
+  };
+}
+
 export function startExpeditionBattle(stageId: ExpeditionStageId): ExpeditionBattleState {
-  return { stageId, score: 0, pressureGuard: 0, actionCount: 0 };
+  return { stageId, score: 0, pressureGuard: 0, actionCount: 0, actionKinds: { attack:0, dodge:0, charge:0 } };
 }
 
 export function applyExpeditionAction(
@@ -79,27 +108,29 @@ export function applyExpeditionAction(
   const allBonus = clamp(input.relics.all, 0, 0.15);
   const advancedBonus = clamp(talentBonus(input.talents, kind), 0, 0.1);
   const identityBonus = clamp(input.identity?.[kind] ?? 0, 0, 0.1);
+  const callingBonus = signatureBonus(battle, kind, input);
+  const counts = withActionCount(battle, kind);
 
   if (kind === 'dodge') {
     const dodgeBonus = clamp(input.relics.dodge, 0, 0.2);
-    const guard = (18 + input.calmness * 0.34 + input.restMastery * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus + advancedBonus + identityBonus);
+    const guard = (18 + input.calmness * 0.34 + input.restMastery * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus + advancedBonus + identityBonus + callingBonus);
     return {
       ...battle,
       pressureGuard: battle.pressureGuard + Math.max(0, guard),
       score: battle.score + Math.round(Math.max(0, guard) * 0.55),
-      actionCount: battle.actionCount + 1,
+      ...counts,
     };
   }
 
   if (kind === 'attack') {
     const bonus = clamp(input.relics.attack, 0, 0.15);
-    const value = (70 + input.strength * 2.15 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus);
-    return { ...battle, score: battle.score + Math.max(0, Math.round(value)), actionCount: battle.actionCount + 1 };
+    const value = (70 + input.strength * 2.15 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+    return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
   }
 
   const bonus = clamp(input.relics.charge, 0, 0.15);
-  const value = (68 + input.magic * 2.2 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus);
-  return { ...battle, score: battle.score + Math.max(0, Math.round(value)), actionCount: battle.actionCount + 1 };
+  const value = (68 + input.magic * 2.2 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+  return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
 }
 
 export function finishExpeditionBattle(battle: ExpeditionBattleState): ExpeditionBattleResult {
@@ -111,5 +142,6 @@ export function finishExpeditionBattle(battle: ExpeditionBattleState): Expeditio
     grade: expeditionGrade(battle.score, stage.target),
     fatigueDelta: Math.max(0, Math.round(mitigatedPressure * 0.72)),
     stressDelta: Math.max(0, Math.round(mitigatedPressure * 0.48)),
+    actionKinds: { ...battle.actionKinds },
   };
 }
