@@ -28,6 +28,7 @@ import {
   seasonLegacyNodes,
   type SeasonLegacyNodeId,
 } from './season-legacy-board';
+import { seasonLegacyEffects } from './season-legacy-effects';
 import {
   emptySanctuaryLevels,
   resolveSanctuaryUpgrade,
@@ -162,13 +163,11 @@ function applySanctuaryRecovery(state:GameState):GameState {
   return { ...state, stats, condition:Base.deriveCondition(stats) };
 }
 
-function applySanctuaryObservatory(previous:GameState,next:GameState):GameState {
-  const bonus = sanctuaryEffects(previous.sanctuaryLevels ?? emptySanctuaryLevels()).expeditionJourneyBonus;
-  if (!bonus || !next.lastExpeditionResult?.accepted) return next;
-  const key = seasonJourneyKey(previous.year,previous.month);
-  const previousBonusScore = next.seasonJourneyScores[key] ?? 0;
-  const score = previousBonusScore + bonus;
-  const earned = newlyEarnedJourneyTiers(previousBonusScore,score,next.claimedSeasonJourneyTiers,key);
+function applyJourneyBonus(next:GameState,key:ReturnType<typeof seasonJourneyKey>,bonus:number,updateArchive:boolean):GameState {
+  if (bonus <= 0) return next;
+  const before = next.seasonJourneyScores[key] ?? 0;
+  const score = before + bonus;
+  const earned = newlyEarnedJourneyTiers(before,score,next.claimedSeasonJourneyTiers,key);
   const claims = [...next.claimedSeasonJourneyTiers];
   let gold = 0;
   let gems = 0;
@@ -179,11 +178,19 @@ function applySanctuaryObservatory(previous:GameState,next:GameState):GameState 
     gems += tier.reward.gems;
     tokens += tier.reward.tokens;
   }
+  const tiersCompleted = claims.filter(claim => claim.startsWith(`${key}:`)).length;
+  const history = updateArchive ? next.seasonJourneyHistory.map(entry => entry.key === key ? {
+    ...entry,
+    score,
+    tiersCompleted:Math.max(entry.tiersCompleted,tiersCompleted),
+    tokensEarned:entry.tokensEarned + tokens,
+  } : entry) : next.seasonJourneyHistory;
   return {
     ...next,
     seasonJourneyScores:{ ...next.seasonJourneyScores, [key]:score },
     claimedSeasonJourneyTiers:claims,
     seasonTokenBalances:{ ...next.seasonTokenBalances, [key]:(next.seasonTokenBalances[key] ?? 0) + tokens },
+    seasonJourneyHistory:history,
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:next.lastLiveOpsProgress ? {
@@ -193,6 +200,18 @@ function applySanctuaryObservatory(previous:GameState,next:GameState):GameState 
       tokensEarned:next.lastLiveOpsProgress.tokensEarned + tokens,
     } : next.lastLiveOpsProgress,
   };
+}
+
+function applyExpeditionMetaBonuses(previous:GameState,next:GameState):GameState {
+  if (!next.lastExpeditionResult?.accepted) return next;
+  const sanctuaryBonus = sanctuaryEffects(previous.sanctuaryLevels ?? emptySanctuaryLevels()).expeditionJourneyBonus;
+  const legacyBonus = seasonLegacyEffects(previous.unlockedSeasonLegacyNodes ?? []).expeditionJourneyBonus;
+  return applyJourneyBonus(next,seasonJourneyKey(previous.year,previous.month),sanctuaryBonus + legacyBonus,false);
+}
+
+function applyMonthlyLegacyJourney(previous:GameState,next:GameState):GameState {
+  const bonus = seasonLegacyEffects(previous.unlockedSeasonLegacyNodes ?? []).monthlyJourneyBonus;
+  return applyJourneyBonus(next,seasonJourneyKey(previous.year,previous.month),bonus,true);
 }
 
 export function reducer(state:GameState, action:Action):GameState {
@@ -276,10 +295,11 @@ export function reducer(state:GameState, action:Action):GameState {
   }
 
   if (action.type !== 'FINISH_TRAINING') {
-    const liveNext = Live.reducer(state,action);
+    let liveNext = Live.reducer(state,action);
     if (liveNext === state) return state;
+    if (action.type === 'NEXT_MONTH') liveNext = applyMonthlyLegacyJourney(state,preserveSeasonMeta(state,liveNext));
     let preserved = preserveSeasonMeta(state,liveNext);
-    if (action.type === 'FINISH_EXPEDITION_STAGE') preserved = applySanctuaryObservatory(state,preserved);
+    if (action.type === 'FINISH_EXPEDITION_STAGE') preserved = applyExpeditionMetaBonuses(state,preserved);
     if (action.type !== 'NEXT_MONTH') return preserved;
     preserved = applySanctuaryRecovery(preserved);
     const honored = applySeasonCompletionHonors(state,preserved);
@@ -326,7 +346,8 @@ export function reducer(state:GameState, action:Action):GameState {
     const rewardKey = `${weekKey}:${directive.id}`;
     if (!rewardedWeekly.includes(rewardKey)) rewardedWeekly.push(rewardKey);
   }
-  const tokensEarned = tierTokens + weekly.reward.tokens;
+  const legacyWeeklyTokens = weekly.completed.length * seasonLegacyEffects(state.unlockedSeasonLegacyNodes ?? []).weeklyTokenBonus;
+  const tokensEarned = tierTokens + weekly.reward.tokens + legacyWeeklyTokens;
   return {
     ...next,
     seasonJourneyScores:{ ...state.seasonJourneyScores, [journeyKey]:nextScore },
