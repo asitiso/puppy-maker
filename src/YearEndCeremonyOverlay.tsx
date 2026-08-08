@@ -4,6 +4,8 @@ import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import type { GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
+import { newlyUnlockedLegacyRelics } from './legacy-relic-discovery';
+import { legacyRelicDefinitions } from './legacy-relics';
 import { ceremonyRecord, shouldShowYearEndCeremony } from './year-end-ceremony';
 
 const storageKey = 'puppy-maker-year-ceremonies';
@@ -26,6 +28,9 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   const honor = annualHonor(record);
   const epilogue = annualEpilogue(record);
   const legacy = guardianLegacy(state.annualRecords);
+  const newRelics = newlyUnlockedLegacyRelics(state.annualRecords, record.id)
+    .map(id => legacyRelicDefinitions.find(item => item.id === id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const close = () => {
     const next = [...new Set([...acknowledged, record.id])];
     setAcknowledged(next);
@@ -44,6 +49,10 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
         <strong className="year-end-honor">✦ {honor.label}</strong>
         <span>{epilogue.narration}</span>
         <div className="year-end-headline">{annualRecordHeadline(record)}</div>
+        {newRelics.length > 0 && <div className="year-end-relics">
+          <small>NEW LEGACY RELIC</small>
+          {newRelics.map(relic => <div key={relic.id}><b>✦ {relic.label}</b><span>{relic.description}</span></div>)}
+        </div>}
         <div className="year-end-stats">
           <b>훈련 <i>{record.trainings}</i></b><b>외출 <i>{record.outings}</i></b><b>S등급 <i>{record.sGrades}</i></b>
           <b>기억 <i>{record.memories}</i></b><b>발견 <i>{record.discoveries}</i></b><b>인장 <i>{record.seasonStamps}/4</i></b>
