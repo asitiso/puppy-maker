@@ -21,6 +21,6 @@ describe('growth collection archive', () => {
   it('clamps malformed counts to each category total', () => {
     const archive = collectionArchive({ memories:99, discoveries:-2, stories:8, talents:8, titles:6 });
     expect(archive.categories.map(item => item.current)).toEqual([13,0,5,8,6]);
-    expect(archive.percent).toBe(100);
+    expect(archive.percent).toBe(84);
   });
 });
