@@ -14,9 +14,11 @@ import {
   type RandomEventId,
   type Screen,
   type SkillId,
+  type YearlyAmbitionId,
 } from './game';
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
+import { readAmbitionSelections } from './yearly-ambition-selection';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -157,13 +159,16 @@ type AppProps = {
   onAttendanceReady?: (claim: () => void) => void;
   onMailReady?: (claim: (mail: MailRewardId) => void) => void;
   onMonthlyFocusReady?: (setFocus: (focus: GameState['monthlyFocus']) => void) => void;
+  onYearlyAmbitionReady?: (setAmbition: (ambition: YearlyAmbitionId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
-      return hydrateGameState(raw);
+      const hydrated = hydrateGameState(raw);
+      const legacyAmbitions = readAmbitionSelections(JSON.parse(localStorage.getItem('puppy-maker-yearly-ambitions') || '{}'));
+      return { ...hydrated, yearlyAmbitions: { ...legacyAmbitions, ...hydrated.yearlyAmbitions } };
     } catch {
       return hydrateGameState(null);
     }
@@ -175,7 +180,11 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const claimAttendance = useCallback(() => dispatch({ type: 'CLAIM_ATTENDANCE' }), []);
   const claimMail = useCallback((mail: MailRewardId) => dispatch({ type: 'CLAIM_MAIL', mail }), []);
   const setMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => dispatch({ type: 'SET_MONTHLY_FOCUS', focus }), []);
-  useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
+  const setYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => dispatch({ type: 'SET_YEARLY_AMBITION', ambition }), []);
+  useEffect(() => {
+    localStorage.setItem('puppy-maker-save', JSON.stringify(state));
+    localStorage.removeItem('puppy-maker-yearly-ambitions');
+  }, [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
   useEffect(() => onClaimAchievementReady?.(claimAchievement), [claimAchievement, onClaimAchievementReady]);
@@ -184,6 +193,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onAttendanceReady?.(claimAttendance), [claimAttendance, onAttendanceReady]);
   useEffect(() => onMailReady?.(claimMail), [claimMail, onMailReady]);
   useEffect(() => onMonthlyFocusReady?.(setMonthlyFocus), [setMonthlyFocus, onMonthlyFocusReady]);
+  useEffect(() => onYearlyAmbitionReady?.(setYearlyAmbition), [setYearlyAmbition, onYearlyAmbitionReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
