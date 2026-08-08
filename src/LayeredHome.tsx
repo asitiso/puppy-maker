@@ -15,6 +15,8 @@ import {
 import {
   achievementDefinitions,
   collectionProgress,
+  currentAdvancedTalents,
+  currentCareerTitles,
   currentGuardianStatus,
   currentStoryChapters,
   eligibleAchievements,
@@ -23,6 +25,8 @@ import {
   type AchievementId,
   type GameState,
 } from './game';
+import { talentDefinitions } from './advanced-talents';
+import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
@@ -109,6 +113,10 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
   const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
   const storyOpen = new Set(currentStoryChapters(state));
+  const talents = currentAdvancedTalents(state);
+  const titles = currentCareerTitles(state);
+  const currentTitle = careerTitleDefinitions.find(item => item.id === titles[titles.length - 1]);
+  const talentLabels = talents.map(id => talentDefinitions.find(item => item.id === id)?.label).filter(Boolean);
   const highestMastery = Math.max(...Object.values(state.mastery).map(entry => masteryLevel(entry.xp)));
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
@@ -196,6 +204,9 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
           })}
         </div> : isBondPanel ? <div className="lh-panel-list">
           <button disabled><span>★</span><b>수호 등급<small>{guardian.next ? `다음 ${guardianRankDefinitions.find(item => item.id === guardian.next?.rank)?.label ?? ''}까지 ${guardian.next.threshold - guardian.points}점` : '최고 등급 달성'}</small></b><i>{guardianDefinition.label}</i></button>
+          <button disabled><span>◆</span><b>커리어 칭호<small>{titles.length ? `${titles.length}개 해금 · ${currentTitle?.description ?? ''}` : '장기 플레이 기록으로 새로운 칭호가 열려요.'}</small></b><i>{currentTitle?.label ?? '도전 중'}</i></button>
+          <button disabled><span>✦</span><b>고급 훈련 재능<small>{talentLabels.length ? talentLabels.join(' · ') : '숙련 Lv.3부터 계열별 재능이 열려요.'}</small></b><i>{talents.length} / {talentDefinitions.length}</i></button>
+          <button disabled><span>↗</span><b>커리어 기록<small>훈련 {state.careerRecords.trainings}회 · S등급 {state.careerRecords.sGrades}회 · 외출 {state.careerRecords.outings}회 · 선물 {state.careerRecords.gifts}회</small></b><i>BEST {state.careerRecords.bestScore}</i></button>
           <button disabled><span>♥</span><b>현재 관계</b><i>{relationshipLabels[rank]}</i></button>
           <button disabled><span>1</span><b>호감도</b><i>{state.stats.affection} / 100</i></button>
           <button disabled><span>2</span><b>수집한 기억</b><i>{collection.memories}개</i></button>
