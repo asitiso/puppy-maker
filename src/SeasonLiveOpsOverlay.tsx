@@ -2,6 +2,13 @@ import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
 import type { SeasonShopOfferId } from './season-shop';
 
+const seasonNames = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' } as const;
+const milestoneNames = {
+  first_keepsake:'첫 계절의 기억',
+  four_seasons:'사계절의 추억',
+  eight_seasons:'두 해의 계절 연대기',
+} as const;
+
 export default function SeasonLiveOpsOverlay({
   state,
   open,
@@ -62,12 +69,33 @@ export default function SeasonLiveOpsOverlay({
           </article>
         </div>
 
+        <article className="season-keepsake-block">
+          <div className="season-keepsake-heading">
+            <div><small>SEASON KEEPSAKES</small><h3>계절 기념품 컬렉션</h3></div>
+            <strong>{summary.keepsakes.total}개</strong>
+          </div>
+          <div className="season-keepsake-seasons">
+            {(Object.keys(seasonNames) as Array<keyof typeof seasonNames>).map(season => <div key={season}>
+              <span>{seasonNames[season]}</span><b>{summary.keepsakes.seasons[season]}</b>
+            </div>)}
+          </div>
+          <div className="season-keepsake-milestones">
+            {Object.entries(milestoneNames).map(([id,label]) => {
+              const claimed = summary.keepsakes.claimed.includes(id as keyof typeof milestoneNames);
+              return <span className={claimed ? 'is-claimed' : ''} key={id}>{claimed ? '✓' : '○'} {label}</span>;
+            })}
+          </div>
+          <p>{summary.keepsakes.nextMilestone
+            ? `다음 장기 보상 · ${milestoneNames[summary.keepsakes.nextMilestone.id]} ${summary.keepsakes.total}/${summary.keepsakes.nextMilestone.threshold}`
+            : '모든 계절 기념품 마일스톤을 달성했어요.'}</p>
+        </article>
+
         <article className="season-archive-block">
           <h3>지난 시즌 기록</h3>
           {summary.archive.length ? <div className="season-archive-list">{summary.archive.slice(0,6).map(record => <div key={record.key}>
             <span><b>{record.label}</b><small>{record.rank}</small></span>
             <strong>{record.score}P · {record.tiersCompleted}/10 · ✦{record.tokensEarned}</strong>
-          </div>)}</div> : <p>아직 заверш된 시즌 기록이 없어요.</p>}
+          </div>)}</div> : <p>아직 완료된 시즌 기록이 없어요.</p>}
         </article>
       </div>
     </section>
