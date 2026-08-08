@@ -18,6 +18,14 @@ import {
   type MonthlyCounters,
   type MonthlyMissionId,
 } from './monthly-missions';
+import {
+  guardianGrowthPoints,
+  guardianRank,
+  guardianRankDefinitions,
+  nextGuardianRank,
+  rewardableGuardianRanks,
+  type GuardianRankId,
+} from './guardian-rank';
 
 export {
   achievementDefinitions,
@@ -56,6 +64,7 @@ export type {
 
 export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } from './adventure';
 export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
+export type { GuardianRankId } from './guardian-rank';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -70,6 +79,7 @@ export interface GameState extends Core.GameState {
   monthlyCounters: MonthlyCounters;
   rewardedMonthlyMissions: MonthlyMissionId[];
   growthStreak: number;
+  rewardedGuardianRanks: GuardianRankId[];
 }
 
 export type Action =
@@ -85,6 +95,7 @@ export const initialState: GameState = {
   monthlyCounters: emptyMonthlyCounters(),
   rewardedMonthlyMissions: [],
   growthStreak: 0,
+  rewardedGuardianRanks: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -93,10 +104,7 @@ const finiteNumber = (value: unknown, fallback: number) => typeof value === 'num
 function hydrateExplorationXp(raw: unknown): Record<OutingLocationId, number> {
   const source = isRecord(raw) ? raw : {};
   const fallback = startingExplorationXp();
-  return Object.fromEntries(outingLocationIds.map(id => [
-    id,
-    Math.max(0, Math.floor(finiteNumber(source[id], fallback[id]))),
-  ])) as Record<OutingLocationId, number>;
+  return Object.fromEntries(outingLocationIds.map(id => [id, Math.max(0, Math.floor(finiteNumber(source[id], fallback[id])))])) as Record<OutingLocationId, number>;
 }
 
 function hydrateDiscoveries(raw: unknown): DiscoveryId[] {
@@ -107,15 +115,17 @@ function hydrateDiscoveries(raw: unknown): DiscoveryId[] {
 function hydrateMonthlyCounters(raw: unknown): MonthlyCounters {
   const source = isRecord(raw) ? raw : {};
   const fallback = emptyMonthlyCounters();
-  return Object.fromEntries((Object.keys(fallback) as MonthlyCounterKey[]).map(key => [
-    key,
-    Math.max(0, Math.floor(finiteNumber(source[key], 0))),
-  ])) as MonthlyCounters;
+  return Object.fromEntries((Object.keys(fallback) as MonthlyCounterKey[]).map(key => [key, Math.max(0, Math.floor(finiteNumber(source[key], 0)))])) as MonthlyCounters;
 }
 
 function hydrateRewardedMonthlyMissions(raw: unknown): MonthlyMissionId[] {
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((id): id is MonthlyMissionId => typeof id === 'string' && monthlyMissionIds.includes(id as MonthlyMissionId)))];
+}
+
+function hydrateRewardedGuardianRanks(raw: unknown): GuardianRankId[] {
+  if (!Array.isArray(raw)) return [];
+  return rewardableGuardianRanks.filter(id => raw.includes(id));
 }
 
 export function hydrateGameState(raw: unknown): GameState {
@@ -129,15 +139,34 @@ export function hydrateGameState(raw: unknown): GameState {
     monthlyCounters: hydrateMonthlyCounters(source.monthlyCounters),
     rewardedMonthlyMissions: hydrateRewardedMonthlyMissions(source.rewardedMonthlyMissions),
     growthStreak: Math.max(0, Math.floor(finiteNumber(source.growthStreak, 0))),
+    rewardedGuardianRanks: hydrateRewardedGuardianRanks(source.rewardedGuardianRanks),
   };
+}
+
+export function currentGuardianStatus(state: GameState) {
+  const points = guardianGrowthPoints({
+    memories: state.memories.length,
+    skills: Core.unlockedSkills(state).length,
+    discoveries: state.discoveries.length,
+    masteryLevels: Object.values(state.mastery).map(entry => Core.masteryLevel(entry.xp)),
+  });
+  return { points, rank: guardianRank(points), next: nextGuardianRank(points) };
+}
+
+function reconcileGuardianRewards(state: GameState): GameState {
+  const { points } = currentGuardianStatus(state);
+  const newlyEarned = guardianRankDefinitions
+    .filter(definition => definition.rewardGems > 0 && points >= definition.threshold)
+    .map(definition => definition.id)
+    .filter(id => !state.rewardedGuardianRanks.includes(id));
+  if (!newlyEarned.length) return state;
+  const reward = newlyEarned.reduce((sum, id) => sum + (guardianRankDefinitions.find(definition => definition.id === id)?.rewardGems ?? 0), 0);
+  return { ...state, gems: state.gems + reward, rewardedGuardianRanks: [...state.rewardedGuardianRanks, ...newlyEarned] };
 }
 
 function applyExplorationEventReward(state: GameState, event: ExplorationEventId | null): GameState {
   if (!event) return state;
-  if (event === 'glowing_tracks' || event === 'street_performance' || event === 'silver_fish') {
-    return { ...state, gold: state.gold + 50 };
-  }
-
+  if (event === 'glowing_tracks' || event === 'street_performance' || event === 'silver_fish') return { ...state, gold: state.gold + 50 };
   const item: GiftItemId = event === 'ancient_tree' ? 'star_cookie' : event === 'wand_repair' ? 'fox_charm' : 'herb_tea';
   return { ...state, inventory: { ...state.inventory, [item]: state.inventory[item] + 1 } };
 }
@@ -145,8 +174,7 @@ function applyExplorationEventReward(state: GameState, event: ExplorationEventId
 function automaticExplorationRoll(state: GameState, location: OutingLocationId): number {
   const sequence = [0.12, 0.82, 0.52, 0.36, 0.9, 0.58, 0.15, 0.5, 0.35, 0.95];
   const locationOffset = outingLocationIds.indexOf(location) * 3;
-  const index = (state.explorationXp[location] + state.month + locationOffset) % sequence.length;
-  return sequence[index];
+  return sequence[(state.explorationXp[location] + state.month + locationOffset) % sequence.length];
 }
 
 function applyMonthlyProgress(state: GameState, counter: MonthlyCounterKey): GameState {
@@ -154,7 +182,6 @@ function applyMonthlyProgress(state: GameState, counter: MonthlyCounterKey): Gam
   const completed = completedMonthlyMissions(monthlyCounters);
   const newlyRewarded = completed.filter(id => !state.rewardedMonthlyMissions.includes(id));
   if (!newlyRewarded.length) return { ...state, monthlyCounters };
-
   let gold = state.gold;
   let gems = state.gems;
   for (const id of newlyRewarded) {
@@ -163,13 +190,7 @@ function applyMonthlyProgress(state: GameState, counter: MonthlyCounterKey): Gam
     gold += definition.reward.gold ?? 0;
     gems += definition.reward.gems ?? 0;
   }
-  return {
-    ...state,
-    gold,
-    gems,
-    monthlyCounters,
-    rewardedMonthlyMissions: [...state.rewardedMonthlyMissions, ...newlyRewarded],
-  };
+  return { ...state, gold, gems, monthlyCounters, rewardedMonthlyMissions: [...state.rewardedMonthlyMissions, ...newlyRewarded] };
 }
 
 function preserveExtendedState(state: GameState, next: Core.GameState): GameState {
@@ -181,6 +202,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     monthlyCounters: state.monthlyCounters,
     rewardedMonthlyMissions: state.rewardedMonthlyMissions,
     growthStreak: state.growthStreak,
+    rewardedGuardianRanks: state.rewardedGuardianRanks,
   };
 }
 
@@ -191,9 +213,7 @@ export function reducer(state: GameState, action: Action): GameState {
     const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
     const outcome = pickExplorationOutcome(action.location, state.explorationXp[action.location], state.discoveries, roll);
     const base = Core.reducer(state, { type: 'GO_OUTING', location: action.location }) as Core.GameState;
-    const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery)
-      ? [...state.discoveries, outcome.discovery]
-      : state.discoveries;
+    const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery) ? [...state.discoveries, outcome.discovery] : state.discoveries;
     const progressed: GameState = {
       ...base,
       explorationXp: { ...state.explorationXp, [action.location]: state.explorationXp[action.location] + 1 },
@@ -202,19 +222,20 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyCounters: state.monthlyCounters,
       rewardedMonthlyMissions: state.rewardedMonthlyMissions,
       growthStreak: state.growthStreak,
+      rewardedGuardianRanks: state.rewardedGuardianRanks,
     };
-    return applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings');
+    return reconcileGuardianRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
 
   if (action.type === 'FINISH_TRAINING') {
     const next = Core.reducer(state, action as Core.Action);
-    return applyMonthlyProgress(preserveExtendedState(state, next), 'trainings');
+    return reconcileGuardianRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
     const next = Core.reducer(state, action as Core.Action);
     if (next === state) return state;
-    return applyMonthlyProgress(preserveExtendedState(state, next), 'gifts');
+    return reconcileGuardianRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'gifts'));
   }
 
   if (action.type === 'NEXT_MONTH') {
@@ -222,7 +243,7 @@ export function reducer(state: GameState, action: Action): GameState {
     const growthStreak = allComplete ? state.growthStreak + 1 : 0;
     const coreNext = Core.reducer(state, action as Core.Action);
     const streakBonus = growthStreak > 0 && growthStreak % 3 === 0 ? 3 : 0;
-    return {
+    return reconcileGuardianRewards({
       ...coreNext,
       gems: coreNext.gems + streakBonus,
       explorationXp: state.explorationXp,
@@ -231,10 +252,11 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyCounters: emptyMonthlyCounters(),
       rewardedMonthlyMissions: [],
       growthStreak,
-    };
+      rewardedGuardianRanks: state.rewardedGuardianRanks,
+    });
   }
 
   const next = Core.reducer(state, action as Core.Action);
   if (next === state) return state;
-  return preserveExtendedState(state, next);
+  return reconcileGuardianRewards(preserveExtendedState(state, next));
 }
