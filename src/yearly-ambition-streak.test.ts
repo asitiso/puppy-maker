@@ -26,7 +26,7 @@ describe('yearly ambition streak', () => {
   });
 
   it('resets when the latest year ambition is incomplete', () => {
-    const records = [record(1,30), record(2,60), record(3,100)];
+    const records = [record(1,30), record(2,60), record(3,80)];
     expect(ambitionStreak(records, { 1:'training', 2:'training', 3:'training' })).toBe(0);
   });
 
