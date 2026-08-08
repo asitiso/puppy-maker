@@ -1,5 +1,6 @@
 import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
+import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 
 const seasonNames = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' } as const;
@@ -14,6 +15,7 @@ const masteryRewardNames = {
   guardian:'별빛 계절수호자',
   eternal:'영원의 계절수호자',
 } as const;
+const legacyBranchNames = { chronicle:'연대기', bond:'유대', expedition:'원정' } as const;
 
 export default function SeasonLiveOpsOverlay({
   state,
@@ -21,12 +23,14 @@ export default function SeasonLiveOpsOverlay({
   onOpen,
   onClose,
   onPurchase,
+  onLegacyUnlock,
 }:{
   state:GameState;
   open:boolean;
   onOpen:()=>void;
   onClose:()=>void;
   onPurchase:(offer:SeasonShopOfferId)=>void;
+  onLegacyUnlock:(nodeId:SeasonLegacyNodeId)=>void;
 }) {
   const summary = liveOpsUiSummary(state);
   const masteryProgress = summary.mastery.nextThreshold
@@ -68,6 +72,29 @@ export default function SeasonLiveOpsOverlay({
         <p className="season-mastery-next">{summary.masteryRewards.next
           ? `다음 Mastery 보상 · ${masteryRewardNames[summary.masteryRewards.next.rank]} ${summary.mastery.score}/${summary.masteryRewards.next.threshold}`
           : '모든 Season Mastery 보상을 획득했어요.'}</p>
+
+        <article className="season-legacy-block">
+          <div className="season-legacy-heading">
+            <div><small>SEASON LEGACY</small><h3>계절 유산 보드</h3></div>
+            <strong>LP {summary.legacy.available} <small>/ {summary.legacy.earned}</small></strong>
+          </div>
+          <p>완주 시즌과 시즌 명예가 Legacy Point가 됩니다. 해금한 유산은 영구 보존돼요.</p>
+          <div className="season-legacy-branches">
+            {(Object.keys(legacyBranchNames) as Array<keyof typeof legacyBranchNames>).map(branch => <div className="season-legacy-branch" key={branch}>
+              <b>{legacyBranchNames[branch]}</b>
+              {summary.legacy.nodes.filter(node => node.branch === branch).map(node => <button
+                key={node.id}
+                className={node.unlocked ? 'is-unlocked' : node.affordable ? 'is-affordable' : ''}
+                disabled={node.unlocked || !node.affordable}
+                onClick={() => onLegacyUnlock(node.id)}
+              >
+                <span><strong>{node.unlocked ? '✓ ' : ''}{node.label}</strong><small>{node.description}</small></span>
+                <em>{node.unlocked ? '해금' : `${node.cost} LP`}</em>
+                <i>{node.reward.gold ? `${node.reward.gold}G` : ''}{node.reward.gold && node.reward.gems ? ' · ' : ''}{node.reward.gems ? `◆${node.reward.gems}` : ''}</i>
+              </button>)}
+            </div>)}
+          </div>
+        </article>
 
         <div className="season-live-score">
           <div><span>여정 점수</span><b>{summary.season.score}</b></div>
