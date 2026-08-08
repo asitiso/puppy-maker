@@ -36,6 +36,7 @@ export type WorldProgressFeedback = {
   seasonPoints: number;
   eventSeasonPoints: number;
   eventMaterialBonus: number;
+  seasonTiersClaimed: ExpeditionSeasonTier[];
   completedContracts: WorldContractId[];
 };
 
@@ -171,6 +172,23 @@ function applyRenownRewards(state:GameState, region:ExpeditionRegionId, nextReno
   return { rewarded, gold, gems };
 }
 
+function applySeasonTierRewards(state:GameState, seasonKey:string, nextScore:number) {
+  const claims = [...state.claimedExpeditionSeasonTiers];
+  const claimed: ExpeditionSeasonTier[] = [];
+  let gold = 0;
+  let gems = 0;
+  for (const tier of expeditionSeasonTiers) {
+    if (nextScore < tier.threshold) continue;
+    const key = expeditionSeasonClaimKey(seasonKey as `${number}-${'spring'|'summer'|'autumn'|'winter'}`, tier.tier);
+    if (claims.includes(key)) continue;
+    claims.push(key);
+    claimed.push(tier.tier);
+    gold += tier.reward.gold;
+    gems += tier.reward.gems;
+  }
+  return { claims, claimed, gold, gems };
+}
+
 export function reducer(state:GameState, action:Action): GameState {
   if (action.type === 'RESET') return initialState;
 
@@ -207,10 +225,12 @@ export function reducer(state:GameState, action:Action): GameState {
     const eventBonus = worldEventExpeditionBonus(event, stage.region, summary.grade);
     const seasonKey = expeditionSeasonKey(state.year, state.month);
     const seasonPoints = expeditionSeasonPoints(summary.grade, firstBossClear) + eventBonus.seasonPoints;
+    const nextSeasonScore = (state.expeditionSeasonScores[seasonKey] ?? 0) + seasonPoints;
     const expeditionSeasonScores = {
       ...state.expeditionSeasonScores,
-      [seasonKey]:(state.expeditionSeasonScores[seasonKey] ?? 0) + seasonPoints,
+      [seasonKey]:nextSeasonScore,
     };
+    const seasonRewards = applySeasonTierRewards(state, seasonKey, nextSeasonScore);
 
     const contracts = advanceWorldContracts({
       year:state.year,
@@ -235,13 +255,13 @@ export function reducer(state:GameState, action:Action): GameState {
       regionalRenown:nextRegionalRenown,
       rewardedRenownLevels:renownRewards.rewarded,
       expeditionSeasonScores,
-      claimedExpeditionSeasonTiers:state.claimedExpeditionSeasonTiers,
+      claimedExpeditionSeasonTiers:seasonRewards.claims,
       worldContractProgress:contracts.progress,
       rewardedWorldContracts:contracts.rewardedKeys,
       expeditionMaterials,
       lastExpeditionResult,
-      gold:baseNext.gold + renownRewards.gold + contracts.reward.gold,
-      gems:baseNext.gems + renownRewards.gems + contracts.reward.gems,
+      gold:baseNext.gold + renownRewards.gold + seasonRewards.gold + contracts.reward.gold,
+      gems:baseNext.gems + renownRewards.gems + seasonRewards.gems + contracts.reward.gems,
       lastWorldProgress:{
         region:stage.region,
         renownGain,
@@ -249,6 +269,7 @@ export function reducer(state:GameState, action:Action): GameState {
         seasonPoints,
         eventSeasonPoints:eventBonus.seasonPoints,
         eventMaterialBonus:eventBonus.materialBonus,
+        seasonTiersClaimed:seasonRewards.claimed,
         completedContracts:contracts.newlyCompleted,
       },
     };
