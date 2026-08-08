@@ -1,0 +1,4 @@
+import type { GameState } from '../game';
+export type EndingId='guardian'|'sage'|'healer'|'explorer'|'companion'|'balanced';
+export function endingScores(state:GameState):Record<EndingId,number>{const p=state.personality,m=state.mastery,s=state.stats;return {guardian:p.courage*2+m.hunt.xp*4+s.strength,sage:p.curiosity*2+m.magic.xp*4+s.magic+s.intelligence*.5,healer:p.kindness*2+m.herb.xp*4+s.morality+s.affection*.5,explorer:p.curiosity+p.courage+m.herb.xp*2+m.hunt.xp*2,companion:p.kindness*2+s.affection*1.5+m.rest.xp*3,balanced:p.calmness+s.morality+(m.hunt.xp+m.magic.xp+m.herb.xp+m.rest.xp)*1.5};}
+export function leadingEndingSeed(state:GameState):EndingId{const scores=endingScores(state);return (Object.keys(scores) as EndingId[]).reduce((best,id)=>scores[id]>scores[best]?id:best,'guardian');}
