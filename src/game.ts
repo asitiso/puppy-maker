@@ -26,6 +26,12 @@ import {
   rewardableGuardianRanks,
   type GuardianRankId,
 } from './guardian-rank';
+import {
+  eligibleStoryChapters,
+  storyChapterDefinitions,
+  storyChapterIds,
+  type StoryChapterId,
+} from './story-chapters';
 
 export {
   achievementDefinitions,
@@ -65,6 +71,7 @@ export type {
 export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } from './adventure';
 export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
 export type { GuardianRankId } from './guardian-rank';
+export type { StoryChapterId } from './story-chapters';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -80,6 +87,7 @@ export interface GameState extends Core.GameState {
   rewardedMonthlyMissions: MonthlyMissionId[];
   growthStreak: number;
   rewardedGuardianRanks: GuardianRankId[];
+  rewardedStoryChapters: StoryChapterId[];
 }
 
 export type Action =
@@ -96,6 +104,7 @@ export const initialState: GameState = {
   rewardedMonthlyMissions: [],
   growthStreak: 0,
   rewardedGuardianRanks: [],
+  rewardedStoryChapters: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -128,6 +137,11 @@ function hydrateRewardedGuardianRanks(raw: unknown): GuardianRankId[] {
   return rewardableGuardianRanks.filter(id => raw.includes(id));
 }
 
+function hydrateRewardedStoryChapters(raw: unknown): StoryChapterId[] {
+  if (!Array.isArray(raw)) return [];
+  return storyChapterIds.filter(id => raw.includes(id));
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -140,6 +154,7 @@ export function hydrateGameState(raw: unknown): GameState {
     rewardedMonthlyMissions: hydrateRewardedMonthlyMissions(source.rewardedMonthlyMissions),
     growthStreak: Math.max(0, Math.floor(finiteNumber(source.growthStreak, 0))),
     rewardedGuardianRanks: hydrateRewardedGuardianRanks(source.rewardedGuardianRanks),
+    rewardedStoryChapters: hydrateRewardedStoryChapters(source.rewardedStoryChapters),
   };
 }
 
@@ -153,6 +168,16 @@ export function currentGuardianStatus(state: GameState) {
   return { points, rank: guardianRank(points), next: nextGuardianRank(points) };
 }
 
+export function currentStoryChapters(state: GameState): StoryChapterId[] {
+  return eligibleStoryChapters({
+    memories: state.memories,
+    visitedOutings: state.visitedOutings,
+    affection: state.stats.affection,
+    guardianRank: currentGuardianStatus(state).rank,
+    discoveries: state.discoveries.length,
+  });
+}
+
 function reconcileGuardianRewards(state: GameState): GameState {
   const { points } = currentGuardianStatus(state);
   const newlyEarned = guardianRankDefinitions
@@ -162,6 +187,22 @@ function reconcileGuardianRewards(state: GameState): GameState {
   if (!newlyEarned.length) return state;
   const reward = newlyEarned.reduce((sum, id) => sum + (guardianRankDefinitions.find(definition => definition.id === id)?.rewardGems ?? 0), 0);
   return { ...state, gems: state.gems + reward, rewardedGuardianRanks: [...state.rewardedGuardianRanks, ...newlyEarned] };
+}
+
+function reconcileStoryRewards(state: GameState): GameState {
+  const eligible = currentStoryChapters(state);
+  const newlyOpened = eligible.filter(id => !state.rewardedStoryChapters.includes(id));
+  if (!newlyOpened.length) return state;
+  const reward = newlyOpened.reduce((sum, id) => sum + (storyChapterDefinitions.find(chapter => chapter.id === id)?.rewardGems ?? 0), 0);
+  return {
+    ...state,
+    gems: state.gems + reward,
+    rewardedStoryChapters: storyChapterIds.filter(id => state.rewardedStoryChapters.includes(id) || newlyOpened.includes(id)),
+  };
+}
+
+function reconcileProgressRewards(state: GameState): GameState {
+  return reconcileStoryRewards(reconcileGuardianRewards(state));
 }
 
 function applyExplorationEventReward(state: GameState, event: ExplorationEventId | null): GameState {
@@ -203,6 +244,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     rewardedMonthlyMissions: state.rewardedMonthlyMissions,
     growthStreak: state.growthStreak,
     rewardedGuardianRanks: state.rewardedGuardianRanks,
+    rewardedStoryChapters: state.rewardedStoryChapters,
   };
 }
 
@@ -223,19 +265,20 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedMonthlyMissions: state.rewardedMonthlyMissions,
       growthStreak: state.growthStreak,
       rewardedGuardianRanks: state.rewardedGuardianRanks,
+      rewardedStoryChapters: state.rewardedStoryChapters,
     };
-    return reconcileGuardianRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
+    return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
   }
 
   if (action.type === 'FINISH_TRAINING') {
     const next = Core.reducer(state, action as Core.Action);
-    return reconcileGuardianRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'trainings'));
+    return reconcileProgressRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'trainings'));
   }
 
   if (action.type === 'GIVE_GIFT') {
     const next = Core.reducer(state, action as Core.Action);
     if (next === state) return state;
-    return reconcileGuardianRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'gifts'));
+    return reconcileProgressRewards(applyMonthlyProgress(preserveExtendedState(state, next), 'gifts'));
   }
 
   if (action.type === 'NEXT_MONTH') {
@@ -243,7 +286,7 @@ export function reducer(state: GameState, action: Action): GameState {
     const growthStreak = allComplete ? state.growthStreak + 1 : 0;
     const coreNext = Core.reducer(state, action as Core.Action);
     const streakBonus = growthStreak > 0 && growthStreak % 3 === 0 ? 3 : 0;
-    return reconcileGuardianRewards({
+    return reconcileProgressRewards({
       ...coreNext,
       gems: coreNext.gems + streakBonus,
       explorationXp: state.explorationXp,
@@ -253,10 +296,11 @@ export function reducer(state: GameState, action: Action): GameState {
       rewardedMonthlyMissions: [],
       growthStreak,
       rewardedGuardianRanks: state.rewardedGuardianRanks,
+      rewardedStoryChapters: state.rewardedStoryChapters,
     });
   }
 
   const next = Core.reducer(state, action as Core.Action);
   if (next === state) return state;
-  return reconcileGuardianRewards(preserveExtendedState(state, next));
+  return reconcileProgressRewards(preserveExtendedState(state, next));
 }
