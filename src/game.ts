@@ -13,6 +13,7 @@ import {
   weeklyDirectives,
 } from './weekly-directives';
 import { resolveSeasonPurchase, type SeasonShopOfferId } from './season-shop';
+import { newlyEarnedKeepsakeMilestones } from './season-keepsakes';
 
 export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId }):Live.GameState {
   if (action.type === 'PURCHASE_SEASON_OFFER') {
@@ -34,13 +35,19 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
       const key = id as keyof typeof expeditionMaterials;
       expeditionMaterials[key] += amount ?? 0;
     }
+    const seasonShopPurchases = [...state.seasonShopPurchases,result.purchaseKey];
+    const keepsakeMilestones = newlyEarnedKeepsakeMilestones(seasonShopPurchases,state.claimedSeasonKeepsakeMilestones);
+    const keepsakeGold = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gold,0);
+    const keepsakeGems = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gems,0);
     return {
       ...state,
-      gold:state.gold + result.reward.gold,
+      gold:state.gold + result.reward.gold + keepsakeGold,
+      gems:state.gems + keepsakeGems,
       inventory,
       expeditionMaterials,
       seasonTokenBalances:{ ...state.seasonTokenBalances, [journeyKey]:result.tokens },
-      seasonShopPurchases:[...state.seasonShopPurchases,result.purchaseKey],
+      seasonShopPurchases,
+      claimedSeasonKeepsakeMilestones:[...state.claimedSeasonKeepsakeMilestones,...keepsakeMilestones.map(item => item.id)],
     };
   }
 
@@ -89,6 +96,7 @@ export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCH
     rewardedWeeklyDirectives:rewardedWeekly,
     seasonJourneyHistory:state.seasonJourneyHistory,
     seasonShopPurchases:state.seasonShopPurchases,
+    claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones,
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
