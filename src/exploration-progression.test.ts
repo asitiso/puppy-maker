@@ -30,11 +30,12 @@ describe('persistent exploration progression', () => {
     expect(result.memories).toContain('forest_memory');
   });
 
-  it('applies a location event reward without removing the standard outing reward', () => {
+  it('applies a location event reward and first-outing bond reward without removing the standard outing reward', () => {
     const result = reducer(initialState, { type: 'GO_OUTING', location: 'forest', eventRoll: 0 });
     expect(result.explorationXp.forest).toBe(1);
-    expect(result.gold).toBe(initialState.gold + 50);
+    expect(result.gold).toBe(initialState.gold + 150);
     expect(result.inventory.star_cookie).toBe(initialState.inventory.star_cookie + 1);
+    expect(result.unlockedBondScenes).toContain('favorite_place');
   });
 
   it('persists a newly discovered hidden item exactly once', () => {
