@@ -54,6 +54,8 @@ import {
 } from './career-records';
 import { smartSchedule } from './smart-schedule';
 import {
+  completesFourSeasons,
+  fourSeasonCompletionRewardGems,
   seasonStampDefinitions,
   seasonStampIds,
   stampForOuting,
@@ -333,9 +335,10 @@ function applySeasonStampReward(state: GameState, month: number, location: Outin
   const stamp = stampForOuting(month, location);
   if (!stamp || state.seasonStamps.includes(stamp)) return state;
   const rewardGems = seasonStampDefinitions.find(item => item.id === stamp)?.rewardGems ?? 0;
+  const completionReward = completesFourSeasons(state.seasonStamps, stamp) ? fourSeasonCompletionRewardGems : 0;
   return {
     ...state,
-    gems: state.gems + rewardGems,
+    gems: state.gems + rewardGems + completionReward,
     seasonStamps: [...state.seasonStamps, stamp],
   };
 }
