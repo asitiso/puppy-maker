@@ -21,6 +21,16 @@ describe('world UI summaries', () => {
     expect(summary.contracts.every(item => item.progress === 0 && item.rewarded === false)).toBe(true);
   });
 
+  it('provides a compact home-card model without React recomputing labels', () => {
+    const summary = worldUiSummary(initialState);
+    expect(summary.homeCard).toEqual({
+      eyebrow:'WORLD PROGRESS',
+      title:'별똥별 흔적',
+      seasonLabel:'봄 원정 0 / 50',
+      contractLabel:'월간 의뢰 0 / 3',
+    });
+  });
+
   it('reports tier progress and already claimed rewards', () => {
     const state: GameState = {
       ...initialState,
