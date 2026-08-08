@@ -13,14 +13,20 @@ import {
   weeklyDirectives,
 } from './weekly-directives';
 import { resolveSeasonPurchase, type SeasonShopOfferId } from './season-shop';
-import { newlyEarnedKeepsakeMilestones } from './season-keepsakes';
+import { newlyEarnedKeepsakeMilestones, seasonKeepsakeCollection } from './season-keepsakes';
 import {
   newlyEarnedSeasonHonors,
   type SeasonCompletionHonorId,
 } from './season-completion-honors';
+import { seasonMasteryScore } from './season-mastery-rank';
+import {
+  newlyEarnedSeasonMasteryRewards,
+  type SeasonMasteryRewardRank,
+} from './season-mastery-rewards';
 
 export type GameState = Live.GameState & {
   claimedSeasonCompletionHonors:SeasonCompletionHonorId[];
+  claimedSeasonMasteryRanks:SeasonMasteryRewardRank[];
 };
 
 export type Action = Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId };
@@ -28,9 +34,11 @@ export type Action = Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:Seaso
 export const initialState:GameState = {
   ...Live.initialState,
   claimedSeasonCompletionHonors:[],
+  claimedSeasonMasteryRanks:[],
 };
 
 const honorIds:SeasonCompletionHonorId[] = ['first_complete','four_seasons','perfect_year','eight_complete'];
+const masteryRewardRanks:SeasonMasteryRewardRank[] = ['traveler','chronicler','guardian','eternal'];
 const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function hydrateSeasonCompletionHonors(raw:unknown):SeasonCompletionHonorId[] {
@@ -38,11 +46,17 @@ function hydrateSeasonCompletionHonors(raw:unknown):SeasonCompletionHonorId[] {
   return [...new Set(raw.filter((value):value is SeasonCompletionHonorId => typeof value === 'string' && honorIds.includes(value as SeasonCompletionHonorId)))];
 }
 
+function hydrateSeasonMasteryRanks(raw:unknown):SeasonMasteryRewardRank[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is SeasonMasteryRewardRank => typeof value === 'string' && masteryRewardRanks.includes(value as SeasonMasteryRewardRank)))];
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
     ...Live.hydrateGameState(raw),
     claimedSeasonCompletionHonors:hydrateSeasonCompletionHonors(source.claimedSeasonCompletionHonors),
+    claimedSeasonMasteryRanks:hydrateSeasonMasteryRanks(source.claimedSeasonMasteryRanks),
   };
 }
 
@@ -51,6 +65,7 @@ function preserveSeasonMeta(state:GameState, next:Live.GameState):GameState {
   return {
     ...next,
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
+    claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
   };
 }
 
@@ -63,6 +78,22 @@ function applySeasonCompletionHonors(previous:GameState, next:GameState):GameSta
     gold:next.gold + earned.reduce((sum,item) => sum + item.reward.gold,0),
     gems:next.gems + earned.reduce((sum,item) => sum + item.reward.gems,0),
     claimedSeasonCompletionHonors:[...claimed,...earned.map(item => item.id)],
+  };
+}
+
+function applySeasonMasteryRewards(previous:GameState, next:GameState):GameState {
+  const claimed = previous.claimedSeasonMasteryRanks ?? [];
+  const keepsakes = seasonKeepsakeCollection(next.seasonShopPurchases).total;
+  const completedSeasons = next.seasonJourneyHistory.filter(entry => entry.tiersCompleted >= 10).length;
+  const honors = next.claimedSeasonCompletionHonors.length;
+  const score = seasonMasteryScore({ completedSeasons, keepsakes, honors });
+  const earned = newlyEarnedSeasonMasteryRewards(score,claimed);
+  if (!earned.length) return { ...next, claimedSeasonMasteryRanks:claimed };
+  return {
+    ...next,
+    gold:next.gold + earned.reduce((sum,item) => sum + item.reward.gold,0),
+    gems:next.gems + earned.reduce((sum,item) => sum + item.reward.gems,0),
+    claimedSeasonMasteryRanks:[...claimed,...earned.map(item => item.rank)],
   };
 }
 
@@ -93,7 +124,7 @@ export function reducer(state:GameState, action:Action):GameState {
     const keepsakeMilestones = newlyEarnedKeepsakeMilestones(seasonShopPurchases,claimedMilestones);
     const keepsakeGold = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gold,0);
     const keepsakeGems = keepsakeMilestones.reduce((sum,item) => sum + item.reward.gems,0);
-    return {
+    const purchased:GameState = {
       ...state,
       gold:state.gold + result.reward.gold + keepsakeGold,
       gems:state.gems + keepsakeGems,
@@ -102,14 +133,18 @@ export function reducer(state:GameState, action:Action):GameState {
       seasonTokenBalances:{ ...state.seasonTokenBalances, [journeyKey]:result.tokens },
       seasonShopPurchases,
       claimedSeasonKeepsakeMilestones:[...claimedMilestones,...keepsakeMilestones.map(item => item.id)],
+      claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
     };
+    return applySeasonMasteryRewards(state,purchased);
   }
 
   if (action.type !== 'FINISH_TRAINING') {
     const liveNext = Live.reducer(state,action);
     if (liveNext === state) return state;
     const preserved = preserveSeasonMeta(state,liveNext);
-    return action.type === 'NEXT_MONTH' ? applySeasonCompletionHonors(state,preserved) : preserved;
+    if (action.type !== 'NEXT_MONTH') return preserved;
+    const honored = applySeasonCompletionHonors(state,preserved);
+    return applySeasonMasteryRewards(state,honored);
   }
 
   const baseNext = Base.reducer(state,action as Base.Action);
@@ -118,6 +153,7 @@ export function reducer(state:GameState, action:Action):GameState {
     ...state,
     ...baseNext,
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
+    claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
   };
   const weekKey = weeklyDirectiveKey(state.year,state.month,state.week);
   const directives = weeklyDirectives(state.year,state.month,state.week);
@@ -161,6 +197,7 @@ export function reducer(state:GameState, action:Action):GameState {
     seasonShopPurchases:state.seasonShopPurchases,
     claimedSeasonKeepsakeMilestones:state.claimedSeasonKeepsakeMilestones ?? [],
     claimedSeasonCompletionHonors:state.claimedSeasonCompletionHonors ?? [],
+    claimedSeasonMasteryRanks:state.claimedSeasonMasteryRanks ?? [],
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
