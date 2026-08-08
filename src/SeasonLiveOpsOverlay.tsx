@@ -90,6 +90,24 @@ export default function SeasonLiveOpsOverlay({
             : '모든 계절 기념품 마일스톤을 달성했어요.'}</p>
         </article>
 
+        <article className="season-honor-block">
+          <div className="season-honor-heading">
+            <div><small>SEASON HONORS</small><h3>시즌 완주 명예</h3></div>
+            <strong>{summary.honors.progress.completedSeasons} 시즌 완주</strong>
+          </div>
+          <div className="season-honor-stats">
+            <span>완주 계절 <b>{summary.honors.progress.completedSeasonTypes}/4</b></span>
+            <span>퍼펙트 연도 <b>{summary.honors.progress.perfectYears}</b></span>
+          </div>
+          <div className="season-honor-list">
+            {summary.honors.items.map(item => <div className={item.claimed ? 'is-claimed' : ''} key={item.id}>
+              <span><b>{item.claimed ? '✓ ' : ''}{item.label}</b><small>{item.description}</small></span>
+              <strong>{item.claimed ? '획득' : `${Math.min(item.current,item.threshold)}/${item.threshold}`}</strong>
+              <em>{item.reward.gold ? `${item.reward.gold}G` : ''}{item.reward.gold && item.reward.gems ? ' · ' : ''}{item.reward.gems ? `◆${item.reward.gems}` : ''}</em>
+            </div>)}
+          </div>
+        </article>
+
         <article className="season-archive-block">
           <h3>지난 시즌 기록</h3>
           {summary.archive.length ? <div className="season-archive-list">{summary.archive.slice(0,6).map(record => <div key={record.key}>
