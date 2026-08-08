@@ -8,6 +8,9 @@ import {
   trainingGrade,
   type AchievementId,
   type ActivityId,
+  type ExpeditionCraftingRecipeId,
+  type ExpeditionRelicId,
+  type ExpeditionStageId,
   type GameState,
   type MailRewardId,
   type MemoryId,
@@ -160,9 +163,13 @@ type AppProps = {
   onMailReady?: (claim: (mail: MailRewardId) => void) => void;
   onMonthlyFocusReady?: (setFocus: (focus: GameState['monthlyFocus']) => void) => void;
   onYearlyAmbitionReady?: (setAmbition: (ambition: YearlyAmbitionId) => void) => void;
+  onExpeditionFinishReady?: (finish: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) => void;
+  onExpeditionEquipReady?: (equip: (relic: ExpeditionRelicId) => void) => void;
+  onExpeditionUnequipReady?: (unequip: (relic: ExpeditionRelicId) => void) => void;
+  onExpeditionCraftReady?: (craft: (recipe: ExpeditionCraftingRecipeId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -181,6 +188,10 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const claimMail = useCallback((mail: MailRewardId) => dispatch({ type: 'CLAIM_MAIL', mail }), []);
   const setMonthlyFocus = useCallback((focus: GameState['monthlyFocus']) => dispatch({ type: 'SET_MONTHLY_FOCUS', focus }), []);
   const setYearlyAmbition = useCallback((ambition: YearlyAmbitionId) => dispatch({ type: 'SET_YEARLY_AMBITION', ambition }), []);
+  const finishExpedition = useCallback((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => dispatch({ type: 'FINISH_EXPEDITION_STAGE', stageId, score, fatigueDelta, stressDelta }), []);
+  const equipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'EQUIP_EXPEDITION_RELIC', relic }), []);
+  const unequipExpeditionRelic = useCallback((relic: ExpeditionRelicId) => dispatch({ type: 'UNEQUIP_EXPEDITION_RELIC', relic }), []);
+  const craftExpeditionRecipe = useCallback((recipe: ExpeditionCraftingRecipeId) => dispatch({ type: 'CRAFT_EXPEDITION_RECIPE', recipe }), []);
   useEffect(() => {
     localStorage.setItem('puppy-maker-save', JSON.stringify(state));
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -194,6 +205,10 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onMailReady?.(claimMail), [claimMail, onMailReady]);
   useEffect(() => onMonthlyFocusReady?.(setMonthlyFocus), [setMonthlyFocus, onMonthlyFocusReady]);
   useEffect(() => onYearlyAmbitionReady?.(setYearlyAmbition), [setYearlyAmbition, onYearlyAmbitionReady]);
+  useEffect(() => onExpeditionFinishReady?.(finishExpedition), [finishExpedition, onExpeditionFinishReady]);
+  useEffect(() => onExpeditionEquipReady?.(equipExpeditionRelic), [equipExpeditionRelic, onExpeditionEquipReady]);
+  useEffect(() => onExpeditionUnequipReady?.(unequipExpeditionRelic), [unequipExpeditionRelic, onExpeditionUnequipReady]);
+  useEffect(() => onExpeditionCraftReady?.(craftExpeditionRecipe), [craftExpeditionRecipe, onExpeditionCraftReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
