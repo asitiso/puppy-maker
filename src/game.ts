@@ -47,9 +47,16 @@ export type {
 
 export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } from './adventure';
 
+export type ExplorationFeedback = {
+  location: OutingLocationId;
+  event: ExplorationEventId | null;
+  discovery: DiscoveryId | null;
+};
+
 export interface GameState extends Core.GameState {
   explorationXp: Record<OutingLocationId, number>;
   discoveries: DiscoveryId[];
+  lastExploration: ExplorationFeedback | null;
 }
 
 export type Action =
@@ -61,6 +68,7 @@ export const initialState: GameState = {
   ...Core.initialState,
   explorationXp: startingExplorationXp(),
   discoveries: [],
+  lastExploration: null,
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -87,6 +95,7 @@ export function hydrateGameState(raw: unknown): GameState {
     ...base,
     explorationXp: hydrateExplorationXp(source.explorationXp),
     discoveries: hydrateDiscoveries(source.discoveries),
+    lastExploration: null,
   };
 }
 
@@ -103,15 +112,23 @@ function applyExplorationEventReward(state: GameState, event: ExplorationEventId
   };
 }
 
+function automaticExplorationRoll(state: GameState, location: OutingLocationId): number {
+  const sequence = [0.12, 0.82, 0.52, 0.36, 0.9, 0.58, 0.15, 0.5, 0.35, 0.95];
+  const locationOffset = outingLocationIds.indexOf(location) * 3;
+  const index = (state.explorationXp[location] + state.month + locationOffset) % sequence.length;
+  return sequence[index];
+}
+
 export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESET') return hydrateGameState(null);
 
   if (action.type === 'GO_OUTING') {
+    const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
     const outcome = pickExplorationOutcome(
       action.location,
       state.explorationXp[action.location],
       state.discoveries,
-      action.eventRoll ?? 0.999999,
+      roll,
     );
     const base = Core.reducer(state, { type: 'GO_OUTING', location: action.location }) as GameState;
     const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery)
@@ -124,6 +141,7 @@ export function reducer(state: GameState, action: Action): GameState {
         [action.location]: state.explorationXp[action.location] + 1,
       },
       discoveries,
+      lastExploration: { location: action.location, event: outcome.event, discovery: outcome.discovery },
     };
     return applyExplorationEventReward(progressed, outcome.event);
   }
@@ -134,5 +152,6 @@ export function reducer(state: GameState, action: Action): GameState {
     ...next,
     explorationXp: state.explorationXp,
     discoveries: state.discoveries,
+    lastExploration: state.lastExploration,
   };
 }
