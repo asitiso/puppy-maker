@@ -24,23 +24,15 @@ describe('Calling depth effects', () => {
     expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBeNull();
   });
 
-  it('applies expedition signature and Legend rewards without duplication', () => {
-    const base = {
-      year:1, month:4, calling:'pathfinder' as const,
-      traits:['pathfinder_eye','pathfinder_supply','pathfinder_legend'] as const,
-      signatures:['trail_reading','star_compass'] as const,
-      legendRewardKeys:[] as string[],
-      stageId:'forest_glade' as const,
-      grade:'S' as const,
-      firstClear:true,
-      discovery:'forest_echo',
-      regionCompleted:'starlight_forest' as const,
-      materialReward:2,
-      fatigueDelta:8,
-      stressDelta:6,
-    };
-    const first = applyExpeditionCallingRewards(base);
-    expect(first.extraMaterial).toBe(3); // supply + trail reading + star compass
+  it('applies Pathfinder signature rewards without duplicating the existing supply trait', () => {
+    const first = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'pathfinder',
+      traits:['pathfinder_eye','pathfinder_supply','pathfinder_legend'],
+      signatures:['trail_reading','star_compass'], legendRewardKeys:[],
+      stageId:'forest_glade', grade:'S', firstClear:true, discovery:'forest_echo',
+      regionCompleted:'starlight_forest', materialReward:2, fatigueDelta:8, stressDelta:6,
+    });
+    expect(first.extraMaterial).toBe(2); // supply +1 remains owned by raising-expedition-effects
     expect(first.goldBonus).toBe(0);
     expect(first.legendRewardKeys).toEqual([]);
   });
@@ -64,5 +56,14 @@ describe('Calling depth effects', () => {
     });
     expect(arcanist.stressDelta).toBe(4);
     expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
+  });
+
+  it('applies heart anchor stress protection whenever its signature is active', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'caretaker', traits:['caretaker_legend'], signatures:['heart_anchor'], legendRewardKeys:[],
+      stageId:'lake_shore', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(result.stressDelta).toBe(4);
+    expect(result.applied).toContain('heart_anchor');
   });
 });
