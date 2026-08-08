@@ -56,4 +56,37 @@ describe('expedition persistent progression', () => {
     expect(reset.expeditionMaterials).toEqual({ star_bark: 0, arcane_shard: 0, wind_pearl: 0 });
     expect(reset.ownedExpeditionRelics).toEqual([]);
   });
+
+  it('FINISH_EXPEDITION_STAGE commits the reward pipeline into GameState', () => {
+    const next = reducer(initialState, { type: 'FINISH_EXPEDITION_STAGE', stageId: 'forest_path', score: 700 } as any);
+    expect(next.expeditionRecords.forest_path.cleared).toBe(true);
+    expect(next.gold).toBe(initialState.gold + 150);
+    expect(next.expeditionMaterials.star_bark).toBe(1);
+    expect(next.expeditionStoryEntries).toContain('forest_path');
+    expect(next.expeditionDiscoveries).toContain('forest_path_discovery');
+    expect(next.lastExpeditionResult?.stageId).toBe('forest_path');
+  });
+
+  it('equips only owned relics and supports unequip', () => {
+    const owned = { ...initialState, ownedExpeditionRelics: ['moonfang_charm'] as any };
+    const equipped = reducer(owned, { type: 'EQUIP_EXPEDITION_RELIC', relic: 'moonfang_charm' } as any);
+    expect(equipped.equippedExpeditionRelics).toEqual(['moonfang_charm']);
+    const rejected = reducer(equipped, { type: 'EQUIP_EXPEDITION_RELIC', relic: 'mana_prism' } as any);
+    expect(rejected.equippedExpeditionRelics).toEqual(['moonfang_charm']);
+    const removed = reducer(rejected, { type: 'UNEQUIP_EXPEDITION_RELIC', relic: 'moonfang_charm' } as any);
+    expect(removed.equippedExpeditionRelics).toEqual([]);
+  });
+
+  it('crafts gifts and relics into the existing inventory/equipment economy', () => {
+    const materials = { ...initialState, expeditionMaterials: { star_bark: 3, arcane_shard: 3, wind_pearl: 3 } };
+    const gift = reducer(materials, { type: 'CRAFT_EXPEDITION_RECIPE', recipe: 'star_cookie_recipe' } as any);
+    expect(gift.expeditionMaterials.star_bark).toBe(1);
+    expect(gift.inventory.star_cookie).toBe(initialState.inventory.star_cookie + 1);
+    expect(gift.craftingMilestones).toContain('crafted_star_cookie');
+
+    const relicState = { ...initialState, expeditionMaterials: { star_bark: 3, arcane_shard: 3, wind_pearl: 3 } };
+    const relic = reducer(relicState, { type: 'CRAFT_EXPEDITION_RECIPE', recipe: 'guardian_thread_recipe' } as any);
+    expect(relic.ownedExpeditionRelics).toContain('guardian_thread');
+    expect(relic.craftingMilestones).toContain('crafted_guardian_thread');
+  });
 });
