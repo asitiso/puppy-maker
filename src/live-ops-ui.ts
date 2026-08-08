@@ -5,6 +5,7 @@ import { seasonKeepsakeCollection, seasonKeepsakeMilestones } from './season-kee
 import { seasonCompletionHonors, seasonHonorProgress } from './season-completion-honors';
 import { seasonMasteryRank, seasonMasteryScore } from './season-mastery-rank';
 import { seasonMasteryRewards } from './season-mastery-rewards';
+import { seasonLegacyBoard, seasonLegacyPoints, seasonLegacyNodes } from './season-legacy-board';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
 
@@ -52,6 +53,14 @@ export function liveOpsUiSummary(state:GameState) {
     unlocked:masteryScore >= item.threshold,
   }));
   const nextMasteryReward = masteryRewardItems.find(item => !item.claimed) ?? null;
+  const unlockedLegacy = state.unlockedSeasonLegacyNodes ?? [];
+  const earnedLegacy = seasonLegacyPoints(state.seasonJourneyHistory,claimedHonors);
+  const spentLegacy = unlockedLegacy.reduce((sum,id) => sum + (seasonLegacyNodes.find(node => node.id === id)?.cost ?? 0),0);
+  const availableLegacy = Math.max(0,earnedLegacy - spentLegacy);
+  const legacyNodes = seasonLegacyBoard(unlockedLegacy).map(node => ({
+    ...node,
+    affordable:node.available && availableLegacy >= node.cost,
+  }));
   return {
     season:{
       key,
@@ -67,6 +76,7 @@ export function liveOpsUiSummary(state:GameState) {
     honors:{ progress:honorProgress, items:honorItems, claimed:claimedHonors },
     mastery,
     masteryRewards:{ claimed:claimedMasteryRewards, items:masteryRewardItems, next:nextMasteryReward },
+    legacy:{ earned:earnedLegacy, spent:spentLegacy, available:availableLegacy, nodes:legacyNodes },
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
 }
