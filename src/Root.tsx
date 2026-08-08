@@ -2,11 +2,22 @@ import { useCallback, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
+import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import LayeredHome from './LayeredHome';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
-import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen, type YearlyAmbitionId } from './game';
+import {
+  initialState,
+  type AchievementId,
+  type ExpeditionCraftingRecipeId,
+  type ExpeditionRelicId,
+  type ExpeditionStageId,
+  type GameState,
+  type MailRewardId,
+  type Screen,
+  type YearlyAmbitionId,
+} from './game';
 import type { HomeMenuId } from './home-panels';
 import './layered-home.css';
 import './home-panels.css';
@@ -14,6 +25,7 @@ import './seasonal-home.css';
 import './collection-archive.css';
 import './year-end-ceremony.css';
 import './yearly-ambition.css';
+import './expedition-ui.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -26,6 +38,11 @@ export default function Root() {
   const [setMonthlyFocus, setSetMonthlyFocus] = useState<((focus: GameState['monthlyFocus']) => void) | null>(null);
   const [setYearlyAmbition, setSetYearlyAmbition] = useState<((ambition: YearlyAmbitionId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
+  const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) | null>(null);
+  const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
+  const [unequipExpedition, setUnequipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
+  const [craftExpedition, setCraftExpedition] = useState<((recipe: ExpeditionCraftingRecipeId) => void) | null>(null);
+  const [expeditionOpen, setExpeditionOpen] = useState(false);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -36,6 +53,10 @@ export default function Root() {
   const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
   const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
+  const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) => setFinishExpedition(() => next), []);
+  const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
+  const captureExpeditionUnequip = useCallback((next: (relic: ExpeditionRelicId) => void) => setUnequipExpedition(() => next), []);
+  const captureExpeditionCraft = useCallback((next: (recipe: ExpeditionCraftingRecipeId) => void) => setCraftExpedition(() => next), []);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -58,6 +79,10 @@ export default function Root() {
       onMailReady={captureMail}
       onMonthlyFocusReady={captureMonthlyFocus}
       onYearlyAmbitionReady={captureYearlyAmbition}
+      onExpeditionFinishReady={captureExpeditionFinish}
+      onExpeditionEquipReady={captureExpeditionEquip}
+      onExpeditionUnequipReady={captureExpeditionUnequip}
+      onExpeditionCraftReady={captureExpeditionCraft}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -75,6 +100,16 @@ export default function Root() {
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} />
       <YearEndCeremonyOverlay state={gameState} />
+      <GuardianExpeditionOverlay
+        state={gameState}
+        open={expeditionOpen}
+        onOpen={() => setExpeditionOpen(true)}
+        onClose={() => setExpeditionOpen(false)}
+        onFinish={(stageId, score, fatigueDelta, stressDelta) => finishExpedition?.(stageId, score, fatigueDelta, stressDelta)}
+        onEquip={relic => equipExpedition?.(relic)}
+        onUnequip={relic => unequipExpedition?.(relic)}
+        onCraft={recipe => craftExpedition?.(recipe)}
+      />
     </>}
   </>;
 }
