@@ -23,11 +23,16 @@ export default function SeasonLiveOpsOverlay({
   onPurchase:(offer:SeasonShopOfferId)=>void;
 }) {
   const summary = liveOpsUiSummary(state);
+  const masteryProgress = summary.mastery.nextThreshold
+    ? `${summary.mastery.score}/${summary.mastery.nextThreshold}`
+    : `${summary.mastery.score} MAX`;
+
   if (!open) {
     return <button className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
       <small>SEASON JOURNEY</small>
       <strong>{summary.season.label}</strong>
       <span>{summary.season.score} P · ✦ {summary.season.tokens}</span>
+      <em>{summary.mastery.label}</em>
     </button>;
   }
 
@@ -39,6 +44,15 @@ export default function SeasonLiveOpsOverlay({
           <div><small>SEASON JOURNEY</small><h2>{summary.season.label}</h2></div>
           <button onClick={onClose} aria-label="닫기">×</button>
         </header>
+
+        <div className="season-mastery-card">
+          <div>
+            <small>SEASON MASTERY</small>
+            <strong>{summary.mastery.label}</strong>
+            <span>{summary.mastery.description}</span>
+          </div>
+          <b>{masteryProgress}</b>
+        </div>
 
         <div className="season-live-score">
           <div><span>여정 점수</span><b>{summary.season.score}</b></div>
