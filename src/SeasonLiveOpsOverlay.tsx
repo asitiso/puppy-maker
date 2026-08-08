@@ -8,6 +8,12 @@ const milestoneNames = {
   four_seasons:'사계절의 추억',
   eight_seasons:'두 해의 계절 연대기',
 } as const;
+const masteryRewardNames = {
+  traveler:'계절 여행자',
+  chronicler:'사계절 기록자',
+  guardian:'별빛 계절수호자',
+  eternal:'영원의 계절수호자',
+} as const;
 
 export default function SeasonLiveOpsOverlay({
   state,
@@ -53,6 +59,15 @@ export default function SeasonLiveOpsOverlay({
           </div>
           <b>{masteryProgress}</b>
         </div>
+        <div className="season-mastery-rewards">
+          {summary.masteryRewards.items.map(item => <div className={item.claimed ? 'is-claimed' : item.unlocked ? 'is-unlocked' : ''} key={item.rank}>
+            <span>{item.claimed ? '✓' : item.unlocked ? '!' : '○'} {masteryRewardNames[item.rank]}</span>
+            <b>{item.reward.gold ? `${item.reward.gold}G` : ''}{item.reward.gold && item.reward.gems ? ' · ' : ''}{item.reward.gems ? `◆${item.reward.gems}` : ''}</b>
+          </div>)}
+        </div>
+        <p className="season-mastery-next">{summary.masteryRewards.next
+          ? `다음 Mastery 보상 · ${masteryRewardNames[summary.masteryRewards.next.rank]} ${summary.mastery.score}/${summary.masteryRewards.next.threshold}`
+          : '모든 Season Mastery 보상을 획득했어요.'}</p>
 
         <div className="season-live-score">
           <div><span>여정 점수</span><b>{summary.season.score}</b></div>
