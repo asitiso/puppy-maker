@@ -3,13 +3,16 @@ import { initialState } from './game';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
 import { sanctuaryContractSet } from './sanctuary-contracts';
 
+const unlockedSanctuary = { ...initialState.sanctuaryLevels, training_hall:1 as const };
+
 describe('sanctuary contract ui summary', () => {
   it('summarizes current prestige rank and weekly contract progress', () => {
     const key = `${initialState.year}-${initialState.month}-${initialState.week}`;
-    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,initialState.sanctuaryLevels);
+    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,unlockedSanctuary);
     const first = contracts[0];
     const summary = sanctuaryContractUiSummary({
       ...initialState,
+      sanctuaryLevels:unlockedSanctuary,
       sanctuaryContractWeekKey:key,
       sanctuaryContractProgress:{ [first.id]:1 },
       sanctuaryPrestige:24,
@@ -24,9 +27,11 @@ describe('sanctuary contract ui summary', () => {
   it('treats stale weekly progress as zero', () => {
     const summary = sanctuaryContractUiSummary({
       ...initialState,
+      sanctuaryLevels:unlockedSanctuary,
       sanctuaryContractWeekKey:'1-3-4',
       sanctuaryContractProgress:{ training_focus:99, field_patrol:99, warm_bond:99, guardian_sortie:99 },
     });
+    expect(summary.contracts).toHaveLength(3);
     expect(summary.contracts.every(item => item.current === 0)).toBe(true);
   });
 });
