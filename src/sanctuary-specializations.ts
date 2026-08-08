@@ -68,3 +68,15 @@ export function sanctuarySpecializationEffects(selected:SanctuarySpecializationS
     weeklyTokenBonus:ids.has('season_lens') ? 1 : 0,
   };
 }
+
+export function sanctuarySpecializationGameplayEffects(selected:SanctuarySpecializationState) {
+  const base = sanctuarySpecializationEffects(selected);
+  const synergies = sanctuarySpecializationSynergies(selected);
+  return {
+    ...base,
+    trainingPercent:base.trainingPercent + (synergies.includes('guardian_academy') ? 1 : 0),
+    bondAffectionBonus:base.bondAffectionBonus + (synergies.includes('living_haven') ? 1 : 0),
+    expeditionJourneyBonus:base.expeditionJourneyBonus + (synergies.includes('star_route_network') ? 1 : 0),
+    weeklyTokenBonus:base.weeklyTokenBonus + (synergies.includes('season_oracle') ? 1 : 0),
+  };
+}
