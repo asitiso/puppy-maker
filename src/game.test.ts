@@ -14,4 +14,21 @@ describe('game engine', () => {
   it('clamps personality values to 0-100', () => { const boosted={...initialState,personality:{...initialState.personality,kindness:99}}; expect(applyDialogueChoice(boosted,'hug').personality.kindness).toBe(100); });
   it('finishes training with mastery, memories, and report deltas', () => { const trained=reducer({...initialState,trainingScore:920},{type:'FINISH_TRAINING'}); expect(trained.screen).toBe('dialogue'); expect(trained.mastery.hunt.xp).toBeGreaterThan(0); expect(trained.memories.some(memory=>memory.id==='first_training')).toBe(true); expect(trained.memories.some(memory=>memory.id==='first_perfect')).toBe(true); const result=reducer(trained,{type:'CHOOSE',choice:'snack'}); expect(result.lastGrowthReport?.quality).toBe('PERFECT'); expect(result.lastGrowthReport?.masteryGains.hunt).toBeGreaterThan(0); expect(result.lastGrowthReport?.personalityChanges.kindness).toBeGreaterThan(0); });
   it('advances month, returns to hub, and preserves V2 progression', () => { const progressed:GameState={...initialState,screen:'result',mastery:{...initialState.mastery,hunt:{xp:5}},memories:[{id:'first_training',month:4,year:1}]}; const next=reducer(progressed,{type:'NEXT_MONTH'}); expect(next.month).toBe(5); expect(next.screen).toBe('hub'); expect(next.gold).toBe(5350); expect(next.mastery.hunt.xp).toBe(5); expect(next.memories).toHaveLength(2); expect(next.memories.some(memory=>memory.id==='first_month_complete')).toBe(true); expect(next.combo).toBe(0); expect(next.trainingScore).toBe(0); });
+  it('runs the full monthly loop through each scheduled week before dialogue', () => {
+    let state:GameState={...initialState,screen:'schedule',week:1,trainingScore:920};
+    state=reducer(state,{type:'GO',screen:'training'});
+    expect(state.screen).toBe('training');
+    state=reducer(state,{type:'FINISH_TRAINING'});
+    expect(state.screen).toBe('training'); expect(state.week).toBe(2);
+    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'});
+    expect(state.screen).toBe('training'); expect(state.week).toBe(3);
+    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'});
+    expect(state.screen).toBe('training'); expect(state.week).toBe(4);
+    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'});
+    expect(state.screen).toBe('dialogue'); expect(state.week).toBe(4);
+    state=reducer(state,{type:'CHOOSE',choice:'hug'});
+    expect(state.screen).toBe('result');
+    state=reducer(state,{type:'NEXT_MONTH'});
+    expect(state.screen).toBe('hub'); expect(state.week).toBe(1); expect(state.month).toBe(5);
+  });
 });
