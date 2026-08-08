@@ -48,4 +48,22 @@ describe('live ops ui summary', () => {
     }));
     expect(summary.keepsakes.nextMilestone).toEqual(expect.objectContaining({ id:'four_seasons', threshold:4 }));
   });
+
+  it('summarizes season completion honors and meta progress', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonJourneyHistory:[
+        { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+        { key:'1-summer', score:1300, tiersCompleted:10, tokensEarned:120 },
+      ],
+      claimedSeasonCompletionHonors:['first_complete'],
+    });
+    expect(summary.honors.progress).toEqual({
+      completedSeasons:2,
+      completedSeasonTypes:2,
+      perfectYears:0,
+    });
+    expect(summary.honors.items.find(item => item.id === 'first_complete')).toEqual(expect.objectContaining({ claimed:true }));
+    expect(summary.honors.items.find(item => item.id === 'four_seasons')).toEqual(expect.objectContaining({ claimed:false, current:2, threshold:4 }));
+  });
 });
