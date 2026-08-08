@@ -1,12 +1,18 @@
 import type { CollectionArchiveCategory, CollectionCategoryId } from './collection-archive';
 
-export type ArchiveRecommendationAction = 'bond' | 'outing' | 'event' | 'training' | 'quest' | 'annual' | 'ambition' | 'complete';
+export type ArchiveRecommendationAction = 'bond' | 'outing' | 'event' | 'training' | 'quest' | 'annual' | 'ambition' | 'expedition' | 'complete';
 
 export type ArchiveRecommendation = {
   categoryId: CollectionCategoryId | null;
   action: ArchiveRecommendationAction;
   label: string;
   reason: string;
+};
+
+const expeditionRecommendation: Omit<ArchiveRecommendation, 'categoryId'> = {
+  action:'expedition',
+  label:'수호자 원정 떠나기',
+  reason:'원정 스테이지·보스·유물·이야기·발견물을 채우려면 수호자 원정을 진행하세요.',
 };
 
 const recommendationByCategory: Record<CollectionCategoryId, Omit<ArchiveRecommendation, 'categoryId'>> = {
@@ -18,11 +24,20 @@ const recommendationByCategory: Record<CollectionCategoryId, Omit<ArchiveRecomme
   seasonStamps: { action:'outing', label:'계절 외출 떠나기', reason:'현재 계절에 맞는 장소로 외출해 아직 없는 계절 인장을 노려보세요.' },
   legacyRelics: { action:'annual', label:'한 해를 완주하기', reason:'연간 수호 기록을 쌓을수록 새로운 레거시 유물이 해금돼요.' },
   ambitionHonors: { action:'ambition', label:'올해의 야망 지키기', reason:'선택한 야망을 연속으로 완수하면 장기 명예 휘장이 열려요.' },
+  expeditionStages: expeditionRecommendation,
+  expeditionBosses: expeditionRecommendation,
+  expeditionRelics: expeditionRecommendation,
+  expeditionStories: expeditionRecommendation,
+  expeditionDiscoveries: expeditionRecommendation,
+  guardianEvolution: expeditionRecommendation,
+  expeditionCrafting: expeditionRecommendation,
+  expeditionRegions: expeditionRecommendation,
+  expeditionSMilestones: expeditionRecommendation,
 };
 
 export function archiveRecommendation(categories: CollectionArchiveCategory[]): ArchiveRecommendation {
   if (!categories.length || categories.every(category => category.total > 0 && category.current >= category.total)) {
-    return { categoryId:null, action:'complete', label:'수호 연대기 완성', reason:'모든 성장 흔적을 모았어요. 루나와 만든 50개의 기록이 완성됐습니다.' };
+    return { categoryId:null, action:'complete', label:'수호 연대기 완성', reason:'모든 성장과 원정의 흔적 100개를 모았어요. 루나와 만든 수호 연대기가 완성됐습니다.' };
   }
 
   const incomplete = categories.filter(category => category.total > 0 && category.current < category.total);
