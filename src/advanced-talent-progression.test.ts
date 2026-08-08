@@ -14,7 +14,7 @@ describe('advanced talent progression', () => {
     expect(currentAdvancedTalents(mastered)).toEqual(['hunter_instinct','arcane_rhythm','star_channel']);
   });
 
-  it('applies unlocked talents after core training and schedule synergies', () => {
+  it('applies unlocked talents after core training and schedule synergies without overstacking one stat', () => {
     const state = {
       ...initialState,
       schedule: ['hunt','magic','rest','herb'] as typeof initialState.schedule,
@@ -24,7 +24,8 @@ describe('advanced talent progression', () => {
     const trained = reducer(state, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(trained.stats.strength).toBe(core.stats.strength + 2);
     expect(trained.stats.magic).toBe(core.stats.magic + 2);
-    expect(trained.stats.intelligence).toBe(core.stats.intelligence + 2);
+    expect(trained.stats.intelligence).toBe(core.stats.intelligence);
+    expect(trained.stats.morality).toBe(core.stats.morality + 3);
     expect(trained.stats.fatigue).toBe(Math.max(0, core.stats.fatigue - 8));
   });
 
