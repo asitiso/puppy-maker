@@ -26,7 +26,7 @@ describe('monthly challenge progression', () => {
     expect(second.gold).toBe(first.gold);
   });
 
-  it('rewards the outing mission on the second outing only', () => {
+  it('rewards the outing mission on the second outing and story on the third unique outing', () => {
     const first = reducer(initialState, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
     expect(first.monthlyCounters.outings).toBe(1);
     expect(first.gems).toBe(initialState.gems);
@@ -34,7 +34,8 @@ describe('monthly challenge progression', () => {
     expect(second.monthlyCounters.outings).toBe(2);
     expect(second.gems).toBe(initialState.gems + 1);
     const third = reducer(second, { type:'GO_OUTING', location:'lakeside', eventRoll:0.999 });
-    expect(third.gems).toBe(second.gems);
+    expect(third.gems).toBe(second.gems + 1);
+    expect(third.rewardedStoryChapters).toContain('wide_world');
   });
 
   it('only counts a gift when an item is actually consumed', () => {
