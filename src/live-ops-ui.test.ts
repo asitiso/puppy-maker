@@ -118,4 +118,18 @@ describe('live ops ui summary', () => {
     expect(summary.legacy.nodes.find(node => node.id === 'chronicle_keeper')).toEqual(expect.objectContaining({ available:true, affordable:true }));
     expect(summary.legacy.nodes.find(node => node.id === 'chronicle_crown')).toEqual(expect.objectContaining({ available:false }));
   });
+
+  it('shows automatic lifetime legacy progress without another mutable ledger', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonJourneyHistory:[
+        { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+        { key:'1-summer', score:625, tiersCompleted:7, tokensEarned:90 },
+      ],
+      seasonShopPurchases:['1-spring:seasonal_keepsake:1'],
+    });
+    expect(summary.lifetimeLegacy.points).toBe(7);
+    expect(summary.lifetimeLegacy.milestone).toEqual(expect.objectContaining({ id:'traveler', nextThreshold:12 }));
+    expect(summary.lifetimeLegacy.bonuses).toEqual({ trainingPercent:2, masteryXp:0, rewardPercent:2, startingCondition:1 });
+  });
 });
