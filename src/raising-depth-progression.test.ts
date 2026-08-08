@@ -37,7 +37,8 @@ describe('raising depth persistent progression', () => {
   });
 
   it('selects a calling through the reducer and spends points on valid traits', () => {
-    const ready = { ...initialState, rewardedGuardianRanks:['guardian'], gold:1000, growthPoints:3 } as any;
+    const mastery = { hunt:{ xp:18 }, magic:{ xp:18 }, rest:{ xp:18 }, herb:{ xp:18 } };
+    const ready = { ...initialState, mastery, gold:1000, growthPoints:3 } as any;
     const selected = reducer(ready, { type:'SET_GUARDIAN_CALLING', calling:'vanguard' } as any);
     expect(selected.activeCalling).toBe('vanguard');
     expect(selected.callingHistory).toEqual(['vanguard']);
