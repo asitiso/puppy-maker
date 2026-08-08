@@ -9,7 +9,7 @@ export type ScheduleSynergyDefinition = {
 };
 
 export const scheduleSynergyDefinitions: ScheduleSynergyDefinition[] = [
-  { id: 'balanced_guardian', label: '균형 수련', description: '네 가지 활동을 고르게 배치해 호감도와 마음의 균형이 조금 좋아져요.' },
+  { id: 'balanced_guardian', label: '균형 수련', description: '네 가지 활동을 고르게 배치해 도덕성과 마음의 균형이 조금 좋아져요.' },
   { id: 'hunt_focus', label: '사냥 집중', description: '사냥 훈련을 반복해 힘과 용기가 추가로 성장해요.' },
   { id: 'magic_focus', label: '마법 집중', description: '마법 수업을 반복해 마력과 호기심이 추가로 성장해요.' },
   { id: 'herb_focus', label: '약초 연구', description: '약초 채집을 반복해 지능과 침착함이 추가로 성장해요.' },
@@ -39,7 +39,7 @@ export function applyScheduleSynergyBonuses(stats: Stats, personality: Personali
 
   for (const synergy of synergies) {
     if (synergy === 'balanced_guardian') {
-      nextStats.affection = clamp(nextStats.affection + 1);
+      nextStats.morality = clamp(nextStats.morality + 1);
       nextPersonality.kindness = clamp(nextPersonality.kindness + 1);
       nextPersonality.calmness = clamp(nextPersonality.calmness + 1);
     } else if (synergy === 'hunt_focus') {
