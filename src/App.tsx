@@ -9,6 +9,7 @@ import {
   type AchievementId,
   type ActivityId,
   type GameState,
+  type MailRewardId,
   type MemoryId,
   type RandomEventId,
   type Screen,
@@ -151,9 +152,10 @@ type AppProps = {
   onOutingReady?: (outing: (location: OutingLocationId) => void) => void;
   onGiftReady?: (gift: (item: GiftItemId) => void) => void;
   onAttendanceReady?: (claim: () => void) => void;
+  onMailReady?: (claim: (mail: MailRewardId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     try {
       const raw = JSON.parse(localStorage.getItem('puppy-maker-save') || 'null');
@@ -167,6 +169,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
   const giveGift = useCallback((item: GiftItemId) => dispatch({ type: 'GIVE_GIFT', item }), []);
   const claimAttendance = useCallback(() => dispatch({ type: 'CLAIM_ATTENDANCE' }), []);
+  const claimMail = useCallback((mail: MailRewardId) => dispatch({ type: 'CLAIM_MAIL', mail }), []);
   useEffect(() => localStorage.setItem('puppy-maker-save', JSON.stringify(state)), [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
@@ -174,6 +177,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onOutingReady?.(goOuting), [goOuting, onOutingReady]);
   useEffect(() => onGiftReady?.(giveGift), [giveGift, onGiftReady]);
   useEffect(() => onAttendanceReady?.(claimAttendance), [claimAttendance, onAttendanceReady]);
+  useEffect(() => onMailReady?.(claimMail), [claimMail, onMailReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
