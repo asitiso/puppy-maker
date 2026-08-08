@@ -65,6 +65,12 @@ import {
 import { applyMonthlyFocusBonus, monthlyFocusIds, type MonthlyFocusId } from './monthly-focus';
 import { readAmbitionSelections, type YearlyAmbitionSelections } from './yearly-ambition-selection';
 import type { YearlyAmbitionId } from './yearly-ambitions';
+import {
+  emptyExpeditionPersistentState,
+  hydrateExpeditionPersistentState,
+  pickExpeditionPersistentState,
+  type ExpeditionPersistentState,
+} from './expedition-state';
 
 export {
   achievementDefinitions,
@@ -114,6 +120,11 @@ export type { SeasonStampId } from './season-stamps';
 export type { MonthlyFocusId } from './monthly-focus';
 export type { YearlyAmbitionSelections } from './yearly-ambition-selection';
 export type { YearlyAmbitionId } from './yearly-ambitions';
+export type { ExpeditionPersistentState } from './expedition-state';
+export type { ExpeditionRelicId } from './expedition-relics';
+export type { ExpeditionMaterialId, ExpeditionCraftingRecipeId, CraftingMilestoneId } from './expedition-crafting';
+export type { ExpeditionDiscoveryId } from './expedition-discoveries';
+export type { ExpeditionRegionId, ExpeditionStageId, ExpeditionStageRecord, ExpeditionGrade } from './expedition-regions';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -121,7 +132,7 @@ export type ExplorationFeedback = {
   discovery: DiscoveryId | null;
 };
 
-export interface GameState extends Core.GameState {
+export interface GameState extends Core.GameState, ExpeditionPersistentState {
   explorationXp: Record<OutingLocationId, number>;
   discoveries: DiscoveryId[];
   lastExploration: ExplorationFeedback | null;
@@ -167,6 +178,7 @@ export const initialState: GameState = {
   monthlyFocus: 'balanced',
   annualRecords: [],
   yearlyAmbitions: {},
+  ...emptyExpeditionPersistentState(),
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -300,6 +312,7 @@ export function hydrateGameState(raw: unknown): GameState {
     monthlyFocus: hydrateMonthlyFocus(source.monthlyFocus),
     annualRecords: hydrateAnnualRecords(source.annualRecords),
     yearlyAmbitions: readAmbitionSelections(source.yearlyAmbitions),
+    ...hydrateExpeditionPersistentState(source),
   };
 }
 
@@ -435,6 +448,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     monthlyFocus: state.monthlyFocus,
     annualRecords: state.annualRecords,
     yearlyAmbitions: state.yearlyAmbitions,
+    ...pickExpeditionPersistentState(state),
   };
 }
 
@@ -501,6 +515,7 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyFocus: state.monthlyFocus,
       annualRecords: state.annualRecords,
       yearlyAmbitions: state.yearlyAmbitions,
+      ...pickExpeditionPersistentState(state),
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
@@ -585,6 +600,7 @@ export function reducer(state: GameState, action: Action): GameState {
       monthlyFocus: 'balanced',
       annualRecords,
       yearlyAmbitions: state.yearlyAmbitions,
+      ...pickExpeditionPersistentState(state),
     });
   }
 
