@@ -75,8 +75,10 @@ import { resolveExpeditionFinish, type ExpeditionFinishSummary } from './expedit
 import { equipExpeditionRelic, unequipExpeditionRelic, type ExpeditionRelicId } from './expedition-relics';
 import { applyCrafting, type ExpeditionCraftingRecipeId } from './expedition-crafting';
 import { expeditionStageDefinitions, isExpeditionStageCleared, type ExpeditionStageId } from './expedition-regions';
+import type { ExpeditionActionCounts } from './expedition-combat';
 import { applyCallingSelection, type GuardianCallingId } from './guardian-callings';
 import { purchaseGrowthTrait, type GrowthTraitId } from './growth-traits';
+import { callingSignatures } from './calling-signatures';
 import {
   emptyRaisingDepthState,
   hydrateRaisingDepthState,
@@ -92,6 +94,12 @@ import {
 } from './raising-depth-rewards';
 import { applyGiftIdentityEffects, applyTrainingIdentityEffects } from './raising-depth-effects';
 import { pathfinderSupplyBonus } from './raising-expedition-effects';
+import {
+  applyExpeditionCallingRewards,
+  applyPathfinderOutingLegend,
+  effectivePathfinderExplorationXp,
+  specialistMasteryCalling,
+} from './calling-depth-effects';
 
 export {
   achievementDefinitions,
@@ -147,6 +155,7 @@ export type { ExpeditionMaterialId, ExpeditionCraftingRecipeId, CraftingMileston
 export type { ExpeditionDiscoveryId } from './expedition-discoveries';
 export type { ExpeditionRegionId, ExpeditionStageId, ExpeditionStageRecord, ExpeditionGrade } from './expedition-regions';
 export type { ExpeditionFinishSummary } from './expedition-rewards';
+export type { ExpeditionActionCounts } from './expedition-combat';
 export type { GuardianCallingId } from './guardian-callings';
 export type { GrowthTraitId } from './growth-traits';
 export type { BondSceneId } from './bond-scenes';
@@ -187,7 +196,7 @@ export type Action =
   | { type: 'SET_YEARLY_AMBITION'; ambition: YearlyAmbitionId }
   | { type: 'SET_GUARDIAN_CALLING'; calling: GuardianCallingId }
   | { type: 'PURCHASE_GROWTH_TRAIT'; trait: GrowthTraitId }
-  | { type: 'FINISH_EXPEDITION_STAGE'; stageId: ExpeditionStageId; score: number; fatigueDelta?: number; stressDelta?: number }
+  | { type: 'FINISH_EXPEDITION_STAGE'; stageId: ExpeditionStageId; score: number; fatigueDelta?: number; stressDelta?: number; actionKinds?: ExpeditionActionCounts }
   | { type: 'EQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
   | { type: 'UNEQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
   | { type: 'CRAFT_EXPEDITION_RECIPE'; recipe: ExpeditionCraftingRecipeId }
@@ -219,6 +228,11 @@ export const initialState: GameState = {
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const finiteNumber = (value: unknown, fallback: number) => typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 const clampStat = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+const expeditionMaterialByRegion = {
+  starlight_forest:'star_bark',
+  ancient_city:'arcane_shard',
+  wind_lakes:'wind_pearl',
+} as const;
 
 function hydrateExplorationXp(raw: unknown): Record<OutingLocationId, number> {
   const source = isRecord(raw) ? raw : {};
@@ -442,10 +456,14 @@ function bondRewardProgress(state: GameState): BondRewardProgress {
 function reconcileBondRewards(previous: GameState, state: GameState): GameState {
   const result = reconcileBondSceneRewards(bondRewardProgress(previous), bondRewardProgress(state));
   if (!result.changed) return state;
+  const caretakerLegend = state.activeCalling === 'caretaker' && state.purchasedTraits.includes('caretaker_legend') && result.newlyUnlocked.length > 0;
+  const stats = caretakerLegend ? { ...state.stats, stress:clampStat(state.stats.stress - 4) } : state.stats;
   return {
     ...state,
     gold:result.gold,
     gems:result.gems,
+    stats,
+    condition:caretakerLegend ? Core.deriveCondition(stats) : state.condition,
     unlockedBondScenes:result.unlocked,
     rewardedBondScenes:result.rewarded,
   };
@@ -575,21 +593,51 @@ export function reducer(state: GameState, action: Action): GameState {
       inventory: state.inventory,
     }, action.stageId, action.score);
     if (!resolved.summary.accepted) return state;
-    const fatigue = clampStat(state.stats.fatigue + Math.max(0, action.fatigueDelta ?? 0));
-    const stress = clampStat(state.stats.stress + Math.max(0, action.stressDelta ?? 0));
+
+    const signatures = callingSignatures(state.activeCalling, state.purchasedTraits);
+    const callingRewards = applyExpeditionCallingRewards({
+      year:state.year,
+      month:state.month,
+      calling:state.activeCalling,
+      traits:state.purchasedTraits,
+      signatures,
+      legendRewardKeys:state.legendRewardKeys,
+      stageId:action.stageId,
+      grade:resolved.summary.grade,
+      firstClear:resolved.summary.firstClear,
+      discovery:resolved.summary.discovery,
+      regionCompleted:resolved.summary.regionCompleted,
+      materialReward:resolved.summary.materialReward,
+      fatigueDelta:Math.max(0, action.fatigueDelta ?? 0),
+      stressDelta:Math.max(0, action.stressDelta ?? 0),
+    });
+    const fatigue = clampStat(state.stats.fatigue + callingRewards.fatigueDelta);
+    const stress = clampStat(state.stats.stress + callingRewards.stressDelta);
     const nextStats = { ...state.stats, affection: resolved.state.affection, fatigue, stress };
     const bossReward = applyBossGrowthPointReward(action.stageId, resolved.summary.firstClear, state.growthPointBossRewards, state.growthPoints);
     const supplyMaterial = pathfinderSupplyBonus(state.activeCalling, state.purchasedTraits, action.stageId, resolved.summary.grade);
     const persistent = pickExpeditionPersistentState(resolved.state);
+    const stage = expeditionStageDefinitions.find(item => item.id === action.stageId);
+    const regionMaterial = stage ? expeditionMaterialByRegion[stage.region] : null;
     if (supplyMaterial) persistent.expeditionMaterials = {
       ...persistent.expeditionMaterials,
       [supplyMaterial]: persistent.expeditionMaterials[supplyMaterial] + 1,
     };
-    const summary = supplyMaterial ? { ...resolved.summary, materialReward: resolved.summary.materialReward + 1 } : resolved.summary;
+    if (regionMaterial && callingRewards.extraMaterial > 0) persistent.expeditionMaterials = {
+      ...persistent.expeditionMaterials,
+      [regionMaterial]: persistent.expeditionMaterials[regionMaterial] + callingRewards.extraMaterial,
+    };
+    const extraMaterial = (supplyMaterial ? 1 : 0) + callingRewards.extraMaterial;
+    const summary = extraMaterial > 0 ? { ...resolved.summary, materialReward: resolved.summary.materialReward + extraMaterial } : resolved.summary;
+    const actionKinds = action.actionKinds ?? { attack:0, dodge:0, charge:0 };
+    const masteryCalling = specialistMasteryCalling(state.activeCalling, actionKinds, summary);
+    const callingMastery = masteryCalling
+      ? { ...state.callingMastery, [masteryCalling]:state.callingMastery[masteryCalling] + 1 }
+      : state.callingMastery;
     const next: GameState = {
       ...state,
       ...persistent,
-      gold: resolved.state.gold,
+      gold: resolved.state.gold + callingRewards.goldBonus,
       gems: resolved.state.gems,
       inventory: resolved.state.inventory,
       stats: nextStats,
@@ -597,6 +645,8 @@ export function reducer(state: GameState, action: Action): GameState {
       lastExpeditionResult: summary,
       growthPoints:bossReward.points,
       growthPointBossRewards:bossReward.rewarded,
+      callingMastery,
+      legendRewardKeys:callingRewards.legendRewardKeys,
     };
     return reconcileProgressRewards(state, next);
   }
@@ -654,11 +704,22 @@ export function reducer(state: GameState, action: Action): GameState {
 
   if (action.type === 'GO_OUTING') {
     const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
-    const outcome = pickExplorationOutcome(action.location, state.explorationXp[action.location], state.discoveries, roll);
+    const effectiveXp = effectivePathfinderExplorationXp(state.explorationXp[action.location], state.activeCalling, state.purchasedTraits);
+    const outcome = pickExplorationOutcome(action.location, effectiveXp, state.discoveries, roll);
     const base = Core.reducer(state, { type: 'GO_OUTING', location: action.location }) as Core.GameState;
-    const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery) ? [...state.discoveries, outcome.discovery] : state.discoveries;
+    const discoveredNow = Boolean(outcome.discovery && !state.discoveries.includes(outcome.discovery));
+    const discoveries = discoveredNow && outcome.discovery ? [...state.discoveries, outcome.discovery] : state.discoveries;
+    const pathfinderLegend = applyPathfinderOutingLegend(
+      state.year,
+      state.month,
+      state.activeCalling,
+      state.purchasedTraits,
+      discoveredNow,
+      state.legendRewardKeys,
+    );
     const progressed: GameState = {
       ...base,
+      gold:base.gold + pathfinderLegend.goldBonus,
       explorationXp: { ...state.explorationXp, [action.location]: state.explorationXp[action.location] + 1 },
       discoveries,
       lastExploration: { location: action.location, event: outcome.event, discovery: outcome.discovery },
@@ -678,6 +739,7 @@ export function reducer(state: GameState, action: Action): GameState {
       lastExpeditionResult: state.lastExpeditionResult,
       ...pickExpeditionPersistentState(state),
       ...pickRaisingDepthState(state),
+      legendRewardKeys:pathfinderLegend.legendRewardKeys,
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(state, applyMonthlyProgress(rewarded, 'outings'));
