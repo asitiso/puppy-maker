@@ -9,6 +9,7 @@ import {
   type GiftItemId,
   type OutingLocationId,
 } from './adventure';
+import { annualRecord, type AnnualRecord } from './annual-records';
 import { attendanceKey, attendanceReward } from './attendance';
 import { availableMail, mailDefinitions, type MailRewardId } from './mail-rewards';
 import {
@@ -99,6 +100,7 @@ export type {
 } from './game-core';
 
 export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } from './adventure';
+export type { AnnualRecord } from './annual-records';
 export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
 export type { GuardianRankId } from './guardian-rank';
 export type { StoryChapterId } from './story-chapters';
@@ -130,6 +132,7 @@ export interface GameState extends Core.GameState {
   claimedMailRewards: MailRewardId[];
   seasonStamps: SeasonStampId[];
   monthlyFocus: MonthlyFocusId;
+  annualRecords: AnnualRecord[];
 }
 
 export type Action =
@@ -156,6 +159,7 @@ export const initialState: GameState = {
   claimedMailRewards: [],
   seasonStamps: [],
   monthlyFocus: 'balanced',
+  annualRecords: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -240,6 +244,34 @@ function hydrateMonthlyFocus(raw: unknown): MonthlyFocusId {
   return typeof raw === 'string' && monthlyFocusIds.includes(raw as MonthlyFocusId) ? raw as MonthlyFocusId : 'balanced';
 }
 
+function hydrateAnnualRecords(raw: unknown): AnnualRecord[] {
+  if (!Array.isArray(raw)) return [];
+  const guardianRanks = guardianRankDefinitions.map(item => item.id);
+  const records: AnnualRecord[] = [];
+  for (const value of raw) {
+    if (!isRecord(value)) continue;
+    const year = Math.max(1, Math.floor(finiteNumber(value.year, 0)));
+    if (!year || records.some(record => record.year === year)) continue;
+    const guardianRankValue = typeof value.guardianRank === 'string' && guardianRanks.includes(value.guardianRank as GuardianRankId)
+      ? value.guardianRank as GuardianRankId
+      : 'trainee';
+    records.push(annualRecord({
+      year,
+      trainings: Math.max(0, Math.floor(finiteNumber(value.trainings, 0))),
+      outings: Math.max(0, Math.floor(finiteNumber(value.outings, 0))),
+      gifts: Math.max(0, Math.floor(finiteNumber(value.gifts, 0))),
+      sGrades: Math.max(0, Math.floor(finiteNumber(value.sGrades, 0))),
+      bestScore: Math.max(0, Math.floor(finiteNumber(value.bestScore, 0))),
+      memories: Math.max(0, Math.floor(finiteNumber(value.memories, 0))),
+      skills: Math.max(0, Math.floor(finiteNumber(value.skills, 0))),
+      discoveries: Math.max(0, Math.floor(finiteNumber(value.discoveries, 0))),
+      seasonStamps: Math.max(0, Math.min(seasonStampIds.length, Math.floor(finiteNumber(value.seasonStamps, 0)))),
+      guardianRank: guardianRankValue,
+    }));
+  }
+  return records.sort((a, b) => a.year - b.year);
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -259,6 +291,7 @@ export function hydrateGameState(raw: unknown): GameState {
     claimedMailRewards: hydrateMailClaims(source.claimedMailRewards),
     seasonStamps: hydrateSeasonStamps(source.seasonStamps),
     monthlyFocus: hydrateMonthlyFocus(source.monthlyFocus),
+    annualRecords: hydrateAnnualRecords(source.annualRecords),
   };
 }
 
@@ -392,6 +425,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     claimedMailRewards: state.claimedMailRewards,
     seasonStamps: state.seasonStamps,
     monthlyFocus: state.monthlyFocus,
+    annualRecords: state.annualRecords,
   };
 }
 
@@ -451,6 +485,7 @@ export function reducer(state: GameState, action: Action): GameState {
       claimedMailRewards: state.claimedMailRewards,
       seasonStamps: state.seasonStamps,
       monthlyFocus: state.monthlyFocus,
+      annualRecords: state.annualRecords,
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
@@ -499,6 +534,21 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'NEXT_MONTH') {
     const allComplete = completedMonthlyMissions(state.monthlyCounters).length === monthlyMissionDefinitions.length;
     const growthStreak = allComplete ? state.growthStreak + 1 : 0;
+    const annualRecords = state.month === 12 && !state.annualRecords.some(record => record.year === state.year)
+      ? [...state.annualRecords, annualRecord({
+          year: state.year,
+          trainings: state.careerRecords.trainings,
+          outings: state.careerRecords.outings,
+          gifts: state.careerRecords.gifts,
+          sGrades: state.careerRecords.sGrades,
+          bestScore: state.careerRecords.bestScore,
+          memories: state.memories.length,
+          skills: Core.unlockedSkills(state).length,
+          discoveries: state.discoveries.length,
+          seasonStamps: state.seasonStamps.length,
+          guardianRank: currentGuardianStatus(state).rank,
+        })]
+      : state.annualRecords;
     const coreNext = Core.reducer(state, action as Core.Action);
     const streakBonus = growthStreak > 0 && growthStreak % 3 === 0 ? 3 : 0;
     return reconcileProgressRewards({
@@ -518,6 +568,7 @@ export function reducer(state: GameState, action: Action): GameState {
       claimedMailRewards: state.claimedMailRewards,
       seasonStamps: state.seasonStamps,
       monthlyFocus: 'balanced',
+      annualRecords,
     });
   }
 
