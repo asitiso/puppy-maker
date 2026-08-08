@@ -6,6 +6,7 @@ export type CollectionArchiveInput = {
   titles: number;
   seasonStamps: number;
   legacyRelics: number;
+  ambitionHonors: number;
 };
 
 export type CollectionCategoryId = keyof CollectionArchiveInput;
@@ -25,6 +26,7 @@ const categoryDefinitions: Array<{ id: CollectionCategoryId; label: string; tota
   { id:'titles', label:'칭호', total:6 },
   { id:'seasonStamps', label:'계절 인장', total:4 },
   { id:'legacyRelics', label:'레거시 유물', total:5 },
+  { id:'ambitionHonors', label:'야망 휘장', total:3 },
 ];
 
 function clampCount(value: number, total: number): number {
