@@ -9,6 +9,7 @@ import { callingSignatures } from './calling-signatures';
 import { guardianCallingDefinitions } from './guardian-callings';
 import { callingMasteryLevel } from './calling-mastery';
 import { expeditionIdentityModifiers } from './raising-expedition-effects';
+import { worldResultSummary, worldUiSummary } from './world-ui';
 
 export type GuardianExpeditionOverlayProps = {
   state: GameState;
@@ -96,6 +97,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
   const cleared = expeditionStageDefinitions.filter(stage => isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const bosses = ['forest_guardian', 'city_core', 'lake_tempest'].filter(id => state.rewardedExpeditionStages.includes(id as ExpeditionStageId)).length;
   const recommended = nextExpeditionStage(state.expeditionRecords);
+  const world = worldUiSummary(state);
 
   if (!open) {
     return <button className="expedition-home-card" onClick={onOpen} aria-label={`수호자 원정 ${cleared} / 9 클리어`}>
@@ -120,6 +122,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     const discovery = result?.discovery ? expeditionDiscoveryDefinitions.find(item => item.id === result.discovery) : null;
     const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
     const mastery = state.activeCalling ? callingMasteryLevel(state.callingMastery[state.activeCalling]) : null;
+    const worldResult = worldResultSummary(state);
     return <div className="expedition-overlay"><section className="expedition-result">
       <img className="expedition-result-burst" src="/assets/effects/success_burst.png" alt=""/>
       <small>EXPEDITION RECORD</small><h2>{stage.name}</h2>
@@ -134,15 +137,24 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
         <span><b>유물</b>{result.relicsUnlocked.length ? result.relicsUnlocked.length + '개' : '-'}</span>
         {calling && <span><b>Calling</b>{calling.label} · Lv.{mastery}</span>}
       </div>}
+      {worldResult && <div className="expedition-world-result">
+        <small>WORLD PROGRESS</small>
+        <div><b>{worldResult.regionLabel} 명성</b><span>{worldResult.renownLabel}</span></div>
+        <div><b>계절 원정</b><span>{worldResult.seasonLabel}</span></div>
+        {worldResult.eventMaterialLabel && <div><b>월드 이벤트</b><span>{worldResult.eventMaterialLabel}</span></div>}
+        {worldResult.seasonRewardLabel && <div><b>시즌 보상</b><span>{worldResult.seasonRewardLabel}</span></div>}
+        {worldResult.contractLabel && <div><b>월간 의뢰</b><span>{worldResult.contractLabel}</span></div>}
+      </div>}
       <button onClick={() => setView('map')}>원정 지도로 돌아가기</button>
     </section></div>;
   }
 
   return <div className="expedition-overlay"><section className="expedition-map">
     <header><button onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
+    <div className="expedition-world-event"><b>{world.expeditionMap.eventStrip}</b><span>{world.event.bonusLabel}</span></div>
     <div className="expedition-materials">{Object.entries(state.expeditionMaterials).map(([id, value]) => <span key={id}><b>{materialLabels[id as keyof typeof materialLabels]}</b>{value}</span>)}</div>
-    <div className="expedition-regions">{expeditionRegionDefinitions.map(region => <article key={region.id}>
-      <h3>{region.name}<small>{region.stages.filter(id => isExpeditionStageCleared(state.expeditionRecords[id])).length}/3</small></h3>
+    <div className="expedition-regions">{expeditionRegionDefinitions.map(region => <article key={region.id} className={region.id === world.expeditionMap.featuredRegionId ? 'event-featured' : ''}>
+      <h3>{region.name}<small>{world.expeditionMap.regionRenownLabels[region.id]} · {region.stages.filter(id => isExpeditionStageCleared(state.expeditionRecords[id])).length}/3</small></h3>
       {region.stages.map((stageId, index) => {
         const stage = stageDefinition(stageId);
         const record = state.expeditionRecords[stageId];
