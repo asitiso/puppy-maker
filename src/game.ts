@@ -75,6 +75,14 @@ import { resolveExpeditionFinish, type ExpeditionFinishSummary } from './expedit
 import { equipExpeditionRelic, unequipExpeditionRelic, type ExpeditionRelicId } from './expedition-relics';
 import { applyCrafting, type ExpeditionCraftingRecipeId } from './expedition-crafting';
 import type { ExpeditionStageId } from './expedition-regions';
+import { applyCallingSelection, type GuardianCallingId } from './guardian-callings';
+import { purchaseGrowthTrait, type GrowthTraitId } from './growth-traits';
+import {
+  emptyRaisingDepthState,
+  hydrateRaisingDepthState,
+  pickRaisingDepthState,
+  type RaisingDepthPersistentState,
+} from './raising-depth-state';
 
 export {
   achievementDefinitions,
@@ -130,6 +138,10 @@ export type { ExpeditionMaterialId, ExpeditionCraftingRecipeId, CraftingMileston
 export type { ExpeditionDiscoveryId } from './expedition-discoveries';
 export type { ExpeditionRegionId, ExpeditionStageId, ExpeditionStageRecord, ExpeditionGrade } from './expedition-regions';
 export type { ExpeditionFinishSummary } from './expedition-rewards';
+export type { GuardianCallingId } from './guardian-callings';
+export type { GrowthTraitId } from './growth-traits';
+export type { BondSceneId } from './bond-scenes';
+export type { RaisingDepthPersistentState } from './raising-depth-state';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -137,7 +149,7 @@ export type ExplorationFeedback = {
   discovery: DiscoveryId | null;
 };
 
-export interface GameState extends Core.GameState, ExpeditionPersistentState {
+export interface GameState extends Core.GameState, ExpeditionPersistentState, RaisingDepthPersistentState {
   explorationXp: Record<OutingLocationId, number>;
   discoveries: DiscoveryId[];
   lastExploration: ExplorationFeedback | null;
@@ -164,6 +176,8 @@ export type Action =
   | { type: 'CLAIM_MAIL'; mail: MailRewardId }
   | { type: 'SET_MONTHLY_FOCUS'; focus: MonthlyFocusId }
   | { type: 'SET_YEARLY_AMBITION'; ambition: YearlyAmbitionId }
+  | { type: 'SET_GUARDIAN_CALLING'; calling: GuardianCallingId }
+  | { type: 'PURCHASE_GROWTH_TRAIT'; trait: GrowthTraitId }
   | { type: 'FINISH_EXPEDITION_STAGE'; stageId: ExpeditionStageId; score: number; fatigueDelta?: number; stressDelta?: number }
   | { type: 'EQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
   | { type: 'UNEQUIP_EXPEDITION_RELIC'; relic: ExpeditionRelicId }
@@ -190,6 +204,7 @@ export const initialState: GameState = {
   yearlyAmbitions: {},
   lastExpeditionResult: null,
   ...emptyExpeditionPersistentState(),
+  ...emptyRaisingDepthState(),
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -326,6 +341,7 @@ export function hydrateGameState(raw: unknown): GameState {
     yearlyAmbitions: readAmbitionSelections(source.yearlyAmbitions),
     lastExpeditionResult: null,
     ...hydrateExpeditionPersistentState(source),
+    ...hydrateRaisingDepthState(source),
   };
 }
 
@@ -463,6 +479,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     yearlyAmbitions: state.yearlyAmbitions,
     lastExpeditionResult: state.lastExpeditionResult,
     ...pickExpeditionPersistentState(state),
+    ...pickRaisingDepthState(state),
   };
 }
 
@@ -480,6 +497,33 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'SET_YEARLY_AMBITION') {
     if (state.yearlyAmbitions[state.year]) return state;
     return { ...state, yearlyAmbitions: { ...state.yearlyAmbitions, [state.year]: action.ambition } };
+  }
+
+  if (action.type === 'SET_GUARDIAN_CALLING') {
+    const result = applyCallingSelection({
+      current:state.activeCalling,
+      next:action.calling,
+      guardianRank:currentGuardianStatus(state).rank,
+      gold:state.gold,
+      year:state.year,
+      month:state.month,
+      lastSwitchKey:state.callingLastSwitchKey,
+      history:state.callingHistory,
+    });
+    if (!result.changed) return state;
+    return {
+      ...state,
+      activeCalling:result.current,
+      gold:result.gold,
+      callingLastSwitchKey:result.lastSwitchKey,
+      callingHistory:result.history,
+    };
+  }
+
+  if (action.type === 'PURCHASE_GROWTH_TRAIT') {
+    const result = purchaseGrowthTrait(action.trait, state.purchasedTraits, state.growthPoints);
+    if (!result.purchased) return state;
+    return { ...state, purchasedTraits:result.traits, growthPoints:result.points };
   }
 
   if (action.type === 'FINISH_EXPEDITION_STAGE') {
@@ -580,6 +624,7 @@ export function reducer(state: GameState, action: Action): GameState {
       yearlyAmbitions: state.yearlyAmbitions,
       lastExpeditionResult: state.lastExpeditionResult,
       ...pickExpeditionPersistentState(state),
+      ...pickRaisingDepthState(state),
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
@@ -666,6 +711,7 @@ export function reducer(state: GameState, action: Action): GameState {
       yearlyAmbitions: state.yearlyAmbitions,
       lastExpeditionResult: null,
       ...pickExpeditionPersistentState(state),
+      ...pickRaisingDepthState(state),
     });
   }
 
