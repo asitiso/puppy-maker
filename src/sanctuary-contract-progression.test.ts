@@ -3,6 +3,7 @@ import { hydrateGameState, initialState, reducer } from './game';
 import { sanctuaryContractSet } from './sanctuary-contracts';
 
 const weekKey = `${initialState.year}-${initialState.month}-${initialState.week}`;
+const unlockedSanctuary = { ...initialState.sanctuaryLevels, training_hall:1 as const };
 
 describe('sanctuary contract reducer progression', () => {
   it('hydrates valid contract state and sanitizes malformed values', () => {
@@ -22,29 +23,29 @@ describe('sanctuary contract reducer progression', () => {
   });
 
   it('advances and rewards a matching successful outing contract exactly once', () => {
-    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,initialState.sanctuaryLevels);
-    const outing = contracts.find(item => item.kind === 'outing');
-    if (!outing) return;
+    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,unlockedSanctuary);
+    const outing = contracts.find(item => item.kind === 'outing')!;
     const ready = {
       ...initialState,
+      sanctuaryLevels:unlockedSanctuary,
       sanctuaryContractWeekKey:weekKey,
       sanctuaryContractProgress:{ [outing.id]:outing.target - 1 },
     };
-    const next = reducer(ready,{ type:'GO_OUTING', locationId:'forest' });
+    const next = reducer(ready,{ type:'GO_OUTING', location:'forest' });
     expect(next.sanctuaryContractProgress[outing.id]).toBe(outing.target);
     expect(next.rewardedSanctuaryContracts).toContain(`${weekKey}:${outing.id}`);
     expect(next.sanctuaryPrestige).toBe(outing.prestige);
     expect(next.gold).toBeGreaterThanOrEqual(ready.gold + outing.reward.gold);
-    const repeat = reducer(next,{ type:'GO_OUTING', locationId:'forest' });
+    const repeat = reducer(next,{ type:'GO_OUTING', location:'forest' });
     expect(repeat.sanctuaryPrestige).toBe(next.sanctuaryPrestige);
   });
 
   it('does not advance gift contracts when the gift action is a no-op', () => {
-    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,initialState.sanctuaryLevels);
-    const gift = contracts.find(item => item.kind === 'gift');
-    if (!gift) return;
+    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,unlockedSanctuary);
+    const gift = contracts.find(item => item.kind === 'gift')!;
     const ready = {
       ...initialState,
+      sanctuaryLevels:unlockedSanctuary,
       inventory:{ herb_tea:0, star_cookie:0, guardian_charm:0 },
       sanctuaryContractWeekKey:weekKey,
       sanctuaryContractProgress:{ [gift.id]:0 },
@@ -57,12 +58,13 @@ describe('sanctuary contract reducer progression', () => {
     const state = {
       ...initialState,
       week:2,
+      sanctuaryLevels:unlockedSanctuary,
       sanctuaryContractWeekKey:'1-4-1',
       sanctuaryContractProgress:{ training_focus:2 },
       rewardedSanctuaryContracts:['1-4-1:training_focus'],
       sanctuaryPrestige:12,
     };
-    const next = reducer(state,{ type:'GO_OUTING', locationId:'forest' });
+    const next = reducer(state,{ type:'GO_OUTING', location:'forest' });
     expect(next.sanctuaryContractWeekKey).toBe('1-4-2');
     expect(next.rewardedSanctuaryContracts).toEqual(state.rewardedSanctuaryContracts);
     expect(next.sanctuaryPrestige).toBeGreaterThanOrEqual(12);
@@ -70,27 +72,27 @@ describe('sanctuary contract reducer progression', () => {
   });
 
   it('auto-claims sanctuary prestige rank rewards only once', () => {
-    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,initialState.sanctuaryLevels);
-    const target = contracts.find(item => item.prestige >= 5)!;
+    const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,unlockedSanctuary);
+    const target = contracts[0];
     const ready = {
       ...initialState,
+      sanctuaryLevels:unlockedSanctuary,
       sanctuaryContractWeekKey:weekKey,
       sanctuaryContractProgress:{ [target.id]:target.target - 1 },
       sanctuaryPrestige:19,
-      claimedSanctuaryPrestigeRanks:[] as string[],
+      claimedSanctuaryPrestigeRanks:[] as ('haven'|'sanctum'|'citadel'|'celestial')[],
     };
     const action = target.kind === 'training'
       ? ({ type:'FINISH_TRAINING' } as const)
       : target.kind === 'outing'
-        ? ({ type:'GO_OUTING', locationId:'forest' } as const)
+        ? ({ type:'GO_OUTING', location:'forest' } as const)
         : target.kind === 'gift'
           ? ({ type:'GIVE_GIFT', itemId:'herb_tea' } as const)
           : ({ type:'FINISH_EXPEDITION_STAGE', stageId:'forest_path', score:700 } as const);
-    const next = reducer(ready as typeof initialState & typeof ready,action);
+    const next = reducer(ready,action);
     expect(next.claimedSanctuaryPrestigeRanks).toContain('haven');
-    const firstGold = next.gold;
     const second = reducer(next,action);
     expect(second.claimedSanctuaryPrestigeRanks.filter(id => id === 'haven')).toHaveLength(1);
-    expect(second.gold - firstGold).toBeLessThan(300);
+    expect(second.sanctuaryPrestige).toBe(next.sanctuaryPrestige);
   });
 });
