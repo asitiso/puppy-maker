@@ -11,19 +11,20 @@ describe('monthly challenge progression', () => {
 
   it('sanitizes malformed monthly progress', () => {
     const state = hydrateGameState({ ...initialState, monthlyCounters:{trainings:-3,outings:2.8,gifts:'bad'}, rewardedMonthlyMissions:['training_once','bad','training_once'], growthStreak:-4 });
-    expect(state.monthlyCounters).toEqual({ trainings:0, outings:2, gifts:0 });
+    expect(state.monthlyCounters).toEqual({ trainings:0,outings:2,gifts:0 });
     expect(state.rewardedMonthlyMissions).toEqual(['training_once']);
     expect(state.growthStreak).toBe(0);
   });
 
-  it('rewards the training mission exactly once', () => {
+  it('rewards the training mission exactly once and can unlock a bond scene on later training', () => {
     const first = reducer(initialState, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(first.monthlyCounters.trainings).toBe(1);
     expect(first.gold).toBe(initialState.gold + 120);
     expect(first.rewardedMonthlyMissions).toContain('training_once');
     const second = reducer({ ...first, screen:'training' }, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(second.monthlyCounters.trainings).toBe(2);
-    expect(second.gold).toBe(first.gold);
+    expect(second.gold).toBe(first.gold + 150);
+    expect(second.unlockedBondScenes).toContain('shared_secret');
   });
 
   it('rewards the outing mission on the second outing and story on the third unique outing', () => {
@@ -38,21 +39,22 @@ describe('monthly challenge progression', () => {
     expect(third.rewardedStoryChapters).toContain('wide_world');
   });
 
-  it('only counts a gift when an item is actually consumed', () => {
+  it('only counts a gift when an item is actually consumed and records newly crossed bond scenes', () => {
     const empty = { ...initialState, inventory:{...initialState.inventory, herb_tea:0} };
     const noOp = reducer(empty, { type:'GIVE_GIFT', item:'herb_tea' });
     expect(noOp).toBe(empty);
     expect(noOp.monthlyCounters.gifts).toBe(0);
     const gifted = reducer(initialState, { type:'GIVE_GIFT', item:'star_cookie' });
     expect(gifted.monthlyCounters.gifts).toBe(1);
-    expect(gifted.gold).toBe(initialState.gold + 100);
+    expect(gifted.gold).toBe(initialState.gold + 250);
+    expect(gifted.unlockedBondScenes).toContain('shared_secret');
   });
 
   it('increments the growth streak and resets monthly progress after a completed month', () => {
     const complete = { ...initialState, monthlyCounters:{trainings:1,outings:2,gifts:1}, rewardedMonthlyMissions:['training_once','outing_twice','gift_once'] as typeof initialState.rewardedMonthlyMissions };
     const next = reducer({ ...complete, screen:'result' }, { type:'NEXT_MONTH' });
     expect(next.growthStreak).toBe(1);
-    expect(next.monthlyCounters).toEqual({ trainings:0,outings:0,gifts:0 });
+    expect(next.monthlyCounters).toEqual({trainings:0,outings:0,gifts:0});
     expect(next.rewardedMonthlyMissions).toEqual([]);
   });
 
