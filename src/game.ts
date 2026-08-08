@@ -12,8 +12,38 @@ import {
   weeklyDirectiveKey,
   weeklyDirectives,
 } from './weekly-directives';
+import { resolveSeasonPurchase, type SeasonShopOfferId } from './season-shop';
 
-export function reducer(state:Live.GameState, action:Live.Action):Live.GameState {
+export function reducer(state:Live.GameState, action:Live.Action | { type:'PURCHASE_SEASON_OFFER'; offerId:SeasonShopOfferId }):Live.GameState {
+  if (action.type === 'PURCHASE_SEASON_OFFER') {
+    const journeyKey = seasonJourneyKey(state.year,state.month);
+    const result = resolveSeasonPurchase({
+      seasonKey:journeyKey,
+      offerId:action.offerId,
+      tokens:state.seasonTokenBalances[journeyKey] ?? 0,
+      purchaseKeys:state.seasonShopPurchases,
+    });
+    if (!result.accepted) return state;
+    const inventory = { ...state.inventory };
+    for (const [id,amount] of Object.entries(result.reward.inventory)) {
+      const key = id as keyof typeof inventory;
+      inventory[key] += amount ?? 0;
+    }
+    const expeditionMaterials = { ...state.expeditionMaterials };
+    for (const [id,amount] of Object.entries(result.reward.materials)) {
+      const key = id as keyof typeof expeditionMaterials;
+      expeditionMaterials[key] += amount ?? 0;
+    }
+    return {
+      ...state,
+      gold:state.gold + result.reward.gold,
+      inventory,
+      expeditionMaterials,
+      seasonTokenBalances:{ ...state.seasonTokenBalances, [journeyKey]:result.tokens },
+      seasonShopPurchases:[...state.seasonShopPurchases,result.purchaseKey],
+    };
+  }
+
   if (action.type !== 'FINISH_TRAINING') return Live.reducer(state,action);
 
   const baseNext = Base.reducer(state,action as Base.Action);
@@ -58,6 +88,7 @@ export function reducer(state:Live.GameState, action:Live.Action):Live.GameState
     weeklyDirectiveProgress:weekly.progress,
     rewardedWeeklyDirectives:rewardedWeekly,
     seasonJourneyHistory:state.seasonJourneyHistory,
+    seasonShopPurchases:state.seasonShopPurchases,
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
