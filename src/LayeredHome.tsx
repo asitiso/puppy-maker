@@ -15,12 +15,14 @@ import {
 import {
   achievementDefinitions,
   collectionProgress,
+  currentGuardianStatus,
   eligibleAchievements,
   masteryLevel,
   relationshipRank,
   type AchievementId,
   type GameState,
 } from './game';
+import { guardianRankDefinitions } from './guardian-rank';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 
@@ -101,6 +103,9 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const rank = relationshipRank(state.stats.affection);
   const collection = collectionProgress(state);
   const eligible = new Set(eligibleAchievements(state));
+  const guardian = currentGuardianStatus(state);
+  const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
+  const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
   const highestMastery = Math.max(...Object.values(state.mastery).map(entry => masteryLevel(entry.xp)));
   const isQuestPanel = activePanel === 'quest';
   const isBondPanel = activePanel === 'bond';
@@ -140,7 +145,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     </button>
     {petted && <img className="lh-heart" src="/assets/effects/affection_hearts.png" alt="" />}
 
-    <div className="lh-level"><Frame src="/ui/level_badge_frame.png" /><div><small>Lv.</small><strong>10</strong><span>루나</span></div></div>
+    <div className="lh-level"><Frame src="/ui/level_badge_frame.png" /><div><small>RANK</small><strong>{guardian.points}</strong><span>{guardianShortLabel}</span></div></div>
     <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin gold">●</i><b>{state.gold.toLocaleString()}</b></span><span><i className="coin gem">◆</i><b>{state.gems.toLocaleString()}</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i style={{ width: `${stamina}%` }} /><b>{stamina} / 100</b></div></div>
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
 
@@ -148,7 +153,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="gems" /></span><b>초보자 패키지</b><small>23:59:59</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
 
-    <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · 컨디션 ${conditionLabels[state.condition]}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
+    <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · ${guardianDefinition.label}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
 
     <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
@@ -178,6 +183,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
             </button>;
           })}
         </div> : isBondPanel ? <div className="lh-panel-list">
+          <button disabled><span>★</span><b>수호 등급<small>{guardian.next ? `다음 ${guardianRankDefinitions.find(item => item.id === guardian.next?.rank)?.label ?? ''}까지 ${guardian.next.threshold - guardian.points}점` : '최고 등급 달성'}</small></b><i>{guardianDefinition.label}</i></button>
           <button disabled><span>♥</span><b>현재 관계</b><i>{relationshipLabels[rank]}</i></button>
           <button disabled><span>1</span><b>호감도</b><i>{state.stats.affection} / 100</i></button>
           <button disabled><span>2</span><b>수집한 기억</b><i>{collection.memories}개</i></button>
