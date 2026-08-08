@@ -4,11 +4,13 @@ import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import LayeredHome from './LayeredHome';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
+import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen } from './game';
 import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
 import './collection-archive.css';
+import './year-end-ceremony.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -60,6 +62,7 @@ export default function Root() {
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
       <CollectionArchiveOverlay state={gameState} />
+      <YearEndCeremonyOverlay state={gameState} />
     </>}
   </>;
 }
