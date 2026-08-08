@@ -83,4 +83,23 @@ describe('live ops ui summary', () => {
     });
     expect(summary.mastery).toEqual(expect.objectContaining({ id:'chronicler', score:13, nextThreshold:24 }));
   });
+
+  it('shows claimed mastery rewards and the next reward target', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonJourneyHistory:[
+        { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+        { key:'1-summer', score:1300, tiersCompleted:10, tokensEarned:120 },
+      ],
+      seasonShopPurchases:[
+        '1-spring:seasonal_keepsake:1',
+        '1-summer:seasonal_keepsake:1',
+        '1-autumn:seasonal_keepsake:1',
+      ],
+      claimedSeasonCompletionHonors:['first_complete'],
+      claimedSeasonMasteryRanks:['traveler','chronicler'],
+    });
+    expect(summary.masteryRewards.claimed).toEqual(['traveler','chronicler']);
+    expect(summary.masteryRewards.next).toEqual(expect.objectContaining({ rank:'guardian', threshold:24 }));
+  });
 });
