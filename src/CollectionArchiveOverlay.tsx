@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { annualHonor } from './annual-honors';
+import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
-import { guardianRankDefinitions } from './guardian-rank';
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
@@ -38,11 +39,13 @@ export default function CollectionArchiveOverlay({ state }: { state: GameState }
           <div className="annual-records">
             <h3>연간 수호 기록</h3>
             {state.annualRecords.length === 0 ? <p>1년차 12월을 마치면 첫 연간 기록이 남아요.</p> : [...state.annualRecords].reverse().map(record => {
-              const rank = guardianRankDefinitions.find(item => item.id === record.guardianRank)?.label ?? record.guardianRank;
+              const honor = annualHonor(record);
               return <article key={record.id}>
-                <b>{record.year}년차 · {rank}</b>
+                <b>{annualRecordHeadline(record)}</b>
+                <strong className="annual-honor">✦ {honor.label}</strong>
+                <small>{honor.description}</small>
                 <span>훈련 {record.trainings} · 외출 {record.outings} · 선물 {record.gifts} · S등급 {record.sGrades}</span>
-                <span>BEST {record.bestScore} · 기억 {record.memories} · 발견 {record.discoveries} · 계절 인장 {record.seasonStamps}/4</span>
+                <span>기억 {record.memories} · 기술 {record.skills} · 발견 {record.discoveries} · 계절 인장 {record.seasonStamps}/4</span>
               </article>;
             })}
           </div>
