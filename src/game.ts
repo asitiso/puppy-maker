@@ -63,6 +63,8 @@ import {
   type SeasonStampId,
 } from './season-stamps';
 import { applyMonthlyFocusBonus, monthlyFocusIds, type MonthlyFocusId } from './monthly-focus';
+import { readAmbitionSelections, type YearlyAmbitionSelections } from './yearly-ambition-selection';
+import type { YearlyAmbitionId } from './yearly-ambitions';
 
 export {
   achievementDefinitions,
@@ -110,6 +112,8 @@ export type { CareerRecords, CareerTitleId } from './career-records';
 export type { MailRewardId } from './mail-rewards';
 export type { SeasonStampId } from './season-stamps';
 export type { MonthlyFocusId } from './monthly-focus';
+export type { YearlyAmbitionSelections } from './yearly-ambition-selection';
+export type { YearlyAmbitionId } from './yearly-ambitions';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -133,6 +137,7 @@ export interface GameState extends Core.GameState {
   seasonStamps: SeasonStampId[];
   monthlyFocus: MonthlyFocusId;
   annualRecords: AnnualRecord[];
+  yearlyAmbitions: YearlyAmbitionSelections;
 }
 
 export type Action =
@@ -141,6 +146,7 @@ export type Action =
   | { type: 'CLAIM_ATTENDANCE' }
   | { type: 'CLAIM_MAIL'; mail: MailRewardId }
   | { type: 'SET_MONTHLY_FOCUS'; focus: MonthlyFocusId }
+  | { type: 'SET_YEARLY_AMBITION'; ambition: YearlyAmbitionId }
   | { type: 'RESET' };
 
 export const initialState: GameState = {
@@ -160,6 +166,7 @@ export const initialState: GameState = {
   seasonStamps: [],
   monthlyFocus: 'balanced',
   annualRecords: [],
+  yearlyAmbitions: {},
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -292,6 +299,7 @@ export function hydrateGameState(raw: unknown): GameState {
     seasonStamps: hydrateSeasonStamps(source.seasonStamps),
     monthlyFocus: hydrateMonthlyFocus(source.monthlyFocus),
     annualRecords: hydrateAnnualRecords(source.annualRecords),
+    yearlyAmbitions: readAmbitionSelections(source.yearlyAmbitions),
   };
 }
 
@@ -426,6 +434,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     seasonStamps: state.seasonStamps,
     monthlyFocus: state.monthlyFocus,
     annualRecords: state.annualRecords,
+    yearlyAmbitions: state.yearlyAmbitions,
   };
 }
 
@@ -438,6 +447,11 @@ export function reducer(state: GameState, action: Action): GameState {
 
   if (action.type === 'SET_MONTHLY_FOCUS') {
     return { ...state, monthlyFocus: action.focus };
+  }
+
+  if (action.type === 'SET_YEARLY_AMBITION') {
+    if (state.yearlyAmbitions[state.year]) return state;
+    return { ...state, yearlyAmbitions: { ...state.yearlyAmbitions, [state.year]: action.ambition } };
   }
 
   if (action.type === 'CLAIM_ATTENDANCE') {
@@ -486,6 +500,7 @@ export function reducer(state: GameState, action: Action): GameState {
       seasonStamps: state.seasonStamps,
       monthlyFocus: state.monthlyFocus,
       annualRecords: state.annualRecords,
+      yearlyAmbitions: state.yearlyAmbitions,
     };
     const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
     return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
@@ -569,6 +584,7 @@ export function reducer(state: GameState, action: Action): GameState {
       seasonStamps: state.seasonStamps,
       monthlyFocus: 'balanced',
       annualRecords,
+      yearlyAmbitions: state.yearlyAmbitions,
     });
   }
 
