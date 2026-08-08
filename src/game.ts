@@ -4,11 +4,13 @@ import * as Base from './game-sanctuary-base';
 import {
   advanceSanctuaryContracts,
   sanctuaryContractSet,
+  sanctuaryPrestigeRank,
   sanctuaryPrestigeReward,
   type SanctuaryContractId,
   type SanctuaryContractKind,
   type SanctuaryPrestigeRankId,
 } from './sanctuary-contracts';
+import { sanctuaryWeeklyChestReady, sanctuaryWeeklyChestReward } from './sanctuary-weekly-chest';
 
 export type GameState = Base.GameState & {
   sanctuaryContractWeekKey:string|null;
@@ -16,6 +18,7 @@ export type GameState = Base.GameState & {
   rewardedSanctuaryContracts:string[];
   sanctuaryPrestige:number;
   claimedSanctuaryPrestigeRanks:SanctuaryPrestigeRankId[];
+  claimedSanctuaryWeeklyChests:string[];
 };
 
 export type Action = Base.Action;
@@ -27,6 +30,7 @@ export const initialState:GameState = {
   rewardedSanctuaryContracts:[],
   sanctuaryPrestige:0,
   claimedSanctuaryPrestigeRanks:[],
+  claimedSanctuaryWeeklyChests:[],
 };
 
 const contractIds:SanctuaryContractId[] = ['training_focus','field_patrol','warm_bond','guardian_sortie'];
@@ -59,6 +63,11 @@ function sanitizePrestigeRanks(raw:unknown):SanctuaryPrestigeRankId[] {
   return [...new Set(raw.filter((value):value is SanctuaryPrestigeRankId => typeof value === 'string' && ids.includes(value as SanctuaryPrestigeRankId)))];
 }
 
+function sanitizeWeeklyChestKeys(raw:unknown):string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is string => typeof value === 'string' && weekKeyPattern.test(value)))];
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
@@ -68,6 +77,7 @@ export function hydrateGameState(raw:unknown):GameState {
     rewardedSanctuaryContracts:sanitizeRewardedContracts(source.rewardedSanctuaryContracts),
     sanctuaryPrestige:safeInt(source.sanctuaryPrestige),
     claimedSanctuaryPrestigeRanks:sanitizePrestigeRanks(source.claimedSanctuaryPrestigeRanks),
+    claimedSanctuaryWeeklyChests:sanitizeWeeklyChestKeys(source.claimedSanctuaryWeeklyChests),
   };
 }
 
@@ -78,6 +88,7 @@ function persistentMeta(state:GameState) {
     rewardedSanctuaryContracts:state.rewardedSanctuaryContracts ?? [],
     sanctuaryPrestige:state.sanctuaryPrestige ?? 0,
     claimedSanctuaryPrestigeRanks:state.claimedSanctuaryPrestigeRanks ?? [],
+    claimedSanctuaryWeeklyChests:state.claimedSanctuaryWeeklyChests ?? [],
   };
 }
 
@@ -89,7 +100,7 @@ function actionKind(action:Action):SanctuaryContractKind|null {
   return null;
 }
 
-function applyPrestigeRewards(state:GameState,prestige:number,claimed:SanctuaryPrestigeRankId[]) {
+function applyPrestigeRewards(prestige:number,claimed:SanctuaryPrestigeRankId[]) {
   const nextClaimed = [...claimed];
   let gold = 0;
   let gems = 0;
@@ -107,6 +118,7 @@ function applyContractAction(previous:GameState,next:GameState,kind:SanctuaryCon
   const key = `${previous.year}-${previous.month}-${previous.week}`;
   const progress = previous.sanctuaryContractWeekKey === key ? (previous.sanctuaryContractProgress ?? {}) : {};
   const contracts = sanctuaryContractSet(previous.year,previous.month,previous.week,previous.sanctuaryLevels);
+  if (!contracts.length) return next;
   const rewarded = previous.rewardedSanctuaryContracts ?? [];
   const completedThisWeek = rewarded
     .filter(item => item.startsWith(`${key}:`))
@@ -115,18 +127,21 @@ function applyContractAction(previous:GameState,next:GameState,kind:SanctuaryCon
   const newlyCompleted = advanced.completed.filter(item => !rewarded.includes(`${key}:${item.id}`));
   const prestigeGain = newlyCompleted.reduce((sum,item) => sum + item.prestige,0);
   const prestige = (previous.sanctuaryPrestige ?? 0) + prestigeGain;
-  const claimed = previous.claimedSanctuaryPrestigeRanks ?? [];
-  const rankRewards = applyPrestigeRewards(previous,prestige,claimed);
-  if (!newlyCompleted.length && previous.sanctuaryContractWeekKey === key && advanced.progress === progress) return next;
+  const rankRewards = applyPrestigeRewards(prestige,previous.claimedSanctuaryPrestigeRanks ?? []);
+  const rewardedNext = [...rewarded,...newlyCompleted.map(item => `${key}:${item.id}`)];
+  const claimedChests = previous.claimedSanctuaryWeeklyChests ?? [];
+  const chestReady = sanctuaryWeeklyChestReady(key,contracts.map(item => item.id),rewardedNext,claimedChests);
+  const chestReward = chestReady ? sanctuaryWeeklyChestReward(sanctuaryPrestigeRank(prestige).id) : { gold:0, gems:0 };
   return {
     ...next,
     sanctuaryContractWeekKey:key,
     sanctuaryContractProgress:advanced.progress,
-    rewardedSanctuaryContracts:[...rewarded,...newlyCompleted.map(item => `${key}:${item.id}`)],
+    rewardedSanctuaryContracts:rewardedNext,
     sanctuaryPrestige:prestige,
     claimedSanctuaryPrestigeRanks:rankRewards.claimed,
-    gold:next.gold + newlyCompleted.reduce((sum,item) => sum + item.reward.gold,0) + rankRewards.gold,
-    gems:next.gems + newlyCompleted.reduce((sum,item) => sum + item.reward.gems,0) + rankRewards.gems,
+    claimedSanctuaryWeeklyChests:chestReady ? [...claimedChests,key] : claimedChests,
+    gold:next.gold + newlyCompleted.reduce((sum,item) => sum + item.reward.gold,0) + rankRewards.gold + chestReward.gold,
+    gems:next.gems + newlyCompleted.reduce((sum,item) => sum + item.reward.gems,0) + rankRewards.gems + chestReward.gems,
   };
 }
 
@@ -134,7 +149,7 @@ export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
   const baseNext = Base.reducer(state,action);
   if (baseNext === state) return state;
-  let next:GameState = { ...baseNext, ...persistentMeta(state) };
+  const next:GameState = { ...baseNext, ...persistentMeta(state) };
   const kind = actionKind(action);
   if (!kind) return next;
   if (kind === 'expedition' && !next.lastExpeditionResult?.accepted) return next;
