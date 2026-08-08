@@ -24,6 +24,7 @@ import {
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
+import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import { readAmbitionSelections } from './yearly-ambition-selection';
 
@@ -174,9 +175,10 @@ type AppProps = {
   onGuardianCallingReady?: (setCalling: (calling: GuardianCallingId) => void) => void;
   onGrowthTraitReady?: (purchase: (trait: GrowthTraitId) => void) => void;
   onSeasonPurchaseReady?: (purchase: (offer: SeasonShopOfferId) => void) => void;
+  onSeasonLegacyUnlockReady?: (unlock: (nodeId: SeasonLegacyNodeId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     const loaded = loadResilientSave(localStorage);
     if (loaded.recovered) repairPrimarySave(localStorage, loaded);
@@ -203,6 +205,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const setGuardianCalling = useCallback((calling: GuardianCallingId) => dispatch({ type:'SET_GUARDIAN_CALLING', calling }), []);
   const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
   const purchaseSeasonOffer = useCallback((offerId: SeasonShopOfferId) => dispatch({ type:'PURCHASE_SEASON_OFFER', offerId }), []);
+  const unlockSeasonLegacyNode = useCallback((nodeId: SeasonLegacyNodeId) => dispatch({ type:'UNLOCK_SEASON_LEGACY_NODE', nodeId }), []);
   useEffect(() => {
     writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -223,6 +226,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onGuardianCallingReady?.(setGuardianCalling), [setGuardianCalling, onGuardianCallingReady]);
   useEffect(() => onGrowthTraitReady?.(purchaseGrowthTrait), [purchaseGrowthTrait, onGrowthTraitReady]);
   useEffect(() => onSeasonPurchaseReady?.(purchaseSeasonOffer), [purchaseSeasonOffer, onSeasonPurchaseReady]);
+  useEffect(() => onSeasonLegacyUnlockReady?.(unlockSeasonLegacyNode), [unlockSeasonLegacyNode, onSeasonLegacyUnlockReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
