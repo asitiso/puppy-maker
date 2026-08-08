@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { initialState, reducer } from './game';
 
 describe('raising depth rewards and bond progression', () => {
-  it('unlocks eligible bond scenes and grants each scene reward only once', () => {
+  it('unlocks a bond scene only when the current action crosses its condition and rewards it once', () => {
     const ready = {
       ...initialState,
-      stats: { ...initialState.stats, affection: 55 },
+      stats: { ...initialState.stats, affection: 49 },
+      monthlyCounters:{ ...initialState.monthlyCounters, gifts:1 },
+      rewardedMonthlyMissions:['gift_once' as const],
     };
-    const first = reducer(ready, { type:'SET_MONTHLY_FOCUS', focus:'balanced' });
+    const first = reducer(ready, { type:'GIVE_GIFT', item:'star_cookie' });
     expect(first.unlockedBondScenes).toContain('first_trust');
     expect(first.rewardedBondScenes).toContain('first_trust');
     expect(first.gold).toBe(ready.gold + 100);
@@ -15,6 +17,17 @@ describe('raising depth rewards and bond progression', () => {
     const again = reducer(first, { type:'SET_MONTHLY_FOCUS', focus:'balanced' });
     expect(again.gold).toBe(first.gold);
     expect(again.rewardedBondScenes.filter(id => id === 'first_trust')).toHaveLength(1);
+  });
+
+  it('does not retroactively reward a scene that was already eligible before an unrelated action', () => {
+    const ready = {
+      ...initialState,
+      stats:{ ...initialState.stats, affection:55 },
+    };
+    const next = reducer(ready, { type:'SET_MONTHLY_FOCUS', focus:'balanced' });
+    expect(next.unlockedBondScenes).toEqual([]);
+    expect(next.rewardedBondScenes).toEqual([]);
+    expect(next.gold).toBe(ready.gold);
   });
 
   it('grants one growth point every completed month and one extra for an S training month', () => {
