@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { seasonLifetimeAward, seasonLifetimeBonuses, seasonLifetimeMilestone } from './season-lifetime-legacy';
+import { seasonLifetimeAward, seasonLifetimeBonuses, seasonLifetimeMilestone, seasonLifetimeSummary } from './season-lifetime-legacy';
 
 describe('season lifetime legacy', () => {
   it('awards bounded lifetime points from season completion quality', () => {
@@ -18,5 +18,15 @@ describe('season lifetime legacy', () => {
     expect(seasonLifetimeMilestone(0)).toEqual(expect.objectContaining({ id:'seed', nextThreshold:5 }));
     expect(seasonLifetimeMilestone(12)).toEqual(expect.objectContaining({ id:'keeper', nextThreshold:25 }));
     expect(seasonLifetimeMilestone(50)).toEqual(expect.objectContaining({ id:'eternal', nextThreshold:null }));
+  });
+
+  it('derives lifetime progress from archived seasons and keepsake purchases without another ledger', () => {
+    const summary = seasonLifetimeSummary([
+      { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+      { key:'1-summer', score:625, tiersCompleted:7, tokensEarned:90 },
+    ],['1-spring:seasonal_keepsake:1']);
+    expect(summary).toEqual(expect.objectContaining({ points:7, completedSeasons:1 }));
+    expect(summary.milestone).toEqual(expect.objectContaining({ id:'traveler', nextThreshold:12 }));
+    expect(summary.bonuses).toEqual({ trainingPercent:2, masteryXp:0, rewardPercent:2, startingCondition:1 });
   });
 });
