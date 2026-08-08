@@ -6,6 +6,7 @@ import { expeditionDiscoveryDefinitions } from './expedition-discoveries';
 import { expeditionRegionDefinitions, expeditionStageDefinitions, isExpeditionStageCleared, isExpeditionStageUnlocked, nextExpeditionStage } from './expedition-regions';
 import { expeditionRelicDefinitions, relicModifiers } from './expedition-relics';
 import { expeditionStoryDefinitions } from './expedition-story';
+import { expeditionIdentityModifiers } from './raising-expedition-effects';
 
 export type GuardianExpeditionOverlayProps = {
   state: GameState;
@@ -40,6 +41,7 @@ function combatInput(state: GameState) {
     restMastery: masteryLevel(state.mastery.rest.xp),
     talents: currentAdvancedTalents(state),
     relics: relicModifiers(state.equippedExpeditionRelics),
+    identity: expeditionIdentityModifiers(state.activeCalling, state.purchasedTraits),
   };
 }
 
