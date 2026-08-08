@@ -6,23 +6,12 @@ import { archiveRank } from './collection-archive-rank';
 import { currentAdvancedTalents, currentCareerTitles, currentStoryChapters, type GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
-import { readAmbitionSelections } from './yearly-ambition-selection';
 import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
-
-const ambitionStorageKey = 'puppy-maker-yearly-ambitions';
-
-function storedAmbitions() {
-  try {
-    return readAmbitionSelections(JSON.parse(localStorage.getItem(ambitionStorageKey) || '{}'));
-  } catch {
-    return {};
-  }
-}
 
 export default function CollectionArchiveOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
-  const streak = ambitionStreak(state.annualRecords, storedAmbitions());
+  const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
   const archive = collectionArchive({
     memories: state.memories.length,
