@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
+import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import LayeredHome from './LayeredHome';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
 import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen } from './game';
 import './layered-home.css';
 import './home-panels.css';
 import './seasonal-home.css';
+import './collection-archive.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -52,6 +54,7 @@ export default function Root() {
         onMail={handleMail}
       />
       <SeasonalHomeBadge month={gameState.month} />
+      <CollectionArchiveOverlay state={gameState} />
     </>}
   </>;
 }
