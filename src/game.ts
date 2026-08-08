@@ -9,6 +9,15 @@ import {
   type GiftItemId,
   type OutingLocationId,
 } from './adventure';
+import {
+  completedMonthlyMissions,
+  emptyMonthlyCounters,
+  monthlyMissionDefinitions,
+  monthlyMissionIds,
+  type MonthlyCounterKey,
+  type MonthlyCounters,
+  type MonthlyMissionId,
+} from './monthly-missions';
 
 export {
   achievementDefinitions,
@@ -46,6 +55,7 @@ export type {
 } from './game-core';
 
 export type { DiscoveryId, ExplorationEventId, GiftItemId, OutingLocationId } from './adventure';
+export type { MonthlyCounters, MonthlyMissionId } from './monthly-missions';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -57,6 +67,9 @@ export interface GameState extends Core.GameState {
   explorationXp: Record<OutingLocationId, number>;
   discoveries: DiscoveryId[];
   lastExploration: ExplorationFeedback | null;
+  monthlyCounters: MonthlyCounters;
+  rewardedMonthlyMissions: MonthlyMissionId[];
+  growthStreak: number;
 }
 
 export type Action =
@@ -69,6 +82,9 @@ export const initialState: GameState = {
   explorationXp: startingExplorationXp(),
   discoveries: [],
   lastExploration: null,
+  monthlyCounters: emptyMonthlyCounters(),
+  rewardedMonthlyMissions: [],
+  growthStreak: 0,
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -88,6 +104,20 @@ function hydrateDiscoveries(raw: unknown): DiscoveryId[] {
   return [...new Set(raw.filter((id): id is DiscoveryId => typeof id === 'string' && discoveryIds.includes(id as DiscoveryId)))];
 }
 
+function hydrateMonthlyCounters(raw: unknown): MonthlyCounters {
+  const source = isRecord(raw) ? raw : {};
+  const fallback = emptyMonthlyCounters();
+  return Object.fromEntries((Object.keys(fallback) as MonthlyCounterKey[]).map(key => [
+    key,
+    Math.max(0, Math.floor(finiteNumber(source[key], 0))),
+  ])) as MonthlyCounters;
+}
+
+function hydrateRewardedMonthlyMissions(raw: unknown): MonthlyMissionId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((id): id is MonthlyMissionId => typeof id === 'string' && monthlyMissionIds.includes(id as MonthlyMissionId)))];
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -96,6 +126,9 @@ export function hydrateGameState(raw: unknown): GameState {
     explorationXp: hydrateExplorationXp(source.explorationXp),
     discoveries: hydrateDiscoveries(source.discoveries),
     lastExploration: null,
+    monthlyCounters: hydrateMonthlyCounters(source.monthlyCounters),
+    rewardedMonthlyMissions: hydrateRewardedMonthlyMissions(source.rewardedMonthlyMissions),
+    growthStreak: Math.max(0, Math.floor(finiteNumber(source.growthStreak, 0))),
   };
 }
 
@@ -106,10 +139,7 @@ function applyExplorationEventReward(state: GameState, event: ExplorationEventId
   }
 
   const item: GiftItemId = event === 'ancient_tree' ? 'star_cookie' : event === 'wand_repair' ? 'fox_charm' : 'herb_tea';
-  return {
-    ...state,
-    inventory: { ...state.inventory, [item]: state.inventory[item] + 1 },
-  };
+  return { ...state, inventory: { ...state.inventory, [item]: state.inventory[item] + 1 } };
 }
 
 function automaticExplorationRoll(state: GameState, location: OutingLocationId): number {
@@ -119,39 +149,92 @@ function automaticExplorationRoll(state: GameState, location: OutingLocationId):
   return sequence[index];
 }
 
-export function reducer(state: GameState, action: Action): GameState {
-  if (action.type === 'RESET') return hydrateGameState(null);
+function applyMonthlyProgress(state: GameState, counter: MonthlyCounterKey): GameState {
+  const monthlyCounters = { ...state.monthlyCounters, [counter]: state.monthlyCounters[counter] + 1 };
+  const completed = completedMonthlyMissions(monthlyCounters);
+  const newlyRewarded = completed.filter(id => !state.rewardedMonthlyMissions.includes(id));
+  if (!newlyRewarded.length) return { ...state, monthlyCounters };
 
-  if (action.type === 'GO_OUTING') {
-    const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
-    const outcome = pickExplorationOutcome(
-      action.location,
-      state.explorationXp[action.location],
-      state.discoveries,
-      roll,
-    );
-    const base = Core.reducer(state, { type: 'GO_OUTING', location: action.location }) as GameState;
-    const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery)
-      ? [...state.discoveries, outcome.discovery]
-      : state.discoveries;
-    const progressed: GameState = {
-      ...base,
-      explorationXp: {
-        ...state.explorationXp,
-        [action.location]: state.explorationXp[action.location] + 1,
-      },
-      discoveries,
-      lastExploration: { location: action.location, event: outcome.event, discovery: outcome.discovery },
-    };
-    return applyExplorationEventReward(progressed, outcome.event);
+  let gold = state.gold;
+  let gems = state.gems;
+  for (const id of newlyRewarded) {
+    const definition = monthlyMissionDefinitions.find(item => item.id === id);
+    if (!definition) continue;
+    gold += definition.reward.gold ?? 0;
+    gems += definition.reward.gems ?? 0;
   }
+  return {
+    ...state,
+    gold,
+    gems,
+    monthlyCounters,
+    rewardedMonthlyMissions: [...state.rewardedMonthlyMissions, ...newlyRewarded],
+  };
+}
 
-  const next = Core.reducer(state, action as Core.Action) as GameState;
-  if (next === state) return state;
+function preserveExtendedState(state: GameState, next: Core.GameState): GameState {
   return {
     ...next,
     explorationXp: state.explorationXp,
     discoveries: state.discoveries,
     lastExploration: state.lastExploration,
+    monthlyCounters: state.monthlyCounters,
+    rewardedMonthlyMissions: state.rewardedMonthlyMissions,
+    growthStreak: state.growthStreak,
   };
+}
+
+export function reducer(state: GameState, action: Action): GameState {
+  if (action.type === 'RESET') return hydrateGameState(null);
+
+  if (action.type === 'GO_OUTING') {
+    const roll = action.eventRoll ?? automaticExplorationRoll(state, action.location);
+    const outcome = pickExplorationOutcome(action.location, state.explorationXp[action.location], state.discoveries, roll);
+    const base = Core.reducer(state, { type: 'GO_OUTING', location: action.location }) as Core.GameState;
+    const discoveries = outcome.discovery && !state.discoveries.includes(outcome.discovery)
+      ? [...state.discoveries, outcome.discovery]
+      : state.discoveries;
+    const progressed: GameState = {
+      ...base,
+      explorationXp: { ...state.explorationXp, [action.location]: state.explorationXp[action.location] + 1 },
+      discoveries,
+      lastExploration: { location: action.location, event: outcome.event, discovery: outcome.discovery },
+      monthlyCounters: state.monthlyCounters,
+      rewardedMonthlyMissions: state.rewardedMonthlyMissions,
+      growthStreak: state.growthStreak,
+    };
+    return applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings');
+  }
+
+  if (action.type === 'FINISH_TRAINING') {
+    const next = Core.reducer(state, action as Core.Action);
+    return applyMonthlyProgress(preserveExtendedState(state, next), 'trainings');
+  }
+
+  if (action.type === 'GIVE_GIFT') {
+    const next = Core.reducer(state, action as Core.Action);
+    if (next === state) return state;
+    return applyMonthlyProgress(preserveExtendedState(state, next), 'gifts');
+  }
+
+  if (action.type === 'NEXT_MONTH') {
+    const allComplete = completedMonthlyMissions(state.monthlyCounters).length === monthlyMissionDefinitions.length;
+    const growthStreak = allComplete ? state.growthStreak + 1 : 0;
+    const coreNext = Core.reducer(state, action as Core.Action);
+    const streakBonus = growthStreak > 0 && growthStreak % 3 === 0 ? 3 : 0;
+    return {
+      ...coreNext,
+      gems: coreNext.gems + streakBonus,
+      explorationXp: state.explorationXp,
+      discoveries: state.discoveries,
+      lastExploration: null,
+      monthlyCounters: emptyMonthlyCounters(),
+      rewardedMonthlyMissions: [],
+      growthStreak,
+    };
+  }
+
+  const next = Core.reducer(state, action as Core.Action);
+  if (next === state) return state;
+  return preserveExtendedState(state, next);
 }
