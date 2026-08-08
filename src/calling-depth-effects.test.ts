@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import {
+  applyExpeditionCallingRewards,
+  effectivePathfinderExplorationXp,
+  legendRewardKey,
+  specialistMasteryCalling,
+} from './calling-depth-effects';
+
+describe('Calling depth effects', () => {
+  it('builds stable monthly legend reward keys', () => {
+    expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+  });
+
+  it('accelerates discovery eligibility only with Pathfinder eye', () => {
+    expect(effectivePathfinderExplorationXp(3, 'pathfinder', ['pathfinder_eye'])).toBe(6);
+    expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
+  });
+
+  it('detects specialist Calling mastery from expedition actions', () => {
+    expect(specialistMasteryCalling('vanguard', { attack:2, dodge:0, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBe('vanguard');
+    expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:1 }, { grade:'S', discovery:null, materialReward:2 })).toBe('arcanist');
+    expect(specialistMasteryCalling('caretaker', { attack:0, dodge:1, charge:0 }, { grade:'B', discovery:null, materialReward:1 })).toBe('caretaker');
+    expect(specialistMasteryCalling('pathfinder', { attack:1, dodge:0, charge:0 }, { grade:'A', discovery:'forest_echo', materialReward:0 })).toBe('pathfinder');
+    expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBeNull();
+  });
+
+  it('applies expedition signature and Legend rewards without duplication', () => {
+    const base = {
+      year:1, month:4, calling:'pathfinder' as const,
+      traits:['pathfinder_eye','pathfinder_supply','pathfinder_legend'] as const,
+      signatures:['trail_reading','star_compass'] as const,
+      legendRewardKeys:[] as string[],
+      stageId:'forest_glade' as const,
+      grade:'S' as const,
+      firstClear:true,
+      discovery:'forest_echo',
+      regionCompleted:'starlight_forest' as const,
+      materialReward:2,
+      fatigueDelta:8,
+      stressDelta:6,
+    };
+    const first = applyExpeditionCallingRewards(base);
+    expect(first.extraMaterial).toBe(3); // supply + trail reading + star compass
+    expect(first.goldBonus).toBe(0);
+    expect(first.legendRewardKeys).toEqual([]);
+  });
+
+  it('applies Vanguard and Arcanist monthly Legend effects once', () => {
+    const vanguard = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'vanguard', traits:['vanguard_legend'], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'A', firstClear:true, discovery:null, regionCompleted:null, materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(vanguard.fatigueDelta).toBe(6);
+    expect(vanguard.legendRewardKeys).toContain('1-4:vanguard_legend');
+    const repeat = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'vanguard', traits:['vanguard_legend'], signatures:[], legendRewardKeys:vanguard.legendRewardKeys,
+      stageId:'forest_glade', grade:'A', firstClear:true, discovery:null, regionCompleted:null, materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(repeat.fatigueDelta).toBe(8);
+
+    const arcanist = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'arcanist', traits:['arcanist_legend'], signatures:[], legendRewardKeys:[],
+      stageId:'city_archive', grade:'S', firstClear:true, discovery:'city_rune', regionCompleted:null, materialReward:2, fatigueDelta:8, stressDelta:6,
+    });
+    expect(arcanist.stressDelta).toBe(4);
+    expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
+  });
+});
