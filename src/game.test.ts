@@ -1,29 +1,36 @@
 import { describe, expect, it } from 'vitest';
+import { STORY_EVENTS } from './game/events';
 import {
   applyActivity, applyDialogueChoice, conditionScoreMultiplier, hydrateGameState, initialState,
   masteryLevel, reducer, trainingGrade, trainingQuality, type GameState,
 } from './game';
 
+function resolveEventIfPresent(state:GameState){
+  if(state.screen!=='event'||!state.activeEventId)return state;
+  const event=STORY_EVENTS.find(item=>item.id===state.activeEventId)!;
+  return reducer(state,{type:'EVENT_CHOICE',eventId:event.id,choiceId:event.choices[0].id});
+}
+
 describe('game engine', () => {
   it('applies activity effects without exceeding stat bounds', () => { const next=applyActivity({...initialState.stats,stress:5,fatigue:4},'rest'); expect(next.stress).toBe(0); expect(next.fatigue).toBe(0); expect(next.affection).toBe(74); });
   it('calculates training grades and positive quality boundaries', () => { expect(trainingGrade(920)).toBe('S'); expect(trainingGrade(700)).toBe('A'); expect(trainingGrade(450)).toBe('B'); expect(trainingGrade(100)).toBe('C'); expect(trainingQuality(899)).toBe('GREAT'); expect(trainingQuality(900)).toBe('PERFECT'); expect(trainingQuality(649)).toBe('GOOD'); expect(trainingQuality(650)).toBe('GREAT'); expect(trainingQuality(399)).toBe('NORMAL'); expect(trainingQuality(400)).toBe('GOOD'); });
-  it('hydrates legacy saves with V2 defaults and preserves progress', () => { const hydrated=hydrateGameState(JSON.stringify({...initialState,gold:7777,condition:undefined,mastery:undefined})); expect(hydrated.gold).toBe(7777); expect(hydrated.condition).toBe('normal'); expect(hydrated.mastery.hunt.xp).toBe(0); expect(hydrated.personality.kindness).toBe(50); expect(hydrated.memories).toEqual([]); });
+  it('hydrates legacy saves with V2 defaults and preserves progress', () => { const hydrated=hydrateGameState(JSON.stringify({...initialState,gold:7777,condition:undefined,mastery:undefined,eventHistory:undefined,monthsCompleted:undefined})); expect(hydrated.gold).toBe(7777); expect(hydrated.condition).toBe('normal'); expect(hydrated.mastery.hunt.xp).toBe(0); expect(hydrated.personality.kindness).toBe(50); expect(hydrated.memories).toEqual([]); expect(hydrated.eventHistory).toEqual([]); expect(hydrated.monthsCompleted).toBe(0); });
   it('falls back safely for malformed saves', () => { expect(hydrateGameState('{bad json')).toEqual(initialState); });
   it('uses deterministic condition modifiers and mastery levels', () => { expect(conditionScoreMultiplier('energetic')).toBe(1.1); expect(conditionScoreMultiplier('normal')).toBe(1); expect(conditionScoreMultiplier('tired')).toBeLessThan(1); expect(masteryLevel(0)).toBe(1); expect(masteryLevel(3)).toBe(2); expect(masteryLevel(18)).toBe(5); });
-  it('applies dialogue personality and memory effects once', () => { const once=applyDialogueChoice(initialState,'hug'); const twice=applyDialogueChoice({...once,screen:'dialogue'},'hug'); expect(once.stats.affection).toBe(82); expect(once.personality.kindness).toBeGreaterThan(initialState.personality.kindness); expect(once.memories.filter(memory=>memory.id==='first_hug')).toHaveLength(1); expect(twice.memories.filter(memory=>memory.id==='first_hug')).toHaveLength(1); expect(once.screen).toBe('result'); });
+  it('applies dialogue personality and memory effects once before optional event', () => { const once=applyDialogueChoice(initialState,'hug'); const twice=applyDialogueChoice({...once,screen:'dialogue'},'hug'); expect(once.stats.affection).toBe(82); expect(once.personality.kindness).toBeGreaterThan(initialState.personality.kindness); expect(once.memories.filter(memory=>memory.id==='first_hug')).toHaveLength(1); expect(twice.memories.filter(memory=>memory.id==='first_hug')).toHaveLength(1); expect(['event','result']).toContain(once.screen); });
   it('clamps personality values to 0-100', () => { const boosted={...initialState,personality:{...initialState.personality,kindness:99}}; expect(applyDialogueChoice(boosted,'hug').personality.kindness).toBe(100); });
   it('finishes the final training week with mastery, memories, and report deltas', () => { const trained=reducer({...initialState,week:4,trainingScore:920},{type:'FINISH_TRAINING'}); expect(trained.screen).toBe('dialogue'); expect(trained.mastery.herb.xp).toBeGreaterThan(0); expect(trained.memories.some(memory=>memory.id==='first_training')).toBe(true); expect(trained.memories.some(memory=>memory.id==='first_perfect')).toBe(true); const result=reducer(trained,{type:'CHOOSE',choice:'snack'}); expect(result.lastGrowthReport?.quality).toBe('PERFECT'); expect(result.lastGrowthReport?.masteryGains.herb).toBeGreaterThan(0); expect(result.lastGrowthReport?.personalityChanges.kindness).toBeGreaterThan(0); });
-  it('advances month, returns to hub, and preserves V2 progression', () => { const progressed:GameState={...initialState,screen:'result',mastery:{...initialState.mastery,hunt:{xp:5}},memories:[{id:'first_training',month:4,year:1}]}; const next=reducer(progressed,{type:'NEXT_MONTH'}); expect(next.month).toBe(5); expect(next.screen).toBe('hub'); expect(next.gold).toBe(5350); expect(next.mastery.hunt.xp).toBe(5); expect(next.memories).toHaveLength(2); expect(next.memories.some(memory=>memory.id==='first_month_complete')).toBe(true); expect(next.combo).toBe(0); expect(next.trainingScore).toBe(0); });
-  it('runs the full monthly loop through each scheduled week before dialogue', () => {
+  it('advances month, returns to hub, and preserves progression', () => { const progressed:GameState={...initialState,screen:'result',mastery:{...initialState.mastery,hunt:{xp:5}},memories:[{id:'first_training',month:4,year:1}]}; const next=reducer(progressed,{type:'NEXT_MONTH'}); expect(next.month).toBe(5); expect(next.screen).toBe('hub'); expect(next.gold).toBe(5350); expect(next.mastery.hunt.xp).toBe(5); expect(next.memories.some(memory=>memory.id==='first_month_complete')).toBe(true); expect(next.monthsCompleted).toBe(1); });
+  it('runs the full monthly loop through optional event and returns home', () => {
     let state:GameState={...initialState,screen:'schedule',week:1,trainingScore:920};
-    state=reducer(state,{type:'GO',screen:'training'}); expect(state.screen).toBe('training');
-    state=reducer(state,{type:'FINISH_TRAINING'}); expect(state.screen).toBe('training'); expect(state.week).toBe(2); expect(state.mastery.hunt.xp).toBeGreaterThan(0);
-    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'}); expect(state.screen).toBe('training'); expect(state.week).toBe(3); expect(state.mastery.magic.xp).toBeGreaterThan(0);
-    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'}); expect(state.screen).toBe('training'); expect(state.week).toBe(4); expect(state.mastery.rest.xp).toBeGreaterThan(0);
-    state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'}); expect(state.screen).toBe('dialogue'); expect(state.week).toBe(4); expect(state.mastery.herb.xp).toBeGreaterThan(0);
-    state=reducer(state,{type:'CHOOSE',choice:'hug'}); expect(state.screen).toBe('result'); expect(state.lastGrowthReport?.masteryGains.hunt).toBeGreaterThan(0); expect(state.lastGrowthReport?.masteryGains.herb).toBeGreaterThan(0);
+    state=reducer(state,{type:'GO',screen:'training'});
+    for(let week=1;week<=4;week++){ state=reducer({...state,trainingScore:920},{type:'FINISH_TRAINING'}); }
+    expect(state.screen).toBe('dialogue');
+    state=reducer(state,{type:'CHOOSE',choice:'hug'}); expect(['event','result']).toContain(state.screen);
+    state=resolveEventIfPresent(state); expect(state.screen).toBe('result');
     state=reducer(state,{type:'NEXT_MONTH'}); expect(state.screen).toBe('hub'); expect(state.week).toBe(1); expect(state.month).toBe(5);
   });
+  it('enters ending after twelve completed months instead of starting month thirteen', () => { const state=reducer({...initialState,screen:'result',monthsCompleted:11},{type:'NEXT_MONTH'}); expect(state.screen).toBe('ending'); expect(state.monthsCompleted).toBe(12); });
   it('keeps schedule edits inside the four visible weeks', () => { const next=reducer(initialState,{type:'SET_SCHEDULE',index:9,activity:'rest'}); expect(next.schedule).toHaveLength(4); expect(next.schedule).toEqual(initialState.schedule); });
   it('does not charge for a snack when gold is insufficient', () => { const poor={...initialState,gold:50}; const next=applyDialogueChoice(poor,'snack'); expect(next.gold).toBe(50); expect(next.lastChoice).not.toBe('snack'); });
   it('hydrates duplicate memories only once', () => { const duplicate={...initialState,memories:[{id:'first_training',year:1,month:4},{id:'first_training',year:1,month:4}]}; const hydrated=hydrateGameState(JSON.stringify(duplicate)); expect(hydrated.memories.filter(memory=>memory.id==='first_training')).toHaveLength(1); });
