@@ -35,6 +35,7 @@ export type {
   GrowthReport,
   MasteryEntry,
   MasteryState,
+  MemoryId,
   Personality,
   RandomEventId,
   RelationshipRank,
