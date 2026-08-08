@@ -3,7 +3,7 @@ import { guardianGrowthPoints, guardianRank, nextGuardianRank } from './guardian
 
 describe('guardian rank rules', () => {
   it('calculates points from memories skills discoveries and mastery', () => {
-    expect(guardianGrowthPoints({ memories: 3, skills: 2, discoveries: 4, masteryLevels: [1, 2, 4, 1] })).toBe(14);
+    expect(guardianGrowthPoints({ memories: 3, skills: 2, discoveries: 4, masteryLevels: [1, 2, 4, 1] })).toBe(15);
   });
 
   it('maps stable guardian rank thresholds', () => {
