@@ -7,6 +7,15 @@ export type CollectionArchiveInput = {
   seasonStamps: number;
   legacyRelics: number;
   ambitionHonors: number;
+  expeditionStages: number;
+  expeditionBosses: number;
+  expeditionRelics: number;
+  expeditionStories: number;
+  expeditionDiscoveries: number;
+  guardianEvolution: number;
+  expeditionCrafting: number;
+  expeditionRegions: number;
+  expeditionSMilestones: number;
 };
 
 export type CollectionCategoryId = keyof CollectionArchiveInput;
@@ -27,6 +36,15 @@ const categoryDefinitions: Array<{ id: CollectionCategoryId; label: string; tota
   { id:'seasonStamps', label:'계절 인장', total:4 },
   { id:'legacyRelics', label:'레거시 유물', total:5 },
   { id:'ambitionHonors', label:'야망 휘장', total:3 },
+  { id:'expeditionStages', label:'원정 스테이지', total:9 },
+  { id:'expeditionBosses', label:'보스 휘장', total:3 },
+  { id:'expeditionRelics', label:'원정 유물', total:6 },
+  { id:'expeditionStories', label:'원정 이야기', total:9 },
+  { id:'expeditionDiscoveries', label:'원정 발견물', total:9 },
+  { id:'guardianEvolution', label:'수호자 진화', total:4 },
+  { id:'expeditionCrafting', label:'원정 제작', total:4 },
+  { id:'expeditionRegions', label:'지역 정복', total:3 },
+  { id:'expeditionSMilestones', label:'지역 올 S', total:3 },
 ];
 
 function clampCount(value: number, total: number): number {
