@@ -1,3 +1,5 @@
+import type { SeasonJourneyHistoryEntry } from './live-ops-state';
+
 export type SeasonLifetimeMilestoneId = 'seed'|'traveler'|'keeper'|'guardian'|'eternal';
 
 export type SeasonLifetimeBonuses = {
@@ -46,5 +48,27 @@ export function seasonLifetimeMilestone(rawPoints:number) {
     ...milestones[index],
     points,
     nextThreshold:milestones[index + 1]?.threshold ?? null,
+  };
+}
+
+export function seasonLifetimePoints(history:SeasonJourneyHistoryEntry[], purchaseKeys:string[]):number {
+  return history.reduce((sum,entry) => {
+    const keepsake = purchaseKeys.some(key => key.startsWith(`${entry.key}:seasonal_keepsake:`));
+    return sum + seasonLifetimeAward({
+      tiersCompleted:entry.tiersCompleted,
+      score:entry.score,
+      tokensEarned:entry.tokensEarned,
+      keepsake,
+    });
+  },0);
+}
+
+export function seasonLifetimeSummary(history:SeasonJourneyHistoryEntry[], purchaseKeys:string[]) {
+  const points = seasonLifetimePoints(history,purchaseKeys);
+  return {
+    points,
+    milestone:seasonLifetimeMilestone(points),
+    bonuses:seasonLifetimeBonuses(points),
+    completedSeasons:history.filter(entry => entry.tiersCompleted >= 10).length,
   };
 }
