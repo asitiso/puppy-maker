@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/v2-core-growth]
 jobs:
   test-build:
     runs-on: ubuntu-latest
