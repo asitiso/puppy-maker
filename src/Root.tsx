@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
 import LayeredHome from './LayeredHome';
-import { initialState, type AchievementId, type GameState, type Screen } from './game';
+import { initialState, type AchievementId, type GameState, type MailRewardId, type Screen } from './game';
 import './layered-home.css';
 import './home-panels.css';
 
@@ -13,18 +13,21 @@ export default function Root() {
   const [goOuting, setGoOuting] = useState<((location: OutingLocationId) => void) | null>(null);
   const [giveGift, setGiveGift] = useState<((item: GiftItemId) => void) | null>(null);
   const [claimAttendance, setClaimAttendance] = useState<(() => void) | null>(null);
+  const [claimMail, setClaimMail] = useState<((mail: MailRewardId) => void) | null>(null);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
   const captureOuting = useCallback((nextOuting: (location: OutingLocationId) => void) => setGoOuting(() => nextOuting), []);
   const captureGift = useCallback((nextGift: (item: GiftItemId) => void) => setGiveGift(() => nextGift), []);
   const captureAttendance = useCallback((nextClaim: () => void) => setClaimAttendance(() => nextClaim), []);
+  const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
   const handleOuting = useCallback((location: OutingLocationId) => goOuting?.(location), [goOuting]);
   const handleGift = useCallback((item: GiftItemId) => giveGift?.(item), [giveGift]);
   const handleAttendance = useCallback(() => claimAttendance?.(), [claimAttendance]);
+  const handleMail = useCallback((mail: MailRewardId) => claimMail?.(mail), [claimMail]);
 
   return <>
     <App
@@ -34,6 +37,7 @@ export default function Root() {
       onOutingReady={captureOuting}
       onGiftReady={captureGift}
       onAttendanceReady={captureAttendance}
+      onMailReady={captureMail}
     />
     {gameState.screen === 'hub' && <LayeredHome
       state={gameState}
@@ -42,6 +46,7 @@ export default function Root() {
       onOuting={handleOuting}
       onGift={handleGift}
       onAttendance={handleAttendance}
+      onMail={handleMail}
     />}
   </>;
 }
