@@ -11,6 +11,7 @@ import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
 import {
   initialState,
   type AchievementId,
+  type ExpeditionActionCounts,
   type ExpeditionCraftingRecipeId,
   type ExpeditionRelicId,
   type ExpeditionStageId,
@@ -44,7 +45,7 @@ export default function Root() {
   const [setGuardianCalling, setSetGuardianCalling] = useState<((calling: GuardianCallingId) => void) | null>(null);
   const [purchaseGrowthTrait, setPurchaseGrowthTrait] = useState<((trait: GrowthTraitId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
-  const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) | null>(null);
+  const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) | null>(null);
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
   const [unequipExpedition, setUnequipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
   const [craftExpedition, setCraftExpedition] = useState<((recipe: ExpeditionCraftingRecipeId) => void) | null>(null);
@@ -62,7 +63,7 @@ export default function Root() {
   const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setSetGuardianCalling(() => nextSetCalling), []);
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
-  const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number) => void) => setFinishExpedition(() => next), []);
+  const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => setFinishExpedition(() => next), []);
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
   const captureExpeditionUnequip = useCallback((next: (relic: ExpeditionRelicId) => void) => setUnequipExpedition(() => next), []);
   const captureExpeditionCraft = useCallback((next: (recipe: ExpeditionCraftingRecipeId) => void) => setCraftExpedition(() => next), []);
@@ -125,7 +126,7 @@ export default function Root() {
         open={expeditionOpen}
         onOpen={handleOpenExpedition}
         onClose={() => setExpeditionOpen(false)}
-        onFinish={(stageId, score, fatigueDelta, stressDelta) => finishExpedition?.(stageId, score, fatigueDelta, stressDelta)}
+        onFinish={(stageId, score, fatigueDelta, stressDelta, actionKinds) => finishExpedition?.(stageId, score, fatigueDelta, stressDelta, actionKinds)}
         onEquip={relic => equipExpedition?.(relic)}
         onUnequip={relic => unequipExpedition?.(relic)}
         onCraft={recipe => craftExpedition?.(recipe)}
