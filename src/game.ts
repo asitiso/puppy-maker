@@ -52,6 +52,7 @@ import {
   type CareerRecords,
   type CareerTitleId,
 } from './career-records';
+import { smartSchedule } from './smart-schedule';
 
 export {
   achievementDefinitions,
@@ -355,6 +356,10 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
 
 export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESET') return hydrateGameState(null);
+
+  if (action.type === 'AUTO_SCHEDULE') {
+    return { ...state, schedule: smartSchedule({ month: state.month, condition: state.condition }) };
+  }
 
   if (action.type === 'CLAIM_ATTENDANCE') {
     const key = attendanceKey(state.year, state.month);
