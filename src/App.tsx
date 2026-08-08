@@ -24,6 +24,9 @@ import {
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
+import type { SanctuaryMasterworkId } from './sanctuary-masterworks';
+import type { SanctuarySpecializationId } from './sanctuary-specializations';
+import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import { readAmbitionSelections } from './yearly-ambition-selection';
@@ -176,9 +179,12 @@ type AppProps = {
   onGrowthTraitReady?: (purchase: (trait: GrowthTraitId) => void) => void;
   onSeasonPurchaseReady?: (purchase: (offer: SeasonShopOfferId) => void) => void;
   onSeasonLegacyUnlockReady?: (unlock: (nodeId: SeasonLegacyNodeId) => void) => void;
+  onSanctuaryUpgradeReady?: (upgrade: (facility: SanctuaryFacilityId) => void) => void;
+  onSanctuarySpecializationReady?: (select: (specialization: SanctuarySpecializationId) => void) => void;
+  onSanctuaryMasterworkReady?: (build: (masterwork: SanctuaryMasterworkId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     const loaded = loadResilientSave(localStorage);
     if (loaded.recovered) repairPrimarySave(localStorage, loaded);
@@ -206,6 +212,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const purchaseGrowthTrait = useCallback((trait: GrowthTraitId) => dispatch({ type:'PURCHASE_GROWTH_TRAIT', trait }), []);
   const purchaseSeasonOffer = useCallback((offerId: SeasonShopOfferId) => dispatch({ type:'PURCHASE_SEASON_OFFER', offerId }), []);
   const unlockSeasonLegacyNode = useCallback((nodeId: SeasonLegacyNodeId) => dispatch({ type:'UNLOCK_SEASON_LEGACY_NODE', nodeId }), []);
+  const upgradeSanctuary = useCallback((facility: SanctuaryFacilityId) => dispatch({ type:'UPGRADE_SANCTUARY', facility }), []);
+  const selectSanctuarySpecialization = useCallback((specialization: SanctuarySpecializationId) => dispatch({ type:'SET_SANCTUARY_SPECIALIZATION', specialization }), []);
+  const buildSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => dispatch({ type:'BUILD_SANCTUARY_MASTERWORK', masterwork }), []);
   useEffect(() => {
     writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -227,6 +236,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onGrowthTraitReady?.(purchaseGrowthTrait), [purchaseGrowthTrait, onGrowthTraitReady]);
   useEffect(() => onSeasonPurchaseReady?.(purchaseSeasonOffer), [purchaseSeasonOffer, onSeasonPurchaseReady]);
   useEffect(() => onSeasonLegacyUnlockReady?.(unlockSeasonLegacyNode), [unlockSeasonLegacyNode, onSeasonLegacyUnlockReady]);
+  useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary, onSanctuaryUpgradeReady]);
+  useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization, onSanctuarySpecializationReady]);
+  useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork, onSanctuaryMasterworkReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
