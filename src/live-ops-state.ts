@@ -1,4 +1,5 @@
 import type { SeasonJourneyKey } from './season-journey';
+import { isValidSeasonPurchaseKey } from './season-shop';
 
 export type SeasonJourneyHistoryEntry = {
   key:SeasonJourneyKey;
@@ -15,6 +16,7 @@ export type LiveOpsPersistentState = {
   weeklyDirectiveProgress:Record<string,number>;
   rewardedWeeklyDirectives:string[];
   seasonJourneyHistory:SeasonJourneyHistoryEntry[];
+  seasonShopPurchases:string[];
 };
 
 const seasonKeyPattern = /^\d+-(spring|summer|autumn|winter)$/;
@@ -34,6 +36,7 @@ export function emptyLiveOpsState(): LiveOpsPersistentState {
     weeklyDirectiveProgress:{},
     rewardedWeeklyDirectives:[],
     seasonJourneyHistory:[],
+    seasonShopPurchases:[],
   };
 }
 
@@ -68,6 +71,11 @@ function hydrateHistory(raw:unknown): SeasonJourneyHistoryEntry[] {
   return result;
 }
 
+function hydrateShopPurchases(raw:unknown):string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is string => typeof value === 'string' && isValidSeasonPurchaseKey(value)))];
+}
+
 export function hydrateLiveOpsState(raw:unknown): LiveOpsPersistentState {
   const source = isRecord(raw) ? raw : {};
   return {
@@ -78,5 +86,6 @@ export function hydrateLiveOpsState(raw:unknown): LiveOpsPersistentState {
     weeklyDirectiveProgress:hydrateNumberMap(source.weeklyDirectiveProgress,directiveIdPattern),
     rewardedWeeklyDirectives:hydrateUniqueStrings(source.rewardedWeeklyDirectives,weeklyRewardPattern),
     seasonJourneyHistory:hydrateHistory(source.seasonJourneyHistory),
+    seasonShopPurchases:hydrateShopPurchases(source.seasonShopPurchases),
   };
 }
