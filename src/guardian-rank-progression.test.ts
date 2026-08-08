@@ -28,7 +28,7 @@ describe('guardian rank progression', () => {
   it('automatically grants missing rank rewards once after progress crosses a threshold', () => {
     const nearRank = {
       ...initialState,
-      memories: ['first_training', 'first_hug', 'first_gift', 'first_month_complete', 'first_skill', 'close_bond', 'forest_memory'] as typeof initialState.memories,
+      memories: ['first_training', 'first_hug', 'first_month_complete', 'first_skill', 'close_bond', 'forest_memory', 'first_perfect'] as typeof initialState.memories,
       inventory: { ...initialState.inventory, star_cookie: 1 },
     };
     expect(currentGuardianStatus(nearRank).points).toBe(7);
