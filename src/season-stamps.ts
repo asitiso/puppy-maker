@@ -17,8 +17,13 @@ export const seasonStampDefinitions: SeasonStampDefinition[] = [
 ];
 
 export const seasonStampIds = seasonStampDefinitions.map(item => item.id);
+export const fourSeasonCompletionRewardGems = 3;
 
 export function stampForOuting(month: number, location: OutingLocationId): SeasonStampId | null {
   const profile = seasonalProfile(month);
   return profile.outing === location ? profile.season : null;
+}
+
+export function completesFourSeasons(current: SeasonStampId[], next: SeasonStampId): boolean {
+  return !current.includes(next) && current.length === seasonStampIds.length - 1;
 }
