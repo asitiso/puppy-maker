@@ -1,3 +1,4 @@
+import type { AdvancedTalentId } from './advanced-talents';
 import { expeditionGrade, expeditionStageDefinitions, type ExpeditionGrade, type ExpeditionStageId } from './expedition-regions';
 
 export type ExpeditionActionKind = 'attack' | 'dodge' | 'charge';
@@ -13,6 +14,7 @@ export type ExpeditionCombatInput = {
   huntMastery: number;
   magicMastery: number;
   restMastery: number;
+  talents: readonly AdvancedTalentId[];
   relics: ExpeditionRelicModifierSummary;
 };
 
@@ -48,6 +50,17 @@ function stageFor(id: ExpeditionStageId) {
   return stage;
 }
 
+function talentBonus(talents: readonly AdvancedTalentId[], kind: ExpeditionActionKind): number {
+  const active = new Set(talents);
+  if (kind === 'attack') {
+    return (active.has('hunter_instinct') ? 0.04 : 0) + (active.has('guardian_strike') ? 0.03 : 0);
+  }
+  if (kind === 'charge') {
+    return (active.has('arcane_rhythm') ? 0.04 : 0) + (active.has('star_channel') ? 0.03 : 0);
+  }
+  return (active.has('steady_recovery') ? 0.04 : 0) + (active.has('deep_rest') ? 0.03 : 0);
+}
+
 export function startExpeditionBattle(stageId: ExpeditionStageId): ExpeditionBattleState {
   return { stageId, score: 0, pressureGuard: 0, actionCount: 0 };
 }
@@ -62,10 +75,11 @@ export function applyExpeditionAction(
   const fatiguePenalty = clamp((Math.max(0, input.fatigue) - 25) / 220, 0, 0.28);
   const readiness = conditionMultiplier[input.condition] * (1 - fatiguePenalty);
   const allBonus = clamp(input.relics.all, 0, 0.15);
+  const advancedBonus = clamp(talentBonus(input.talents, kind), 0, 0.1);
 
   if (kind === 'dodge') {
     const dodgeBonus = clamp(input.relics.dodge, 0, 0.2);
-    const guard = (18 + input.calmness * 0.34 + input.restMastery * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus);
+    const guard = (18 + input.calmness * 0.34 + input.restMastery * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus + advancedBonus);
     return {
       ...battle,
       pressureGuard: battle.pressureGuard + Math.max(0, guard),
@@ -76,12 +90,12 @@ export function applyExpeditionAction(
 
   if (kind === 'attack') {
     const bonus = clamp(input.relics.attack, 0, 0.15);
-    const value = (70 + input.strength * 2.15 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus);
+    const value = (70 + input.strength * 2.15 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus);
     return { ...battle, score: battle.score + Math.max(0, Math.round(value)), actionCount: battle.actionCount + 1 };
   }
 
   const bonus = clamp(input.relics.charge, 0, 0.15);
-  const value = (68 + input.magic * 2.2 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus);
+  const value = (68 + input.magic * 2.2 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus);
   return { ...battle, score: battle.score + Math.max(0, Math.round(value)), actionCount: battle.actionCount + 1 };
 }
 
