@@ -64,7 +64,16 @@ describe('world progression reducer integration', () => {
     expect(second.gems - gemsAfterFirst).toBeLessThan(1);
   });
 
-  it('claims earned expedition season tiers once', () => {
+  it('auto-claims a newly crossed expedition season tier during play', () => {
+    const seasonKey = expeditionSeasonKey(initialState.year, initialState.month);
+    const state = { ...initialState, expeditionSeasonScores:{ [seasonKey]:30 } };
+    const next = reducer(state, { type:'FINISH_EXPEDITION_STAGE', stageId:'forest_path', score:700 });
+    expect(next.expeditionSeasonScores[seasonKey]).toBe(55);
+    expect(next.claimedExpeditionSeasonTiers).toContain(`${seasonKey}:1`);
+    expect(next.gold - state.gold).toBeGreaterThanOrEqual(150);
+  });
+
+  it('claims earned expedition season tiers once for migrated saves', () => {
     const seasonKey = expeditionSeasonKey(initialState.year, initialState.month);
     const ready = { ...initialState, expeditionSeasonScores:{ [seasonKey]:50 } };
     const claimed = reducer(ready, { type:'CLAIM_EXPEDITION_SEASON_TIER', tier:1 });
