@@ -8,11 +8,12 @@ describe('schedule synergy progression', () => {
     expect(state.lastScheduleSynergies).toEqual([]);
   });
 
-  it('adds balanced and recovery bonuses after core training effects', () => {
+  it('adds balanced and recovery bonuses after core training effects without crossing bond thresholds', () => {
     const core = Core.reducer(initialState, { type:'FINISH_TRAINING', eventRoll:0.999 });
     const trained = reducer(initialState, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(trained.lastScheduleSynergies).toEqual(['balanced_guardian','recovery_rhythm']);
-    expect(trained.stats.affection).toBe(Math.min(100, core.stats.affection + 1));
+    expect(trained.stats.affection).toBe(core.stats.affection);
+    expect(trained.stats.morality).toBe(Math.min(100, core.stats.morality + 1));
     expect(trained.stats.stress).toBe(Math.max(0, core.stats.stress - 5));
     expect(trained.stats.fatigue).toBe(Math.max(0, core.stats.fatigue - 5));
     expect(trained.personality.kindness).toBe(Math.min(100, core.personality.kindness + 1));
