@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveSanctuarySpecialization,
   sanctuarySpecializationEffects,
+  sanctuarySpecializationGameplayEffects,
   sanctuarySpecializationSynergies,
   sanctuarySpecializations,
 } from './sanctuary-specializations';
@@ -67,5 +68,27 @@ describe('sanctuary specializations', () => {
       herb_garden:'moonwell_garden',
       observatory:'season_lens',
     })).toEqual(expect.arrayContaining(['season_oracle']));
+  });
+
+  it('converts active synergies into bounded extra gameplay bonuses', () => {
+    expect(sanctuarySpecializationGameplayEffects({
+      training_hall:'warrior_doctrine',
+      archive_library:'mastery_codex',
+    })).toEqual(expect.objectContaining({ trainingPercent:3, masteryXp:1 }));
+
+    expect(sanctuarySpecializationGameplayEffects({
+      training_hall:'adaptive_drills',
+      observatory:'expedition_array',
+    })).toEqual(expect.objectContaining({ expeditionJourneyBonus:3 }));
+
+    expect(sanctuarySpecializationGameplayEffects({
+      herb_garden:'bonding_grove',
+      archive_library:'living_chronicle',
+    })).toEqual(expect.objectContaining({ bondAffectionBonus:2, monthlyJourneyBonus:5 }));
+
+    expect(sanctuarySpecializationGameplayEffects({
+      herb_garden:'moonwell_garden',
+      observatory:'season_lens',
+    })).toEqual(expect.objectContaining({ weeklyTokenBonus:2, fatigueRecovery:1, stressRecovery:1 }));
   });
 });
