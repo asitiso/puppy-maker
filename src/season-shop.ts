@@ -23,6 +23,14 @@ export function seasonPurchaseKey(seasonKey:SeasonJourneyKey, offerId:SeasonShop
   return `${seasonKey}:${offerId}:${Math.max(1,Math.floor(ordinal))}` as const;
 }
 
+export function isValidSeasonPurchaseKey(value:string):boolean {
+  const match = /^(\d+)-(spring|summer|autumn|winter):(gold_pouch|recovery_bundle|expedition_cache|seasonal_keepsake):(\d+)$/.exec(value);
+  if (!match || Number(match[1]) < 1) return false;
+  const offer = offers.find(item => item.id === match[3]);
+  const ordinal = Number(match[4]);
+  return Boolean(offer && ordinal >= 1 && ordinal <= offer.limit);
+}
+
 export function resolveSeasonPurchase(input:{ seasonKey:SeasonJourneyKey; offerId:SeasonShopOfferId; tokens:number; purchaseKeys:string[] }) {
   const offer = offers.find(item => item.id === input.offerId);
   if (!offer) return { accepted:false as const };
