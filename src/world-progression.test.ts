@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hydrateGameState, initialState, reducer } from './game';
 import { expeditionSeasonKey } from './expedition-season';
+import { seasonJourneyKey } from './season-journey';
 
 describe('world progression reducer integration', () => {
   it('hydrates legacy saves with safe empty world progression state', () => {
@@ -42,10 +43,13 @@ describe('world progression reducer integration', () => {
   });
 
   it('auto-pays regional renown and world contract rewards only once', () => {
+    const journeyKey = seasonJourneyKey(initialState.year,initialState.month);
     const state = {
       ...initialState,
       regionalRenown:{ ...initialState.regionalRenown, starlight_forest:4 },
       worldContractProgress:{ expedition_clear:2, high_grade:1, featured_region:1 },
+      seasonJourneyScores:{ [journeyKey]:50 },
+      claimedSeasonJourneyTiers:[`${journeyKey}:1`],
     };
     const first = reducer(state, { type:'FINISH_EXPEDITION_STAGE', stageId:'forest_path', score:700 });
     expect(first.regionalRenown.starlight_forest).toBe(6);
