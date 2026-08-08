@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { hydrateGameState, initialState, reducer } from './game';
+import type { SeasonKeepsakeMilestoneId } from './season-keepsakes';
 import { seasonJourneyKey } from './season-journey';
 
 describe('season keepsake milestone progression', () => {
@@ -22,6 +23,7 @@ describe('season keepsake milestone progression', () => {
 
   it('rewards a complete four-season keepsake set', () => {
     const key = seasonJourneyKey(1,12);
+    const claimedSeasonKeepsakeMilestones:SeasonKeepsakeMilestoneId[] = ['first_keepsake'];
     const ready = {
       ...initialState,
       year:1,
@@ -32,7 +34,7 @@ describe('season keepsake milestone progression', () => {
         '1-summer:seasonal_keepsake:1',
         '1-autumn:seasonal_keepsake:1',
       ],
-      claimedSeasonKeepsakeMilestones:['first_keepsake'] as const,
+      claimedSeasonKeepsakeMilestones,
     };
     const next = reducer(ready,{ type:'PURCHASE_SEASON_OFFER', offerId:'seasonal_keepsake' });
     expect(next.gems).toBe(ready.gems + 2);
