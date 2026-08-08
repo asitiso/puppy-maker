@@ -66,4 +66,21 @@ describe('live ops ui summary', () => {
     expect(summary.honors.items.find(item => item.id === 'first_complete')).toEqual(expect.objectContaining({ claimed:true }));
     expect(summary.honors.items.find(item => item.id === 'four_seasons')).toEqual(expect.objectContaining({ claimed:false, current:2, threshold:4 }));
   });
+
+  it('combines long-term seasonal progress into a mastery rank', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      seasonJourneyHistory:[
+        { key:'1-spring', score:1300, tiersCompleted:10, tokensEarned:120 },
+        { key:'1-summer', score:1300, tiersCompleted:10, tokensEarned:120 },
+      ],
+      seasonShopPurchases:[
+        '1-spring:seasonal_keepsake:1',
+        '1-summer:seasonal_keepsake:1',
+        '1-autumn:seasonal_keepsake:1',
+      ],
+      claimedSeasonCompletionHonors:['first_complete'],
+    });
+    expect(summary.mastery).toEqual(expect.objectContaining({ id:'chronicler', score:13, nextThreshold:24 }));
+  });
 });
