@@ -53,6 +53,12 @@ import {
   type CareerTitleId,
 } from './career-records';
 import { smartSchedule } from './smart-schedule';
+import {
+  seasonStampDefinitions,
+  seasonStampIds,
+  stampForOuting,
+  type SeasonStampId,
+} from './season-stamps';
 
 export {
   achievementDefinitions,
@@ -97,6 +103,7 @@ export type { ScheduleSynergyId } from './schedule-synergies';
 export type { AdvancedTalentId } from './advanced-talents';
 export type { CareerRecords, CareerTitleId } from './career-records';
 export type { MailRewardId } from './mail-rewards';
+export type { SeasonStampId } from './season-stamps';
 
 export type ExplorationFeedback = {
   location: OutingLocationId;
@@ -117,6 +124,7 @@ export interface GameState extends Core.GameState {
   careerRecords: CareerRecords;
   claimedAttendanceMonths: string[];
   claimedMailRewards: MailRewardId[];
+  seasonStamps: SeasonStampId[];
 }
 
 export type Action =
@@ -140,6 +148,7 @@ export const initialState: GameState = {
   careerRecords: emptyCareerRecords(),
   claimedAttendanceMonths: [],
   claimedMailRewards: [],
+  seasonStamps: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -215,6 +224,11 @@ function hydrateMailClaims(raw: unknown): MailRewardId[] {
   return ids.filter(id => raw.includes(id));
 }
 
+function hydrateSeasonStamps(raw: unknown): SeasonStampId[] {
+  if (!Array.isArray(raw)) return [];
+  return seasonStampIds.filter(id => raw.includes(id));
+}
+
 export function hydrateGameState(raw: unknown): GameState {
   const base = Core.hydrateGameState(raw);
   const source = isRecord(raw) ? raw : {};
@@ -232,6 +246,7 @@ export function hydrateGameState(raw: unknown): GameState {
     careerRecords: hydrateCareerRecords(source.careerRecords),
     claimedAttendanceMonths: hydrateAttendanceClaims(source.claimedAttendanceMonths),
     claimedMailRewards: hydrateMailClaims(source.claimedMailRewards),
+    seasonStamps: hydrateSeasonStamps(source.seasonStamps),
   };
 }
 
@@ -314,6 +329,17 @@ function applyExplorationEventReward(state: GameState, event: ExplorationEventId
   return { ...state, inventory: { ...state.inventory, [item]: state.inventory[item] + 1 } };
 }
 
+function applySeasonStampReward(state: GameState, month: number, location: OutingLocationId): GameState {
+  const stamp = stampForOuting(month, location);
+  if (!stamp || state.seasonStamps.includes(stamp)) return state;
+  const rewardGems = seasonStampDefinitions.find(item => item.id === stamp)?.rewardGems ?? 0;
+  return {
+    ...state,
+    gems: state.gems + rewardGems,
+    seasonStamps: [...state.seasonStamps, stamp],
+  };
+}
+
 function automaticExplorationRoll(state: GameState, location: OutingLocationId): number {
   const sequence = [0.12, 0.82, 0.52, 0.36, 0.9, 0.58, 0.15, 0.5, 0.35, 0.95];
   const locationOffset = outingLocationIds.indexOf(location) * 3;
@@ -351,6 +377,7 @@ function preserveExtendedState(state: GameState, next: Core.GameState): GameStat
     careerRecords: state.careerRecords,
     claimedAttendanceMonths: state.claimedAttendanceMonths,
     claimedMailRewards: state.claimedMailRewards,
+    seasonStamps: state.seasonStamps,
   };
 }
 
@@ -404,8 +431,10 @@ export function reducer(state: GameState, action: Action): GameState {
       careerRecords: recordCareerAction(state.careerRecords, { type: 'outing' }),
       claimedAttendanceMonths: state.claimedAttendanceMonths,
       claimedMailRewards: state.claimedMailRewards,
+      seasonStamps: state.seasonStamps,
     };
-    return reconcileProgressRewards(applyMonthlyProgress(applyExplorationEventReward(progressed, outcome.event), 'outings'));
+    const rewarded = applySeasonStampReward(applyExplorationEventReward(progressed, outcome.event), state.month, action.location);
+    return reconcileProgressRewards(applyMonthlyProgress(rewarded, 'outings'));
   }
 
   if (action.type === 'FINISH_TRAINING') {
@@ -467,6 +496,7 @@ export function reducer(state: GameState, action: Action): GameState {
       careerRecords: recordCareerAction(state.careerRecords, { type: 'month' }),
       claimedAttendanceMonths: state.claimedAttendanceMonths,
       claimedMailRewards: state.claimedMailRewards,
+      seasonStamps: state.seasonStamps,
     });
   }
 
