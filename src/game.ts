@@ -399,7 +399,7 @@ export function reducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESET') return hydrateGameState(null);
 
   if (action.type === 'AUTO_SCHEDULE') {
-    return { ...state, schedule: smartSchedule({ month: state.month, condition: state.condition }) };
+    return { ...state, schedule: smartSchedule({ month: state.month, condition: state.condition, focus: state.monthlyFocus }) };
   }
 
   if (action.type === 'SET_MONTHLY_FOCUS') {
