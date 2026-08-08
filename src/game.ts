@@ -16,6 +16,12 @@ import {
   seasonLegacyNodes,
   type SeasonLegacyNodeId,
 } from './season-legacy-board';
+import {
+  resolveSanctuarySpecialization,
+  sanctuarySpecializations as sanctuarySpecializationDefinitions,
+  type SanctuarySpecializationId,
+  type SanctuarySpecializationState,
+} from './sanctuary-specializations';
 
 export type GameState = Base.GameState & {
   sanctuaryContractWeekKey:string|null;
@@ -25,9 +31,13 @@ export type GameState = Base.GameState & {
   claimedSanctuaryPrestigeRanks:SanctuaryPrestigeRankId[];
   claimedSanctuaryWeeklyChests:string[];
   unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
+  sanctuarySpecializations:SanctuarySpecializationState;
 };
 
-export type Action = Base.Action | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
+export type Action =
+  | Base.Action
+  | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId }
+  | { type:'SET_SANCTUARY_SPECIALIZATION'; specialization:SanctuarySpecializationId };
 
 export const initialState:GameState = {
   ...Base.initialState,
@@ -38,6 +48,7 @@ export const initialState:GameState = {
   claimedSanctuaryPrestigeRanks:[],
   claimedSanctuaryWeeklyChests:[],
   unlockedSeasonLegacyNodes:[],
+  sanctuarySpecializations:{},
 };
 
 const contractIds:SanctuaryContractId[] = ['training_focus','field_patrol','warm_bond','guardian_sortie'];
@@ -48,6 +59,7 @@ const prestigeRanks:{ id:Exclude<SanctuaryPrestigeRankId,'outpost'>; threshold:n
   { id:'celestial', threshold:180 },
 ];
 const seasonLegacyNodeIds = seasonLegacyNodes.map(node => node.id);
+const specializationByFacility = new Map(sanctuarySpecializationDefinitions.map(item => [`${item.facility}:${item.id}`,item]));
 const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
 const rewardKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(training_focus|field_patrol|warm_bond|guardian_sortie)$/;
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -81,6 +93,18 @@ function sanitizeSeasonLegacyNodes(raw:unknown):SeasonLegacyNodeId[] {
   return [...new Set(raw.filter((value):value is SeasonLegacyNodeId => typeof value === 'string' && seasonLegacyNodeIds.includes(value as SeasonLegacyNodeId)))];
 }
 
+function sanitizeSanctuarySpecializations(raw:unknown):SanctuarySpecializationState {
+  if (!isRecord(raw)) return {};
+  const result:SanctuarySpecializationState = {};
+  for (const facility of ['training_hall','archive_library','herb_garden','observatory'] as const) {
+    const value = raw[facility];
+    if (typeof value !== 'string') continue;
+    const definition = specializationByFacility.get(`${facility}:${value}`);
+    if (definition) result[facility] = definition.id;
+  }
+  return result;
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
@@ -92,6 +116,7 @@ export function hydrateGameState(raw:unknown):GameState {
     claimedSanctuaryPrestigeRanks:sanitizePrestigeRanks(source.claimedSanctuaryPrestigeRanks),
     claimedSanctuaryWeeklyChests:sanitizeWeeklyChestKeys(source.claimedSanctuaryWeeklyChests),
     unlockedSeasonLegacyNodes:sanitizeSeasonLegacyNodes(source.unlockedSeasonLegacyNodes),
+    sanctuarySpecializations:sanitizeSanctuarySpecializations(source.sanctuarySpecializations),
   };
 }
 
@@ -104,6 +129,7 @@ function persistentMeta(state:GameState) {
     claimedSanctuaryPrestigeRanks:state.claimedSanctuaryPrestigeRanks ?? [],
     claimedSanctuaryWeeklyChests:state.claimedSanctuaryWeeklyChests ?? [],
     unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
+    sanctuarySpecializations:state.sanctuarySpecializations ?? {},
   };
 }
 
@@ -177,6 +203,16 @@ export function reducer(state:GameState,action:Action):GameState {
       gold:state.gold + result.reward.gold,
       gems:state.gems + result.reward.gems,
     };
+  }
+
+  if (action.type === 'SET_SANCTUARY_SPECIALIZATION') {
+    const result = resolveSanctuarySpecialization({
+      specialization:action.specialization,
+      levels:state.sanctuaryLevels,
+      selected:state.sanctuarySpecializations ?? {},
+    });
+    if (!result.accepted) return state;
+    return { ...state, sanctuarySpecializations:result.selected };
   }
 
   const baseNext = Base.reducer(state,action as Base.Action);
