@@ -18,7 +18,7 @@ export type LiveOpsPersistentState = {
   rewardedWeeklyDirectives:string[];
   seasonJourneyHistory:SeasonJourneyHistoryEntry[];
   seasonShopPurchases:string[];
-  claimedSeasonKeepsakeMilestones:SeasonKeepsakeMilestoneId[];
+  claimedSeasonKeepsakeMilestones?:SeasonKeepsakeMilestoneId[];
 };
 
 const seasonKeyPattern = /^\d+-(spring|summer|autumn|winter)$/;
