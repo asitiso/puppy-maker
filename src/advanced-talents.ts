@@ -25,7 +25,7 @@ export const talentDefinitions: AdvancedTalentDefinition[] = [
   { id: 'star_channel', activity: 'magic', requiredLevel: 5, label: '별빛 통로', description: '마법이 포함된 달에는 지식 +2.' },
   { id: 'steady_recovery', activity: 'rest', requiredLevel: 3, label: '안정된 회복', description: '휴식이 포함된 달에는 피로 -3.' },
   { id: 'deep_rest', activity: 'rest', requiredLevel: 5, label: '깊은 휴식', description: '휴식이 포함된 달에는 스트레스 -3.' },
-  { id: 'field_scholar', activity: 'herb', requiredLevel: 3, label: '야외 연구가', description: '약초가 포함된 달에는 지식 +2.' },
+  { id: 'field_scholar', activity: 'herb', requiredLevel: 3, label: '야외 연구가', description: '약초가 포함된 달에는 도덕성 +2.' },
   { id: 'ancient_remedy', activity: 'herb', requiredLevel: 5, label: '고대 처방', description: '약초가 포함된 달에는 호기심 +1.' },
 ];
 
@@ -58,7 +58,7 @@ export function applyAdvancedTalentBonuses(
     if (id === 'star_channel') nextStats.intelligence = clamp(nextStats.intelligence + 2);
     if (id === 'steady_recovery') nextStats.fatigue = clamp(nextStats.fatigue - 3);
     if (id === 'deep_rest') nextStats.stress = clamp(nextStats.stress - 3);
-    if (id === 'field_scholar') nextStats.intelligence = clamp(nextStats.intelligence + 2);
+    if (id === 'field_scholar') nextStats.morality = clamp(nextStats.morality + 2);
     if (id === 'ancient_remedy') nextPersonality.curiosity = clamp(nextPersonality.curiosity + 1);
   }
 
