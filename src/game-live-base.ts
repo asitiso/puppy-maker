@@ -189,6 +189,7 @@ function persistentState(state:GameState) {
     weeklyDirectiveProgress:state.weeklyDirectiveProgress,
     rewardedWeeklyDirectives:state.rewardedWeeklyDirectives,
     seasonJourneyHistory:state.seasonJourneyHistory,
+    seasonShopPurchases:state.seasonShopPurchases,
   };
 }
 
@@ -275,6 +276,7 @@ function applyLiveOpsAction(state:GameState, next:GameState, journeyAction:Seaso
     weeklyDirectiveProgress:weekly.progress,
     rewardedWeeklyDirectives:rewardedWeekly,
     seasonJourneyHistory:state.seasonJourneyHistory,
+    seasonShopPurchases:state.seasonShopPurchases,
     gold:next.gold + gold,
     gems:next.gems + gems,
     lastLiveOpsProgress:{
