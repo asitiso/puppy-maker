@@ -8,7 +8,7 @@ import {
 } from './sanctuary-constellations';
 
 const matureSanctuary = {
-  levels:{ training_hall:3, archive_library:3, herb_garden:3, observatory:3 },
+  levels:{ training_hall:3, archive_library:3, herb_garden:3, observatory:3 } as const,
   specializationCount:4,
   masterworkCount:4,
   prestige:180,
