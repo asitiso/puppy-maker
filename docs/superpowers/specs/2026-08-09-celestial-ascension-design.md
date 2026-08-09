@@ -35,9 +35,9 @@ Celestial Ascension is surfaced inside the existing Starlight Sanctuary rather t
 Legacy saves hydrate with an empty claimed Ascension reward list. Invalid or duplicate rank IDs are removed. Existing Sanctuary, Astral, Live Ops, monthly growth, and expedition state remain authoritative and unchanged.
 
 ## Verification
-Verified on implementation and Sanctuary UI:
+Verified implementation and Sanctuary UI batch:
 - 134 test files / 550 tests passed.
 - `tsc -b && vite build` passed.
-- GitHub Actions run #683 verified the complete functional/UI batch GREEN; subsequent documentation-only runs also passed.
+- GitHub Actions run #683 verified the full functional/UI batch; subsequent documentation-only runs #684-686 also passed.
 - Same-object no-op behavior is covered for rejected duplicate Astral Blessing purchases.
 - Exact latest Vercel READY SHA remains separately verified and is not inferred from GitHub CI.
