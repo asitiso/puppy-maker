@@ -7,7 +7,14 @@ import {
   resolveAstralTrial,
   type AstralTrialGrade,
 } from './sanctuary-astral-trials';
+import {
+  astralBlessingEffects,
+  astralBlessings,
+  resolveAstralBlessingPurchase,
+  type AstralBlessingId,
+} from './sanctuary-astral-blessings';
 import { constellationProgress } from './sanctuary-constellations';
+import { seasonJourneyKey } from './season-journey';
 
 export type AstralTrialRecord = {
   key:string;
@@ -19,25 +26,35 @@ export type GameState = Base.GameState & {
   astralStarShards:number;
   claimedAstralTrials:string[];
   astralTrialRecords:AstralTrialRecord[];
+  purchasedAstralBlessings:AstralBlessingId[];
 };
 
-export type Action = Base.Action | { type:'CHALLENGE_ASTRAL_TRIAL' };
+export type Action = Base.Action
+  | { type:'CHALLENGE_ASTRAL_TRIAL' }
+  | { type:'PURCHASE_ASTRAL_BLESSING'; blessing:AstralBlessingId };
 
 export const initialState:GameState = {
   ...Base.initialState,
   astralStarShards:0,
   claimedAstralTrials:[],
   astralTrialRecords:[],
+  purchasedAstralBlessings:[],
 };
 
 const claimPattern = /^\d+-(?:[1-9]|1[0-2]):(scholar_trial|wayfarer_trial|guardian_trial|crown_trial)$/;
 const grades:AstralTrialGrade[] = ['B','A','S'];
+const blessingIds = astralBlessings.map(item => item.id);
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : 0;
 
 function sanitizeClaims(raw:unknown):string[] {
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((value):value is string => typeof value === 'string' && claimPattern.test(value)))];
+}
+
+function sanitizeBlessings(raw:unknown):AstralBlessingId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is AstralBlessingId => typeof value === 'string' && blessingIds.includes(value as AstralBlessingId)))];
 }
 
 function sanitizeRecords(raw:unknown):AstralTrialRecord[] {
@@ -59,6 +76,7 @@ export function hydrateGameState(raw:unknown):GameState {
     astralStarShards:safeInt(source.astralStarShards),
     claimedAstralTrials:sanitizeClaims(source.claimedAstralTrials),
     astralTrialRecords:sanitizeRecords(source.astralTrialRecords),
+    purchasedAstralBlessings:sanitizeBlessings(source.purchasedAstralBlessings),
   };
 }
 
@@ -78,7 +96,46 @@ function preserveAstral(state:GameState,next:Base.GameState):GameState {
     astralStarShards:state.astralStarShards ?? 0,
     claimedAstralTrials:state.claimedAstralTrials ?? [],
     astralTrialRecords:state.astralTrialRecords ?? [],
+    purchasedAstralBlessings:state.purchasedAstralBlessings ?? [],
   };
+}
+
+function applyBlessingEffects(previous:GameState,next:GameState,action:Action):GameState {
+  const effects = astralBlessingEffects(previous.purchasedAstralBlessings ?? []);
+  let result = next;
+  if (action.type === 'FINISH_TRAINING' && effects.trainingPercent > 0) {
+    const stats = { ...result.stats };
+    for (const key of ['strength','intelligence','magic','morality'] as const) {
+      const delta = Math.max(0,next.stats[key] - previous.stats[key]);
+      if (delta) stats[key] = Math.min(100,result.stats[key] + delta * effects.trainingPercent / 100);
+    }
+    result = { ...result, stats };
+  }
+  if (action.type === 'NEXT_MONTH') {
+    const stats = {
+      ...result.stats,
+      fatigue:Math.max(0,result.stats.fatigue - effects.monthlyRecovery),
+      stress:Math.max(0,result.stats.stress - effects.monthlyRecovery),
+    };
+    const oldKey = seasonJourneyKey(previous.year,previous.month);
+    result = {
+      ...result,
+      stats,
+      condition:Base.deriveCondition(stats),
+      seasonJourneyScores:{
+        ...result.seasonJourneyScores,
+        [oldKey]:(result.seasonJourneyScores[oldKey] ?? 0) + effects.monthlyJourneyBonus,
+      },
+    };
+  }
+  if (action.type === 'FINISH_EXPEDITION_STAGE' && result.lastExpeditionResult?.accepted && effects.expeditionJourneyBonus > 0) {
+    const key = seasonJourneyKey(previous.year,previous.month);
+    result = {
+      ...result,
+      seasonJourneyScores:{ ...result.seasonJourneyScores, [key]:(result.seasonJourneyScores[key] ?? 0) + effects.expeditionJourneyBonus },
+    };
+  }
+  return result;
 }
 
 export function reducer(state:GameState,action:Action):GameState {
@@ -114,6 +171,23 @@ export function reducer(state:GameState,action:Action):GameState {
     };
   }
 
+  if (action.type === 'PURCHASE_ASTRAL_BLESSING') {
+    const result = resolveAstralBlessingPurchase({
+      blessing:action.blessing,
+      shards:state.astralStarShards ?? 0,
+      purchased:state.purchasedAstralBlessings ?? [],
+      trialKeys:state.claimedAstralTrials ?? [],
+    });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      astralStarShards:result.shards,
+      purchasedAstralBlessings:[...(state.purchasedAstralBlessings ?? []),action.blessing],
+    };
+  }
+
   const baseNext = Base.reducer(state,action as Base.Action);
-  return preserveAstral(state,baseNext);
+  if (baseNext === state) return state;
+  const next = preserveAstral(state,baseNext);
+  return applyBlessingEffects(state,next,action);
 }
