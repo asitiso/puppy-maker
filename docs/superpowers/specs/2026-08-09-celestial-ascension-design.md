@@ -29,15 +29,14 @@ Maximum score is 83.
 Only claimed rank IDs are persisted. Score/rank remain derived from existing state. Rewards are evaluated only after an accepted underlying game action; rejected/no-op actions return the same state and cannot duplicate rewards.
 
 ## UI
-Celestial Ascension is surfaced inside the existing Starlight Sanctuary rather than creating another home entry. The Sanctuary panel shows current rank, score/next threshold, five contributing progression components, and the four-rank reward track. Existing popup frame artwork is reused; CSS handles layout and readability only.
+Celestial Ascension is surfaced inside the existing Starlight Sanctuary rather than creating another home entry. The Sanctuary panel shows current rank, score/next threshold, five contributing progression components, and the four-rank reward track. Existing popup frame artwork is reused; dedicated CSS handles layout and readability only.
 
 ## Compatibility
 Legacy saves hydrate with an empty claimed Ascension reward list. Invalid or duplicate rank IDs are removed. Existing Sanctuary, Astral, Live Ops, monthly growth, and expedition state remain authoritative and unchanged.
 
-## Verification Contract
-- Pure score/rank/reward tests.
-- Hydration sanitation tests.
-- Automatic reward on a threshold-crossing Astral Blessing purchase.
-- Same-object no-op on rejected duplicate purchase.
-- Sanctuary UI summary tests.
-- Full project tests and production build must pass before completion is claimed.
+## Verification
+Verified on the implementation/UI batch:
+- 134 test files / 550 tests passed.
+- `tsc -b && vite build` passed.
+- Same-object no-op behavior is covered for rejected duplicate Astral Blessing purchases.
+- Exact latest Vercel READY SHA remains separately verified and is not inferred from GitHub CI.
