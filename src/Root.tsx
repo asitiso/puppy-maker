@@ -11,6 +11,8 @@ import SeasonLiveOpsOverlay from './SeasonLiveOpsOverlay';
 import WorldProgressOverlay from './WorldProgressOverlay';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
+import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
+import type { AstralRiftRelicId } from './astral-rift-relics';
 import {
   initialState,
   type AchievementId,
@@ -43,6 +45,7 @@ import './expedition-ui.css';
 import './expedition-world.css';
 import './raising-identity.css';
 import './sanctuary.css';
+import './astral-rift.css';
 
 export default function Root() {
   const [gameState, setGameState] = useState<GameState>(initialState);
@@ -61,6 +64,8 @@ export default function Root() {
   const [upgradeSanctuary, setUpgradeSanctuary] = useState<((facility: SanctuaryFacilityId) => void) | null>(null);
   const [selectSanctuarySpecialization, setSelectSanctuarySpecialization] = useState<((specialization: SanctuarySpecializationId) => void) | null>(null);
   const [buildSanctuaryMasterwork, setBuildSanctuaryMasterwork] = useState<((masterwork: SanctuaryMasterworkId) => void) | null>(null);
+  const [clearAstralRift, setClearAstralRift] = useState<((riftId: AstralRiftId, intensity: AstralRiftIntensity) => void) | null>(null);
+  const [purchaseAstralRiftRelic, setPurchaseAstralRiftRelic] = useState<((relicId: AstralRiftRelicId) => void) | null>(null);
   const [openHomeMenu, setOpenHomeMenu] = useState<((id: HomeMenuId) => void) | null>(null);
   const [finishExpedition, setFinishExpedition] = useState<((stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) | null>(null);
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
@@ -86,6 +91,8 @@ export default function Root() {
   const captureSanctuaryUpgrade = useCallback((nextUpgrade: (facility: SanctuaryFacilityId) => void) => setUpgradeSanctuary(() => nextUpgrade), []);
   const captureSanctuarySpecialization = useCallback((nextSelect: (specialization: SanctuarySpecializationId) => void) => setSelectSanctuarySpecialization(() => nextSelect), []);
   const captureSanctuaryMasterwork = useCallback((nextBuild: (masterwork: SanctuaryMasterworkId) => void) => setBuildSanctuaryMasterwork(() => nextBuild), []);
+  const captureAstralRiftClear = useCallback((nextClear: (riftId: AstralRiftId, intensity: AstralRiftIntensity) => void) => setClearAstralRift(() => nextClear), []);
+  const captureAstralRiftRelic = useCallback((nextPurchase: (relicId: AstralRiftRelicId) => void) => setPurchaseAstralRiftRelic(() => nextPurchase), []);
   const captureHomeMenu = useCallback((nextOpenMenu: (id: HomeMenuId) => void) => setOpenHomeMenu(() => nextOpenMenu), []);
   const captureExpeditionFinish = useCallback((next: (stageId: ExpeditionStageId, score: number, fatigueDelta: number, stressDelta: number, actionKinds: ExpeditionActionCounts) => void) => setFinishExpedition(() => next), []);
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
@@ -107,6 +114,8 @@ export default function Root() {
   const handleSanctuaryUpgrade = useCallback((facility: SanctuaryFacilityId) => upgradeSanctuary?.(facility), [upgradeSanctuary]);
   const handleSanctuarySpecialization = useCallback((specialization: SanctuarySpecializationId) => selectSanctuarySpecialization?.(specialization), [selectSanctuarySpecialization]);
   const handleSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => buildSanctuaryMasterwork?.(masterwork), [buildSanctuaryMasterwork]);
+  const handleAstralRiftClear = useCallback((riftId: AstralRiftId, intensity: AstralRiftIntensity) => clearAstralRift?.(riftId,intensity), [clearAstralRift]);
+  const handleAstralRiftRelic = useCallback((relicId: AstralRiftRelicId) => purchaseAstralRiftRelic?.(relicId), [purchaseAstralRiftRelic]);
 
   return <>
     <App
@@ -130,6 +139,8 @@ export default function Root() {
       onSanctuaryUpgradeReady={captureSanctuaryUpgrade}
       onSanctuarySpecializationReady={captureSanctuarySpecialization}
       onSanctuaryMasterworkReady={captureSanctuaryMasterwork}
+      onAstralRiftClearReady={captureAstralRiftClear}
+      onAstralRiftRelicReady={captureAstralRiftRelic}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -160,6 +171,8 @@ export default function Root() {
         onUpgrade={handleSanctuaryUpgrade}
         onSpecialization={handleSanctuarySpecialization}
         onMasterwork={handleSanctuaryMasterwork}
+        onAstralRiftClear={handleAstralRiftClear}
+        onAstralRiftRelic={handleAstralRiftRelic}
       />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
