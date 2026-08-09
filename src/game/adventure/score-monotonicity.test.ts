@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{createAdventureSession,timingTap}from'./runtime';describe('adventure score monotonicity',()=>{it('successful actions never reduce score',()=>{let s=createAdventureSession('timing',4),last=0;for(const accuracy of[.7,.8,.9,1]){s=timingTap(s,accuracy);expect(s.score).toBeGreaterThanOrEqual(last);last=s.score}})});

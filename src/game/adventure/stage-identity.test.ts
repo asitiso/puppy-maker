@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{adventureStages}from'./catalog';describe('stage identity',()=>{it('has unique destination ids and titles',()=>{expect(new Set(adventureStages.map(s=>s.destinationId)).size).toBe(adventureStages.length);expect(new Set(adventureStages.map(s=>s.title)).size).toBe(adventureStages.length)})});
