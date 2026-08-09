@@ -9,8 +9,13 @@ describe('sanctuary constellation game integration', () => {
   it('unlocks eligible nodes for free once sanctuary progress is sufficient', () => {
     const state = {
       ...initialState,
-      sanctuaryLevels:{ training_hall:3, archive_library:3, herb_garden:3, observatory:3 },
-      sanctuarySpecializations:{ training_hall:'balanced', archive_library:'balanced', herb_garden:'balanced', observatory:'balanced' },
+      sanctuaryLevels:{ training_hall:3, archive_library:3, herb_garden:3, observatory:3 } as const,
+      sanctuarySpecializations:{
+        training_hall:'warrior_doctrine',
+        archive_library:'mastery_codex',
+        herb_garden:'moonwell_garden',
+        observatory:'expedition_array',
+      } as typeof initialState.sanctuarySpecializations,
       sanctuaryMasterworks:['champion_court','living_archive','moonwell_garden','astral_beacon'],
       sanctuaryPrestige:180,
     } as typeof initialState;
