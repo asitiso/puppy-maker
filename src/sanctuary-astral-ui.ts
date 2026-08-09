@@ -1,4 +1,10 @@
 import type { GameState } from './game';
+import {
+  celestialAscensionProgress,
+  celestialAscensionRank,
+  celestialAscensionRewards,
+} from './celestial-ascension';
+import { celestialRecordProgress } from './celestial-records';
 import { astralBlessings, resolveAstralBlessingPurchase } from './sanctuary-astral-blessings';
 import { astralTrialFor, astralTrialPower } from './sanctuary-astral-trials';
 import { constellationProgress } from './sanctuary-constellations';
@@ -43,7 +49,23 @@ export function sanctuaryAstralUiSummary(state:GameState) {
       canBuy:purchase.accepted,
     };
   });
-  const recentRecords = [...(state.astralTrialRecords ?? [])].slice(-6).reverse();
+  const records = state.astralTrialRecords ?? [];
+  const recentRecords = [...records].slice(-6).reverse();
+  const recordProgress = celestialRecordProgress(records);
+  const ascensionScore = celestialAscensionProgress({
+    trialRecords:records,
+    blessingCount:purchased.length,
+    constellationCount:(state.sanctuaryConstellations ?? []).length,
+    sanctuaryGrandProgress:progress,
+  });
+  const ascensionRank = celestialAscensionRank(ascensionScore);
+  const claimedAscension = state.claimedCelestialAscensionRanks ?? [];
+  const ascensionRewards = celestialAscensionRewards.map(item => ({
+    ...item,
+    claimed:claimedAscension.includes(item.rank),
+    reached:ascensionScore >= item.threshold,
+  }));
+  const nextAscensionReward = ascensionRewards.find(item => !item.claimed) ?? null;
   return {
     progress,
     starShards,
@@ -58,5 +80,18 @@ export function sanctuaryAstralUiSummary(state:GameState) {
     },
     blessings,
     recentRecords,
+    ascension:{
+      score:ascensionScore,
+      rank:ascensionRank,
+      components:{
+        trialClears:Math.min(12,records.length),
+        uniqueSClears:Math.min(4,recordProgress.uniqueSClears),
+        blessings:Math.min(4,purchased.length),
+        constellations:Math.min(5,(state.sanctuaryConstellations ?? []).length),
+        sanctuaryProgress:progress,
+      },
+      rewards:ascensionRewards,
+      nextReward:nextAscensionReward,
+    },
   };
 }
