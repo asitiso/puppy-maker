@@ -1,30 +1,14 @@
-# 퍼피 메이커: 수호 동물의 여정
+# Puppy Maker
 
-모바일 세로형 육성 RPG의 첫 번째 플레이 가능한 버전입니다.
+A mobile-first raising simulation vertical slice centered on Runa.
 
-## 현재 구현 범위
-
-- 수호 여우 루나가 등장하는 메인 로비
-- 4주 성장 다이어리 스케줄
-- 공격·회피·기 모으기 타이밍 훈련
-- 비주얼 노벨 선택지
-- 월말 성장 정산과 다음 달 진행
-- 브라우저 로컬 저장
-
-## 실행
+## Development
 
 ```bash
 npm install
 npm run dev
-```
-
-## 검증
-
-```bash
 npm run test
 npm run build
 ```
 
-데스크톱에서는 중앙 9:16 게임 캔버스로 표시되고 모바일에서는 화면을 채웁니다.
-
-> Vercel Preview: `feat/vertical-slice` 브랜치 자동 배포 확인용.
+Current development focus: Layered Home, the 12-month raising loop, and Adventure System 2.0 with persistent mastery progression.
