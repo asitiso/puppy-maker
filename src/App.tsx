@@ -21,6 +21,8 @@ import {
   type SkillId,
   type YearlyAmbitionId,
 } from './game';
+import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
+import type { AstralRiftRelicId } from './astral-rift-relics';
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
@@ -182,9 +184,11 @@ type AppProps = {
   onSanctuaryUpgradeReady?: (upgrade: (facility: SanctuaryFacilityId) => void) => void;
   onSanctuarySpecializationReady?: (select: (specialization: SanctuarySpecializationId) => void) => void;
   onSanctuaryMasterworkReady?: (build: (masterwork: SanctuaryMasterworkId) => void) => void;
+  onAstralRiftClearReady?: (clear: (riftId: AstralRiftId, intensity: AstralRiftIntensity) => void) => void;
+  onAstralRiftRelicReady?: (purchase: (relicId: AstralRiftRelicId) => void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     const loaded = loadResilientSave(localStorage);
     if (loaded.recovered) repairPrimarySave(localStorage, loaded);
@@ -215,6 +219,8 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const upgradeSanctuary = useCallback((facility: SanctuaryFacilityId) => dispatch({ type:'UPGRADE_SANCTUARY', facility }), []);
   const selectSanctuarySpecialization = useCallback((specialization: SanctuarySpecializationId) => dispatch({ type:'SET_SANCTUARY_SPECIALIZATION', specialization }), []);
   const buildSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => dispatch({ type:'BUILD_SANCTUARY_MASTERWORK', masterwork }), []);
+  const clearAstralRift = useCallback((riftId: AstralRiftId, intensity: AstralRiftIntensity) => dispatch({ type:'CLEAR_ASTRAL_RIFT', riftId, intensity }), []);
+  const purchaseAstralRiftRelic = useCallback((relicId: AstralRiftRelicId) => dispatch({ type:'PURCHASE_ASTRAL_RIFT_RELIC', relicId }), []);
   useEffect(() => {
     writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -239,6 +245,8 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary, onSanctuaryUpgradeReady]);
   useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization, onSanctuarySpecializationReady]);
   useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork, onSanctuaryMasterworkReady]);
+  useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift, onAstralRiftClearReady]);
+  useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic, onAstralRiftRelicReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
