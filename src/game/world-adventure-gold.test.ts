@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,worldReducer}from'./world-state';describe('world adventure gold',()=>{it('adds gold for an accepted adventure',()=>{const next=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path',score:500});expect(next.gold).toBeGreaterThan(initialWorldState.gold)})});

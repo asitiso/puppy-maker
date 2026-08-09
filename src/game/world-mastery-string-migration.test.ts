@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState}from'./world-state';describe('world mastery string migration',()=>{it('filters invalid mastery ids',()=>{const state=hydrateWorldState(JSON.stringify({...initialWorldState,adventureMasteries:['forest_path',1,null,'forest_path']}));expect(state.adventureMasteries).toEqual(['forest_path'])})});

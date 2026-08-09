@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState}from'./world-state';describe('world save null hydration',()=>{it('provides current adventure containers for a missing save',()=>{const state=hydrateWorldState(null);expect(state.adventureRecords).toEqual({});expect(state.adventureMasteries).toEqual([]);expect(state.adventureSGrades).toEqual([])})});

@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,worldReducer}from'./world-state';describe('mastery milestone message',()=>{it('surfaces MASTER in immediate world feedback',()=>{const state=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path',score:950,mastered:true});expect(state.lastWorldMessage).toContain('MASTER')})});

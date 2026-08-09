@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,worldReducer}from'./world-state';describe('world best score persistence',()=>{it('keeps best world score across new run',()=>{const state={...initialWorldState,bestWorldScore:222};const next=worldReducer(state,{type:'NEW_RUN'});expect(next.bestWorldScore).toBe(222)})});

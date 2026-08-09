@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,worldReducer}from'./world-state';describe('world exploration cap immutability',()=>{it('returns the same state object when the monthly cap is reached',()=>{const capped={...initialWorldState,monthlyExplorations:2};expect(worldReducer(capped,{type:'EXPLORE',destinationId:'forest_path',score:950})).toBe(capped)})});
