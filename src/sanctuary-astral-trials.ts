@@ -49,7 +49,7 @@ export function astralTrialPower(input:TrialPowerInput):number {
   else focus = (stats.strength + stats.intelligence + stats.magic + stats.morality) / 4;
   const progress = Number.isFinite(input.sanctuaryProgress) ? Math.max(0,Math.min(65,input.sanctuaryProgress)) : 0;
   const count = Number.isFinite(input.constellationCount) ? Math.max(0,Math.min(5,Math.floor(input.constellationCount))) : 0;
-  return Math.floor(focus * 0.7 + progress * 0.3 + count * 2.5);
+  return Math.floor(focus * 0.7 + progress * 0.4 + count * 2.5);
 }
 
 function gradeFor(power:number):AstralTrialGrade {
