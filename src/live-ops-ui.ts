@@ -6,6 +6,7 @@ import { seasonCompletionHonors, seasonHonorProgress } from './season-completion
 import { seasonMasteryRank, seasonMasteryScore } from './season-mastery-rank';
 import { seasonMasteryRewards } from './season-mastery-rewards';
 import { seasonLegacyBoard, seasonLegacyPoints, seasonLegacyNodes } from './season-legacy-board';
+import { seasonLegacyCrownSynergy } from './season-legacy-effects';
 import { seasonLifetimeSummary } from './season-lifetime-legacy';
 import { seasonShopOffers } from './season-shop';
 import { weeklyDirectiveKey, weeklyDirectives } from './weekly-directives';
@@ -62,6 +63,7 @@ export function liveOpsUiSummary(state:GameState) {
     ...node,
     affordable:node.available && availableLegacy >= node.cost,
   }));
+  const legacySynergy = seasonLegacyCrownSynergy(unlockedLegacy);
   const lifetimeLegacy = seasonLifetimeSummary(state.seasonJourneyHistory,state.seasonShopPurchases);
   return {
     season:{
@@ -78,7 +80,7 @@ export function liveOpsUiSummary(state:GameState) {
     honors:{ progress:honorProgress, items:honorItems, claimed:claimedHonors },
     mastery,
     masteryRewards:{ claimed:claimedMasteryRewards, items:masteryRewardItems, next:nextMasteryReward },
-    legacy:{ earned:earnedLegacy, spent:spentLegacy, available:availableLegacy, nodes:legacyNodes },
+    legacy:{ earned:earnedLegacy, spent:spentLegacy, available:availableLegacy, nodes:legacyNodes, synergy:legacySynergy },
     lifetimeLegacy,
     archive:seasonArchiveRecords(state.seasonJourneyHistory),
   };
