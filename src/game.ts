@@ -31,6 +31,11 @@ import {
 import { callingMasteryLevel } from './calling-mastery';
 import { celestialAscensionProgress } from './celestial-ascension';
 import { sanctuaryGrandProgress } from './sanctuary-grand-milestones';
+import {
+  resolveSeasonLegacyUnlock,
+  seasonLegacyNodes,
+  type SeasonLegacyNodeId,
+} from './season-legacy-board';
 
 export type GameState = Base.GameState & {
   astralRiftRecords:AstralRiftRecordMap;
@@ -40,11 +45,13 @@ export type GameState = Base.GameState & {
   astralRiftWeeklyProgress:Record<string,number>;
   rewardedAstralRiftDirectives:string[];
   claimedAstralRiftHonors:AstralRiftHonorId[];
+  unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
 };
 
 export type Action = Base.Action
   | { type:'CLEAR_ASTRAL_RIFT'; riftId:AstralRiftId; intensity:AstralRiftIntensity }
-  | { type:'PURCHASE_ASTRAL_RIFT_RELIC'; relicId:AstralRiftRelicId };
+  | { type:'PURCHASE_ASTRAL_RIFT_RELIC'; relicId:AstralRiftRelicId }
+  | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
 
 export const initialState:GameState = {
   ...Base.initialState,
@@ -55,6 +62,7 @@ export const initialState:GameState = {
   astralRiftWeeklyProgress:{},
   rewardedAstralRiftDirectives:[],
   claimedAstralRiftHonors:[],
+  unlockedSeasonLegacyNodes:[],
 };
 
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -62,6 +70,7 @@ const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(
 const validRiftIds = astralRiftDefinitions.map(item => item.id);
 const validRelicIds = astralRiftRelics.map(item => item.id);
 const validHonorIds = astralRiftHonors.map(item => item.id);
+const validLegacyNodeIds = seasonLegacyNodes.map(item => item.id);
 const directiveTargets:Record<AstralRiftDirectiveId,number> = { rift_clear:2, high_grade:1, featured_rift:1 };
 
 function sanitizeRiftRecords(raw:unknown):AstralRiftRecordMap {
@@ -117,6 +126,11 @@ function sanitizeHonors(raw:unknown):AstralRiftHonorId[] {
   return validHonorIds.filter(id => raw.includes(id));
 }
 
+function sanitizeLegacyNodes(raw:unknown):SeasonLegacyNodeId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value):value is SeasonLegacyNodeId => typeof value === 'string' && validLegacyNodeIds.includes(value as SeasonLegacyNodeId)))];
+}
+
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
@@ -128,6 +142,7 @@ export function hydrateGameState(raw:unknown):GameState {
     astralRiftWeeklyProgress:sanitizeWeeklyProgress(source.astralRiftWeeklyProgress),
     rewardedAstralRiftDirectives:sanitizeRewardedDirectives(source.rewardedAstralRiftDirectives),
     claimedAstralRiftHonors:sanitizeHonors(source.claimedAstralRiftHonors),
+    unlockedSeasonLegacyNodes:sanitizeLegacyNodes(source.unlockedSeasonLegacyNodes),
   };
 }
 
@@ -154,7 +169,7 @@ function currentCallingLevel(state:Base.GameState):number {
   return callingMasteryLevel(state.callingMastery?.[state.activeCalling] ?? 0);
 }
 
-function riftState(state:GameState) {
+function metaState(state:GameState) {
   return {
     astralRiftRecords:state.astralRiftRecords,
     astralRiftEchoes:state.astralRiftEchoes,
@@ -163,11 +178,28 @@ function riftState(state:GameState) {
     astralRiftWeeklyProgress:state.astralRiftWeeklyProgress,
     rewardedAstralRiftDirectives:state.rewardedAstralRiftDirectives,
     claimedAstralRiftHonors:state.claimedAstralRiftHonors,
+    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes,
   };
 }
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+
+  if (action.type === 'UNLOCK_SEASON_LEGACY_NODE') {
+    const result = resolveSeasonLegacyUnlock({
+      nodeId:action.nodeId,
+      history:state.seasonJourneyHistory,
+      honors:state.claimedSeasonCompletionHonors ?? [],
+      unlocked:state.unlockedSeasonLegacyNodes,
+    });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      unlockedSeasonLegacyNodes:result.unlocked,
+      gold:state.gold + result.reward.gold,
+      gems:state.gems + result.reward.gems,
+    };
+  }
 
   if (action.type === 'PURCHASE_ASTRAL_RIFT_RELIC') {
     const result = resolveAstralRiftRelicPurchase({
@@ -219,5 +251,5 @@ export function reducer(state:GameState,action:Action):GameState {
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  return { ...baseNext, ...riftState(state) };
+  return { ...baseNext, ...metaState(state) };
 }
