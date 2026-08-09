@@ -85,9 +85,9 @@ describe('Astral Rift reducer progression', () => {
       ...initialState,
       screen:'result' as const,
       astralRiftEchoes:33,
-      purchasedAstralRiftRelics:['vanguard_seed'] as const,
+      purchasedAstralRiftRelics:['vanguard_seed'] as typeof initialState.purchasedAstralRiftRelics,
       astralRiftRecords:{ 'nebula_garden:1':{ grade:'A' as const, bestPower:80, clearCount:2 } },
-      claimedAstralRiftHonors:['first_rift_clear'] as const,
+      claimedAstralRiftHonors:['first_rift_clear'] as typeof initialState.claimedAstralRiftHonors,
     };
     const next = reducer(state,{ type:'NEXT_MONTH' });
     expect(next.astralRiftEchoes).toBe(33);
