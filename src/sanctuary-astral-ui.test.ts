@@ -49,4 +49,27 @@ describe('sanctuary astral ui summary', () => {
     }));
     expect(summary.blessings.find(item => item.id === 'guardian_aegis')).toEqual(expect.objectContaining({ trialCleared:false, canBuy:false }));
   });
+
+  it('summarizes celestial ascension rank, components and reward track', () => {
+    const summary = sanctuaryAstralUiSummary({
+      ...initialState,
+      astralTrialRecords:[
+        { key:'1-1:scholar_trial', grade:'S', power:110 },
+        { key:'1-2:wayfarer_trial', grade:'A', power:90 },
+        { key:'1-3:guardian_trial', grade:'S', power:108 },
+      ],
+      purchasedAstralBlessings:['scholar_glow','wayfarer_wind'] as typeof initialState.purchasedAstralBlessings,
+      sanctuaryConstellations:['dawn_compass','scholar_star','wayfarer_star','guardian_star'] as typeof initialState.sanctuaryConstellations,
+      claimedCelestialAscensionRanks:['awakened'] as typeof initialState.claimedCelestialAscensionRanks,
+    });
+    expect(summary.ascension.rank).toEqual(expect.objectContaining({ id:'stellar' }));
+    expect(summary.ascension.components).toEqual(expect.objectContaining({
+      trialClears:3,
+      uniqueSClears:2,
+      blessings:2,
+      constellations:4,
+    }));
+    expect(summary.ascension.rewards.find(item => item.rank === 'awakened')).toEqual(expect.objectContaining({ claimed:true }));
+    expect(summary.ascension.nextReward).toEqual(expect.objectContaining({ rank:'stellar' }));
+  });
 });
