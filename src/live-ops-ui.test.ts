@@ -119,6 +119,21 @@ describe('live ops ui summary', () => {
     expect(summary.legacy.nodes.find(node => node.id === 'chronicle_crown')).toEqual(expect.objectContaining({ available:false }));
   });
 
+  it('exposes crown synergy progress and active bonuses', () => {
+    const summary = liveOpsUiSummary({
+      ...initialState,
+      unlockedSeasonLegacyNodes:['chronicle_crown','bond_crown'],
+    });
+    expect(summary.legacy.synergy).toEqual({
+      crowns:2,
+      label:'쌍왕관 공명',
+      monthlyJourneyBonus:3,
+      weeklyTokenBonus:1,
+      expeditionJourneyBonus:2,
+      nextCrowns:3,
+    });
+  });
+
   it('shows automatic lifetime legacy progress without another mutable ledger', () => {
     const summary = liveOpsUiSummary({
       ...initialState,
