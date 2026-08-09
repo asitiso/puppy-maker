@@ -1,4 +1,7 @@
 import type { GameState } from './game';
+import AstralRiftPanel from './AstralRiftPanel';
+import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
+import type { AstralRiftRelicId } from './astral-rift-relics';
 import { sanctuaryAstralUiSummary } from './sanctuary-astral-ui';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
 import { sanctuaryGrandProgress, sanctuaryGrandRank } from './sanctuary-grand-milestones';
@@ -26,6 +29,8 @@ export default function SanctuaryOverlay({
   onUpgrade,
   onSpecialization,
   onMasterwork,
+  onAstralRiftClear,
+  onAstralRiftRelic,
 }:{
   state:GameState;
   open:boolean;
@@ -34,6 +39,8 @@ export default function SanctuaryOverlay({
   onUpgrade:(facility:SanctuaryFacilityId)=>void;
   onSpecialization:(specialization:SanctuarySpecializationId)=>void;
   onMasterwork:(masterwork:SanctuaryMasterworkId)=>void;
+  onAstralRiftClear:(riftId:AstralRiftId,intensity:AstralRiftIntensity)=>void;
+  onAstralRiftRelic:(relicId:AstralRiftRelicId)=>void;
 }) {
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
@@ -94,6 +101,8 @@ export default function SanctuaryOverlay({
           </div>
           <p>{ascension.nextReward ? `다음 승천 보상 · ${ascension.nextReward.threshold}점` : '모든 천상 승천 보상을 획득했어요.'}</p>
         </article>
+
+        <AstralRiftPanel state={state} onClear={onAstralRiftClear} onRelic={onAstralRiftRelic} />
 
         <div className="sanctuary-prestige-card">
           <div><small>SANCTUARY PRESTIGE</small><strong>{contractSummary.prestige.label}</strong><span>주간 성역 의뢰를 완료해 성소의 위상을 높여요.</span></div>
