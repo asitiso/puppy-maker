@@ -28,6 +28,35 @@ import {
   newlyEarnedAstralRiftHonors,
   type AstralRiftHonorId,
 } from './astral-rift-honors';
+import {
+  astralRiftClearCount,
+  canEnterConvergence,
+  celestialGuardianDefinitions,
+  convergencePower,
+  resolveConvergence,
+  updateConvergenceRecord,
+  type CelestialGuardianId,
+  type ConvergenceIntensity,
+  type ConvergenceRecord,
+  type ConvergenceRecordMap,
+} from './celestial-convergence';
+import {
+  guardianBoons,
+  resolveGuardianBoonPurchase,
+  sanitizeGuardianBoons,
+  type GuardianBoonId,
+} from './guardian-boons';
+import {
+  advanceConvergenceWeekly,
+  convergenceWeeklyDirectives,
+  convergenceWeeklyKey,
+  type ConvergenceDirectiveId,
+} from './convergence-weekly';
+import {
+  convergenceHonors,
+  newlyEarnedConvergenceHonors,
+  type ConvergenceHonorId,
+} from './convergence-honors';
 import { callingMasteryLevel } from './calling-mastery';
 import { celestialAscensionProgress } from './celestial-ascension';
 import { sanctuaryGrandProgress } from './sanctuary-grand-milestones';
@@ -40,11 +69,20 @@ export type GameState = Base.GameState & {
   astralRiftWeeklyProgress:Record<string,number>;
   rewardedAstralRiftDirectives:string[];
   claimedAstralRiftHonors:AstralRiftHonorId[];
+  celestialConvergenceRecords:ConvergenceRecordMap;
+  guardianSigils:number;
+  purchasedGuardianBoons:GuardianBoonId[];
+  convergenceWeeklyKey:string|null;
+  convergenceWeeklyProgress:Record<string,number>;
+  rewardedConvergenceDirectives:string[];
+  claimedConvergenceHonors:ConvergenceHonorId[];
 };
 
 export type Action = Base.Action
   | { type:'CLEAR_ASTRAL_RIFT'; riftId:AstralRiftId; intensity:AstralRiftIntensity }
-  | { type:'PURCHASE_ASTRAL_RIFT_RELIC'; relicId:AstralRiftRelicId };
+  | { type:'PURCHASE_ASTRAL_RIFT_RELIC'; relicId:AstralRiftRelicId }
+  | { type:'CLEAR_CELESTIAL_CONVERGENCE'; guardianId:CelestialGuardianId; intensity:ConvergenceIntensity }
+  | { type:'PURCHASE_GUARDIAN_BOON'; boonId:GuardianBoonId };
 
 export const initialState:GameState = {
   ...Base.initialState,
@@ -55,14 +93,24 @@ export const initialState:GameState = {
   astralRiftWeeklyProgress:{},
   rewardedAstralRiftDirectives:[],
   claimedAstralRiftHonors:[],
+  celestialConvergenceRecords:{},
+  guardianSigils:0,
+  purchasedGuardianBoons:[],
+  convergenceWeeklyKey:null,
+  convergenceWeeklyProgress:{},
+  rewardedConvergenceDirectives:[],
+  claimedConvergenceHonors:[],
 };
 
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : 0;
 const validRiftIds = astralRiftDefinitions.map(item => item.id);
 const validRelicIds = astralRiftRelics.map(item => item.id);
-const validHonorIds = astralRiftHonors.map(item => item.id);
-const directiveTargets:Record<AstralRiftDirectiveId,number> = { rift_clear:2, high_grade:1, featured_rift:1 };
+const validRiftHonorIds = astralRiftHonors.map(item => item.id);
+const validGuardianIds = celestialGuardianDefinitions.map(item => item.id);
+const validConvergenceHonorIds = convergenceHonors.map(item => item.id);
+const riftDirectiveTargets:Record<AstralRiftDirectiveId,number> = { rift_clear:2, high_grade:1, featured_rift:1 };
+const convergenceDirectiveTargets:Record<ConvergenceDirectiveId,number> = { convergence_clear:2, high_grade:1, featured_guardian:1 };
 
 function sanitizeRiftRecords(raw:unknown):AstralRiftRecordMap {
   if (!isRecord(raw)) return {};
@@ -75,6 +123,24 @@ function sanitizeRiftRecords(raw:unknown):AstralRiftRecordMap {
     if (clearCount < 1) continue;
     result[key] = {
       grade:value.grade as AstralRiftRecord['grade'],
+      bestPower:safeInt(value.bestPower),
+      clearCount,
+    };
+  }
+  return result;
+}
+
+function sanitizeConvergenceRecords(raw:unknown):ConvergenceRecordMap {
+  if (!isRecord(raw)) return {};
+  const result:ConvergenceRecordMap = {};
+  for (const [key,value] of Object.entries(raw)) {
+    const [guardianId,intensity] = key.split(':');
+    if (!validGuardianIds.includes(guardianId as CelestialGuardianId) || !['1','2','3'].includes(intensity) || !isRecord(value)) continue;
+    if (!['B','A','S'].includes(String(value.grade))) continue;
+    const clearCount = safeInt(value.clearCount);
+    if (clearCount < 1) continue;
+    result[key] = {
+      grade:value.grade as ConvergenceRecord['grade'],
       bestPower:safeInt(value.bestPower),
       clearCount,
     };
@@ -96,25 +162,29 @@ function sanitizeWeeklyKey(raw:unknown):string|null {
   return year >= 1 && month >= 1 && month <= 12 ? `${year}-${month}-${match[3]}` : null;
 }
 
-function sanitizeWeeklyProgress(raw:unknown):Record<string,number> {
+function sanitizeProgress(raw:unknown,targets:Record<string,number>):Record<string,number> {
   if (!isRecord(raw)) return {};
   const result:Record<string,number> = {};
-  for (const id of Object.keys(directiveTargets) as AstralRiftDirectiveId[]) {
+  for (const [id,target] of Object.entries(targets)) {
     if (!(id in raw)) continue;
-    result[id] = Math.min(directiveTargets[id],safeInt(raw[id]));
+    result[id] = Math.min(target,safeInt(raw[id]));
   }
   return result;
 }
 
-function sanitizeRewardedDirectives(raw:unknown):string[] {
+function sanitizeRewardedDirectives(raw:unknown,pattern:RegExp):string[] {
   if (!Array.isArray(raw)) return [];
-  const valid = raw.filter((value):value is string => typeof value === 'string' && /^\d+-(?:[1-9]|1[0-2])-[1-4]:(rift_clear|high_grade|featured_rift)$/.test(value));
-  return [...new Set(valid)];
+  return [...new Set(raw.filter((value):value is string => typeof value === 'string' && pattern.test(value)))];
 }
 
-function sanitizeHonors(raw:unknown):AstralRiftHonorId[] {
+function sanitizeRiftHonors(raw:unknown):AstralRiftHonorId[] {
   if (!Array.isArray(raw)) return [];
-  return validHonorIds.filter(id => raw.includes(id));
+  return validRiftHonorIds.filter(id => raw.includes(id));
+}
+
+function sanitizeConvergenceHonors(raw:unknown):ConvergenceHonorId[] {
+  if (!Array.isArray(raw)) return [];
+  return validConvergenceHonorIds.filter(id => raw.includes(id));
 }
 
 export function hydrateGameState(raw:unknown):GameState {
@@ -125,9 +195,16 @@ export function hydrateGameState(raw:unknown):GameState {
     astralRiftEchoes:safeInt(source.astralRiftEchoes),
     purchasedAstralRiftRelics:sanitizeRelics(source.purchasedAstralRiftRelics),
     astralRiftWeeklyKey:sanitizeWeeklyKey(source.astralRiftWeeklyKey),
-    astralRiftWeeklyProgress:sanitizeWeeklyProgress(source.astralRiftWeeklyProgress),
-    rewardedAstralRiftDirectives:sanitizeRewardedDirectives(source.rewardedAstralRiftDirectives),
-    claimedAstralRiftHonors:sanitizeHonors(source.claimedAstralRiftHonors),
+    astralRiftWeeklyProgress:sanitizeProgress(source.astralRiftWeeklyProgress,riftDirectiveTargets),
+    rewardedAstralRiftDirectives:sanitizeRewardedDirectives(source.rewardedAstralRiftDirectives,/^\d+-(?:[1-9]|1[0-2])-[1-4]:(rift_clear|high_grade|featured_rift)$/),
+    claimedAstralRiftHonors:sanitizeRiftHonors(source.claimedAstralRiftHonors),
+    celestialConvergenceRecords:sanitizeConvergenceRecords(source.celestialConvergenceRecords),
+    guardianSigils:safeInt(source.guardianSigils),
+    purchasedGuardianBoons:sanitizeGuardianBoons(source.purchasedGuardianBoons),
+    convergenceWeeklyKey:sanitizeWeeklyKey(source.convergenceWeeklyKey),
+    convergenceWeeklyProgress:sanitizeProgress(source.convergenceWeeklyProgress,convergenceDirectiveTargets),
+    rewardedConvergenceDirectives:sanitizeRewardedDirectives(source.rewardedConvergenceDirectives,/^\d+-(?:[1-9]|1[0-2])-[1-4]:(convergence_clear|high_grade|featured_guardian)$/),
+    claimedConvergenceHonors:sanitizeConvergenceHonors(source.claimedConvergenceHonors),
   };
 }
 
@@ -154,7 +231,7 @@ function currentCallingLevel(state:Base.GameState):number {
   return callingMasteryLevel(state.callingMastery?.[state.activeCalling] ?? 0);
 }
 
-function riftState(state:GameState) {
+function endgameState(state:GameState) {
   return {
     astralRiftRecords:state.astralRiftRecords,
     astralRiftEchoes:state.astralRiftEchoes,
@@ -163,11 +240,74 @@ function riftState(state:GameState) {
     astralRiftWeeklyProgress:state.astralRiftWeeklyProgress,
     rewardedAstralRiftDirectives:state.rewardedAstralRiftDirectives,
     claimedAstralRiftHonors:state.claimedAstralRiftHonors,
+    celestialConvergenceRecords:state.celestialConvergenceRecords,
+    guardianSigils:state.guardianSigils,
+    purchasedGuardianBoons:state.purchasedGuardianBoons,
+    convergenceWeeklyKey:state.convergenceWeeklyKey,
+    convergenceWeeklyProgress:state.convergenceWeeklyProgress,
+    rewardedConvergenceDirectives:state.rewardedConvergenceDirectives,
+    claimedConvergenceHonors:state.claimedConvergenceHonors,
   };
 }
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+
+  if (action.type === 'PURCHASE_GUARDIAN_BOON') {
+    const result = resolveGuardianBoonPurchase({ boonId:action.boonId, sigils:state.guardianSigils, purchased:state.purchasedGuardianBoons });
+    if (!result.accepted) return state;
+    return {
+      ...state,
+      guardianSigils:result.sigils,
+      purchasedGuardianBoons:result.purchased,
+      gold:state.gold + result.reward.gold,
+      gems:state.gems + result.reward.gems,
+    };
+  }
+
+  if (action.type === 'CLEAR_CELESTIAL_CONVERGENCE') {
+    if (!canEnterConvergence({
+      guardianId:action.guardianId,
+      intensity:action.intensity,
+      riftRecords:state.astralRiftRecords,
+      riftRelicCount:state.purchasedAstralRiftRelics.length,
+    })) return state;
+    const power = convergencePower({
+      ascensionScore:ascensionScore(state),
+      sanctuaryGrandProgress:sanctuaryScore(state),
+      callingMasteryLevel:currentCallingLevel(state),
+      astralRiftClearCount:astralRiftClearCount(state.astralRiftRecords),
+      riftRelicCount:state.purchasedAstralRiftRelics.length,
+      activeCalling:state.activeCalling,
+      guardianId:action.guardianId,
+    });
+    const recordKey = `${action.guardianId}:${action.intensity}`;
+    const firstClear = !state.celestialConvergenceRecords[recordKey];
+    const resolved = resolveConvergence(action.guardianId,action.intensity,power,firstClear);
+    if (!resolved.success) return state;
+    const records = updateConvergenceRecord(state.celestialConvergenceRecords,action.guardianId,action.intensity,{ grade:resolved.grade, power });
+    const weekKey = convergenceWeeklyKey(state.year,state.month,state.week);
+    const directives = convergenceWeeklyDirectives(state.year,state.month,state.week);
+    const weekly = advanceConvergenceWeekly({
+      directives,
+      progress:state.convergenceWeeklyKey === weekKey ? state.convergenceWeeklyProgress : {},
+      rewardedKeys:state.rewardedConvergenceDirectives,
+      weekKey,
+      event:{ guardianId:action.guardianId, grade:resolved.grade, success:true },
+    });
+    const earnedHonors = newlyEarnedConvergenceHonors(records,state.claimedConvergenceHonors);
+    return {
+      ...state,
+      celestialConvergenceRecords:records,
+      guardianSigils:state.guardianSigils + resolved.sigils + weekly.sigils,
+      convergenceWeeklyKey:weekKey,
+      convergenceWeeklyProgress:weekly.progress,
+      rewardedConvergenceDirectives:weekly.rewardedKeys,
+      claimedConvergenceHonors:[...state.claimedConvergenceHonors,...earnedHonors.map(item => item.id)],
+      gold:state.gold + earnedHonors.reduce((sum,item) => sum + item.reward.gold,0),
+      gems:state.gems + earnedHonors.reduce((sum,item) => sum + item.reward.gems,0),
+    };
+  }
 
   if (action.type === 'PURCHASE_ASTRAL_RIFT_RELIC') {
     const result = resolveAstralRiftRelicPurchase({
@@ -219,5 +359,5 @@ export function reducer(state:GameState,action:Action):GameState {
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  return { ...baseNext, ...riftState(state) };
+  return { ...baseNext, ...endgameState(state) };
 }
