@@ -1,0 +1,38 @@
+import type { AstralTrialGrade } from './sanctuary-astral-trials';
+
+export type CelestialRecord = { key:string; grade:AstralTrialGrade; power:number };
+export type CelestialHonorId = 'first_light'|'full_cycle'|'perfect_cycle'|'twelve_trials';
+export type CelestialHonor = {
+  id:CelestialHonorId;
+  label:string;
+  description:string;
+  metric:'totalClears'|'uniqueTrials'|'uniqueSClears';
+  threshold:number;
+  reward:{ gold:number; gems:number; starShards:number };
+};
+
+export const celestialHonors:CelestialHonor[] = [
+  { id:'first_light', label:'첫 별빛', description:'첫 Astral Trial을 완료했어요.', metric:'totalClears', threshold:1, reward:{ gold:120, gems:0, starShards:1 } },
+  { id:'full_cycle', label:'별자리 순환', description:'네 종류의 Astral Trial을 모두 완료했어요.', metric:'uniqueTrials', threshold:4, reward:{ gold:300, gems:1, starShards:2 } },
+  { id:'perfect_cycle', label:'완전한 천궁', description:'네 종류의 Astral Trial에서 모두 S를 기록했어요.', metric:'uniqueSClears', threshold:4, reward:{ gold:500, gems:3, starShards:3 } },
+  { id:'twelve_trials', label:'천체 연대기', description:'누적 12회의 Astral Trial을 완료했어요.', metric:'totalClears', threshold:12, reward:{ gold:800, gems:4, starShards:4 } },
+];
+
+const trialFromKey = (key:string) => key.split(':')[1] ?? '';
+
+export function celestialRecordProgress(records:ReadonlyArray<CelestialRecord>) {
+  const unique = new Set<string>();
+  const uniqueS = new Set<string>();
+  for (const record of records) {
+    const trial = trialFromKey(record.key);
+    if (!trial) continue;
+    unique.add(trial);
+    if (record.grade === 'S') uniqueS.add(trial);
+  }
+  return { totalClears:records.length, uniqueTrials:unique.size, uniqueSClears:uniqueS.size };
+}
+
+export function newlyEarnedCelestialHonors(records:ReadonlyArray<CelestialRecord>,claimed:ReadonlyArray<CelestialHonorId>) {
+  const progress = celestialRecordProgress(records);
+  return celestialHonors.filter(item => progress[item.metric] >= item.threshold && !claimed.includes(item.id));
+}
