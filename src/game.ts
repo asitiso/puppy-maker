@@ -1,74 +1,137 @@
-export * from './game-sanctuary-celestial-base';
+export * from './game-astral-rift-base';
 
-import * as Base from './game-sanctuary-celestial-base';
+import * as Base from './game-astral-rift-base';
 import {
-  newlyEarnedSanctuaryGrandRewards,
-  sanctuaryGrandProgress,
-  type SanctuaryGrandRewardRank,
-} from './sanctuary-grand-milestones';
+  astralRiftDefinitions,
+  astralRiftPower,
+  canEnterAstralRift,
+  resolveAstralRift,
+  updateAstralRiftRecord,
+  type AstralRiftId,
+  type AstralRiftIntensity,
+  type AstralRiftRecord,
+  type AstralRiftRecordMap,
+} from './astral-rift';
 import {
-  resolveSeasonLegacyUnlock,
-  seasonLegacyNodes,
-  type SeasonLegacyNodeId,
-} from './season-legacy-board';
+  astralRiftRelics,
+  resolveAstralRiftRelicPurchase,
+  type AstralRiftRelicId,
+} from './astral-rift-relics';
 import {
-  celestialAscensionProgress,
-  newlyEarnedAscensionRewards,
-  type CelestialAscensionRewardRank,
-} from './celestial-ascension';
+  advanceAstralRiftWeekly,
+  astralRiftWeeklyDirectives,
+  astralRiftWeeklyKey,
+  type AstralRiftDirectiveId,
+} from './astral-rift-weekly';
+import {
+  astralRiftHonors,
+  newlyEarnedAstralRiftHonors,
+  type AstralRiftHonorId,
+} from './astral-rift-honors';
+import { callingMasteryLevel } from './calling-mastery';
+import { celestialAscensionProgress } from './celestial-ascension';
+import { sanctuaryGrandProgress } from './sanctuary-grand-milestones';
 
 export type GameState = Base.GameState & {
-  claimedSanctuaryGrandRanks:SanctuaryGrandRewardRank[];
-  unlockedSeasonLegacyNodes:SeasonLegacyNodeId[];
-  claimedCelestialAscensionRanks:CelestialAscensionRewardRank[];
+  astralRiftRecords:AstralRiftRecordMap;
+  astralRiftEchoes:number;
+  purchasedAstralRiftRelics:AstralRiftRelicId[];
+  astralRiftWeeklyKey:string|null;
+  astralRiftWeeklyProgress:Record<string,number>;
+  rewardedAstralRiftDirectives:string[];
+  claimedAstralRiftHonors:AstralRiftHonorId[];
 };
 
-export type Action = Base.Action | { type:'UNLOCK_SEASON_LEGACY_NODE'; nodeId:SeasonLegacyNodeId };
+export type Action = Base.Action
+  | { type:'CLEAR_ASTRAL_RIFT'; riftId:AstralRiftId; intensity:AstralRiftIntensity }
+  | { type:'PURCHASE_ASTRAL_RIFT_RELIC'; relicId:AstralRiftRelicId };
 
 export const initialState:GameState = {
   ...Base.initialState,
-  claimedSanctuaryGrandRanks:[],
-  unlockedSeasonLegacyNodes:[],
-  claimedCelestialAscensionRanks:[],
+  astralRiftRecords:{},
+  astralRiftEchoes:0,
+  purchasedAstralRiftRelics:[],
+  astralRiftWeeklyKey:null,
+  astralRiftWeeklyProgress:{},
+  rewardedAstralRiftDirectives:[],
+  claimedAstralRiftHonors:[],
 };
 
-const validRanks:SanctuaryGrandRewardRank[] = ['haven','sanctum','citadel','celestial'];
-const validLegacyNodes = seasonLegacyNodes.map(node => node.id);
-const validAscensionRanks:CelestialAscensionRewardRank[] = ['awakened','stellar','empyrean','transcendent'];
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : 0;
+const validRiftIds = astralRiftDefinitions.map(item => item.id);
+const validRelicIds = astralRiftRelics.map(item => item.id);
+const validHonorIds = astralRiftHonors.map(item => item.id);
+const directiveTargets:Record<AstralRiftDirectiveId,number> = { rift_clear:2, high_grade:1, featured_rift:1 };
 
-function sanitizeClaimedRanks(raw:unknown):SanctuaryGrandRewardRank[] {
-  if (!Array.isArray(raw)) return [];
-  return [...new Set(raw.filter((value):value is SanctuaryGrandRewardRank =>
-    typeof value === 'string' && validRanks.includes(value as SanctuaryGrandRewardRank)
-  ))];
+function sanitizeRiftRecords(raw:unknown):AstralRiftRecordMap {
+  if (!isRecord(raw)) return {};
+  const result:AstralRiftRecordMap = {};
+  for (const [key,value] of Object.entries(raw)) {
+    const [riftId,intensity] = key.split(':');
+    if (!validRiftIds.includes(riftId as AstralRiftId) || !['1','2','3'].includes(intensity) || !isRecord(value)) continue;
+    if (!['B','A','S'].includes(String(value.grade))) continue;
+    const clearCount = safeInt(value.clearCount);
+    if (clearCount < 1) continue;
+    result[key] = {
+      grade:value.grade as AstralRiftRecord['grade'],
+      bestPower:safeInt(value.bestPower),
+      clearCount,
+    };
+  }
+  return result;
 }
 
-function sanitizeLegacyNodes(raw:unknown):SeasonLegacyNodeId[] {
+function sanitizeRelics(raw:unknown):AstralRiftRelicId[] {
   if (!Array.isArray(raw)) return [];
-  return [...new Set(raw.filter((value):value is SeasonLegacyNodeId =>
-    typeof value === 'string' && validLegacyNodes.includes(value as SeasonLegacyNodeId)
-  ))];
+  return validRelicIds.filter(id => raw.includes(id));
 }
 
-function sanitizeAscensionRanks(raw:unknown):CelestialAscensionRewardRank[] {
+function sanitizeWeeklyKey(raw:unknown):string|null {
+  if (typeof raw !== 'string') return null;
+  const match = /^(\d+)-(\d+)-([1-4])$/.exec(raw);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  return year >= 1 && month >= 1 && month <= 12 ? `${year}-${month}-${match[3]}` : null;
+}
+
+function sanitizeWeeklyProgress(raw:unknown):Record<string,number> {
+  if (!isRecord(raw)) return {};
+  const result:Record<string,number> = {};
+  for (const id of Object.keys(directiveTargets) as AstralRiftDirectiveId[]) {
+    if (!(id in raw)) continue;
+    result[id] = Math.min(directiveTargets[id],safeInt(raw[id]));
+  }
+  return result;
+}
+
+function sanitizeRewardedDirectives(raw:unknown):string[] {
   if (!Array.isArray(raw)) return [];
-  return [...new Set(raw.filter((value):value is CelestialAscensionRewardRank =>
-    typeof value === 'string' && validAscensionRanks.includes(value as CelestialAscensionRewardRank)
-  ))];
+  const valid = raw.filter((value):value is string => typeof value === 'string' && /^\d+-(?:[1-9]|1[0-2])-[1-4]:(rift_clear|high_grade|featured_rift)$/.test(value));
+  return [...new Set(valid)];
+}
+
+function sanitizeHonors(raw:unknown):AstralRiftHonorId[] {
+  if (!Array.isArray(raw)) return [];
+  return validHonorIds.filter(id => raw.includes(id));
 }
 
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
   return {
     ...Base.hydrateGameState(raw),
-    claimedSanctuaryGrandRanks:sanitizeClaimedRanks(source.claimedSanctuaryGrandRanks),
-    unlockedSeasonLegacyNodes:sanitizeLegacyNodes(source.unlockedSeasonLegacyNodes),
-    claimedCelestialAscensionRanks:sanitizeAscensionRanks(source.claimedCelestialAscensionRanks),
+    astralRiftRecords:sanitizeRiftRecords(source.astralRiftRecords),
+    astralRiftEchoes:safeInt(source.astralRiftEchoes),
+    purchasedAstralRiftRelics:sanitizeRelics(source.purchasedAstralRiftRelics),
+    astralRiftWeeklyKey:sanitizeWeeklyKey(source.astralRiftWeeklyKey),
+    astralRiftWeeklyProgress:sanitizeWeeklyProgress(source.astralRiftWeeklyProgress),
+    rewardedAstralRiftDirectives:sanitizeRewardedDirectives(source.rewardedAstralRiftDirectives),
+    claimedAstralRiftHonors:sanitizeHonors(source.claimedAstralRiftHonors),
   };
 }
 
-function grandScore(state:Base.GameState):number {
+function sanctuaryScore(state:Base.GameState):number {
   return sanctuaryGrandProgress({
     levels:state.sanctuaryLevels,
     specializationCount:Object.keys(state.sanctuarySpecializations ?? {}).length,
@@ -82,63 +145,79 @@ function ascensionScore(state:Base.GameState):number {
     trialRecords:state.astralTrialRecords ?? [],
     blessingCount:state.purchasedAstralBlessings?.length ?? 0,
     constellationCount:state.sanctuaryConstellations?.length ?? 0,
-    sanctuaryGrandProgress:grandScore(state),
+    sanctuaryGrandProgress:sanctuaryScore(state),
   });
 }
 
-function applyGrandRewards(previous:GameState,next:GameState):GameState {
-  const claimed = previous.claimedSanctuaryGrandRanks ?? [];
-  const earned = newlyEarnedSanctuaryGrandRewards(grandScore(next),claimed);
-  if (!earned.length) return { ...next, claimedSanctuaryGrandRanks:claimed };
-  return {
-    ...next,
-    claimedSanctuaryGrandRanks:[...claimed,...earned.map(item => item.rank)],
-    gold:next.gold + earned.reduce((sum,item) => sum + item.reward.gold,0),
-    gems:next.gems + earned.reduce((sum,item) => sum + item.reward.gems,0),
-  };
+function currentCallingLevel(state:Base.GameState):number {
+  if (!state.activeCalling) return 0;
+  return callingMasteryLevel(state.callingMastery?.[state.activeCalling] ?? 0);
 }
 
-function applyAscensionRewards(previous:GameState,next:GameState):GameState {
-  const claimed = previous.claimedCelestialAscensionRanks ?? [];
-  const earned = newlyEarnedAscensionRewards(ascensionScore(next),claimed);
-  if (!earned.length) return { ...next, claimedCelestialAscensionRanks:claimed };
+function riftState(state:GameState) {
   return {
-    ...next,
-    claimedCelestialAscensionRanks:[...claimed,...earned.map(item => item.rank)],
-    gold:next.gold + earned.reduce((sum,item) => sum + item.reward.gold,0),
-    gems:next.gems + earned.reduce((sum,item) => sum + item.reward.gems,0),
-    astralStarShards:(next.astralStarShards ?? 0) + earned.reduce((sum,item) => sum + item.reward.starShards,0),
+    astralRiftRecords:state.astralRiftRecords,
+    astralRiftEchoes:state.astralRiftEchoes,
+    purchasedAstralRiftRelics:state.purchasedAstralRiftRelics,
+    astralRiftWeeklyKey:state.astralRiftWeeklyKey,
+    astralRiftWeeklyProgress:state.astralRiftWeeklyProgress,
+    rewardedAstralRiftDirectives:state.rewardedAstralRiftDirectives,
+    claimedAstralRiftHonors:state.claimedAstralRiftHonors,
   };
 }
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
 
-  if (action.type === 'UNLOCK_SEASON_LEGACY_NODE') {
-    const result = resolveSeasonLegacyUnlock({
-      nodeId:action.nodeId,
-      history:state.seasonJourneyHistory,
-      honors:state.claimedSeasonCompletionHonors ?? [],
-      unlocked:state.unlockedSeasonLegacyNodes ?? [],
+  if (action.type === 'PURCHASE_ASTRAL_RIFT_RELIC') {
+    const result = resolveAstralRiftRelicPurchase({
+      relicId:action.relicId,
+      echoes:state.astralRiftEchoes,
+      purchased:state.purchasedAstralRiftRelics,
     });
     if (!result.accepted) return state;
+    return { ...state, astralRiftEchoes:result.echoes, purchasedAstralRiftRelics:result.purchased };
+  }
+
+  if (action.type === 'CLEAR_ASTRAL_RIFT') {
+    const ascension = ascensionScore(state);
+    if (!canEnterAstralRift({ riftId:action.riftId, intensity:action.intensity, ascensionScore:ascension, records:state.astralRiftRecords })) return state;
+    const power = astralRiftPower({
+      ascensionScore:ascension,
+      sanctuaryGrandProgress:sanctuaryScore(state),
+      callingMasteryLevel:currentCallingLevel(state),
+      blessingCount:state.purchasedAstralBlessings?.length ?? 0,
+    });
+    const recordKey = `${action.riftId}:${action.intensity}`;
+    const firstClear = !state.astralRiftRecords[recordKey];
+    const resolved = resolveAstralRift(action.riftId,action.intensity,power,firstClear);
+    if (!resolved.success) return state;
+
+    const records = updateAstralRiftRecord(state.astralRiftRecords,action.riftId,action.intensity,{ grade:resolved.grade, power });
+    const weekKey = astralRiftWeeklyKey(state.year,state.month,state.week);
+    const directives = astralRiftWeeklyDirectives(state.year,state.month,state.week);
+    const weekly = advanceAstralRiftWeekly({
+      directives,
+      progress:state.astralRiftWeeklyKey === weekKey ? state.astralRiftWeeklyProgress : {},
+      rewardedKeys:state.rewardedAstralRiftDirectives,
+      weekKey,
+      event:{ riftId:action.riftId, grade:resolved.grade, success:true },
+    });
+    const earnedHonors = newlyEarnedAstralRiftHonors(records,state.claimedAstralRiftHonors);
     return {
       ...state,
-      unlockedSeasonLegacyNodes:result.unlocked,
-      gold:state.gold + result.reward.gold,
-      gems:state.gems + result.reward.gems,
-      claimedCelestialAscensionRanks:state.claimedCelestialAscensionRanks ?? [],
+      astralRiftRecords:records,
+      astralRiftEchoes:state.astralRiftEchoes + resolved.echoes + weekly.echoes,
+      astralRiftWeeklyKey:weekKey,
+      astralRiftWeeklyProgress:weekly.progress,
+      rewardedAstralRiftDirectives:weekly.rewardedKeys,
+      claimedAstralRiftHonors:[...state.claimedAstralRiftHonors,...earnedHonors.map(item => item.id)],
+      gold:state.gold + earnedHonors.reduce((sum,item) => sum + item.reward.gold,0),
+      gems:state.gems + earnedHonors.reduce((sum,item) => sum + item.reward.gems,0),
     };
   }
 
-  const baseNext = Base.reducer(state,action);
+  const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
-  const next:GameState = {
-    ...baseNext,
-    claimedSanctuaryGrandRanks:state.claimedSanctuaryGrandRanks ?? [],
-    unlockedSeasonLegacyNodes:state.unlockedSeasonLegacyNodes ?? [],
-    claimedCelestialAscensionRanks:state.claimedCelestialAscensionRanks ?? [],
-  };
-  const withGrandRewards = applyGrandRewards(state,next);
-  return applyAscensionRewards(state,withGrandRewards);
+  return { ...baseNext, ...riftState(state) };
 }
