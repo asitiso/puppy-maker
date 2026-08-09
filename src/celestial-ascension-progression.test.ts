@@ -36,7 +36,7 @@ describe('celestial ascension progression', () => {
       astralTrialRecords:[{ key:trialKey, grade:'B' as const, power:80 }],
       purchasedAstralBlessings:['scholar_glow'] as typeof initialState.purchasedAstralBlessings,
       sanctuaryConstellations:['dawn_compass','scholar_star','wayfarer_star'] as typeof initialState.sanctuaryConstellations,
-      claimedCelestialAscensionRanks:['awakened'] as const,
+      claimedCelestialAscensionRanks:['awakened'] as typeof initialState.claimedCelestialAscensionRanks,
     };
     const next = reducer(ready,{ type:'PURCHASE_ASTRAL_BLESSING', blessing:'scholar_glow' });
     expect(next).toBe(ready);
