@@ -1,6 +1,6 @@
-export * from './game-sanctuary-grand-base';
+export * from './game-sanctuary-constellation-base';
 
-import * as Base from './game-sanctuary-grand-base';
+import * as Base from './game-sanctuary-constellation-base';
 import {
   newlyEarnedSanctuaryGrandRewards,
   sanctuaryGrandProgress,
