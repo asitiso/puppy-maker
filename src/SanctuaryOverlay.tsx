@@ -1,7 +1,10 @@
 import type { GameState } from './game';
 import AstralRiftPanel from './AstralRiftPanel';
+import ConvergencePanel from './ConvergencePanel';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
+import type { CelestialGuardianId, ConvergenceIntensity } from './celestial-convergence';
+import type { GuardianBoonId } from './guardian-boons';
 import { sanctuaryAstralUiSummary } from './sanctuary-astral-ui';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
 import { sanctuaryGrandProgress, sanctuaryGrandRank } from './sanctuary-grand-milestones';
@@ -31,6 +34,8 @@ export default function SanctuaryOverlay({
   onMasterwork,
   onAstralRiftClear,
   onAstralRiftRelic,
+  onConvergenceClear,
+  onGuardianBoon,
 }:{
   state:GameState;
   open:boolean;
@@ -41,6 +46,8 @@ export default function SanctuaryOverlay({
   onMasterwork:(masterwork:SanctuaryMasterworkId)=>void;
   onAstralRiftClear:(riftId:AstralRiftId,intensity:AstralRiftIntensity)=>void;
   onAstralRiftRelic:(relicId:AstralRiftRelicId)=>void;
+  onConvergenceClear:(guardianId:CelestialGuardianId,intensity:ConvergenceIntensity)=>void;
+  onGuardianBoon:(boonId:GuardianBoonId)=>void;
 }) {
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
@@ -103,6 +110,7 @@ export default function SanctuaryOverlay({
         </article>
 
         <AstralRiftPanel state={state} onClear={onAstralRiftClear} onRelic={onAstralRiftRelic} />
+        <ConvergencePanel state={state} onClear={onConvergenceClear} onBoon={onGuardianBoon} />
 
         <div className="sanctuary-prestige-card">
           <div><small>SANCTUARY PRESTIGE</small><strong>{contractSummary.prestige.label}</strong><span>주간 성역 의뢰를 완료해 성소의 위상을 높여요.</span></div>
