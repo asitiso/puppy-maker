@@ -2,6 +2,7 @@ import type { GameState } from './game';
 import type { CelestialGuardianId, ConvergenceIntensity } from './celestial-convergence';
 import type { GuardianBoonId } from './guardian-boons';
 import { convergenceUiSummary } from './convergence-ui';
+import './convergence.css';
 
 const intensityLabels:Record<ConvergenceIntensity,string> = { 1:'I', 2:'II', 3:'III' };
 const guardianMarks:Record<CelestialGuardianId,string> = {
