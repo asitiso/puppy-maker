@@ -1,4 +1,5 @@
 import type { GameState } from './game';
+import { sanctuaryAstralUiSummary } from './sanctuary-astral-ui';
 import { sanctuaryContractUiSummary } from './sanctuary-contract-ui';
 import { sanctuaryGrandProgress, sanctuaryGrandRank } from './sanctuary-grand-milestones';
 import { canBuildSanctuaryMasterwork, sanctuaryMasterworks, type SanctuaryMasterworkId } from './sanctuary-masterworks';
@@ -36,6 +37,8 @@ export default function SanctuaryOverlay({
 }) {
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
+  const astralSummary = sanctuaryAstralUiSummary(state);
+  const ascension = astralSummary.ascension;
   const masterworkIds = state.sanctuaryMasterworks ?? [];
   const grandScore = sanctuaryGrandProgress({
     levels:state.sanctuaryLevels,
@@ -47,11 +50,14 @@ export default function SanctuaryOverlay({
   const prestigeProgress = contractSummary.prestige.nextThreshold
     ? `${contractSummary.prestige.prestige}/${contractSummary.prestige.nextThreshold}`
     : `${contractSummary.prestige.prestige} MAX`;
+  const ascensionProgress = ascension.rank.nextThreshold
+    ? `${ascension.score}/${ascension.rank.nextThreshold}`
+    : `${ascension.score} MAX`;
   if (!open) {
     return <button className="sanctuary-entry" onClick={onOpen} aria-label="별빛 성소 열기">
       <small>STARLIGHT SANCTUARY</small>
       <strong>별빛 성소</strong>
-      <span>{grand.label} · Masterwork {masterworkIds.length}/4</span>
+      <span>{grand.label} · {ascension.rank.label}</span>
     </button>;
   }
   return <div className="sanctuary-backdrop" role="presentation" onClick={onClose}>
@@ -59,7 +65,7 @@ export default function SanctuaryOverlay({
       <img className="sanctuary-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="sanctuary-content">
         <header>
-          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork 완성으로 성역을 완성해요.</p></div>
+          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork → 천상 승천으로 성역을 완성해요.</p></div>
           <button onClick={onClose} aria-label="닫기">×</button>
         </header>
 
@@ -67,6 +73,27 @@ export default function SanctuaryOverlay({
           <div><small>SANCTUARY GRAND RANK</small><strong>{grand.label}</strong><span>{grand.description}</span></div>
           <b>{grand.nextThreshold ? `${grand.score}/${grand.nextThreshold}` : `${grand.score} MAX`}</b>
         </div>
+
+        <article className="sanctuary-ascension-block">
+          <div className="sanctuary-ascension-heading">
+            <div><small>CELESTIAL ASCENSION</small><h3>{ascension.rank.label}</h3><p>{ascension.rank.description}</p></div>
+            <strong>{ascensionProgress}</strong>
+          </div>
+          <div className="sanctuary-ascension-components">
+            <span>시련 <b>{ascension.components.trialClears}/12</b></span>
+            <span>S 다양성 <b>{ascension.components.uniqueSClears}/4</b></span>
+            <span>축복 <b>{ascension.components.blessings}/4</b></span>
+            <span>성좌 <b>{ascension.components.constellations}/5</b></span>
+            <span>성소 <b>{ascension.components.sanctuaryProgress}/65</b></span>
+          </div>
+          <div className="sanctuary-ascension-rewards">
+            {ascension.rewards.map(item => <div className={item.claimed ? 'is-claimed' : item.reached ? 'is-reached' : ''} key={item.rank}>
+              <span><b>{item.claimed ? '✓ ' : ''}{item.rank === 'awakened' ? '성광 각성' : item.rank === 'stellar' ? '성좌 승천' : item.rank === 'empyrean' ? '천궁 수호' : '초월'}</b><small>{item.threshold}점</small></span>
+              <strong>{item.reward.gold ? `${item.reward.gold}G` : ''}{item.reward.gold && item.reward.gems ? ' · ' : ''}{item.reward.gems ? `◆${item.reward.gems}` : ''}{(item.reward.gold || item.reward.gems) && item.reward.starShards ? ' · ' : ''}{item.reward.starShards ? `✦${item.reward.starShards}` : ''}</strong>
+            </div>)}
+          </div>
+          <p>{ascension.nextReward ? `다음 승천 보상 · ${ascension.nextReward.threshold}점` : '모든 천상 승천 보상을 획득했어요.'}</p>
+        </article>
 
         <div className="sanctuary-prestige-card">
           <div><small>SANCTUARY PRESTIGE</small><strong>{contractSummary.prestige.label}</strong><span>주간 성역 의뢰를 완료해 성소의 위상을 높여요.</span></div>
