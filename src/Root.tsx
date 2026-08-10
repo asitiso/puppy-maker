@@ -173,6 +173,8 @@ export default function Root() {
         onMasterwork={handleSanctuaryMasterwork}
         onAstralRiftClear={handleAstralRiftClear}
         onAstralRiftRelic={handleAstralRiftRelic}
+        onConvergenceClear={() => undefined}
+        onGuardianBoon={() => undefined}
       />
       <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
       <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
