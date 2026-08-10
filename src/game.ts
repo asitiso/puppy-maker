@@ -8,13 +8,64 @@ import {
   seasonJourneyKey,
 } from './season-journey';
 import {
+  canPurchaseSeasonOffer,
+  seasonShopOffer,
+  seasonShopPurchaseCount,
+  seasonShopPurchaseKey,
+  type SeasonShopOfferId,
+} from './season-shop';
+import {
   advanceWeeklyDirectives,
   weeklyDirectiveKey,
   weeklyDirectives,
 } from './weekly-directives';
 
-export function reducer(state:Live.GameState, action:Live.Action):Live.GameState {
-  if (action.type !== 'FINISH_TRAINING') return Live.reducer(state,action);
+export type Action = Live.Action | { type:'BUY_SEASON_SHOP_OFFER'; offerId:SeasonShopOfferId };
+
+function buySeasonShopOffer(state:Live.GameState, offerId:SeasonShopOfferId):Live.GameState {
+  const offer = seasonShopOffer(offerId);
+  if (!offer) return state;
+  const key = seasonJourneyKey(state.year,state.month);
+  const balance = state.seasonTokenBalances[key] ?? 0;
+  const count = seasonShopPurchaseCount(state.seasonShopPurchases,key,offer.id);
+  if (!canPurchaseSeasonOffer(offer,balance,count)) return state;
+  const inventory = { ...state.inventory };
+  let gold = state.gold;
+  let gems = state.gems;
+  let stats = state.stats;
+  if ('gold' in offer.reward) gold += offer.reward.gold;
+  if ('gems' in offer.reward) gems += offer.reward.gems;
+  if ('giftItems' in offer.reward) {
+    inventory.star_cookie += 1;
+    inventory.herb_tea += Math.max(0,offer.reward.giftItems - 1);
+  }
+  if ('recoveryItems' in offer.reward) {
+    const strength = Math.max(1,offer.reward.recoveryItems);
+    stats = {
+      ...stats,
+      fatigue:Math.max(0,stats.fatigue - 10 * strength),
+      stress:Math.max(0,stats.stress - 5 * strength),
+    };
+  }
+  return {
+    ...state,
+    gold,
+    gems,
+    stats,
+    inventory,
+    seasonTokenBalances:{ ...state.seasonTokenBalances, [key]:balance - offer.cost },
+    seasonShopPurchases:[...state.seasonShopPurchases,seasonShopPurchaseKey(key,offer.id,count + 1)],
+  };
+}
+
+export function reducer(state:Live.GameState, action:Action):Live.GameState {
+  if (action.type === 'BUY_SEASON_SHOP_OFFER') return buySeasonShopOffer(state,action.offerId);
+
+  if (action.type !== 'FINISH_TRAINING') {
+    const next = Live.reducer(state,action);
+    if (next === state) return state;
+    return { ...next, seasonShopPurchases:state.seasonShopPurchases };
+  }
 
   const baseNext = Base.reducer(state,action as Base.Action);
   if (baseNext === state) return state;
@@ -57,6 +108,7 @@ export function reducer(state:Live.GameState, action:Live.Action):Live.GameState
     weeklyDirectiveKey:weekKey,
     weeklyDirectiveProgress:weekly.progress,
     rewardedWeeklyDirectives:rewardedWeekly,
+    seasonShopPurchases:state.seasonShopPurchases,
     seasonJourneyHistory:state.seasonJourneyHistory,
     gold:next.gold + gold,
     gems:next.gems + gems,
