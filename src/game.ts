@@ -60,6 +60,7 @@ function buySeasonShopOffer(state:Live.GameState, offerId:SeasonShopOfferId):Liv
 
 export function reducer(state:Live.GameState, action:Action):Live.GameState {
   if (action.type === 'BUY_SEASON_SHOP_OFFER') return buySeasonShopOffer(state,action.offerId);
+  if (action.type === 'RESET') return Live.reducer(state,action);
 
   if (action.type !== 'FINISH_TRAINING') {
     const next = Live.reducer(state,action);
