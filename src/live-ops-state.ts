@@ -1,4 +1,5 @@
 import type { SeasonJourneyKey } from './season-journey';
+import { seasonShopOffers, type SeasonShopOfferId } from './season-shop';
 
 export type SeasonJourneyHistoryEntry = {
   key:SeasonJourneyKey;
@@ -14,6 +15,7 @@ export type LiveOpsPersistentState = {
   weeklyDirectiveKey:string|null;
   weeklyDirectiveProgress:Record<string,number>;
   rewardedWeeklyDirectives:string[];
+  seasonShopPurchases:string[];
   seasonJourneyHistory:SeasonJourneyHistoryEntry[];
 };
 
@@ -22,6 +24,7 @@ const seasonTierPattern = /^\d+-(spring|summer|autumn|winter):(10|[1-9])$/;
 const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
 const weeklyRewardPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
 const directiveIdPattern = /^(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
+const shopPurchasePattern = /^(\d+-(?:spring|summer|autumn|winter)):(gold_cache|gem_pouch|gift_bundle|recovery_kit|season_keepsake):(\d+)$/;
 const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : 0;
 
@@ -33,6 +36,7 @@ export function emptyLiveOpsState(): LiveOpsPersistentState {
     weeklyDirectiveKey:null,
     weeklyDirectiveProgress:{},
     rewardedWeeklyDirectives:[],
+    seasonShopPurchases:[],
     seasonJourneyHistory:[],
   };
 }
@@ -50,6 +54,19 @@ function hydrateNumberMap(raw:unknown, keyPattern:RegExp) {
 function hydrateUniqueStrings(raw:unknown, pattern:RegExp) {
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((value):value is string => typeof value === 'string' && pattern.test(value)))];
+}
+
+function hydrateShopPurchases(raw:unknown) {
+  if (!Array.isArray(raw)) return [];
+  const unique = [...new Set(raw.filter((value):value is string => typeof value === 'string'))];
+  return unique.filter(value => {
+    const match = shopPurchasePattern.exec(value);
+    if (!match) return false;
+    const offer = seasonShopOffers.find(item => item.id === match[2] as SeasonShopOfferId);
+    if (!offer) return false;
+    const ordinal = Number(match[3]);
+    return Number.isInteger(ordinal) && ordinal >= 1 && ordinal <= offer.limit;
+  });
 }
 
 function hydrateHistory(raw:unknown): SeasonJourneyHistoryEntry[] {
@@ -77,6 +94,7 @@ export function hydrateLiveOpsState(raw:unknown): LiveOpsPersistentState {
     weeklyDirectiveKey:typeof source.weeklyDirectiveKey === 'string' && weekKeyPattern.test(source.weeklyDirectiveKey) ? source.weeklyDirectiveKey : null,
     weeklyDirectiveProgress:hydrateNumberMap(source.weeklyDirectiveProgress,directiveIdPattern),
     rewardedWeeklyDirectives:hydrateUniqueStrings(source.rewardedWeeklyDirectives,weeklyRewardPattern),
+    seasonShopPurchases:hydrateShopPurchases(source.seasonShopPurchases),
     seasonJourneyHistory:hydrateHistory(source.seasonJourneyHistory),
   };
 }
