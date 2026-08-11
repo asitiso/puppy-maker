@@ -1,0 +1,7 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState,worldReducer}from'./world-state';
+describe('wardrobe equip',()=>{
+ it('equips an unlocked item and reflects it as the active wardrobe piece',()=>{const discovered=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path'});expect(discovered.wardrobeUnlocks).toContain('forest_charm');const equipped=worldReducer(discovered,{type:'EQUIP_ITEM',itemId:'forest_charm'});expect(equipped.equippedWardrobe).toBe('forest_charm')});
+ it('rejects equipping an item that has not been unlocked yet',()=>{const equipped=worldReducer(initialWorldState,{type:'EQUIP_ITEM',itemId:'forest_charm'});expect(equipped.equippedWardrobe).toBe('runa_classic')});
+ it('falls back to the starter ribbon on a new run since prior unlocks reset',()=>{const discovered=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path'});const equipped=worldReducer(discovered,{type:'EQUIP_ITEM',itemId:'forest_charm'});const reset=worldReducer(equipped,{type:'NEW_RUN'});expect(reset.equippedWardrobe).toBe('runa_classic')});
+ it('round-trips the equipped item through save hydration',()=>{const discovered=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path'});const equipped=worldReducer(discovered,{type:'EQUIP_ITEM',itemId:'forest_charm'});const hydrated=hydrateWorldState(JSON.stringify(equipped));expect(hydrated.equippedWardrobe).toBe('forest_charm')});
+});

@@ -1,1 +1,128 @@
-.layered-home{position:absolute;inset:0;z-index:40;overflow:hidden;background:#1b100d;font-family:'Noto Sans KR',sans-serif;color:#fff;pointer-events:none;isolation:isolate;touch-action:manipulation}.layered-home button{min-width:44px;min-height:44px}.layered-home svg{display:block;width:100%;height:100%}.lh-frame{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}.lh-scene-layer{position:absolute;inset:-1.5%;z-index:1;transform:scale(1.035)}.lh-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}.layered-vignette{position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,#08081444,transparent 18%,transparent 68%,#08040f88);pointer-events:none}.layered-particles{position:absolute;inset:0;z-index:3;background-image:radial-gradient(circle,#fff7b7 0 1px,transparent 2px);background-size:82px 97px;opacity:.35}.lh-character{position:absolute;pointer-events:auto;z-index:12;left:50%;bottom:24.5%;width:48%;transform:translateX(-50%);border:0;background:transparent;padding:0;filter:drop-shadow(0 18px 18px #20100a88)}.lh-character img{display:block;width:100%;height:auto}.lh-level,.lh-currency,.lh-weather,.lh-shortcuts,.lh-goal,.lh-promos,.lh-dialogue,.lh-bottom-nav,.lh-primary-action{position:absolute;pointer-events:auto}.lh-level{z-index:40;left:1.8%;top:max(1.25%,env(safe-area-inset-top));width:16.8%;aspect-ratio:1}.lh-level>div{position:absolute;inset:13%;display:grid;place-content:center;text-align:center}.lh-level strong{font-size:clamp(26px,8vw,48px)}.lh-currency{z-index:40;left:18.8%;top:max(1.8%,env(safe-area-inset-top));width:60.2%;height:10%}.lh-currency-values{position:absolute;left:7%;right:7%;top:15%;display:grid;grid-template-columns:repeat(3,1fr);text-align:center;font-size:clamp(10px,2.5vw,16px)}.lh-hp{position:absolute;left:6%;right:6%;bottom:11%;height:23%;overflow:hidden;border-radius:99px}.lh-hp i{position:absolute;inset:14% 4%;border-radius:99px;background:linear-gradient(90deg,#ff668d,#ff99ad)}.lh-hp b{position:absolute;inset:0;display:grid;place-content:center;font-size:11px}.lh-weather{z-index:40;right:1.5%;top:max(1.5%,env(safe-area-inset-top));width:19.2%;aspect-ratio:1.47}.lh-weather>div{position:absolute;inset:17% 9%;display:grid;place-content:center;text-align:center;color:#4d2f20}.lh-shortcuts{z-index:40;left:2.8%;top:13.4%;width:49.6%;display:flex;gap:2.8%}.lh-shortcuts button{position:relative;width:22.9%;aspect-ratio:1;border:0;background:none;color:#fff;padding:0}.lh-shortcut-icon{position:absolute;left:28%;right:28%;top:22%}.lh-shortcuts b{position:absolute;left:-8%;right:-8%;bottom:-15%;font-size:clamp(8px,2.25vw,14px)}.lh-goal{z-index:40;right:1.6%;top:13.2%;width:34.8%;aspect-ratio:1.22}.lh-goal>div{position:absolute;inset:11% 9%;color:#4e301f}.lh-goal h3{margin:0 0 7%;font-size:clamp(12px,3vw,19px)}.lh-goal p{font-size:clamp(8px,1.98vw,12px);margin:4.5% 0;white-space:nowrap}.lh-promos{z-index:18;left:2.2%;top:46.5%;width:15%;display:grid;gap:11px}.lh-promos button{position:relative;aspect-ratio:1;border:2px solid #e8c466;border-radius:50%;background:#35245f;color:#fff}.lh-promos b,.lh-promos small{position:absolute;left:-22%;right:-22%;text-align:center;font-size:9px}.lh-promos b{bottom:-24%}.lh-promos small{bottom:-42%}.lh-primary-action{z-index:35;left:23%;right:23%;bottom:31.5%;min-height:58px;border:2px solid #f4d58a;border-radius:18px;background:linear-gradient(#e9b85e,#a85e2f);color:#fff;box-shadow:0 8px 18px #0008;text-shadow:0 2px 3px #0008}.lh-primary-action small,.lh-primary-action b,.lh-primary-action span{display:block}.lh-primary-action small{font-size:8px;letter-spacing:.2em}.lh-primary-action b{font-size:clamp(13px,3.5vw,20px)}.lh-primary-action span{font-size:9px}.lh-dialogue{z-index:30;left:6.2%;right:6.2%;bottom:calc(16.8% + env(safe-area-inset-bottom)*.25);height:12.4%}.lh-name{position:absolute;left:7%;top:-10%;padding:2% 5%;border-radius:18px;background:#60458d;border:2px solid #e7ca79;font-weight:900}.lh-dialogue p{position:absolute;left:8%;right:8%;top:26%;margin:0;color:#4a2b1d;font-size:clamp(10px,2.5vw,16px);line-height:1.4}.lh-bottom-nav{z-index:20;left:1.3%;right:1.3%;bottom:max(1.1%,env(safe-area-inset-bottom));height:10.4%;display:flex;justify-content:space-between;align-items:end}.lh-bottom-nav button{position:relative;width:19%;height:100%;padding:0;border:0;background:none;color:#fff}.lh-bottom-nav span{position:absolute;left:31%;right:31%;top:18%}.lh-bottom-nav b{position:absolute;left:0;right:0;bottom:9%;font-size:clamp(9px,2.35vw,15px)}.lh-panel-backdrop{position:absolute;z-index:80;inset:0;pointer-events:auto;background:#100c1c99;display:grid;place-items:end center;padding:16px 12px max(16px,env(safe-area-inset-bottom))}.lh-panel{position:relative;width:min(94%,520px);max-height:70%;overflow:auto;padding:26px 18px;background:#fff5df;color:#493326;border:2px solid #d5aa58;border-radius:24px}.lh-panel-close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:25px}.lh-panel-list{display:grid;gap:8px}.lh-panel-list button{display:flex;align-items:center;gap:10px;border:1px solid #d7b66f;border-radius:12px;background:#fffaf0;padding:10px;color:#493326}.lh-panel-list i{margin-left:auto}.lh-heart{position:absolute;z-index:15;left:36%;top:28%;width:28%;pointer-events:none}.game-icon{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}@media(max-width:390px){.lh-character{bottom:25%;width:46%}.lh-primary-action{left:21%;right:21%;bottom:31.8%;min-height:54px}.lh-dialogue{bottom:calc(17.2% + env(safe-area-inset-bottom)*.25);height:12%}.lh-shortcuts{top:13.7%}.lh-goal{top:13.4%;width:34.3%}}@media(max-height:650px){.lh-character{width:43%;bottom:25.5%}.lh-primary-action{bottom:32%;min-height:48px}.lh-dialogue{height:11.5%;bottom:17.5%}.lh-goal p{margin:3% 0}.lh-promos{top:45%}}@media(prefers-reduced-motion:reduce){.layered-home *{animation:none!important;transition:none!important}}
+.layered-home{position:absolute;inset:0;z-index:40;overflow:hidden;background:#1b100d;font-family:'Noto Sans KR',sans-serif;color:#fff;pointer-events:none;isolation:isolate;touch-action:manipulation}.layered-home button{min-width:44px;min-height:44px}.layered-home svg{display:block;width:100%;height:100%}/* Absolute+inset:0 so a <Frame> always acts as a background layer behind
+   its container's real (text/icon) content, and so the container's own
+   size is driven by that content (padding+text) rather than by the
+   image — this is what keeps things like .lh-weather from being forced
+   into a too-small fixed box by the frame art. */
+.lh-frame{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}.lh-scene-layer{position:absolute;inset:-1.5%;z-index:1;transform:scale(1.035)}.lh-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}.layered-vignette{position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,#08081444,transparent 18%,transparent 68%,#08040f88);pointer-events:none}.layered-particles{position:absolute;inset:0;z-index:3;background-image:radial-gradient(circle,#fff7b7 0 1px,transparent 2px);background-size:82px 97px;opacity:.35}.lh-character{position:absolute;pointer-events:auto;z-index:12;left:50%;bottom:24.5%;width:48%;transform:translateX(-50%);border:0;background:transparent;padding:0;filter:drop-shadow(0 18px 18px #20100a88)}.lh-character img{display:block;width:100%;height:auto}.lh-level,.lh-currency,.lh-weather,.lh-shortcuts,.lh-goal,.lh-promos,.lh-dialogue,.lh-bottom-nav,.lh-primary-action{position:absolute;pointer-events:auto}/* Top HUD was entirely dependent on /ui/*_frame.png images for its
+   visible shape (CSS only positioned text with % insets) — with those
+   images swapped out for solid CSS below, and font sizes that used to
+   clamp up to a real-viewport-relative 8vw (independent of how big the
+   badge itself actually is), .lh-level's "3" could render up to 48px
+   inside a ~50-70px circle and push "루나" out past the circle's own
+   edge. .lh-weather used a fixed aspect-ratio box too small for
+   "N월 N주차" at any font size and clipped it to a single character.
+   Rebuilt as solid gold/navy badges sized to their real content instead
+   of an image + guessed inset. */
+/* First pass used a cold navy/periwinkle-blue palette for the whole HUD
+   (badge, currency bar, weather pill) — reads as sci-fi glass against a
+   warm lantern-lit log-cabin background, so it looked pasted on rather
+   than part of the scene. Swapped the "glass" base from navy to a warm
+   bronze/umber (still dark enough for light text, but the same family as
+   the wood/firelight around it), and warmed the level badge from
+   blue-periwinkle to gold-bronze to match the room's lantern light. */
+/* Section 29 of the design doc: decorative frames/badges/buttons use the
+   real /ui/*_frame.png assets, not CSS-drawn gradients — reverted from
+   the CSS-only pass. Per-item identity (which was the actual point of
+   that pass) is kept the code/SVG way instead: each icon's own color,
+   not the whole badge's background, since section 29 explicitly carves
+   out "simple icons" as a code concern. Sizing/font fixes from the
+   overflow bugs earlier in this file are kept as-is under the images. */
+.lh-level{z-index:40;left:1.8%;top:max(1.25%,env(safe-area-inset-top));width:16.8%;aspect-ratio:1}
+.lh-level>div{position:absolute;inset:13%;display:grid;place-content:center;text-align:center;line-height:1.15}
+.lh-level small{display:block;font-size:9px;color:#6b4a1e;font-weight:700;letter-spacing:.04em}
+.lh-level strong{display:block;font-size:clamp(16px,5vw,22px);color:#5c3a12;text-shadow:0 1px 0 #ffffff80}
+.lh-level span{display:block;font-size:9px;color:#8a5a1e;font-weight:700}
+.lh-currency{z-index:40;left:18.8%;top:max(1.8%,env(safe-area-inset-top));width:60.2%;height:10%}
+.lh-currency-values{position:absolute;left:7%;right:7%;top:15%;display:grid;grid-template-columns:repeat(3,1fr);text-align:center;font-size:clamp(9px,2vw,12px)}
+.lh-currency-values b{color:#4a2f10}
+.lh-hp{position:absolute;left:6%;right:6%;bottom:11%;height:23%;overflow:hidden;border-radius:99px}
+.lh-hp i{position:absolute;inset:14% 4%;border-radius:99px;background:linear-gradient(90deg,#ff668d,#ff99ad);box-shadow:inset 0 1px 0 #ffffff90}
+.lh-hp b{position:absolute;inset:0;display:grid;place-content:center;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
+/* .lh-weather stays content-sized (padding, not a fixed aspect-ratio box)
+   — that mismatch between a small fixed frame box and "N월 N주차" text
+   was the original overflow bug (only a single stray character showing).
+   The frame image is absolute+inset:0 (see .lh-frame) so it doesn't
+   fight this element's auto sizing. */
+.lh-weather{z-index:40;right:1.5%;top:max(1.5%,env(safe-area-inset-top));width:auto;height:auto;padding:8px 16px 10px}
+.lh-weather>div{position:relative;text-align:right;color:#4a2f10}
+.lh-weather b{display:block;font-size:clamp(10px,2.4vw,12px);white-space:nowrap}
+.lh-weather span{display:block;font-size:clamp(9px,2vw,10px);white-space:nowrap;color:#8a5a1e}
+.lh-shortcuts{z-index:40;left:2.8%;top:13.4%;width:42%;display:flex;gap:2.8%}
+.lh-shortcuts button{position:relative;width:22.9%;aspect-ratio:1;border:0;background:none;color:#fff;padding:0;transition:transform .1s ease}
+.lh-shortcuts button:active{transform:scale(.92)}
+/* Same 9-color set as before (shared HSL recipe with .lh-bottom-nav's
+   --nv-* below), just driving icon color now instead of a background
+   fill — the frame art itself is one neutral gold badge for all of them. */
+.lh-shortcut-attendance{--sc:#c9860f}
+.lh-shortcut-event{--sc:#1f7a63}
+.lh-shortcut-mail{--sc:#9d2541}
+.lh-shortcut-mission{--sc:#5c3c96}
+.lh-shortcut-icon{position:absolute;left:28%;right:28%;top:22%;color:var(--sc);filter:drop-shadow(0 1px 1px #ffffff90)}
+.lh-shortcuts b{position:absolute;left:-8%;right:-8%;bottom:-15%;font-size:clamp(8px,2.25vw,14px);font-weight:800;color:#fff;text-shadow:0 2px 4px #000c}
+.lh-goal{z-index:40;right:1.6%;top:13.2%;width:34.8%;aspect-ratio:1}
+.lh-equipped-badge{z-index:19;position:absolute;right:2%;top:47.5%;display:flex;align-items:center;gap:5px;padding:5px 10px 5px 8px;border-radius:999px;background:linear-gradient(180deg,#3d2f57ee,#1c1533ee);border:1px solid #c9a6ff88;box-shadow:0 4px 12px #0007,inset 0 1px 0 #ffffff22;color:#f1e6ff;font-size:9.5px;font-weight:800;white-space:nowrap}.lh-equipped-badge span{color:#c9a6ff;font-size:9px}
+.lh-goal>div{position:absolute;inset:12% 9%;color:#4e301f;overflow:hidden}
+.lh-goal h3{margin:0 0 6%;font-size:clamp(11px,2.6vw,17px);line-height:1.15}
+.lh-goal p{font-size:clamp(7.5px,1.7vw,11px);margin:3% 0;line-height:1.25}.lh-promos{z-index:18;left:2.2%;top:46.5%;width:15%;display:grid;gap:11px}.lh-promos button{position:relative;aspect-ratio:1;border:2px solid #e8c466;border-radius:50%;background:radial-gradient(circle at 35% 24%,#8d6cd9,#35245f 72%);color:#fff;box-shadow:inset 0 2px 3px #ffffff40,inset 0 -4px 6px #00000040,0 4px 0 #1c1236,0 8px 14px #0007;transition:transform .1s ease,box-shadow .1s ease}
+.lh-promos button:active{transform:translateY(3px);box-shadow:inset 0 2px 3px #ffffff30,inset 0 -2px 4px #00000040,0 1px 0 #1c1236,0 3px 8px #0007}.lh-promos b,.lh-promos small{position:absolute;left:-22%;right:-22%;text-align:center;font-size:9px}.lh-promos b{bottom:-24%}.lh-promos small{bottom:-42%}.lh-primary-action{z-index:35;left:23%;right:23%;bottom:31.5%;min-height:58px;border:2px solid #fff3c4;border-radius:18px;background:radial-gradient(circle at 30% 20%,#f5d998,#c9860f 65%,#a85e2f);color:#fff;box-shadow:inset 0 2px 0 #fff6dbaa,inset 0 -6px 10px #00000030,0 5px 0 #6b3a12,0 12px 20px #0008;text-shadow:0 2px 3px #0008;transition:transform .1s ease,box-shadow .1s ease}
+.lh-primary-action:active{transform:translateY(4px);box-shadow:inset 0 2px 0 #fff6dbaa,inset 0 -3px 6px #00000030,0 1px 0 #6b3a12,0 4px 10px #0008}
+.lh-primary-action small,.lh-primary-action b,.lh-primary-action span{display:block}.lh-primary-action small{font-size:8px;letter-spacing:.2em}.lh-primary-action b{font-size:clamp(13px,3.5vw,20px)}.lh-primary-action span{font-size:9px}.lh-dialogue{z-index:30;left:6.2%;right:6.2%;bottom:calc(16.8% + env(safe-area-inset-bottom)*.25);height:12.4%}
+.lh-name{position:absolute;left:7%;top:-10%;padding:2% 5%;border-radius:18px;background:#60458d;border:2px solid #e7ca79;font-weight:900;color:#fff}
+.lh-dialogue p{position:absolute;left:8%;right:8%;top:26%;margin:0;color:#3a2a1c;font-size:clamp(10px,2.5vw,16px);line-height:1.4}
+.lh-bottom-nav{z-index:20;left:1.3%;right:1.3%;bottom:max(1.1%,env(safe-area-inset-bottom));height:10.4%;display:flex;justify-content:space-between;align-items:end}
+.lh-bottom-nav button{position:relative;width:16%;height:100%;padding:0;border:0;background:none;color:#fff}
+.lh-bottom-nav span{position:absolute;left:28%;right:28%;top:16%;aspect-ratio:1;display:grid;place-items:center;transition:transform .15s ease}
+/* bottom_nav_button_frame.png is a mid-brown pill (not the light cream of
+   the shortcut badges), so a dark saturated icon like .lh-shortcut-icon
+   uses would have weak contrast here — keep the icon itself light/white
+   and carry the per-item identity as a colored glow behind it instead. */
+.lh-bottom-nav span svg{color:#fff;filter:drop-shadow(0 1px 2px #0006) drop-shadow(0 0 4px var(--nv))}
+.lh-bottom-nav button.is-active span{transform:translateY(-4px) scale(1.1)}
+.lh-bottom-nav button:active span{transform:scale(.9)}
+.lh-bottom-nav b{position:absolute;left:0;right:0;bottom:9%;font-size:clamp(9px,2.35vw,15px);font-weight:800;text-shadow:0 2px 4px #000c}
+.lh-nav-schedule{--nv:#25759d}
+.lh-nav-bag{--nv:#259d4d}
+.lh-nav-quest{--nv:#9d5925}
+.lh-nav-outing{--nv:#6d259d}
+.lh-nav-bond{--nv:#9d2539}.lh-panel-backdrop{position:absolute;z-index:80;inset:0;pointer-events:auto;background:#100c1c99;display:grid;place-items:end center;padding:16px 12px max(16px,env(safe-area-inset-bottom))}.lh-panel{position:relative;width:min(94%,520px);max-height:70%;overflow:auto;padding:26px 18px;background:#fff5df;color:#493326;border:2px solid #d5aa58;border-radius:24px}.lh-panel-close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:25px}.lh-panel-list{display:grid;gap:8px}.lh-panel-list>div{display:flex;align-items:center;gap:10px;border:1px solid #d7b66f;border-radius:12px;background:#fffaf0;padding:10px;color:#493326}
+.lh-panel-cta{display:block;width:100%;margin-top:12px;padding:12px;border:2px solid #d5aa58;border-radius:14px;background:linear-gradient(180deg,#fff3c4,#e0ab4a);color:#4b3419;font-weight:900;box-shadow:0 3px 0 #a9752c}.lh-panel-cta:active{transform:translateY(2px);box-shadow:0 1px 0 #a9752c}/* affection_hearts.png is a glow-style sprite (bright hearts on a dark
+   backdrop meant for additive blending), not a straight-alpha cutout —
+   plain <img> painted its dark backdrop as an opaque block right over
+   Runa's face. mix-blend-mode:screen drops the dark pixels out so only
+   the hearts/sparkles show. Paired with the auto-clear timer in
+   LayeredHome.tsx (`petted` used to stay true forever after one tap, so
+   this sat there permanently once triggered), it now pops in, holds
+   briefly, and fades — see the animation for the same lifecycle. */
+.lh-heart{position:absolute;z-index:15;left:36%;top:20%;width:26%;pointer-events:none;mix-blend-mode:screen;opacity:0;animation:lh-heart-pop 1.6s ease-out forwards}
+@keyframes lh-heart-pop{0%{opacity:0;transform:translateY(10px) scale(.85)}18%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.05)}}.game-icon{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}@media(max-width:390px){.lh-character{bottom:25%;width:46%}.lh-primary-action{left:21%;right:21%;bottom:31.8%;min-height:54px}.lh-dialogue{bottom:calc(17.2% + env(safe-area-inset-bottom)*.25);height:12%}.lh-shortcuts{top:13.7%}.lh-goal{top:13.4%;width:34.3%}}@media(max-height:650px){.lh-character{width:43%;bottom:25.5%}.lh-primary-action{bottom:32%;min-height:48px}.lh-dialogue{height:11.5%;bottom:17.5%}.lh-goal p{margin:3% 0}.lh-promos{top:45%}}@media(prefers-reduced-motion:reduce){.layered-home *{animation:none!important;transition:none!important}}
+/* These classes existed in LayeredHome.tsx with zero matching rules
+   anywhere: harmless (empty <div>/<i> collapse to 0 height and don't
+   break layout) but the intended ambient-lighting/backlight/icon touches
+   were simply invisible. Filling them in. */
+.lh-window-light{position:absolute;left:6%;top:8%;width:26%;height:20%;background:radial-gradient(ellipse,#cdeaff88,transparent 70%);filter:blur(10px);pointer-events:none}
+.lh-fire-light{position:absolute;right:8%;bottom:22%;width:30%;height:22%;background:radial-gradient(ellipse,#ffb35c66,transparent 70%);filter:blur(12px);pointer-events:none}
+.lh-floor-glow{position:absolute;left:20%;right:20%;bottom:20%;height:12%;background:radial-gradient(ellipse,#ffe9b655,transparent 75%);filter:blur(10px);pointer-events:none}
+/* First pass covered the whole figure (including the face) because
+   .lh-character-rim is position:absolute while the <img> beside it is
+   position:static — positioned elements paint above static ones
+   regardless of DOM order, so the glow sat on top of, not behind, Runa.
+   Scoped to a small ground-level glow and pushed behind with a negative
+   z-index (valid here since .lh-character itself has z-index:12, i.e.
+   its own stacking context). */
+.lh-character-rim{position:absolute;left:20%;right:20%;bottom:-2%;height:12%;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,#fff2c966,transparent 72%);pointer-events:none}
+.coin{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-right:3px;font-style:normal;font-size:11px;vertical-align:-2px}
+.coin.star{color:#ffe79d;text-shadow:0 0 6px #ffe79d99}
+.lh-dialogue-next{position:absolute;right:14px;bottom:10px;font-style:normal;color:#a9855c;animation:lh-next-bob 1.2s ease-in-out infinite}
+@keyframes lh-next-bob{50%{transform:translateY(3px)}}
+/* ProgressRibbon (12-month journey bar) — first pass gave it text + a
+   dark scrim across the full top of the screen, but that's exactly
+   where .lh-level/.lh-currency/.lh-weather already live: the scrim
+   darkened them and the text sat on top of/behind their own labels
+   (visible as stray fragments like a lone "차" from "평온"). The month
+   count is already shown in .lh-goal, so this doesn't need to repeat it
+   in text — a slim accent line in the ~1% margin above the HUD row is
+   enough and can't collide with anything. */
+.progress-ribbon{position:absolute;z-index:41;left:4%;right:4%;top:2px;height:3px;border-radius:3px;overflow:hidden;background:#00000040;pointer-events:none}
+.progress-ribbon div,.progress-ribbon small,.progress-ribbon b{display:none}
+.progress-ribbon span{display:block;width:100%;height:100%}
+.progress-ribbon i{display:block;height:100%;background:linear-gradient(90deg,#ffd873,#fff3c4);box-shadow:0 0 6px #ffd873aa}

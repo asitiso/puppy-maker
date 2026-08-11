@@ -30,4 +30,17 @@ describe('GameApp home rendering', () => {
     expect(html).toContain('NORMAL');
     expect(html).toContain('/assets/runa/runa_training_ready.png');
   });
+
+  it('invites a finisher charge once combo reaches the threshold in the hunt minigame', () => {
+    const html = renderToStaticMarkup(<GameApp state={{ ...initialState, screen: 'training', week: 1, combo: 5, finisherCharged: false }} dispatch={vi.fn()} />);
+    expect(html).toContain('charge is-ready');
+  });
+
+  it('invites the finisher-landing attack and shows the combo badge once charged', () => {
+    const html = renderToStaticMarkup(<GameApp state={{ ...initialState, screen: 'training', week: 1, combo: 6, finisherCharged: true }} dispatch={vi.fn()} />);
+    expect(html).toContain('attack is-ready');
+    expect(html).toContain('is-finisher-ready');
+    expect(html).toContain('필살기 준비!');
+    expect(html).toContain('필살기!</i>');
+  });
 });

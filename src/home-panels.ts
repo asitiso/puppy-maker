@@ -22,6 +22,6 @@ export function getHomePanel(id:HomeMenuId,state:GameState):HomePanel|null{
   attendance:{title:'함께한 시간',eyebrow:'JOURNEY',summary:`루나와 ${state.monthsCompleted}개월째 성장 중`,items:[{title:`${state.year}년 ${state.month}월`,detail:`${state.week}주차 · ${condition(state)}`,state:'active'},{title:'성장 이정표',detail:`${state.claimedMilestones.length}/4 달성`,state:state.claimedMilestones.length===4?'done':'active'}]},
   event:{title:'이야기 도감',eyebrow:'STORY ARCHIVE',summary:`발견 ${state.eventHistory.length}/${STORY_EVENTS.length}`,items:events},
   mail:{title:'추억 앨범',eyebrow:'MEMORIES',summary:`소중한 기억 ${state.memories.length}개`,items:memories},
-  mission:{title:'이번 달 가이드',eyebrow:'NEXT STEPS',summary:'지금 루나에게 가장 필요한 행동',items:[{title:'4주 일정을 완성하기',detail:'훈련과 휴식을 균형 있게 배치',state:'active'},{title:'루나의 컨디션 살피기',detail:`현재 ${condition(state)} · 피로 ${state.stats.fatigue}`,state:state.stats.fatigue<70?'done':'active'},{title:'새로운 기억 만들기',detail:`현재 ${state.memories.length}개 발견`,state:'active'}]}
+  mission:{title:'이번 달 가이드',eyebrow:'NEXT STEPS',summary:'지금 루나에게 가장 필요한 행동',items:[{title:'4주 일정을 완성하기',detail:'훈련과 휴식을 균형 있게 배치',state:state.week>=4?'done':'active'},{title:'루나의 컨디션 살피기',detail:`현재 ${condition(state)} · 피로 ${state.stats.fatigue}`,state:state.stats.fatigue<70?'done':'active'},{title:'새로운 기억 만들기',detail:`현재 ${state.memories.length}개 발견`,state:state.memories.length>0?'done':'active'}]}
  };return panels[id]??null;
 }
