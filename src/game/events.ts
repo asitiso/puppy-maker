@@ -1,14 +1,16 @@
 import type { GameState, Personality, Stats } from '../game';
 export type StoryEventId='lost_bird'|'moon_flower'|'rival_tracks'|'quiet_rain'|'starlight_market'|'old_shrine'|'firefly_path'|'training_bell'|'winter_letter'|'guardian_dream';
 type PersonalityKey=keyof Personality;
-export type LegacyStoryState={monthsCompleted?:number;eventHistory?:StoryEventId[];activeEventId?:StoryEventId};
+export type LegacyStoryState={monthsCompleted?:number;eventHistory?:string[];activeEventId?:string};
 type StoryInput=GameState&LegacyStoryState;
 type StoryView=GameState&{monthsCompleted:number;eventHistory:StoryEventId[];activeEventId?:StoryEventId};
+type StoryResult=StoryInput&{eventHistory:StoryEventId[];activeEventId?:StoryEventId};
 export interface StoryEventChoice{id:string;label:string;statDelta?:Partial<Stats>;personalityDelta?:Partial<Personality>;goldDelta?:number}
 export interface StoryEventDefinition{id:StoryEventId;title:string;body:string;choices:StoryEventChoice[];eligibility:(state:StoryView)=>boolean}
-const legacyMonths=(state:GameState&LegacyStoryState)=>{const value=state.monthsCompleted;return Number.isFinite(value)?Number(value):Math.max(0,(state.year-1)*12+state.month-4)};
-const eventHistory=(state:GameState&LegacyStoryState)=>Array.isArray(state.eventHistory)?state.eventHistory:[];
-const eventView=(state:GameState&LegacyStoryState):StoryView=>({...state,monthsCompleted:legacyMonths(state),eventHistory:eventHistory(state)} as StoryView);
+const validEventIds=new Set<StoryEventId>(['lost_bird','moon_flower','rival_tracks','quiet_rain','starlight_market','old_shrine','firefly_path','training_bell','winter_letter','guardian_dream']);
+const legacyMonths=(state:StoryInput)=>{const value=state.monthsCompleted;return Number.isFinite(value)?Number(value):Math.max(0,(state.year-1)*12+state.month-4)};
+const eventHistory=(state:StoryInput):StoryEventId[]=>Array.isArray(state.eventHistory)?state.eventHistory.filter((id):id is StoryEventId=>validEventIds.has(id as StoryEventId)):[];
+const eventView=(state:StoryInput):StoryView=>({...state,monthsCompleted:legacyMonths(state),eventHistory:eventHistory(state),activeEventId:validEventIds.has(state.activeEventId as StoryEventId)?state.activeEventId as StoryEventId:undefined} as StoryView);
 const clamp=(v:number)=>Math.max(0,Math.min(100,v));
 export const STORY_EVENTS:StoryEventDefinition[]=[
 {id:'lost_bird',title:'숲속의 작은 손님',body:'길가에서 날개를 다친 작은 새가 루나를 바라보고 있어요.',eligibility:s=>s.personality.kindness>=45,choices:[{id:'help',label:'함께 돌봐준다',statDelta:{affection:3,morality:3},personalityDelta:{kindness:3}},{id:'observe',label:'안전한 곳까지 지켜본다',statDelta:{intelligence:2},personalityDelta:{calmness:2}}]},
@@ -24,4 +26,4 @@ export const STORY_EVENTS:StoryEventDefinition[]=[
 ];
 export function eligibleEvents(state:StoryInput){const view=eventView(state),history=view.eventHistory;return STORY_EVENTS.filter(e=>e.eligibility(view)&&!history.includes(e.id))}
 export function selectMonthlyEvent(state:StoryInput){const eligible=eligibleEvents(state);if(!eligible.length)return null;return eligible[(state.year*17+state.month*7+state.personality.curiosity+state.personality.courage)%eligible.length]}
-export function applyEventChoice(state:StoryInput,eventId:StoryEventId,choiceId:string):StoryInput{const view=eventView(state),history=view.eventHistory;if(history.includes(eventId))return state;const event=STORY_EVENTS.find(e=>e.id===eventId),choice=event?.choices.find(c=>c.id===choiceId);if(!event||!choice||!event.eligibility(view))return state;const stats={...state.stats};(Object.keys(choice.statDelta??{}) as(keyof Stats)[]).forEach(k=>stats[k]=clamp(stats[k]+(choice.statDelta?.[k]??0)));const personality={...state.personality};(Object.keys(choice.personalityDelta??{}) as PersonalityKey[]).forEach(k=>personality[k]=clamp(personality[k]+(choice.personalityDelta?.[k]??0)));return{...state,stats,personality,gold:Math.max(0,state.gold+(choice.goldDelta??0)),eventHistory:[...history,eventId],activeEventId:undefined}}
+export function applyEventChoice(state:StoryInput,eventId:StoryEventId,choiceId:string):StoryResult{const view=eventView(state),history=view.eventHistory;const stable=()=>({...state,eventHistory:history,activeEventId:view.activeEventId} as StoryResult);if(history.includes(eventId))return stable();const event=STORY_EVENTS.find(e=>e.id===eventId),choice=event?.choices.find(c=>c.id===choiceId);if(!event||!choice||!event.eligibility(view))return stable();const stats={...state.stats};(Object.keys(choice.statDelta??{}) as(keyof Stats)[]).forEach(k=>stats[k]=clamp(stats[k]+(choice.statDelta?.[k]??0)));const personality={...state.personality};(Object.keys(choice.personalityDelta??{}) as PersonalityKey[]).forEach(k=>personality[k]=clamp(personality[k]+(choice.personalityDelta?.[k]??0)));return{...state,stats,personality,gold:Math.max(0,state.gold+(choice.goldDelta??0)),eventHistory:[...history,eventId],activeEventId:undefined} as StoryResult}
