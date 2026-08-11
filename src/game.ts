@@ -15,22 +15,20 @@ import type { BattleResult } from './tactical-battle';
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
 
-export type LegacyGrowthReport = {
-  quality:string;
-  grade:string;
-  mostImprovedStat:keyof Base.Stats;
-  masteryGains:Partial<Record<Base.ActivityId,number>>;
-  personalityChanges:Partial<Base.Personality>;
+export type GrowthReport = Partial<Base.GrowthReport> & {
+  quality:Base.ResultQuality;
+  grade:ReturnType<typeof Base.trainingGrade>;
+  mostImprovedStat?:keyof Base.Stats;
+  masteryGains?:Partial<Record<Base.ActivityId,number>>;
+  personalityChanges?:Partial<Base.Personality>;
   newMemory?:string;
-  nextCondition:Base.Condition;
-  goldReward:number;
+  nextCondition?:Base.Condition;
+  goldReward?:number;
 };
-export type GrowthReport = Base.GrowthReport | LegacyGrowthReport;
 
-export type GameState = Omit<Base.GameState,'screen'|'memories'|'lastGrowthReport'> & {
-  screen:Base.Screen|'event'|'ending';
+export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & {
   memories:any[];
-  lastGrowthReport?:any;
+  lastGrowthReport:GrowthReport|null;
   monthsCompleted?:number;
   eventHistory?:string[];
   endingCollection?:string[];
