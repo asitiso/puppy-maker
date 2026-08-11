@@ -1,33 +1,36 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
-import { GameApp } from './App';
-import { initialState } from './game';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import App from './App';
 
-describe('GameApp home rendering', () => {
-  it('can suppress the legacy hub when the layered home owns the hub screen', () => {
-    const html = renderToStaticMarkup(<GameApp state={initialState} dispatch={vi.fn()} renderHub={false} />);
-    expect(html).not.toContain('hub-screen');
-  });
+function memoryStorage() {
+  const values = new Map<string,string>();
+  return {
+    get length(){ return values.size; },
+    clear(){ values.clear(); },
+    getItem(key:string){ return values.get(key) ?? null; },
+    key(index:number){ return [...values.keys()][index] ?? null; },
+    removeItem(key:string){ values.delete(key); },
+    setItem(key:string,value:string){ values.set(key,String(value)); },
+  } as Storage;
+}
 
-  it('keeps the legacy hub available for standalone GameApp consumers', () => {
-    const html = renderToStaticMarkup(<GameApp state={initialState} dispatch={vi.fn()} />);
+describe('App home rendering', () => {
+  beforeEach(() => vi.stubGlobal('localStorage', memoryStorage()));
+
+  it('renders the standalone hub with the core raising destinations', () => {
+    const html = renderToStaticMarkup(<App />);
     expect(html).toContain('hub-screen');
+    expect(html).toContain('스케줄');
+    expect(html).toContain('가방');
+    expect(html).toContain('퀘스트');
+    expect(html).toContain('외출');
+    expect(html).toContain('교감');
   });
 
-  it('shows four editable schedule weeks with condition-aware consequences', () => {
-    const html = renderToStaticMarkup(<GameApp state={{ ...initialState, screen: 'schedule' }} dispatch={vi.fn()} />);
-    expect((html.match(/WEEK/g) ?? [])).toHaveLength(4);
-    expect(html).toContain('현재 컨디션');
-    expect(html).toContain('피로');
-    expect(html).toContain('스트레스');
-    expect(html).toContain('↻');
-  });
-
-  it('changes training presentation for the scheduled activity and exposes quality feedback', () => {
-    const html = renderToStaticMarkup(<GameApp state={{ ...initialState, screen: 'training', week: 2 }} dispatch={vi.fn()} />);
-    expect(html).toContain('마법 수업');
-    expect(html).toContain('집중 타이밍');
-    expect(html).toContain('NORMAL');
-    expect(html).toContain('/assets/runa/runa_training_ready.png');
+  it('renders the current Runa presentation and essential resources', () => {
+    const html = renderToStaticMarkup(<App />);
+    expect(html).toContain('/assets/home/runa_idle_layer.png');
+    expect(html).toContain('5,000');
+    expect(html).toContain('220');
   });
 });
