@@ -1,0 +1,8 @@
+import type {TacticalUnit} from './tactical-battle';
+export type EnemyArchetype='brute'|'guardian'|'hexer'|'medic'|'assassin';
+export type AiAction={kind:'attack'|'guard'|'hex'|'heal';targetId:string};
+const living=(xs:TacticalUnit[])=>xs.filter(x=>x.hp>0);
+const lowest=(xs:TacticalUnit[])=>living(xs).slice().sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.id.localeCompare(b.id))[0];
+export function chooseEnemyAction(kind:EnemyArchetype,actor:TacticalUnit,allies:TacticalUnit[],enemies:TacticalUnit[]):AiAction{const foe=lowest(allies);if(kind==='medic'){const patient=lowest(enemies);if(patient&&patient.hp<patient.maxHp)return {kind:'heal',targetId:patient.id};}if(kind==='guardian'&&actor.shield<15)return {kind:'guard',targetId:actor.id};if(kind==='hexer'&&foe)return {kind:'hex',targetId:foe.id};return {kind:'attack',targetId:(kind==='assassin'?lowest(allies):living(allies)[0]??foe)?.id??actor.id};}
+export function chooseAutoAction(actor:TacticalUnit,enemies:TacticalUnit[]):AiAction{const target=lowest(enemies);return {kind:'attack',targetId:target?.id??actor.id};}
+export function applyAiAction(units:TacticalUnit[],actorId:string,action:AiAction){const actor=units.find(x=>x.id===actorId);if(!actor||actor.hp<=0)return units;return units.map(x=>{if(x.id!==action.targetId)return x;if(action.kind==='heal')return {...x,hp:Math.min(x.maxHp,x.hp+18)};if(action.kind==='guard')return {...x,shield:x.shield+20};if(action.kind==='hex')return {...x,ap:Math.max(0,x.ap-1)};const damage=16,absorbed=Math.min(x.shield,damage);return {...x,shield:x.shield-absorbed,hp:Math.max(0,x.hp-(damage-absorbed))};});}
