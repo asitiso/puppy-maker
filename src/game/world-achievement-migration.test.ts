@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState}from'./world-state';describe('world achievement migration',()=>{it('deduplicates persisted achievement ids',()=>{const state=hydrateWorldState(JSON.stringify({...initialWorldState,worldAchievements:['first_step','first_step']}));expect(state.worldAchievements).toEqual(['first_step'])})});

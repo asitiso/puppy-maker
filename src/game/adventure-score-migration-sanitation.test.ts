@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState}from'./world-state';describe('adventure score migration sanitation',()=>{it('normalizes negative legacy best scores',()=>{const state=hydrateWorldState(JSON.stringify({...initialWorldState,adventureBestScores:{forest_path:-100}}));expect(state.adventureRecords.forest_path.bestScore).toBe(0)})});

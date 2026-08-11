@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,hydrateWorldState}from'./world-state';describe('world malformed record safety',()=>{it('ignores null adventure record entries',()=>{const state=hydrateWorldState(JSON.stringify({...initialWorldState,adventureRecords:{forest_path:null}}));expect(state.adventureRecords.forest_path).toBeUndefined()})});

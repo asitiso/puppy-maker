@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import type{AdventureGrade}from'./catalog';import{gradeMultiplier}from'./scoring';describe('adventure grade type contract',()=>{it('keeps all grade economics exhaustive',()=>{const grades:AdventureGrade[]=['C','B','A','S'];expect(grades.map(gradeMultiplier)).toEqual([1,1.2,1.5,2])})});
