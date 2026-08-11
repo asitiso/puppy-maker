@@ -23,7 +23,7 @@ export function deriveCompanionUnit(id: CompanionId, leader: LeaderCombatProgres
   const d = COMPANIONS[id], roleScale = d.role === 'tank' ? 1.2 : d.role === 'striker' ? 1.08 : 0.96
   const maxHp = Math.max(1, Math.round(leader.maxHp * 0.72 * (d.role === 'tank' ? 1.25 : d.role === 'support' ? 0.95 : 1)))
   return { id:`companion-${id}`, name:d.name, role:d.role, side:'ally', position:d.preferredPosition, maxHp, hp:maxHp,
-    agility:Math.max(1,Math.round(leader.agility*(d.role==='trickster'?1.05:0.82))), ap:2,maxAp:2,mp:0,maxMp:5,shield:0,
+    agility:Math.max(1,Math.round(leader.agility*(d.role==='trickster'?1.05:0.82))), ap:3,maxAp:3,mp:0,maxMp:10,shield:0,
     power:Math.max(1,Math.round(leader.power*0.68*roleScale)), magic:Math.max(1,Math.round(leader.magic*(d.role==='support'?0.82:0.62))) }
 }
 export function recommendedFormation(selected: readonly CompanionId[]) {
