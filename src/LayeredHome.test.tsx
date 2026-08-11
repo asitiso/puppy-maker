@@ -1,1 +1,42 @@
-import {renderToStaticMarkup} from 'react-dom/server';import {describe,expect,it,vi} from 'vitest';import LayeredHome from './LayeredHome';import {initialState} from './game';describe('LayeredHome hierarchy',()=>{it('surfaces next action, journey and essential status',()=>{const html=renderToStaticMarkup(<LayeredHome state={initialState} onSchedule={vi.fn()}/>);expect(html).toContain('이번 달 일정 짜기');expect(html).toContain('4월 2주차');expect(html).toContain('평온');expect(html).toContain('82 / 100');expect(html).toContain('루나의 여정 0%');expect(html).toContain('엔딩 <b>0/6</b>')});it('replaces placeholder service menus with raising-game destinations',()=>{const html=renderToStaticMarkup(<LayeredHome state={initialState} onSchedule={vi.fn()}/>);expect(html).toContain('>성장<');expect(html).toContain('>목표<');expect(html).toContain('>엔딩<');expect(html).toContain('>추억<');expect(html).not.toContain('우편함');expect(html).not.toContain('출석체크')});it('uses tired Runa presentation and contextual guidance',()=>{const html=renderToStaticMarkup(<LayeredHome state={{...initialState,condition:'tired'}} onSchedule={vi.fn()}/>);expect(html).toContain('/assets/runa/runa_tired.png');expect(html).toContain('조금 지쳐 보여요')});it('surfaces accumulated story and collection counts',()=>{const html=renderToStaticMarkup(<LayeredHome state={{...initialState,monthsCompleted:6,eventHistory:['lost_bird','moon_flower'],endingCollection:['guardian']}} onSchedule={vi.fn()}/>);expect(html).toContain('루나의 여정 50%');expect(html).toContain('2 발견');expect(html).toContain('엔딩 <b>1/6</b>')})});
+import {renderToStaticMarkup} from 'react-dom/server';
+import {describe,expect,it,vi} from 'vitest';
+import LayeredHome from './LayeredHome';
+import {initialState} from './game';
+
+const callbacks={
+  onSchedule:vi.fn(),
+  onClaimAchievement:vi.fn(),
+  onOuting:vi.fn(),
+  onGift:vi.fn(),
+  onAttendance:vi.fn(),
+  onMail:vi.fn(),
+  onMonthlyFocus:vi.fn(),
+};
+const render=(state=initialState)=>renderToStaticMarkup(<LayeredHome state={state} {...callbacks}/>);
+
+describe('LayeredHome hierarchy',()=>{
+  it('surfaces essential status and current progression',()=>{
+    const html=render();
+    expect(html).toContain('4월 2주차');
+    expect(html).toContain('82 / 100');
+    expect(html).toContain('성장 컬렉션');
+    expect(html).toContain('루나 이야기');
+    expect(html).toContain('성장 업적');
+  });
+  it('keeps the full raising navigation available',()=>{
+    const html=render();
+    expect(html).toContain('>스케줄<');
+    expect(html).toContain('>가방<');
+    expect(html).toContain('>퀘스트<');
+    expect(html).toContain('>외출<');
+    expect(html).toContain('>교감<');
+  });
+  it('uses condition-aware contextual guidance',()=>{
+    const html=render({...initialState,condition:'tired'});
+    expect(html).toContain('오늘은 휴식을 넣거나 호숫가에 다녀오는 게 좋아요.');
+  });
+  it('surfaces collection counts from the integrated state',()=>{
+    const html=render({...initialState,discoveries:['moon_feather','star_mushroom']});
+    expect(html).toContain('발견물 <b>2 / 6</b>');
+  });
+});
