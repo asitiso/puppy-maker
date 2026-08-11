@@ -13,8 +13,30 @@ import {
 import type { BattleResult } from './tactical-battle';
 
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
+export type PersonalityKey = keyof Base.Personality;
 
-export type GameState = Base.GameState & {
+export type LegacyGrowthReport = {
+  quality:string;
+  grade:string;
+  mostImprovedStat:keyof Base.Stats;
+  masteryGains:Partial<Record<Base.ActivityId,number>>;
+  personalityChanges:Partial<Base.Personality>;
+  newMemory?:string;
+  nextCondition:Base.Condition;
+  goldReward:number;
+};
+export type GrowthReport = Base.GrowthReport | LegacyGrowthReport;
+
+export type GameState = Omit<Base.GameState,'screen'|'memories'|'lastGrowthReport'> & {
+  screen:Base.Screen|'event'|'ending';
+  memories:any[];
+  lastGrowthReport?:any;
+  monthsCompleted?:number;
+  eventHistory?:string[];
+  endingCollection?:string[];
+  activeEventId?:string;
+  resolvedEnding?:string;
+  lastMilestone?:string;
   tacticalBattleRecords:TacticalBattleRecordMap;
   claimedTacticalFirstClears:TacticalEncounterId[];
 };
@@ -26,6 +48,12 @@ export type Action = Base.Action | {
   rounds:number;
   survivingAllies:number;
   damageTaken:number;
+} | {
+  type:'NEW_RUN';
+} | {
+  type:'EVENT_CHOICE';
+  eventId:string;
+  choiceId:string;
 };
 
 export const initialState:GameState = {
@@ -60,15 +88,23 @@ function sanitizeTacticalFirstClears(raw:unknown):TacticalEncounterId[] {
 
 export function hydrateGameState(raw:unknown):GameState {
   const source = isRecord(raw) ? raw : {};
+  const base = Base.hydrateGameState(raw);
   return {
-    ...Base.hydrateGameState(raw),
+    ...base,
+    ...(typeof source.monthsCompleted==='number'?{monthsCompleted:Math.max(0,Math.floor(source.monthsCompleted))}:{}),
+    ...(Array.isArray(source.eventHistory)?{eventHistory:source.eventHistory.filter((value):value is string=>typeof value==='string')}:{}),
+    ...(Array.isArray(source.endingCollection)?{endingCollection:source.endingCollection.filter((value):value is string=>typeof value==='string')}:{}),
+    ...(typeof source.activeEventId==='string'?{activeEventId:source.activeEventId}:{}),
+    ...(typeof source.resolvedEnding==='string'?{resolvedEnding:source.resolvedEnding}:{}),
+    ...(typeof source.lastMilestone==='string'?{lastMilestone:source.lastMilestone}:{}),
     tacticalBattleRecords:sanitizeTacticalRecords(source.tacticalBattleRecords),
     claimedTacticalFirstClears:sanitizeTacticalFirstClears(source.claimedTacticalFirstClears),
-  };
+  } as GameState;
 }
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+  if (action.type === 'NEW_RUN' || action.type === 'EVENT_CHOICE') return state;
 
   if (action.type === 'COMPLETE_TACTICAL_BATTLE') {
     if (action.result !== 'victory' || !encounterIds.includes(action.encounterId)) return state;
@@ -92,11 +128,12 @@ export function reducer(state:GameState,action:Action):GameState {
     };
   }
 
-  const next = Base.reducer(state,action as Base.Action);
+  const next = Base.reducer(state as Base.GameState,action as Base.Action);
   if (next === state) return state;
   return {
+    ...state,
     ...next,
     tacticalBattleRecords:state.tacticalBattleRecords,
     claimedTacticalFirstClears:state.claimedTacticalFirstClears,
-  };
+  } as GameState;
 }
