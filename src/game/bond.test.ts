@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{bondLevel,bondTitle}from'./bond';describe('bond progression',()=>{it('has stable level thresholds',()=>{expect(bondLevel(0)).toBe(1);expect(bondLevel(5)).toBe(2);expect(bondLevel(50)).toBe(5);expect(bondLevel(80)).toBe(6)});it('names high bond meaningfully',()=>expect(bondTitle(6)).toBe('별빛의 가족'))});

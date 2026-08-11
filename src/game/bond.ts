@@ -1,0 +1,1 @@
+export const bondLevel=(xp:number)=>xp>=80?6:xp>=50?5:xp>=30?4:xp>=15?3:xp>=5?2:1;export const bondTitle=(level:number)=>level>=6?'별빛의 가족':level>=5?'영원한 친구':level>=4?'마음의 동료':level>=3?'믿음직한 친구':level>=2?'가까워진 사이':'첫 만남';export const bondReaction=(level:number)=>level>=5?'주인님과 함께라면 어디든 좋아요!':level>=3?'요즘 주인님 마음을 조금 알 것 같아요.':'조금 더 같이 있어주세요.';

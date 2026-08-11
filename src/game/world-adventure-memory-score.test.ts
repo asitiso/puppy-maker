@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{initialWorldState,worldReducer}from'./world-state';describe('world adventure memory score',()=>{it('records grade and score in persistent adventure memory',()=>{const state=worldReducer(initialWorldState,{type:'EXPLORE',destinationId:'forest_path',score:900});expect(state.worldMoments.at(-1)?.summary).toContain('S등급 900점')})});
