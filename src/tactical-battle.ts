@@ -21,6 +21,7 @@ export type BattleSession = {
   timeline:string[];
   round:number;
   seed:number;
+  acted:string[];
 };
 
 export function orderedTimeline(units:TacticalUnit[]) {
@@ -44,7 +45,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
     mp:Math.max(0,Math.min(Math.floor(unit.mp),Math.max(0,Math.floor(unit.maxMp)))),
     shield:Math.max(0,Math.floor(unit.shield)),
   }));
-  return { units, timeline:orderedTimeline(units), round:1, seed:Math.floor(seed) };
+  return { units, timeline:orderedTimeline(units), round:1, seed:Math.floor(seed), acted:[] };
 }
 
 export function isBattleFinished(session:BattleSession):BattleResult|null {
