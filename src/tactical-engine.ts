@@ -8,6 +8,12 @@ export type TacticalActionInput = {
   targetId:string;
 };
 
+type PoweredTacticalUnit = TacticalUnit & {
+  attackPower?:number;
+  skillPower?:number;
+  supportPower?:number;
+};
+
 const mpGainByAction:Record<TacticalActionId,number> = {
   attack:2,
   skill:3,
@@ -36,6 +42,17 @@ function applySupport(target:TacticalUnit,power:number):TacticalUnit {
   return { ...target, hp:Math.min(target.maxHp,target.hp + Math.max(0,Math.floor(power))) };
 }
 
+function actionPower(actor:PoweredTacticalUnit,actionId:TacticalActionId,basePower:number):number {
+  if (actionId === 'attack' && Number.isFinite(actor.attackPower)) return Math.max(0,Math.floor(actor.attackPower!));
+  if (actionId === 'skill' && Number.isFinite(actor.skillPower)) return Math.max(0,Math.floor(actor.skillPower!));
+  if (actionId === 'support' && Number.isFinite(actor.supportPower)) return Math.max(0,Math.floor(actor.supportPower!));
+  if (actionId === 'special') {
+    const strongest = Math.max(actor.attackPower ?? 0,actor.skillPower ?? 0,basePower);
+    return Math.max(basePower,Math.floor(strongest * 1.2));
+  }
+  return basePower;
+}
+
 function refreshRound(session:BattleSession):BattleSession {
   const units = session.units.map(unit => unit.hp > 0 ? { ...unit, ap:unit.maxAp } : unit);
   return {
@@ -50,11 +67,12 @@ function refreshRound(session:BattleSession):BattleSession {
 export function resolveTacticalAction(session:BattleSession,input:TacticalActionInput):BattleSession {
   if (isBattleFinished(session)) return session;
   if (nextTacticalActor(session) !== input.actorId) return session;
-  const actor = session.units.find(unit => unit.id === input.actorId);
+  const actor = session.units.find(unit => unit.id === input.actorId) as PoweredTacticalUnit|undefined;
   if (!actor || actor.hp <= 0) return session;
   const action = tacticalAction(input.actionId);
   if (actor.ap < action.apCost || actor.mp < action.mpCost) return session;
   if (!validTacticalTargets(session,input.actorId,input.actionId).includes(input.targetId)) return session;
+  const power = actionPower(actor,input.actionId,action.power);
 
   const units = session.units.map(unit => {
     if (unit.id === input.actorId) {
@@ -65,7 +83,7 @@ export function resolveTacticalAction(session:BattleSession,input:TacticalAction
       };
     }
     if (unit.id !== input.targetId) return unit;
-    return input.actionId === 'support' ? applySupport(unit,action.power) : applyDamage(unit,action.power);
+    return input.actionId === 'support' ? applySupport(unit,power) : applyDamage(unit,power);
   });
 
   const acted = [...session.acted,input.actorId];
