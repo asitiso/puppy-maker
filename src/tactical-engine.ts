@@ -1,6 +1,7 @@
 import type { BattleSession, TacticalUnit } from './tactical-battle';
 import { isBattleFinished, orderedTimeline } from './tactical-battle';
 import { tacticalAction, validTacticalTargets, type TacticalActionId } from './tactical-actions';
+import { advanceTacticalStatuses, tacticalStatusPower } from './tactical-status';
 
 export type TacticalActionInput = {
   actorId:string;
@@ -43,18 +44,22 @@ function applySupport(target:TacticalUnit,power:number):TacticalUnit {
 }
 
 function actionPower(actor:PoweredTacticalUnit,actionId:TacticalActionId,basePower:number):number {
-  if (actionId === 'attack' && Number.isFinite(actor.attackPower)) return Math.max(0,Math.floor(actor.attackPower!));
-  if (actionId === 'skill' && Number.isFinite(actor.skillPower)) return Math.max(0,Math.floor(actor.skillPower!));
-  if (actionId === 'support' && Number.isFinite(actor.supportPower)) return Math.max(0,Math.floor(actor.supportPower!));
-  if (actionId === 'special') {
+  let raw = basePower;
+  if (actionId === 'attack' && Number.isFinite(actor.attackPower)) raw = Math.max(0,Math.floor(actor.attackPower!));
+  else if (actionId === 'skill' && Number.isFinite(actor.skillPower)) raw = Math.max(0,Math.floor(actor.skillPower!));
+  else if (actionId === 'support' && Number.isFinite(actor.supportPower)) raw = Math.max(0,Math.floor(actor.supportPower!));
+  else if (actionId === 'special') {
     const strongest = Math.max(actor.attackPower ?? 0,actor.skillPower ?? 0,basePower);
-    return Math.max(basePower,Math.floor(strongest * 1.2));
+    raw = Math.max(basePower,Math.floor(strongest * 1.2));
   }
-  return basePower;
+  return tacticalStatusPower(actor,raw);
 }
 
 function refreshRound(session:BattleSession):BattleSession {
-  const units = session.units.map(unit => unit.hp > 0 ? { ...unit, ap:unit.maxAp } : unit);
+  const units = session.units.map(unit => {
+    if (unit.hp <= 0) return advanceTacticalStatuses(unit);
+    return { ...advanceTacticalStatuses(unit), ap:unit.maxAp };
+  });
   return {
     ...session,
     units,
