@@ -186,6 +186,17 @@ describe('tactical vertical slice stability', () => {
     expect(nextTacticalActor(lost)).toBeNull();
   });
 
+  it('treats a mutual wipe as terminal defeat instead of stalling without an actor', () => {
+    const mutualWipe = createBattleSession(
+      [basicUnit('runa','ally',20,0),basicUnit('ally-2','ally',9,0),basicUnit('ally-3','ally',8,0)],
+      [basicUnit('enemy-1','enemy',10,0),basicUnit('enemy-2','enemy',7,0),basicUnit('enemy-3','enemy',5,0)],
+      29,
+    );
+
+    expect(isBattleFinished(mutualWipe)).toBe('defeat');
+    expect(nextTacticalActor(mutualWipe)).toBeNull();
+  });
+
   it('does not leak HP, AP, MP, acted units or terminal state into a consecutive battle', () => {
     const first = runBattle('auto',101).session;
     expect(isBattleFinished(first)).not.toBeNull();
