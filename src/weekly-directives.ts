@@ -43,7 +43,7 @@ export function weeklyDirectives(year:number, month:number, week:number): Weekly
   let cursor = seed % directivePool.length;
   while (result.length < 3) {
     const candidate = directivePool[cursor % directivePool.length];
-    if (!result.some(item => item.id === candidate.id)) result.push(candidate);
+    if (!result.some(item => item.id === candidate.id || item.counter === candidate.counter)) result.push(candidate);
     cursor += 3;
   }
   return result;
