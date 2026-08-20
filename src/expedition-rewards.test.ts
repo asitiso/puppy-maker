@@ -103,6 +103,17 @@ describe('expedition finish reward pipeline', () => {
     expect(worldReplay.state.ownedExpeditionRelics).toContain('explorer_compass');
   });
 
+  it('does not repair the world-completion relic on a failed replay', () => {
+    const worldState = base();
+    for (const id of Object.keys(worldState.expeditionRecords) as Array<keyof typeof worldState.expeditionRecords>) {
+      worldState.expeditionRecords[id] = { bestScore:9999, bestGrade:'A', cleared:true };
+    }
+    const failedReplay = resolveExpeditionFinish(worldState, 'lake_tempest', 100);
+    expect(failedReplay.summary.cleared).toBe(false);
+    expect(failedReplay.summary.relicsUnlocked).toEqual([]);
+    expect(failedReplay.state.ownedExpeditionRelics).not.toContain('explorer_compass');
+  });
+
   it('separates an accepted C-grade attempt from a successful clear', () => {
     const result = resolveExpeditionFinish(base(), 'forest_path', 100);
     expect(result.summary.accepted).toBe(true);
