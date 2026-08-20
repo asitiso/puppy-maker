@@ -7,13 +7,17 @@ import type { ExpeditionStageId } from './expedition-regions';
 
 const fallbackParty:[CompanionId,CompanionId] = ['bear','owl'];
 
+type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
+  selectedTacticalCompanions:readonly CompanionId[];
+};
+
 export function tacticalEncounterForExpeditionStage(stageId:ExpeditionStageId):TacticalEncounterId {
   if (stageId.startsWith('city_')) return 'starlight_patrol';
   if (stageId.startsWith('lake_')) return 'rift_vanguard';
   return 'training_ground';
 }
 
-export function tacticalPartyForGame(state:Pick<GameState,'selectedTacticalCompanions'>):[CompanionId,CompanionId] {
+export function tacticalPartyForGame(state:{selectedTacticalCompanions:readonly CompanionId[]}):[CompanionId,CompanionId] {
   const selected = state.selectedTacticalCompanions;
   if (selected.length === 2 && selected[0] !== selected[1]) return [selected[0],selected[1]];
   return fallbackParty;
@@ -32,7 +36,7 @@ export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personal
   };
 }
 
-export function createTacticalBattleFromGame(state:GameState,stageId:ExpeditionStageId,seed:number) {
+export function createTacticalBattleFromGame(state:TacticalLaunchState,stageId:ExpeditionStageId,seed:number) {
   return createTacticalExpeditionBattle(stageId,tacticalPartyForGame(state),tacticalLeaderProgression(state),seed);
 }
 
