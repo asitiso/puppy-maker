@@ -8,24 +8,38 @@ import { resolveAstralTrial, type AstralTrialId } from './sanctuary-astral-trial
 import { seasonJourneyTiers } from './season-journey';
 import { seasonShopOffers } from './season-shop';
 import { sanctuaryFacilities } from './starlight-sanctuary';
+import { weeklyDirectives } from './weekly-directives';
+
+const materials = ['star_bark','arcane_shard','wind_pearl'] as const;
 
 describe('season meta economy chain', () => {
-  it('keeps Weekly Directive tokens meaningful instead of letting Journey tiers clear the whole shop alone', () => {
+  it('keeps Weekly Directive tokens meaningful while a full season can still clear the shop', () => {
     const journeyOnlyTokens = seasonJourneyTiers.reduce((sum,tier) => sum + tier.reward.tokens,0);
+    const weeklyTokens = [3,4,5].flatMap(month => [1,2,3,4].map(week => weeklyDirectives(1,month,week)))
+      .flat()
+      .reduce((sum,directive) => sum + directive.reward.tokens,0);
     const fullShopCost = seasonShopOffers('1-spring').reduce((sum,offer) => sum + offer.cost * offer.limit,0);
 
     expect(fullShopCost).toBeGreaterThan(journeyOnlyTokens);
+    expect(fullShopCost).toBeLessThanOrEqual(journeyOnlyTokens + weeklyTokens);
   });
 
-  it('makes one sanctuary material cache enough to start any level-1 sanctuary facility', () => {
+  it('makes one sanctuary material cache enough to start any level-1 sanctuary facility without replacing the full sanctuary grind', () => {
     const cache = seasonShopOffers('1-spring').find(offer => offer.id === 'expedition_cache');
     expect(cache).toBeDefined();
 
     for (const facility of sanctuaryFacilities) {
       const levelOne = facility.upgrades.find(step => step.level === 1)!;
-      for (const material of ['star_bark','arcane_shard','wind_pearl'] as const) {
+      for (const material of materials) {
         expect(cache!.reward.materials[material] ?? 0).toBeGreaterThanOrEqual(levelOne.cost.materials[material]);
       }
+    }
+
+    const totalCosts = Object.fromEntries(materials.map(material => [material,
+      sanctuaryFacilities.reduce((facilitySum,facility) => facilitySum + facility.upgrades.reduce((stepSum,step) => stepSum + step.cost.materials[material],0),0),
+    ])) as Record<(typeof materials)[number],number>;
+    for (const material of materials) {
+      expect((cache!.reward.materials[material] ?? 0) * cache!.limit).toBeLessThan(totalCosts[material]);
     }
   });
 
