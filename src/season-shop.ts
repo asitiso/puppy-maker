@@ -22,7 +22,7 @@ export type SeasonShopOffer = { id:SeasonShopOfferId; label:string; cost:number;
 const coreOffers:SeasonShopOffer[] = [
   { id:'gold_pouch', label:'수호자 골드 주머니', cost:20, limit:2, reward:{ gold:300, inventory:{}, materials:{}, keepsake:false } },
   { id:'recovery_bundle', label:'루나 회복 꾸러미', cost:25, limit:1, reward:{ gold:0, inventory:{ herb_tea:1, star_cookie:1 }, materials:{}, keepsake:false } },
-  { id:'expedition_cache', label:'원정·성소 재료 상자', cost:30, limit:1, reward:{ gold:0, inventory:{}, materials:{ star_bark:2, arcane_shard:2, wind_pearl:2 }, keepsake:false } },
+  { id:'expedition_cache', label:'원정·성소 재료 상자', cost:30, limit:6, reward:{ gold:0, inventory:{}, materials:{ star_bark:3, arcane_shard:3, wind_pearl:3 }, keepsake:false } },
   { id:'seasonal_keepsake', label:'계절 기념품', cost:40, limit:1, reward:{ gold:0, inventory:{}, materials:{}, keepsake:true } },
 ];
 
