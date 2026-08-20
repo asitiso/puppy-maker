@@ -1,13 +1,40 @@
 import type {BattleSession,TacticalUnit} from './tactical-battle';
 import {validTacticalTargets} from './tactical-actions';
+import type {CompanionId} from './tactical-companions';
 import type {TacticalActionInput} from './tactical-engine';
+import {validCombinationUltimateTargets,type CombinationUltimateInput} from './tactical-ultimate';
 export type EnemyArchetype='brute'|'guardian'|'hexer'|'medic'|'assassin';
 export type AiAction={kind:'attack'|'guard'|'hex'|'heal';targetId:string};
 const living=(xs:TacticalUnit[])=>xs.filter(x=>x.hp>0);
 const lowest=(xs:TacticalUnit[])=>living(xs).slice().sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.id.localeCompare(b.id))[0];
 export function chooseEnemyAction(kind:EnemyArchetype,actor:TacticalUnit,allies:TacticalUnit[],enemies:TacticalUnit[]):AiAction{const foe=lowest(allies);if(kind==='medic'){const patient=lowest(enemies);if(patient&&patient.hp<patient.maxHp)return {kind:'heal',targetId:patient.id};}if(kind==='guardian'&&actor.shield<15)return {kind:'guard',targetId:actor.id};if(kind==='hexer'&&foe)return {kind:'hex',targetId:foe.id};return {kind:'attack',targetId:(kind==='assassin'?lowest(allies):living(allies)[0]??foe)?.id??actor.id};}
 export function chooseAutoAction(actor:TacticalUnit,enemies:TacticalUnit[]):AiAction{const target=lowest(enemies);return {kind:'attack',targetId:target?.id??actor.id};}
-export function applyAiAction(units:TacticalUnit[],actorId:string,action:AiAction){const actor=units.find(x=>x.id===actorId);if(!actor||actor.hp<=0)return units;return units.map(x=>{if(x.id!==action.targetId)return x;if(action.kind==='heal')return {...x,hp:Math.min(x.maxHp,x.hp+18)};if(action.kind==='guard')return {...x,shield:x.shield+20};if(action.kind==='hex')return {...x,ap:Math.max(0,x.ap-1)};const damage=16,absorbed=Math.min(x.shield,damage);return {...x,shield:x.shield-absorbed,hp:Math.max(0,x.hp-(damage-absorbed))};});}
+
+export function chooseAutoCombinationUltimate(session:BattleSession,party:readonly CompanionId[],bondLevels:Partial<Record<CompanionId,number>>):CombinationUltimateInput|null {
+  const available=(companionId:CompanionId)=>{
+    if(!party.includes(companionId))return null;
+    const bondLevel=bondLevels[companionId]??1;
+    const targetIds=validCombinationUltimateTargets(session,'runa',companionId,bondLevel);
+    return targetIds.length?{companionId,bondLevel,targetIds}:null;
+  };
+  const allies=session.units.filter(unit=>unit.side==='ally'&&unit.hp>0);
+  const enemies=session.units.filter(unit=>unit.side==='enemy'&&unit.hp>0);
+  const owl=available('owl');
+  const owlPatient=owl?lowest(allies.filter(unit=>owl.targetIds.includes(unit.id))):undefined;
+  if(owl&&owlPatient&&owlPatient.hp/owlPatient.maxHp<=.55)return {actorId:'runa',companionId:'owl',bondLevel:owl.bondLevel,targetId:owlPatient.id};
+  const bear=available('bear');
+  const vulnerable=bear?lowest(allies.filter(unit=>bear.targetIds.includes(unit.id))):undefined;
+  if(bear&&vulnerable&&vulnerable.hp/vulnerable.maxHp<=.65)return {actorId:'runa',companionId:'bear',bondLevel:bear.bondLevel,targetId:vulnerable.id};
+  for(const companionId of ['wolf','cat'] as const){
+    const offensive=available(companionId);
+    if(!offensive)continue;
+    const target=lowest(enemies.filter(unit=>offensive.targetIds.includes(unit.id)));
+    if(target)return {actorId:'runa',companionId,bondLevel:offensive.bondLevel,targetId:target.id};
+  }
+  if(bear&&vulnerable)return {actorId:'runa',companionId:'bear',bondLevel:bear.bondLevel,targetId:vulnerable.id};
+  if(owl&&owlPatient&&owlPatient.hp<owlPatient.maxHp)return {actorId:'runa',companionId:'owl',bondLevel:owl.bondLevel,targetId:owlPatient.id};
+  return null;
+}
 
 export function chooseTacticalEngineAction(session:BattleSession,actorId:string,seed:number):TacticalActionInput|null {
   const actor=session.units.find(unit=>unit.id===actorId);
