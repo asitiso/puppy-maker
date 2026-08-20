@@ -35,6 +35,16 @@ describe('Layered Home mobile UI contract', () => {
     expect(mobileCss).toContain('min-width:44px');
   });
 
+  it('keeps the shortcut lane viable at the 320px minimum shell width', () => {
+    expect(mobileCss).toContain('@media(max-width:340px)');
+    expect(mobileCss).toContain('.layered-home .lh-shortcuts{width:58%;gap:.5%}');
+    expect(mobileCss).toContain('.layered-home .lh-goal{width:31%}');
+  });
+
+  it('avoids pointer-tilt churn for touch and pen input', () => {
+    expect(home).toContain("if (event.pointerType !== 'mouse') return;");
+  });
+
   it('keeps top and action chrome clear of device safe areas', () => {
     expect(mobileCss).toContain('safe-area-inset-top');
     expect(mobileCss).toContain('safe-area-inset-bottom');
@@ -55,6 +65,12 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).toContain('className="lh-panel-header"');
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*overflow-y:auto/);
     expect(panelCss).toContain('-webkit-overflow-scrolling:touch');
+  });
+
+  it('prevents horizontal panel drift while preserving vertical touch scroll', () => {
+    expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*overflow-x:hidden/);
+    expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*touch-action:pan-y/);
+    expect(panelCss).toMatch(/\.lh-panel-list button\{[^}]*min-width:0/);
   });
 
   it('bounds compact panels to the visual viewport and clamps secondary copy', () => {
