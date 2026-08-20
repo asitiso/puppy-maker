@@ -49,6 +49,34 @@ describe('raising depth rewards and bond progression', () => {
     expect(reconciled.gold).toBe(600);
   });
 
+  it('catches up a missing reward for an already unlocked eligible bond scene', () => {
+    const progress = {
+      affection:55,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:['first_trust' as const],
+      rewarded:[],
+      gold:500,
+      gems:2,
+    };
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.changed).toBe(true);
+    expect(caughtUp.newlyUnlocked).toEqual([]);
+    expect(caughtUp.rewarded).toEqual(['first_trust']);
+    expect(caughtUp.gold).toBe(600);
+
+    const reconciled = reconcileBondSceneRewards(
+      { ...progress, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+      { ...progress, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+    );
+    expect(reconciled.changed).toBe(false);
+    expect(reconciled.gold).toBe(600);
+  });
+
   it('grants one growth point every completed month and one extra for an S training month', () => {
     const normal = reducer({ ...initialState, growthPoints:0, trainingScore:650 }, { type:'NEXT_MONTH' });
     expect(normal.growthPoints).toBe(1);
