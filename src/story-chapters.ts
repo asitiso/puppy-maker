@@ -30,10 +30,10 @@ export type StoryProgress = {
 
 const coreStoryChapterDefinitions: StoryChapterDefinition[] = [
   { id: 'first_step', title: '첫 발걸음', summary: '루나는 처음으로 수호자 훈련을 마쳤다. 작은 한 걸음이 앞으로 이어질 긴 여정의 시작이 되었다.', unlockHint: '첫 훈련을 완료하면 열려요.', rewardGems: 0 },
-  { id: 'wide_world', title: '넓어진 세계', summary: '별빛 숲과 마법 마을, 바람 호숫가를 돌아본 루나는 집 밖의 세계가 생각보다 훨씬 넓다는 걸 알게 되었다.', unlockHint: '세 곳의 외출 장소를 모두 방문하면 열려요.', rewardGems: 1 },
-  { id: 'trusted_bond', title: '마음을 나누는 사이', summary: '함께 보낸 시간이 쌓이며 루나는 조심스럽게 마음속 이야기를 꺼내기 시작했다.', unlockHint: '루나와 가까운 친구가 되면 열려요.', rewardGems: 1 },
-  { id: 'guardian_oath', title: '수호자의 맹세', summary: '쌓아온 기억과 숙련은 이제 우연이 아니다. 루나는 정식 수호자로서 자신의 길을 선택한다.', unlockHint: '정식 수호자 등급에 도달하고 Calling을 선택하면 열려요.', rewardGems: 2 },
-  { id: 'starlight_road', title: '별빛으로 가는 길', summary: '숨겨진 흔적들이 하나의 방향을 가리킨다. 루나는 더 먼 곳에서 자신을 부르는 별빛을 느낀다.', unlockHint: 'Calling 선택 + 숙련 수호자 이상 + 숨겨진 발견물 4개가 필요해요.', rewardGems: 3 },
+  { id: 'wide_world', title: '넓어진 세계', summary: '별빛 숲과 마법 마을, 바람 호숫가를 돌아본 루나는 집 밖의 세계가 생각보다 훨씬 넓다는 걸 알게 되었다.', unlockHint: '첫 발걸음 이후 세 곳의 외출 장소를 모두 방문하면 열려요.', rewardGems: 1 },
+  { id: 'trusted_bond', title: '마음을 나누는 사이', summary: '함께 보낸 시간이 쌓이며 루나는 조심스럽게 마음속 이야기를 꺼내기 시작했다.', unlockHint: '넓어진 세계 이후 루나와 가까운 친구가 되면 열려요.', rewardGems: 1 },
+  { id: 'guardian_oath', title: '수호자의 맹세', summary: '쌓아온 기억과 숙련은 이제 우연이 아니다. 루나는 정식 수호자로서 자신의 길을 선택한다.', unlockHint: '마음을 나누는 사이 이후 정식 수호자 등급에 도달하고 Calling을 선택하면 열려요.', rewardGems: 2 },
+  { id: 'starlight_road', title: '별빛으로 가는 길', summary: '숨겨진 흔적들이 하나의 방향을 가리킨다. 루나는 더 먼 곳에서 자신을 부르는 별빛을 느낀다.', unlockHint: '수호자의 맹세 이후 Calling 선택 + 숙련 수호자 이상 + 숨겨진 발견물 4개가 필요해요.', rewardGems: 3 },
 ];
 
 export const coreStoryChapterIds = coreStoryChapterDefinitions.map(chapter => chapter.id as CoreStoryChapterId);
@@ -66,11 +66,28 @@ function callingChosen(progress: StoryProgress): boolean {
 
 export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[] {
   const unlocked = new Set<StoryChapterId>();
-  if (progress.memories.includes('first_training')) unlocked.add('first_step');
-  if (requiredOutings.every(id => progress.visitedOutings.includes(id))) unlocked.add('wide_world');
-  if (trustedBondReady(progress)) unlocked.add('trusted_bond');
-  if (rankAtLeast(progress.guardianRank, 'guardian') && callingChosen(progress)) unlocked.add('guardian_oath');
-  if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4 && callingChosen(progress)) unlocked.add('starlight_road');
+
+  const firstStepReady = progress.memories.includes('first_training');
+  if (firstStepReady) {
+    unlocked.add('first_step');
+
+    const wideWorldReady = requiredOutings.every(id => progress.visitedOutings.includes(id));
+    if (wideWorldReady) {
+      unlocked.add('wide_world');
+
+      const bondReady = trustedBondReady(progress);
+      if (bondReady) {
+        unlocked.add('trusted_bond');
+
+        const oathReady = rankAtLeast(progress.guardianRank, 'guardian') && callingChosen(progress);
+        if (oathReady) {
+          unlocked.add('guardian_oath');
+          if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4) unlocked.add('starlight_road');
+        }
+      }
+    }
+  }
+
   for (const id of progress.expeditionStoryEntries ?? []) {
     if (expeditionStoryDefinitions.some(entry => entry.stageId === id)) unlocked.add(id as ExpeditionStageId);
   }
