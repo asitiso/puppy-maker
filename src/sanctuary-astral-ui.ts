@@ -4,7 +4,7 @@ import {
   celestialAscensionRank,
   celestialAscensionRewards,
 } from './celestial-ascension';
-import { celestialRecordProgress } from './celestial-records';
+import { canonicalCelestialRecords, celestialRecordProgress } from './celestial-records';
 import { astralBlessings, resolveAstralBlessingPurchase } from './sanctuary-astral-blessings';
 import { eligibleAstralTrialFor, astralTrialPower } from './sanctuary-astral-trials';
 import { constellationProgress } from './sanctuary-constellations';
@@ -52,7 +52,8 @@ export function sanctuaryAstralUiSummary(state:GameState) {
     };
   });
   const records = state.astralTrialRecords ?? [];
-  const recentRecords = [...records].slice(-6).reverse();
+  const canonicalRecords = canonicalCelestialRecords(records);
+  const recentRecords = [...canonicalRecords].slice(-6).reverse();
   const recordProgress = celestialRecordProgress(records);
   const ascensionScore = celestialAscensionProgress({
     trialRecords:records,
@@ -86,7 +87,7 @@ export function sanctuaryAstralUiSummary(state:GameState) {
       score:ascensionScore,
       rank:ascensionRank,
       components:{
-        trialClears:Math.min(12,records.length),
+        trialClears:Math.min(12,recordProgress.totalClears),
         uniqueSClears:Math.min(4,recordProgress.uniqueSClears),
         blessings:Math.min(4,purchased.length),
         constellations:Math.min(5,constellations.length),
