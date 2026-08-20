@@ -23,6 +23,9 @@ import {
 } from './game';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
+import type { BattleResult } from './tactical-battle';
+import type { CompanionId } from './tactical-companions';
+import type { TacticalEncounterId } from './tactical-encounters';
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
@@ -186,9 +189,12 @@ type AppProps = {
   onSanctuaryMasterworkReady?: (build: (masterwork: SanctuaryMasterworkId) => void) => void;
   onAstralRiftClearReady?: (clear: (riftId: AstralRiftId, intensity: AstralRiftIntensity) => void) => void;
   onAstralRiftRelicReady?: (purchase: (relicId: AstralRiftRelicId) => void) => void;
+  onTacticalPartyReady?: (setParty:(companions:[CompanionId,CompanionId])=>void) => void;
+  onTacticalPreferencesReady?: (setPreferences:(auto:boolean,speed:1|2)=>void) => void;
+  onTacticalCompleteReady?: (complete:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
     const loaded = loadResilientSave(localStorage);
     if (loaded.recovered) repairPrimarySave(localStorage, loaded);
@@ -221,6 +227,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const buildSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => dispatch({ type:'BUILD_SANCTUARY_MASTERWORK', masterwork }), []);
   const clearAstralRift = useCallback((riftId: AstralRiftId, intensity: AstralRiftIntensity) => dispatch({ type:'CLEAR_ASTRAL_RIFT', riftId, intensity }), []);
   const purchaseAstralRiftRelic = useCallback((relicId: AstralRiftRelicId) => dispatch({ type:'PURCHASE_ASTRAL_RIFT_RELIC', relicId }), []);
+  const setTacticalParty = useCallback((companions:[CompanionId,CompanionId]) => dispatch({ type:'SET_TACTICAL_PARTY', companions }), []);
+  const setTacticalPreferences = useCallback((auto:boolean,speed:1|2) => dispatch({ type:'SET_TACTICAL_PREFERENCES', auto, speed }), []);
+  const completeTacticalBattle = useCallback((encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId]) => dispatch({ type:'COMPLETE_TACTICAL_BATTLE', encounterId, result, rounds, survivingAllies, damageTaken, companions }), []);
   useEffect(() => {
     writeResilientSave(localStorage, state);
     localStorage.removeItem('puppy-maker-yearly-ambitions');
@@ -247,6 +256,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork, onSanctuaryMasterworkReady]);
   useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift, onAstralRiftClearReady]);
   useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic, onAstralRiftRelicReady]);
+  useEffect(() => onTacticalPartyReady?.(setTacticalParty), [setTacticalParty,onTacticalPartyReady]);
+  useEffect(() => onTacticalPreferencesReady?.(setTacticalPreferences), [setTacticalPreferences,onTacticalPreferencesReady]);
+  useEffect(() => onTacticalCompleteReady?.(completeTacticalBattle), [completeTacticalBattle,onTacticalCompleteReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
