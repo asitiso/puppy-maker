@@ -13,8 +13,10 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).toContain('지금 할 일');
   });
 
-  it('marks the selected bottom navigation item as the current destination', () => {
+  it('marks only an opened bottom destination as current', () => {
+    expect(home).toContain('useState(-1)');
     expect(home).toContain("aria-current={activeNav === index ? 'page' : undefined}");
+    expect(home).toContain('setActiveNav(-1);');
   });
 
   it('keeps panel navigation visible while long content scrolls independently', () => {
