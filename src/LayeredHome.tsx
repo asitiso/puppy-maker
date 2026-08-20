@@ -110,7 +110,7 @@ type LayeredHomeProps = {
 
 export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onMenuReady }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
-  const [activeNav, setActiveNav] = useState(2);
+  const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const staticPanel = activePanel ? getHomePanel(activePanel) : null;
@@ -152,10 +152,16 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
   const openMenu = useCallback((id: HomeMenuId, index?: number) => {
     if (typeof index === 'number') setActiveNav(index);
+    else setActiveNav(-1);
     if (id === 'schedule') return onSchedule();
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
   }, [onSchedule]);
+
+  const closePanel = () => {
+    setActivePanel(null);
+    setActiveNav(-1);
+  };
 
   const primaryTask = unclaimedMail.length > 0
     ? { label: `우편 보상 ${unclaimedMail.length}개 확인`, detail: '받을 보상이 있어요.', action: () => openMenu('mail') }
@@ -200,11 +206,11 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
     <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index} aria-current={activeNav === index ? 'page' : undefined}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
-    {activePanel && hasPanel && <div className="lh-panel-backdrop" onClick={() => setActivePanel(null)}>
+    {activePanel && hasPanel && <div className="lh-panel-backdrop" onClick={closePanel}>
       <section className="lh-panel" role="dialog" aria-modal="true" aria-label={panelTitle} onClick={event => event.stopPropagation()}>
         <header className="lh-panel-header">
           <div><small>{panelEyebrow}</small><h2>{panelTitle}</h2></div>
-          <button className="lh-panel-close" onClick={() => setActivePanel(null)} aria-label="홈으로 돌아가기">×</button>
+          <button className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">×</button>
         </header>
         {isQuestPanel ? <div className="lh-panel-list">{achievementDefinitions.map((item, index) => {
           const claimed = state.claimedAchievements.includes(item.id);
