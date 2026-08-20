@@ -1,7 +1,9 @@
 import type { MemoryId } from './game-core';
 import type { OutingLocationId } from './adventure';
+import type { BondSceneId } from './bond-scenes';
 import { expeditionStoryDefinitions } from './expedition-story';
 import type { ExpeditionStageId } from './expedition-regions';
+import type { GuardianCallingId } from './guardian-callings';
 import type { GuardianRankId } from './guardian-rank';
 
 export type CoreStoryChapterId = 'first_step' | 'wide_world' | 'trusted_bond' | 'guardian_oath' | 'starlight_road';
@@ -22,6 +24,8 @@ export type StoryProgress = {
   guardianRank: GuardianRankId;
   discoveries: number;
   expeditionStoryEntries?: ExpeditionStageId[] | string[];
+  unlockedBondScenes?: readonly BondSceneId[];
+  activeCalling?: GuardianCallingId | null;
 };
 
 const coreStoryChapterDefinitions: StoryChapterDefinition[] = [
@@ -51,13 +55,22 @@ function rankAtLeast(rank: GuardianRankId, target: GuardianRankId): boolean {
   return guardianRankOrder.indexOf(rank) >= guardianRankOrder.indexOf(target);
 }
 
+function trustedBondReady(progress: StoryProgress): boolean {
+  if (progress.unlockedBondScenes === undefined) return progress.affection >= 75;
+  return progress.unlockedBondScenes.includes('shared_secret');
+}
+
+function callingChosen(progress: StoryProgress): boolean {
+  return progress.activeCalling === undefined || progress.activeCalling !== null;
+}
+
 export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[] {
   const unlocked = new Set<StoryChapterId>();
   if (progress.memories.includes('first_training')) unlocked.add('first_step');
   if (requiredOutings.every(id => progress.visitedOutings.includes(id))) unlocked.add('wide_world');
-  if (progress.affection >= 75) unlocked.add('trusted_bond');
-  if (rankAtLeast(progress.guardianRank, 'guardian')) unlocked.add('guardian_oath');
-  if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4) unlocked.add('starlight_road');
+  if (trustedBondReady(progress)) unlocked.add('trusted_bond');
+  if (rankAtLeast(progress.guardianRank, 'guardian') && callingChosen(progress)) unlocked.add('guardian_oath');
+  if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4 && callingChosen(progress)) unlocked.add('starlight_road');
   for (const id of progress.expeditionStoryEntries ?? []) {
     if (expeditionStoryDefinitions.some(entry => entry.stageId === id)) unlocked.add(id as ExpeditionStageId);
   }
