@@ -7,8 +7,9 @@ const unit = (id:string, side:'ally'|'enemy', agility:number, mp=0, hp=100):Tact
 });
 
 function battle(partner:'bear'|'owl'|'wolf'|'cat'='wolf') {
+  const supportId = partner === 'owl' ? 'companion-bear' : 'companion-owl';
   return createBattleSession(
-    [unit('runa','ally',20,10),unit(`companion-${partner}`,'ally',12),unit('companion-owl','ally',8,0,60)],
+    [unit('runa','ally',20,10),unit(`companion-${partner}`,'ally',12),unit(supportId,'ally',8,0,60)],
     [unit('enemy-front','enemy',10),unit('enemy-back','enemy',7),unit('enemy-third','enemy',5)],
     17,
   );
