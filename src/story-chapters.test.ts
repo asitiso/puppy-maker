@@ -54,6 +54,11 @@ describe('story chapter rules', () => {
     expect(eligibleStoryChapters({ ...base, activeCalling:'caretaker' as const })).toContain('guardian_oath');
   });
 
+  it('describes Calling-dependent story gates in the player-facing unlock hints', () => {
+    expect(storyChapterDefinitions.find(chapter => chapter.id === 'guardian_oath')?.unlockHint).toContain('Calling');
+    expect(storyChapterDefinitions.find(chapter => chapter.id === 'starlight_road')?.unlockHint).toContain('Calling');
+  });
+
   it('unlocks expedition chapters exactly from cleared expedition story entries', () => {
     const opened = eligibleStoryChapters({
       memories: [], visitedOutings: [], affection: 0, guardianRank: 'trainee', discoveries: 0,
