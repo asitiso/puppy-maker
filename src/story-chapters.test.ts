@@ -26,6 +26,34 @@ describe('story chapter rules', () => {
     })).toEqual(['first_step', 'wide_world', 'trusted_bond', 'guardian_oath']);
   });
 
+  it('uses unlocked bond scenes as the trusted-bond source when relationship progress is supplied', () => {
+    const base = {
+      memories: [],
+      visitedOutings: [],
+      affection: 95,
+      guardianRank: 'trainee' as const,
+      discoveries: 0,
+      expeditionStoryEntries: [],
+      unlockedBondScenes: [] as const,
+    };
+    expect(eligibleStoryChapters(base)).not.toContain('trusted_bond');
+    expect(eligibleStoryChapters({ ...base, unlockedBondScenes:['shared_secret'] as const })).toContain('trusted_bond');
+  });
+
+  it('requires an actual Calling choice for guardian oath when Calling progress is supplied', () => {
+    const base = {
+      memories: [],
+      visitedOutings: [],
+      affection: 95,
+      guardianRank: 'guardian' as const,
+      discoveries: 0,
+      expeditionStoryEntries: [],
+      activeCalling: null,
+    };
+    expect(eligibleStoryChapters(base)).not.toContain('guardian_oath');
+    expect(eligibleStoryChapters({ ...base, activeCalling:'caretaker' as const })).toContain('guardian_oath');
+  });
+
   it('unlocks expedition chapters exactly from cleared expedition story entries', () => {
     const opened = eligibleStoryChapters({
       memories: [], visitedOutings: [], affection: 0, guardianRank: 'trainee', discoveries: 0,
