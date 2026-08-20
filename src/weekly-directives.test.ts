@@ -19,6 +19,17 @@ describe('weekly directives', () => {
     expect(weeklyDirectives(1,4,1).map(item => item.id)).not.toEqual(weeklyDirectives(1,4,2).map(item => item.id));
   });
 
+  it('never assigns two directives that reward the same action counter in one week', () => {
+    for (let year = 1; year <= 3; year += 1) {
+      for (let month = 1; month <= 12; month += 1) {
+        for (let week = 1; week <= 4; week += 1) {
+          const directives = weeklyDirectives(year,month,week);
+          expect(new Set(directives.map(item => item.counter)).size).toBe(directives.length);
+        }
+      }
+    }
+  });
+
   it('advances only matching directives and caps progress at targets', () => {
     const directives = weeklyDirectives(1,4,1);
     const expedition = directives.find(item => item.counter === 'expedition');
