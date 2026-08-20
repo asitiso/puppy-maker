@@ -160,8 +160,8 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
   }
 
   let fullCompleted = false;
-  if (allStagesCleared(next.expeditionRecords) && !next.ownedExpeditionRelics.includes('explorer_compass')) {
-    fullCompleted = clearedNow && !fullWasComplete;
+  if (clearedNow && allStagesCleared(next.expeditionRecords) && !next.ownedExpeditionRelics.includes('explorer_compass')) {
+    fullCompleted = !fullWasComplete;
     next = {
       ...next,
       gems: next.gems + (fullCompleted ? 5 : 0),
