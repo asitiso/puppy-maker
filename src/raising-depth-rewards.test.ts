@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { bondSceneIds } from './bond-scenes';
 import { initialState, reducer } from './game';
+import { reconcileBondSceneRewards } from './raising-depth-rewards';
 
 describe('raising depth rewards and bond progression', () => {
   it('unlocks a bond scene only when the current action crosses its condition and rewards it once', () => {
@@ -19,15 +21,163 @@ describe('raising depth rewards and bond progression', () => {
     expect(again.rewardedBondScenes.filter(id => id === 'first_trust')).toHaveLength(1);
   });
 
-  it('does not retroactively reward a scene that was already eligible before an unrelated action', () => {
-    const ready = {
-      ...initialState,
-      stats:{ ...initialState.stats, affection:55 },
+  it('keeps the first bond threshold exact', () => {
+    const base = {
+      outings:0, trainings:0, gifts:0, guardianRank:'trainee' as const,
+      bossClears:0, annualRecords:0, unlocked:[], rewarded:[], gold:500, gems:2,
     };
-    const next = reducer(ready, { type:'SET_MONTHLY_FOCUS', focus:'balanced' });
-    expect(next.unlockedBondScenes).toEqual([]);
-    expect(next.rewardedBondScenes).toEqual([]);
-    expect(next.gold).toBe(ready.gold);
+    expect(reconcileBondSceneRewards({ ...base, affection:54 }, { ...base, affection:54 }).changed).toBe(false);
+    expect(reconcileBondSceneRewards({ ...base, affection:55 }, { ...base, affection:55 }).newlyUnlocked).toEqual(['first_trust']);
+  });
+
+  it('catches up an eligible but missing bond scene and reward exactly once', () => {
+    const progress = {
+      affection:55,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:[],
+      rewarded:[],
+      gold:500,
+      gems:2,
+    };
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.changed).toBe(true);
+    expect(caughtUp.newlyUnlocked).toEqual(['first_trust']);
+    expect(caughtUp.unlocked).toEqual(['first_trust']);
+    expect(caughtUp.rewarded).toEqual(['first_trust']);
+    expect(caughtUp.gold).toBe(600);
+
+    const reconciled = reconcileBondSceneRewards(
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+    );
+    expect(reconciled.changed).toBe(false);
+    expect(reconciled.gold).toBe(600);
+  });
+
+  it('catches up a missing reward for an already unlocked eligible bond scene', () => {
+    const progress = {
+      affection:55,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:['first_trust' as const],
+      rewarded:[],
+      gold:500,
+      gems:2,
+    };
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.changed).toBe(true);
+    expect(caughtUp.newlyUnlocked).toEqual([]);
+    expect(caughtUp.rewarded).toEqual(['first_trust']);
+    expect(caughtUp.gold).toBe(600);
+
+    const reconciled = reconcileBondSceneRewards(
+      { ...progress, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+      { ...progress, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+    );
+    expect(reconciled.changed).toBe(false);
+    expect(reconciled.gold).toBe(600);
+  });
+
+  it('uses an existing unlock as proof for a missing reward even if the live condition later fell below the threshold', () => {
+    const progress = {
+      affection:0,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:['first_trust' as const],
+      rewarded:[],
+      gold:500,
+      gems:2,
+    };
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.changed).toBe(true);
+    expect(caughtUp.newlyUnlocked).toEqual([]);
+    expect(caughtUp.rewarded).toEqual(['first_trust']);
+    expect(caughtUp.gold).toBe(600);
+  });
+
+  it('restores a missing unlock from an existing reward claim without paying twice', () => {
+    const progress = {
+      affection:0,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:[],
+      rewarded:['first_trust' as const],
+      gold:500,
+      gems:2,
+    };
+    const repaired = reconcileBondSceneRewards(progress, progress);
+    expect(repaired.changed).toBe(true);
+    expect(repaired.unlocked).toEqual(['first_trust']);
+    expect(repaired.rewarded).toEqual(['first_trust']);
+    expect(repaired.gold).toBe(500);
+    expect(repaired.gems).toBe(2);
+  });
+
+  it('canonicalizes duplicate bond state without duplicating rewards', () => {
+    const progress = {
+      affection:0,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:['first_trust' as const, 'first_trust' as const],
+      rewarded:['first_trust' as const, 'first_trust' as const],
+      gold:500,
+      gems:2,
+    };
+    const repaired = reconcileBondSceneRewards(progress, progress);
+    expect(repaired.changed).toBe(true);
+    expect(repaired.unlocked).toEqual(['first_trust']);
+    expect(repaired.rewarded).toEqual(['first_trust']);
+    expect(repaired.gold).toBe(500);
+  });
+
+  it('can catch up every reachable bond scene in one reconciliation regardless of prior action order', () => {
+    const progress = {
+      affection:95,
+      outings:1,
+      trainings:10,
+      gifts:5,
+      guardianRank:'guardian' as const,
+      bossClears:3,
+      annualRecords:1,
+      unlocked:[],
+      rewarded:[],
+      gold:500,
+      gems:2,
+    };
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.unlocked).toEqual(bondSceneIds);
+    expect(caughtUp.rewarded).toEqual(bondSceneIds);
+    expect(caughtUp.gold).toBe(1200);
+    expect(caughtUp.gems).toBe(7);
+
+    const stable = reconcileBondSceneRewards(
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold, gems:caughtUp.gems },
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold, gems:caughtUp.gems },
+    );
+    expect(stable.changed).toBe(false);
+    expect(stable.gold).toBe(1200);
+    expect(stable.gems).toBe(7);
   });
 
   it('grants one growth point every completed month and one extra for an S training month', () => {
