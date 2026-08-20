@@ -23,4 +23,21 @@ describe('career records and titles', () => {
       'steady_trainer', 'perfect_chaser', 'seasoned_explorer', 'warm_giver', 'story_witness', 'veteran_guardian',
     ]);
   });
+
+  it('uses raising-story progress for story witness when supplied instead of expedition-heavy total story count', () => {
+    const records = emptyCareerRecords();
+    expect(careerTitles({
+      records,
+      guardianRank: 'trainee',
+      openedStories: 9,
+      openedRaisingStories: 2,
+    })).not.toContain('story_witness');
+
+    expect(careerTitles({
+      records,
+      guardianRank: 'trainee',
+      openedStories: 9,
+      openedRaisingStories: 4,
+    })).toContain('story_witness');
+  });
 });
