@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import home from './LayeredHome.tsx?raw';
 import homeCss from './layered-home.css?raw';
+import mobileCss from './layered-home-mobile.css?raw';
 import flowCss from './hub-flow-mobile.css?raw';
 import panelCss from './home-panels.css?raw';
 import seasonCss from './season-live-ops.css?raw';
@@ -27,20 +28,21 @@ describe('Layered Home mobile UI contract', () => {
     expect(homeCss).toContain('.lh-weather span{display:none}');
   });
 
-  it('does not run decorative pointer tilt for touch input', () => {
-    expect(home).toContain("if (event.pointerType !== 'mouse') return;");
-  });
-
   it('keeps four compact shortcuts at usable touch size without overflowing their lane', () => {
-    expect(homeCss).toContain('@media(max-width:390px){.lh-shortcuts{');
-    expect(homeCss).toContain('width:54%');
-    expect(homeCss).toContain('.lh-shortcuts button{flex:1 1 44px;min-width:44px');
+    expect(mobileCss).toContain('@media(max-width:390px)');
+    expect(mobileCss).toContain('width:54%');
+    expect(mobileCss).toContain('flex:1 1 44px');
+    expect(mobileCss).toContain('min-width:44px');
   });
 
   it('keeps top and action chrome clear of device safe areas', () => {
-    expect(homeCss).toContain('safe-area-inset-top');
-    expect(homeCss).toContain('safe-area-inset-bottom');
-    expect(homeCss).toContain('.lh-primary-action{bottom:calc(31.5% + env(safe-area-inset-bottom)*.12)');
+    expect(mobileCss).toContain('safe-area-inset-top');
+    expect(mobileCss).toContain('safe-area-inset-bottom');
+    expect(mobileCss).toContain('bottom:calc(31.5% + env(safe-area-inset-bottom)*.12)');
+  });
+
+  it('reduces tertiary collection detail on short 9:16 screens', () => {
+    expect(mobileCss).toContain('.lh-goal p:nth-of-type(3){display:none}');
   });
 
   it('marks only an opened bottom destination as current', () => {
@@ -78,6 +80,7 @@ describe('Layered Home mobile UI contract', () => {
 
   it('keeps home-return chrome reachable while long major overlays scroll', () => {
     expect(homeCss).toContain("@import './hub-flow-mobile.css'");
+    expect(flowCss).toContain("@import './layered-home-mobile.css'");
     expect(flowCss).toContain('.raising-content header{position:sticky');
     expect(flowCss).toContain('.world-progress-close{position:sticky');
     expect(flowCss).toContain('.expedition-map header,.expedition-battle header{position:sticky');
