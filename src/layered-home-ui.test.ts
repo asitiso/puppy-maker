@@ -1,13 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-
-const source = (name: string) => readFileSync(new URL(name, import.meta.url), 'utf8');
+import home from './LayeredHome.tsx?raw';
+import homeCss from './layered-home.css?raw';
+import panelCss from './home-panels.css?raw';
 
 describe('Layered Home mobile UI contract', () => {
-  const home = source('./LayeredHome.tsx');
-  const homeCss = source('./layered-home.css');
-  const panelCss = source('./home-panels.css');
-
   it('exposes one prominent current-task action on the home scene', () => {
     expect(home).toContain('className="lh-primary-action"');
     expect(home).toContain('지금 할 일');
