@@ -32,10 +32,9 @@ function eligible(progress: BondRewardProgress): BondSceneId[] {
   });
 }
 
-export function reconcileBondSceneRewards(previous: BondRewardProgress, current: BondRewardProgress) {
-  const beforeEligible = new Set(eligible(previous));
+export function reconcileBondSceneRewards(_previous: BondRewardProgress, current: BondRewardProgress) {
   const afterEligible = eligible(current);
-  const newlyUnlocked = afterEligible.filter(id => !beforeEligible.has(id) && !current.unlocked.includes(id));
+  const newlyUnlocked = afterEligible.filter(id => !current.unlocked.includes(id));
   if (!newlyUnlocked.length) return {
     changed:false,
     unlocked:current.unlocked,
