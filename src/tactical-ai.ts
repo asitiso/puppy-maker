@@ -49,7 +49,7 @@ function chooseArchetypeEngineAction(session:BattleSession,actor:TacticalUnit,ha
   const enemies=session.units.filter(unit=>unit.side!==actor.side&&unit.hp>0);
   const has=(actionId:TacticalActionInput['actionId'])=>hand.includes(actionId);
   const patient=lowest(allies);
-  const supportThreshold=archetype==='medic'?.8:archetype==='guardian'?.65:0;
+  const supportThreshold=archetype==='medic' ? 0.8 : archetype==='guardian' ? 0.65 : 0;
   if(supportThreshold&&has('support')&&patient&&patient.hp/patient.maxHp<=supportThreshold&&validTacticalTargets(session,actor.id,'support').includes(patient.id))return {actorId:actor.id,actionId:'support',targetId:patient.id};
   const priorities:TacticalActionInput['actionId'][]=archetype==='guardian'?['attack','skill']:['skill','attack'];
   for(const actionId of priorities){
