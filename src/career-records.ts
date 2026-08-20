@@ -22,7 +22,7 @@ export const careerTitleDefinitions: Array<{ id: CareerTitleId; label: string; d
   { id: 'perfect_chaser', label: '완벽을 좇는 자', description: '최고 훈련 점수 900 이상.' },
   { id: 'seasoned_explorer', label: '노련한 탐험가', description: '누적 외출 10회 이상.' },
   { id: 'warm_giver', label: '따뜻한 선물가', description: '누적 선물 5회 이상.' },
-  { id: 'story_witness', label: '이야기의 목격자', description: '스토리 챕터 4개 이상 해금.' },
+  { id: 'story_witness', label: '이야기의 목격자', description: '육성 스토리 챕터 4개 이상 해금.' },
   { id: 'veteran_guardian', label: '숙련 수호자의 증표', description: '숙련 수호자 이상.' },
 ];
 
