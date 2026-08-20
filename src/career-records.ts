@@ -43,10 +43,11 @@ export type CareerAction =
 
 export function recordCareerAction(records: CareerRecords, action: CareerAction): CareerRecords {
   if (action.type === 'training') {
+    const score = Number.isFinite(action.score) ? Math.max(0, Math.floor(action.score)) : 0;
     return {
       ...records,
       trainings: records.trainings + 1,
-      bestScore: Math.max(records.bestScore, Math.max(0, Math.floor(action.score))),
+      bestScore: Math.max(records.bestScore, score),
       sGrades: records.sGrades + (action.grade === 'S' ? 1 : 0),
     };
   }
