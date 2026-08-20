@@ -70,7 +70,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
 export function isBattleFinished(session:BattleSession):BattleResult|null {
   const alliesAlive = session.units.some(unit => unit.side === 'ally' && unit.hp > 0);
   const enemiesAlive = session.units.some(unit => unit.side === 'enemy' && unit.hp > 0);
-  if (!enemiesAlive && alliesAlive) return 'victory';
-  if (!alliesAlive && enemiesAlive) return 'defeat';
+  if (!alliesAlive) return 'defeat';
+  if (!enemiesAlive) return 'victory';
   return null;
 }
