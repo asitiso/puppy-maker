@@ -3,6 +3,7 @@ export type BattlePosition = 'front'|'back';
 export type BattleResult = 'victory'|'defeat';
 export type TacticalStatusId = 'guard'|'focus'|'break'|'regen';
 export type TacticalStatus = { id:TacticalStatusId; turns:number };
+export type TacticalEnemyArchetype = 'brute'|'guardian'|'hexer'|'medic'|'assassin';
 
 export type TacticalUnit = {
   id:string;
@@ -19,6 +20,7 @@ export type TacticalUnit = {
   attackPower?:number;
   skillPower?:number;
   supportPower?:number;
+  aiArchetype?:TacticalEnemyArchetype;
   statuses?:TacticalStatus[];
 };
 
@@ -57,6 +59,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
     attackPower:normalizeOptionalPower(unit.attackPower),
     skillPower:normalizeOptionalPower(unit.skillPower),
     supportPower:normalizeOptionalPower(unit.supportPower),
+    aiArchetype:unit.side === 'enemy' ? unit.aiArchetype : undefined,
     statuses:(unit.statuses ?? [])
       .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
       .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
