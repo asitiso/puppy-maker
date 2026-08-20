@@ -8,8 +8,9 @@ const unit = (id:string, side:'ally'|'enemy', agility:number, mp=0, hp=100):Tact
 
 function battle(partner:'bear'|'owl'|'wolf'|'cat'='wolf') {
   const supportId = partner === 'owl' ? 'companion-bear' : 'companion-owl';
+  const partnerHp = partner === 'owl' ? 60 : 100;
   return createBattleSession(
-    [unit('runa','ally',20,10),unit(`companion-${partner}`,'ally',12),unit(supportId,'ally',8,0,60)],
+    [unit('runa','ally',20,10),unit(`companion-${partner}`,'ally',12,0,partnerHp),unit(supportId,'ally',8)],
     [unit('enemy-front','enemy',10),unit('enemy-back','enemy',7),unit('enemy-third','enemy',5)],
     17,
   );
@@ -55,6 +56,7 @@ describe('bond level five combination ultimates', () => {
     const owl = battle('owl');
     const owlNext = resolveCombinationUltimate(owl,{ actorId:'runa', companionId:'owl', bondLevel:5, targetId:'companion-owl' });
     expect(owlNext.units.find(unit => unit.id === 'companion-owl')?.hp).toBeGreaterThan(60);
+    expect(owlNext.units.find(unit => unit.id === 'companion-owl')?.statuses).toContainEqual({ id:'regen',turns:2 });
 
     const cat = battle('cat');
     const catNext = resolveCombinationUltimate(cat,{ actorId:'runa', companionId:'cat', bondLevel:5, targetId:'enemy-front' });
