@@ -65,7 +65,7 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
 
   const chooseAction=(id:TacticalActionId)=>{
     if(!activeRaw||activeRaw.side!=='ally'||auto||v.result)return;
-    if(!v.actions.some(action=>action.id===id))return;
+    if(!v.hand.includes(id)||!v.actions.some(action=>action.id===id))return;
     setSelectedUltimate(null);
     setSelectedAction(id);
   };
@@ -97,9 +97,9 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
       <div className="tactical-team enemies">{v.enemies.map(u=><article key={u.id} onClick={()=>chooseTarget(u.id)} className={`unit ${u.position} ${u.active?'active':''} ${validTargetIds.includes(u.id)?'targetable':''} ${!u.alive?'down':''}`}><b>{u.id}</b><progress max={u.maxHp} value={u.hp}/><small>HP {u.hp}/{u.maxHp} · SH {u.shield}</small><small>AP {u.ap}/{u.maxAp} · MP {u.mp}/{u.maxMp}</small>{u.statuses.length?<em>{u.statuses.join(' · ')}</em>:null}</article>)}</div>
       <div className="tactical-team allies">{v.allies.map(u=><article key={u.id} onClick={()=>chooseTarget(u.id)} className={`unit ${u.position} ${u.active?'active':''} ${validTargetIds.includes(u.id)?'targetable':''} ${!u.alive?'down':''}`}><b>{u.id}</b><progress max={u.maxHp} value={u.hp}/><small>HP {u.hp}/{u.maxHp} · SH {u.shield}</small><small>AP {u.ap}/{u.maxAp} · MP {u.mp}/{u.maxMp}</small>{u.statuses.length?<em>{u.statuses.join(' · ')}</em>:null}</article>)}</div>
     </div>
-    <div className="tactical-log">{log.length?log.map((line,index)=><span key={`${line}-${index}`}>{line}</span>):<span>{activeRaw?.side==='ally'?'행동을 선택하세요.':'적의 행동을 기다리는 중...'}</span>}</div>
+    <div className="tactical-log">{log.length?log.map((line,index)=><span key={`${line}-${index}`}>{line}</span>):<span>{activeRaw?.side==='ally'?'카드 1장을 선택하세요.':'적의 행동을 기다리는 중...'}</span>}</div>
     {ultimateViews.length?<div className="tactical-ultimates" aria-label="Bond Lv5 합동기">{ultimateViews.map(ultimate=><button key={ultimate.companionId} className={selectedUltimate===ultimate.companionId?'selected':''} disabled={!ultimate.available||activeRaw?.id!=='runa'||auto||Boolean(v.result)} onClick={()=>chooseUltimate(ultimate.companionId)}><b>{ultimate.label}</b><small>MP {ultimate.mpCost} · BOND 5</small></button>)}</div>:null}
-    <footer className="tactical-hand">{(['attack','skill','support','special'] as TacticalActionId[]).map(id=>{const action=v.actions.find(item=>item.id===id);return <button key={id} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}>{id.toUpperCase()}{action?<small> AP{action.apCost}{action.mpCost?` · MP${action.mpCost}`:''}</small>:null}</button>})}</footer>
+    <footer className="tactical-hand" aria-label="4장 전술 카드">{v.hand.map((id,index)=>{const action=v.actions.find(item=>item.id===id);return <button key={`${id}-${index}`} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}><b>{id.toUpperCase()}</b>{action?<small>AP {action.apCost}{action.mpCost?` · MP ${action.mpCost}`:''}</small>:<small>사용 불가</small>}</button>})}</footer>
     {v.result?<div className="tactical-result" role="dialog" aria-label="전투 결과"><strong>{v.result==='victory'?'VICTORY':'DEFEAT'}</strong><span>ROUND {v.round}</span><div>{onRetry?<button onClick={onRetry}>RETRY</button>:null}{onExit?<button onClick={onExit}>EXIT</button>:null}</div></div>:null}
   </section>
 }
