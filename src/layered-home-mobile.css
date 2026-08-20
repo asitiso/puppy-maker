@@ -1,0 +1,25 @@
+.layered-home .lh-shortcuts{top:max(13.4%,calc(env(safe-area-inset-top) + 72px))}
+.layered-home .lh-goal{top:max(13.2%,calc(env(safe-area-inset-top) + 72px))}
+.layered-home .lh-primary-action{bottom:calc(31.5% + env(safe-area-inset-bottom)*.12)}
+.layered-home .lh-dialogue{bottom:calc(16.8% + env(safe-area-inset-bottom)*.35)}
+
+@media(max-width:390px){
+  .layered-home .lh-shortcuts{left:max(2.5%,env(safe-area-inset-left));top:max(13.7%,calc(env(safe-area-inset-top) + 72px));width:54%;gap:1.5%}
+  .layered-home .lh-shortcuts button{flex:1 1 44px;min-width:44px;width:auto}
+  .layered-home .lh-shortcut-icon{left:30%;right:30%;top:20%}
+  .layered-home .lh-shortcuts b{bottom:-10%;font-size:8px;white-space:nowrap}
+  .layered-home .lh-goal{right:max(2.5%,env(safe-area-inset-right));top:max(13.4%,calc(env(safe-area-inset-top) + 72px));width:33%}
+  .layered-home .lh-goal h3{font-size:clamp(11px,3vw,14px)}
+  .layered-home .lh-goal p{overflow:hidden;text-overflow:ellipsis}
+  .layered-home .lh-goal p:nth-of-type(3){display:none}
+  .layered-home .lh-primary-action{bottom:calc(31.8% + env(safe-area-inset-bottom)*.12)}
+  .layered-home .lh-dialogue{bottom:calc(17.2% + env(safe-area-inset-bottom)*.35)}
+}
+
+@media(max-height:650px){
+  .layered-home .lh-goal p:nth-of-type(3){display:none}
+  .layered-home .lh-goal>div{inset:9% 9%}
+  .layered-home .lh-goal h3{margin-bottom:3%}
+  .layered-home .lh-goal p{margin:2.5% 0}
+  .layered-home .lh-dialogue p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+}
