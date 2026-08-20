@@ -1,0 +1,4 @@
+.raising-content header{position:sticky;top:-1px;z-index:4;padding-bottom:8px;background:linear-gradient(180deg,rgba(255,248,229,.98) 72%,rgba(255,248,229,0))}
+.world-progress-close{position:sticky;top:0;right:auto;z-index:4;display:block;margin-left:auto;margin-bottom:-44px;background:rgba(255,249,232,.9)}
+.expedition-map header,.expedition-battle header{position:sticky;top:-1px;z-index:4;padding-bottom:8px;background:linear-gradient(180deg,rgba(29,23,48,.98) 72%,rgba(29,23,48,0))}
+@media(max-width:390px){.world-progress-card{top:49.5%}}
