@@ -16,6 +16,9 @@ export type TacticalUnit = {
   mp:number;
   maxMp:number;
   shield:number;
+  attackPower?:number;
+  skillPower?:number;
+  supportPower?:number;
   statuses?:TacticalStatus[];
 };
 
@@ -26,6 +29,10 @@ export type BattleSession = {
   seed:number;
   acted:string[];
 };
+
+function normalizeOptionalPower(value:number|undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : undefined;
+}
 
 export function orderedTimeline(units:TacticalUnit[]) {
   return units
@@ -47,6 +54,9 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
     maxMp:Math.max(0,Math.floor(unit.maxMp)),
     mp:Math.max(0,Math.min(Math.floor(unit.mp),Math.max(0,Math.floor(unit.maxMp)))),
     shield:Math.max(0,Math.floor(unit.shield)),
+    attackPower:normalizeOptionalPower(unit.attackPower),
+    skillPower:normalizeOptionalPower(unit.skillPower),
+    supportPower:normalizeOptionalPower(unit.supportPower),
     statuses:(unit.statuses ?? [])
       .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
       .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
