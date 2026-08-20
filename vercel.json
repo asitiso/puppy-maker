@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "feat/tactical-3v3-playable": false,
+      "feat/tactical-3v3-red": false,
+      "feat/tactical-3v3-green": false,
+      "feat/tactical-3v3-ui": false
+    }
+  }
+}

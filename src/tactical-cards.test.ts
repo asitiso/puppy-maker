@@ -25,6 +25,16 @@ describe('tactical cards', () => {
     expect(next.units.find(unit => unit.id === 'e1')?.hp).toBeLessThan(100);
   });
 
+  it('applies a support card when the actor targets themself', () => {
+    const start = session();
+    start.units = start.units.map(unit => unit.id === 'runa' ? { ...unit,hp:45 } : unit);
+    const next = resolveCard(start,'runa','healing_light','runa',{ str:20,mag:10,sen:20,mor:10 });
+    const runa = next.units.find(unit => unit.id === 'runa')!;
+    expect(runa.hp).toBeGreaterThan(45);
+    expect(runa.ap).toBe(1);
+    expect(runa.mp).toBe(3);
+  });
+
   it('returns the same session for an illegal target', () => {
     const start = session();
     expect(resolveCard(start,'runa','basic_strike','bear',{ str:20,mag:10,sen:10,mor:10 })).toBe(start);

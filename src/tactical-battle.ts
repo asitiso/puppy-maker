@@ -3,6 +3,7 @@ export type BattlePosition = 'front'|'back';
 export type BattleResult = 'victory'|'defeat';
 export type TacticalStatusId = 'guard'|'focus'|'break'|'regen';
 export type TacticalStatus = { id:TacticalStatusId; turns:number };
+export type TacticalEnemyArchetype = 'brute'|'guardian'|'hexer'|'medic'|'assassin';
 
 export type TacticalUnit = {
   id:string;
@@ -16,6 +17,10 @@ export type TacticalUnit = {
   mp:number;
   maxMp:number;
   shield:number;
+  attackPower?:number;
+  skillPower?:number;
+  supportPower?:number;
+  aiArchetype?:TacticalEnemyArchetype;
   statuses?:TacticalStatus[];
 };
 
@@ -26,6 +31,10 @@ export type BattleSession = {
   seed:number;
   acted:string[];
 };
+
+function normalizeOptionalPower(value:number|undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : undefined;
+}
 
 export function orderedTimeline(units:TacticalUnit[]) {
   return units
@@ -47,6 +56,10 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
     maxMp:Math.max(0,Math.floor(unit.maxMp)),
     mp:Math.max(0,Math.min(Math.floor(unit.mp),Math.max(0,Math.floor(unit.maxMp)))),
     shield:Math.max(0,Math.floor(unit.shield)),
+    attackPower:normalizeOptionalPower(unit.attackPower),
+    skillPower:normalizeOptionalPower(unit.skillPower),
+    supportPower:normalizeOptionalPower(unit.supportPower),
+    aiArchetype:unit.side === 'enemy' ? unit.aiArchetype : undefined,
     statuses:(unit.statuses ?? [])
       .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
       .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
@@ -57,7 +70,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
 export function isBattleFinished(session:BattleSession):BattleResult|null {
   const alliesAlive = session.units.some(unit => unit.side === 'ally' && unit.hp > 0);
   const enemiesAlive = session.units.some(unit => unit.side === 'enemy' && unit.hp > 0);
-  if (!enemiesAlive && alliesAlive) return 'victory';
-  if (!alliesAlive && enemiesAlive) return 'defeat';
+  if (!alliesAlive) return 'defeat';
+  if (!enemiesAlive) return 'victory';
   return null;
 }
