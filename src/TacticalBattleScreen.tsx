@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {BattleResult,BattleSession} from './tactical-battle';
 import type {CompanionId} from './tactical-companions';
-import {resolveTacticalAction} from './tactical-engine';
+import {resolveTacticalAction,skipTacticalTurnIfNoPlayableAction} from './tactical-engine';
 import {chooseAutoCombinationUltimate,chooseTacticalEngineAction} from './tactical-ai';
 import {buildCombinationUltimateViews,buildTacticalBattleView} from './tactical-ui';
 import {resolveCombinationUltimate} from './tactical-ultimate';
@@ -45,7 +45,14 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
 
   useEffect(()=>{
     if(v.result){if(completedRef.current!==v.result){completedRef.current=v.result;onComplete?.(v.result,current)}return;}
-    if(!activeRaw||(activeRaw.side==='ally'&&!auto))return;
+    if(!activeRaw)return;
+    if(activeRaw.side==='ally'&&!auto){
+      const hasUltimate=activeRaw.id==='runa'&&ultimateViews.some(view=>view.available);
+      if(hasUltimate)return;
+      const next=skipTacticalTurnIfNoPlayableAction(current,activeRaw.id,v.hand);
+      if(next!==current){const timer=window.setTimeout(()=>commit(next,`${activeRaw.id} · PASS`),speed===2?90:180);return()=>window.clearTimeout(timer)}
+      return;
+    }
     if(activeRaw.side==='ally'&&auto){
       const ultimateMove=chooseAutoCombinationUltimate(current,party,bondLevels);
       if(ultimateMove){
@@ -58,10 +65,13 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
       }
     }
     const move=chooseTacticalEngineAction(current,activeRaw.id,current.seed+current.round+current.acted.length);
-    if(!move)return;
-    const next=resolveTacticalAction(current,move);
-    if(next!==current){const timer=window.setTimeout(()=>commit(next,`${activeRaw.id} · ${move.actionId.toUpperCase()}`),speed===2?90:180);return()=>window.clearTimeout(timer)}
-  },[activeRaw,auto,bondLevels,current,onComplete,party,speed,ultimateViews,v.result]);
+    if(move){
+      const next=resolveTacticalAction(current,move);
+      if(next!==current){const timer=window.setTimeout(()=>commit(next,`${activeRaw.id} · ${move.actionId.toUpperCase()}`),speed===2?90:180);return()=>window.clearTimeout(timer)}
+    }
+    const passed=skipTacticalTurnIfNoPlayableAction(current,activeRaw.id,v.hand);
+    if(passed!==current){const timer=window.setTimeout(()=>commit(passed,`${activeRaw.id} · PASS`),speed===2?90:180);return()=>window.clearTimeout(timer)}
+  },[activeRaw,auto,bondLevels,current,onComplete,party,speed,ultimateViews,v.hand,v.result]);
 
   const chooseAction=(id:TacticalActionId)=>{
     if(!activeRaw||activeRaw.side!=='ally'||auto||v.result)return;
