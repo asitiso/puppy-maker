@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bondSceneDefinitions, eligibleBondScenes } from './bond-scenes';
+import { bondSceneDefinitions, eligibleBondScenes, type BondSceneId } from './bond-scenes';
 
 describe('Runa bond scenes', () => {
   it('defines ten scenes in relationship progression order', () => {
@@ -26,5 +26,24 @@ describe('Runa bond scenes', () => {
     const prior = ['first_trust','favorite_place','shared_secret','training_promise','gift_memory','guardian_confession','first_boss_together','three_regions_together'] as const;
     expect(eligibleBondScenes({ affection:94, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).not.toContain('precious_partner');
     expect(eligibleBondScenes({ affection:95, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).toContain('precious_partner');
+  });
+
+  it('counts only valid earlier bond scenes toward precious partner', () => {
+    const sevenPrior: BondSceneId[] = [
+      'first_trust','favorite_place','shared_secret','training_promise','gift_memory','guardian_confession','first_boss_together',
+    ];
+    const pollutedPrior = [...sevenPrior, 'precious_partner', 'unknown_scene' as BondSceneId];
+    const progress = {
+      affection:95,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+    };
+
+    expect(eligibleBondScenes({ ...progress, alreadyUnlocked:pollutedPrior })).not.toContain('precious_partner');
+    expect(eligibleBondScenes({ ...progress, alreadyUnlocked:[...sevenPrior, 'three_regions_together'] })).toContain('precious_partner');
   });
 });
