@@ -3,6 +3,7 @@ import TacticalBattleScreen from './TacticalBattleScreen';
 import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
 import type { TacticalEncounterId } from './tactical-encounters';
+import { tacticalExpeditionFinishScore } from './tactical-expedition';
 import { expeditionStageDefinitions, nextExpeditionStage, type ExpeditionStageId } from './expedition-regions';
 import type { ExpeditionActionCounts, GameState } from './game';
 import {
@@ -73,7 +74,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     const metrics = tacticalCompletionMetrics(finalSession);
     onComplete(tacticalEncounterForExpeditionStage(stageId),result,metrics.rounds,metrics.survivingAllies,metrics.damageTaken,party);
     const actionKinds:ExpeditionActionCounts = { attack:metrics.rounds,dodge:0,charge:0 };
-    const expeditionScore = result==='victory' ? Math.ceil(stage.target*1.05) : Math.floor(stage.target*.45);
+    const expeditionScore = tacticalExpeditionFinishScore(stage.target,result);
     onExpeditionFinish(stageId,expeditionScore,result==='victory'?2:6,result==='victory'?1:5,actionKinds);
   };
 
@@ -87,7 +88,6 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         bondLevels={bondLevels}
         onToggleAuto={toggleAuto}
         onToggleSpeed={toggleSpeed}
-        onSessionChange={setSession}
         onComplete={complete}
         onRetry={()=>setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+1))}
         onExit={()=>{setSession(null);setOpen(false)}}
