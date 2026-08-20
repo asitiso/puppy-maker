@@ -26,6 +26,7 @@ export const bondSceneDefinitions: BondSceneDefinition[] = [
 
 export const bondSceneIds = bondSceneDefinitions.map(item => item.id);
 const rankOrder: GuardianRankId[] = ['trainee','junior','guardian','veteran','starlight'];
+const preciousPartnerPriorIds = bondSceneIds.filter(id => id !== 'precious_partner');
 
 export type BondSceneProgress = {
   affection: number;
@@ -50,6 +51,7 @@ export function eligibleBondScenes(progress: BondSceneProgress): BondSceneId[] {
   if (progress.bossClears >= 3) eligible.add('three_regions_together');
   if (progress.annualRecords >= 1) eligible.add('year_together');
   const prior = new Set([...progress.alreadyUnlocked, ...eligible]);
-  if (progress.affection >= 95 && prior.size >= 8) eligible.add('precious_partner');
+  const validPriorCount = preciousPartnerPriorIds.filter(id => prior.has(id)).length;
+  if (progress.affection >= 95 && validPriorCount >= 8) eligible.add('precious_partner');
   return bondSceneIds.filter(id => eligible.has(id));
 }
