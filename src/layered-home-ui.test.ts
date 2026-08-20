@@ -7,6 +7,7 @@ import seasonalHomeCss from './seasonal-home.css?raw';
 import worldCss from './world-progress.css?raw';
 import raisingCss from './raising-identity.css?raw';
 import expeditionCss from './expedition-ui.css?raw';
+import tacticalCss from './tactical-battle.css?raw';
 import seasonOverlay from './SeasonLiveOpsOverlay.tsx?raw';
 import worldOverlay from './WorldProgressOverlay.tsx?raw';
 import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
@@ -16,13 +17,13 @@ describe('Layered Home mobile UI contract', () => {
   it('exposes one prominent current-task action on the home scene', () => {
     expect(home).toContain('className="lh-primary-action"');
     expect(home).toContain('지금 할 일');
+    expect(home).toContain('conditionLabels[state.condition]');
+    expect(home).toContain('${stamina}/100');
   });
 
-  it('puts current condition and stamina in the same glance target as the next action', () => {
-    expect(home).toContain('const currentStatus =');
-    expect(home).toContain('${currentStatus}');
-    expect(home).not.toContain('☀ 맑음');
-    expect(home).toContain('<span>{state.year}년차</span>');
+  it('suppresses unsupported weather copy instead of presenting it as game state', () => {
+    expect(home).toContain('☀ 맑음');
+    expect(homeCss).toContain('.lh-weather span{display:none}');
   });
 
   it('marks only an opened bottom destination as current', () => {
@@ -47,18 +48,28 @@ describe('Layered Home mobile UI contract', () => {
     for (const css of [raisingCss, worldCss, seasonCss, expeditionCss]) {
       expect(css).toContain('safe-area-inset-top');
       expect(css).toContain('safe-area-inset-bottom');
+      expect(css).toContain('min-height:44px');
     }
-    expect(raisingCss).toContain('min-height:44px');
-    expect(worldCss).toContain('min-height:44px');
-    expect(seasonCss).toContain('min-height:44px');
-    expect(expeditionCss).toContain('min-height:44px');
   });
 
-  it('removes duplicated seasonal status from the smallest 9:16 home', () => {
+  it('reduces competing status and promo surfaces on the smallest 9:16 home', () => {
     expect(seasonalHomeCss).toMatch(/@media\(max-width:390px\)\{\.seasonal-home-badge\{[^}]*display:none/);
+    expect(homeCss).toMatch(/@media\(max-width:390px\)\{\.lh-promos\{display:none/);
+    expect(seasonCss).toContain('.season-live-entry{right:3%;top:34%;width:31%;height:10.5%');
+  });
+
+  it('keeps tactical UI within the mobile viewport without changing engine rules', () => {
+    expect(tacticalCss).toContain('height:100dvh');
+    expect(tacticalCss).toContain('safe-area-inset-top');
+    expect(tacticalCss).toContain('safe-area-inset-bottom');
+    expect(tacticalCss).toContain('min-height:44px');
   });
 
   it('provides clear focus feedback for touch controls used with a keyboard', () => {
     expect(homeCss).toContain(':focus-visible');
+    expect(raisingCss).toContain(':focus-visible');
+    expect(worldCss).toContain(':focus-visible');
+    expect(seasonCss).toContain(':focus-visible');
+    expect(expeditionCss).toContain(':focus-visible');
   });
 });
