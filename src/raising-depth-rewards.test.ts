@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, reducer } from './game';
+import { reconcileBondSceneRewards } from './raising-depth-rewards';
 
 describe('raising depth rewards and bond progression', () => {
   it('unlocks a bond scene only when the current action crosses its condition and rewards it once', () => {
@@ -19,15 +20,33 @@ describe('raising depth rewards and bond progression', () => {
     expect(again.rewardedBondScenes.filter(id => id === 'first_trust')).toHaveLength(1);
   });
 
-  it('does not retroactively reward a scene that was already eligible before an unrelated action', () => {
-    const ready = {
-      ...initialState,
-      stats:{ ...initialState.stats, affection:55 },
+  it('catches up an eligible but missing bond scene and reward exactly once', () => {
+    const progress = {
+      affection:55,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:[],
+      rewarded:[],
+      gold:500,
+      gems:2,
     };
-    const next = reducer(ready, { type:'SET_MONTHLY_FOCUS', focus:'balanced' });
-    expect(next.unlockedBondScenes).toEqual([]);
-    expect(next.rewardedBondScenes).toEqual([]);
-    expect(next.gold).toBe(ready.gold);
+    const caughtUp = reconcileBondSceneRewards(progress, progress);
+    expect(caughtUp.changed).toBe(true);
+    expect(caughtUp.newlyUnlocked).toEqual(['first_trust']);
+    expect(caughtUp.unlocked).toEqual(['first_trust']);
+    expect(caughtUp.rewarded).toEqual(['first_trust']);
+    expect(caughtUp.gold).toBe(600);
+
+    const reconciled = reconcileBondSceneRewards(
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+      { ...progress, unlocked:caughtUp.unlocked, rewarded:caughtUp.rewarded, gold:caughtUp.gold },
+    );
+    expect(reconciled.changed).toBe(false);
+    expect(reconciled.gold).toBe(600);
   });
 
   it('grants one growth point every completed month and one extra for an S training month', () => {
