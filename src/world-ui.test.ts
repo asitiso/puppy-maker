@@ -57,11 +57,11 @@ describe('world UI summaries', () => {
     expect(summary.season.tiers.map(item => item.status)).toEqual(['claimed','claimed','locked','locked']);
   });
 
-  it('clamps maxed regional renown and marks a completed contract', () => {
+  it('clamps maxed regional renown and completed contract counters', () => {
     const state: GameState = {
       ...initialState,
       regionalRenown:{ starlight_forest:99, ancient_city:5, wind_lakes:0 },
-      worldContractProgress:{ expedition_clear:3, high_grade:1, featured_region:0 },
+      worldContractProgress:{ expedition_clear:99, high_grade:1, featured_region:0 },
       rewardedWorldContracts:['1-4:expedition_clear'],
     };
     const summary = worldUiSummary(state);
@@ -97,5 +97,22 @@ describe('world UI summaries', () => {
       seasonRewardLabel:'시즌 보상 1·2단계 자동 수령',
       contractLabel:'빛나는 기록 · 월드 이벤트 지원 완료',
     });
+  });
+
+  it('hides no-op world progress from a failed expedition attempt', () => {
+    const state: GameState = {
+      ...initialState,
+      lastWorldProgress:{
+        region:'starlight_forest',
+        renownGain:0,
+        renownLevel:1,
+        seasonPoints:0,
+        eventSeasonPoints:0,
+        eventMaterialBonus:0,
+        seasonTiersClaimed:[],
+        completedContracts:[],
+      },
+    };
+    expect(worldResultSummary(state)).toBeNull();
   });
 });
