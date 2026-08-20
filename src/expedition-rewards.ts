@@ -1,5 +1,5 @@
 import type { GiftItemId } from './adventure';
-import { bossReward, isBossStage } from './expedition-bosses';
+import { bossReward } from './expedition-bosses';
 import type { ExpeditionMaterialId } from './expedition-crafting';
 import { eligibleExpeditionDiscovery } from './expedition-discoveries';
 import {
@@ -25,6 +25,7 @@ export type ExpeditionRewardState = ExpeditionPersistentState & {
 
 export type ExpeditionFinishSummary = {
   accepted: boolean;
+  cleared: boolean;
   stageId: ExpeditionStageId;
   grade: ExpeditionGrade;
   firstClear: boolean;
@@ -74,6 +75,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
   const accepted = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
   const rejectedSummary: ExpeditionFinishSummary = {
     accepted: false,
+    cleared: false,
     stageId,
     grade,
     firstClear: false,
@@ -88,7 +90,11 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
   if (!accepted) return { state, summary: rejectedSummary };
 
   const clearedNow = grade !== 'C';
-  const firstClear = clearedNow && !state.rewardedExpeditionStages.includes(stageId);
+  const wasCleared = isExpeditionStageCleared(state.expeditionRecords[stageId]);
+  const wasStageRewarded = state.rewardedExpeditionStages.includes(stageId);
+  const regionWasComplete = regionNowComplete(stage.region, state.expeditionRecords);
+  const fullWasComplete = allStagesCleared(state.expeditionRecords);
+  const firstClear = clearedNow && !wasCleared && !wasStageRewarded;
   const expeditionRecords = updateExpeditionRecord(state.expeditionRecords, stageId, score, stage.target);
   let next: ExpeditionRewardState = { ...state, expeditionRecords };
   const relicsUnlocked: ExpeditionRelicId[] = [];
@@ -109,19 +115,26 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
 
   let storyUnlocked = false;
   let bossBadge = false;
-  if (firstClear) {
+  if (clearedNow) {
     storyUnlocked = !next.expeditionStoryEntries.includes(stageId);
-    const firstReward = stage.boss ? bossReward(stageId) : { gold: 150, gems: 0 };
-    const affectionBonus = relicModifiers(state.equippedExpeditionRelics).firstClearAffection;
     next = {
       ...next,
-      gold: next.gold + firstReward.gold,
-      gems: next.gems + firstReward.gems,
-      affection: Math.min(100, next.affection + affectionBonus),
       rewardedExpeditionStages: addUnique(next.rewardedExpeditionStages, stageId),
       expeditionStoryEntries: addUnique(next.expeditionStoryEntries, stageId),
     };
-    bossBadge = stage.boss;
+
+    if (firstClear) {
+      const firstReward = stage.boss ? bossReward(stageId) : { gold: 150, gems: 0 };
+      const affectionBonus = relicModifiers(state.equippedExpeditionRelics).firstClearAffection;
+      next = {
+        ...next,
+        gold: next.gold + firstReward.gold,
+        gems: next.gems + firstReward.gems,
+        affection: Math.min(100, next.affection + affectionBonus),
+      };
+      bossBadge = stage.boss;
+    }
+
     if (stageId === 'forest_guardian' && !next.ownedExpeditionRelics.includes('bond_locket')) {
       next = { ...next, ownedExpeditionRelics: [...next.ownedExpeditionRelics, 'bond_locket'] };
       relicsUnlocked.push('bond_locket');
@@ -132,24 +145,26 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
   if (discovery) next = { ...next, expeditionDiscoveries: [...next.expeditionDiscoveries, discovery] };
 
   let regionCompleted: ExpeditionRegionId | null = null;
-  if (clearedNow && regionNowComplete(stage.region, next.expeditionRecords) && !next.rewardedExpeditionRegions.includes(stage.region)) {
-    regionCompleted = stage.region;
+  const regionIsComplete = regionNowComplete(stage.region, next.expeditionRecords);
+  if (clearedNow && regionIsComplete) {
+    const regionWasRewarded = state.rewardedExpeditionRegions.includes(stage.region);
+    if (!regionWasComplete && !regionWasRewarded) regionCompleted = stage.region;
     const relic = regionRelic[stage.region];
     const owned = next.ownedExpeditionRelics.includes(relic) ? next.ownedExpeditionRelics : [...next.ownedExpeditionRelics, relic];
     if (!next.ownedExpeditionRelics.includes(relic)) relicsUnlocked.push(relic);
     next = {
       ...next,
       ownedExpeditionRelics: owned,
-      rewardedExpeditionRegions: [...next.rewardedExpeditionRegions, stage.region],
+      rewardedExpeditionRegions: addUnique(next.rewardedExpeditionRegions, stage.region),
     };
   }
 
   let fullCompleted = false;
   if (allStagesCleared(next.expeditionRecords) && !next.ownedExpeditionRelics.includes('explorer_compass')) {
-    fullCompleted = true;
+    fullCompleted = clearedNow && !fullWasComplete;
     next = {
       ...next,
-      gems: next.gems + 5,
+      gems: next.gems + (fullCompleted ? 5 : 0),
       ownedExpeditionRelics: [...next.ownedExpeditionRelics, 'explorer_compass'],
     };
     relicsUnlocked.push('explorer_compass');
@@ -159,6 +174,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
     state: next,
     summary: {
       accepted: true,
+      cleared: clearedNow,
       stageId,
       grade,
       firstClear,
