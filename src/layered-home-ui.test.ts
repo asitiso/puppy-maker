@@ -27,6 +27,22 @@ describe('Layered Home mobile UI contract', () => {
     expect(homeCss).toContain('.lh-weather span{display:none}');
   });
 
+  it('does not run decorative pointer tilt for touch input', () => {
+    expect(home).toContain("if (event.pointerType !== 'mouse') return;");
+  });
+
+  it('keeps four compact shortcuts at usable touch size without overflowing their lane', () => {
+    expect(homeCss).toContain('@media(max-width:390px){.lh-shortcuts{');
+    expect(homeCss).toContain('width:54%');
+    expect(homeCss).toContain('.lh-shortcuts button{flex:1 1 44px;min-width:44px');
+  });
+
+  it('keeps top and action chrome clear of device safe areas', () => {
+    expect(homeCss).toContain('safe-area-inset-top');
+    expect(homeCss).toContain('safe-area-inset-bottom');
+    expect(homeCss).toContain('.lh-primary-action{bottom:calc(31.5% + env(safe-area-inset-bottom)*.12)');
+  });
+
   it('marks only an opened bottom destination as current', () => {
     expect(home).toContain('useState(-1)');
     expect(home).toContain("aria-current={activeNav === index ? 'page' : undefined}");
@@ -36,6 +52,13 @@ describe('Layered Home mobile UI contract', () => {
   it('keeps panel navigation visible while long content scrolls independently', () => {
     expect(home).toContain('className="lh-panel-header"');
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*overflow-y:auto/);
+    expect(panelCss).toContain('-webkit-overflow-scrolling:touch');
+  });
+
+  it('bounds compact panels to the visual viewport and clamps secondary copy', () => {
+    expect(panelCss).toContain('calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)');
+    expect(panelCss).toContain('-webkit-line-clamp:2');
+    expect(panelCss).toContain('text-overflow:ellipsis');
   });
 
   it('restores focus to the launcher after closing each major hub overlay', () => {
