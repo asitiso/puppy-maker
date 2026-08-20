@@ -57,13 +57,21 @@ export function recordCareerAction(records: CareerRecords, action: CareerAction)
 
 const guardianOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
 
-export function careerTitles(input: { records: CareerRecords; guardianRank: GuardianRankId; openedStories: number }): CareerTitleId[] {
+export type CareerTitleProgress = {
+  records: CareerRecords;
+  guardianRank: GuardianRankId;
+  openedStories: number;
+  openedRaisingStories?: number;
+};
+
+export function careerTitles(input: CareerTitleProgress): CareerTitleId[] {
   const unlocked = new Set<CareerTitleId>();
+  const relevantStories = input.openedRaisingStories ?? input.openedStories;
   if (input.records.trainings >= 10) unlocked.add('steady_trainer');
   if (input.records.bestScore >= 900) unlocked.add('perfect_chaser');
   if (input.records.outings >= 10) unlocked.add('seasoned_explorer');
   if (input.records.gifts >= 5) unlocked.add('warm_giver');
-  if (input.openedStories >= 4) unlocked.add('story_witness');
+  if (relevantStories >= 4) unlocked.add('story_witness');
   if (guardianOrder.indexOf(input.guardianRank) >= guardianOrder.indexOf('veteran')) unlocked.add('veteran_guardian');
   return careerTitleDefinitions.map(item => item.id).filter(id => unlocked.has(id));
 }
