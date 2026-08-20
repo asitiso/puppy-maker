@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import home from './LayeredHome.tsx?raw';
 import homeCss from './layered-home.css?raw';
+import flowCss from './hub-flow-mobile.css?raw';
 import panelCss from './home-panels.css?raw';
 import seasonCss from './season-live-ops.css?raw';
 import seasonalHomeCss from './seasonal-home.css?raw';
@@ -53,9 +54,10 @@ describe('Layered Home mobile UI contract', () => {
   });
 
   it('keeps home-return chrome reachable while long major overlays scroll', () => {
-    expect(raisingCss).toContain('.raising-content header{position:sticky');
-    expect(worldCss).toContain('.world-progress-close{position:sticky');
-    expect(expeditionCss).toContain('.expedition-map header,.expedition-battle header{position:sticky');
+    expect(homeCss).toContain("@import './hub-flow-mobile.css'");
+    expect(flowCss).toContain('.raising-content header{position:sticky');
+    expect(flowCss).toContain('.world-progress-close{position:sticky');
+    expect(flowCss).toContain('.expedition-map header,.expedition-battle header{position:sticky');
     expect(seasonCss).toContain('.season-live-content header{position:sticky');
   });
 
@@ -63,7 +65,7 @@ describe('Layered Home mobile UI contract', () => {
     expect(seasonalHomeCss).toMatch(/@media\(max-width:390px\)\{\.seasonal-home-badge\{[^}]*display:none/);
     expect(homeCss).toMatch(/@media\(max-width:390px\)\{\.lh-promos\{display:none/);
     expect(seasonCss).toContain('.season-live-entry{right:3%;top:34%;width:31%;height:10.5%');
-    expect(worldCss).toContain('.world-progress-card{right:3%;top:49.5%;width:31%;height:10.5%');
+    expect(flowCss).toContain('@media(max-width:390px){.world-progress-card{top:49.5%}}');
   });
 
   it('keeps tactical UI within the mobile viewport without changing engine rules', () => {
