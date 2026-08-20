@@ -30,11 +30,11 @@ describe('story chapter rules', () => {
   it('does not let late-game conditions skip the earlier raising story, but catches up in one evaluation once the start exists', () => {
     const matureProgress = {
       memories: [] as string[],
-      visitedOutings: ['forest', 'village', 'lakeside'] as const,
+      visitedOutings: ['forest', 'village', 'lakeside'],
       affection: 100,
       guardianRank: 'veteran' as const,
       discoveries: 6,
-      expeditionStoryEntries: [] as const,
+      expeditionStoryEntries: [],
       unlockedBondScenes: ['shared_secret'] as const,
       activeCalling: 'caretaker' as const,
     };
