@@ -41,8 +41,9 @@ describe('Layered Home mobile UI contract', () => {
     expect(mobileCss).toContain('.layered-home .lh-goal{width:31%}');
   });
 
-  it('avoids pointer-tilt churn for touch and pen input', () => {
-    expect(home).toContain("if (event.pointerType !== 'mouse') return;");
+  it('keeps tap controls and panel scrolling on deliberate touch gestures', () => {
+    expect(homeCss).toContain('touch-action:manipulation');
+    expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*touch-action:pan-y/);
   });
 
   it('keeps top and action chrome clear of device safe areas', () => {
@@ -68,6 +69,7 @@ describe('Layered Home mobile UI contract', () => {
   });
 
   it('prevents horizontal panel drift while preserving vertical touch scroll', () => {
+    expect(panelCss).toMatch(/\.lh-panel-backdrop\{[^}]*overflow:hidden/);
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*overflow-x:hidden/);
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*touch-action:pan-y/);
     expect(panelCss).toMatch(/\.lh-panel-list button\{[^}]*min-width:0/);
