@@ -22,7 +22,7 @@ export type SeasonShopOffer = { id:SeasonShopOfferId; label:string; cost:number;
 const coreOffers:SeasonShopOffer[] = [
   { id:'gold_pouch', label:'수호자 골드 주머니', cost:20, limit:2, reward:{ gold:300, inventory:{}, materials:{}, keepsake:false } },
   { id:'recovery_bundle', label:'루나 회복 꾸러미', cost:25, limit:1, reward:{ gold:0, inventory:{ herb_tea:1, star_cookie:1 }, materials:{}, keepsake:false } },
-  { id:'expedition_cache', label:'원정 재료 상자', cost:30, limit:1, reward:{ gold:0, inventory:{}, materials:{ star_bark:2, arcane_shard:2, wind_pearl:2 }, keepsake:false } },
+  { id:'expedition_cache', label:'원정·성소 재료 상자', cost:30, limit:1, reward:{ gold:0, inventory:{}, materials:{ star_bark:2, arcane_shard:2, wind_pearl:2 }, keepsake:false } },
   { id:'seasonal_keepsake', label:'계절 기념품', cost:40, limit:1, reward:{ gold:0, inventory:{}, materials:{}, keepsake:true } },
 ];
 
@@ -57,12 +57,22 @@ export function resolveSeasonPurchase(input:{ seasonKey:SeasonJourneyKey; offerI
   const offer = seasonShopOffers(input.seasonKey).find(item => item.id === input.offerId);
   if (!offer) return { accepted:false as const };
   const prefix = `${input.seasonKey}:${offer.id}:`;
-  const used = input.purchaseKeys.filter(key => key.startsWith(prefix)).length;
-  if (used >= offer.limit || input.tokens < offer.cost) return { accepted:false as const };
+  const usedOrdinals = new Set<number>();
+  for (const key of input.purchaseKeys) {
+    if (!key.startsWith(prefix)) continue;
+    const rawOrdinal = key.slice(prefix.length);
+    if (!/^\d+$/.test(rawOrdinal)) continue;
+    const ordinal = Number(rawOrdinal);
+    if (ordinal >= 1 && ordinal <= offer.limit) usedOrdinals.add(ordinal);
+  }
+  if (usedOrdinals.size >= offer.limit || input.tokens < offer.cost) return { accepted:false as const };
+  let nextOrdinal = 1;
+  while (usedOrdinals.has(nextOrdinal) && nextOrdinal <= offer.limit) nextOrdinal += 1;
+  if (nextOrdinal > offer.limit) return { accepted:false as const };
   return {
     accepted:true as const,
     tokens:input.tokens - offer.cost,
-    purchaseKey:seasonPurchaseKey(input.seasonKey,offer.id,used + 1),
+    purchaseKey:seasonPurchaseKey(input.seasonKey,offer.id,nextOrdinal),
     reward:offer.reward,
   };
 }
