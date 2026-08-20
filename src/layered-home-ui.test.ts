@@ -52,10 +52,18 @@ describe('Layered Home mobile UI contract', () => {
     }
   });
 
+  it('keeps home-return chrome reachable while long major overlays scroll', () => {
+    expect(raisingCss).toContain('.raising-content header{position:sticky');
+    expect(worldCss).toContain('.world-progress-close{position:sticky');
+    expect(expeditionCss).toContain('.expedition-map header,.expedition-battle header{position:sticky');
+    expect(seasonCss).toContain('.season-live-content header{position:sticky');
+  });
+
   it('reduces competing status and promo surfaces on the smallest 9:16 home', () => {
     expect(seasonalHomeCss).toMatch(/@media\(max-width:390px\)\{\.seasonal-home-badge\{[^}]*display:none/);
     expect(homeCss).toMatch(/@media\(max-width:390px\)\{\.lh-promos\{display:none/);
     expect(seasonCss).toContain('.season-live-entry{right:3%;top:34%;width:31%;height:10.5%');
+    expect(worldCss).toContain('.world-progress-card{right:3%;top:49.5%;width:31%;height:10.5%');
   });
 
   it('keeps tactical UI within the mobile viewport without changing engine rules', () => {
