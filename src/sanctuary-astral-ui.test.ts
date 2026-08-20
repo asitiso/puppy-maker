@@ -102,4 +102,20 @@ describe('sanctuary astral ui summary', () => {
     expect(summary.ascension.rewards.find(item => item.rank === 'awakened')).toEqual(expect.objectContaining({ claimed:true }));
     expect(summary.ascension.nextReward).toEqual(expect.objectContaining({ rank:'stellar' }));
   });
+
+  it('shows canonical monthly Astral records in Celestial progress', () => {
+    const summary = sanctuaryAstralUiSummary({
+      ...initialState,
+      astralTrialRecords:[
+        { key:'1-1:scholar_trial', grade:'A', power:90 },
+        { key:'1-1:scholar_trial', grade:'S', power:110 },
+        { key:'1-1:wayfarer_trial', grade:'S', power:115 },
+      ],
+    });
+
+    expect(summary.recentRecords).toHaveLength(1);
+    expect(summary.recentRecords[0]).toEqual(expect.objectContaining({ key:'1-1:scholar_trial', grade:'S', power:110 }));
+    expect(summary.ascension.components.trialClears).toBe(1);
+    expect(summary.ascension.components.uniqueSClears).toBe(1);
+  });
 });
