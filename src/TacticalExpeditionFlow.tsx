@@ -38,6 +38,12 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   const [speed,setSpeed] = useState<1|2>(state.tacticalBattleSpeed);
   const stageId = (nextExpeditionStage(state.expeditionRecords) ?? 'forest_path') as ExpeditionStageId;
   const stage = useMemo(()=>expeditionStageDefinitions.find(item=>item.id===stageId)!,[stageId]);
+  const bondLevels = useMemo(()=>({
+    bear:state.tacticalCompanionBonds.bear.level,
+    owl:state.tacticalCompanionBonds.owl.level,
+    wolf:state.tacticalCompanionBonds.wolf.level,
+    cat:state.tacticalCompanionBonds.cat.level,
+  }),[state.tacticalCompanionBonds]);
 
   if (!expeditionOpen) return null;
 
@@ -77,6 +83,8 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         session={session}
         auto={auto}
         speed={speed}
+        party={party}
+        bondLevels={bondLevels}
         onToggleAuto={toggleAuto}
         onToggleSpeed={toggleSpeed}
         onSessionChange={setSession}
