@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { careerTitles, emptyCareerRecords, recordCareerAction } from './career-records';
+import { careerTitleDefinitions, careerTitles, emptyCareerRecords, recordCareerAction } from './career-records';
 
 describe('career records and titles', () => {
   it('starts with zero lifetime records', () => {
@@ -39,5 +39,9 @@ describe('career records and titles', () => {
       openedStories: 9,
       openedRaisingStories: 4,
     })).toContain('story_witness');
+  });
+
+  it('labels story witness as a raising-story achievement', () => {
+    expect(careerTitleDefinitions.find(title => title.id === 'story_witness')?.description).toContain('육성 스토리');
   });
 });
