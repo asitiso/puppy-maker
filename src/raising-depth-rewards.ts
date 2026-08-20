@@ -36,7 +36,7 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
   const afterEligible = eligible(current);
   const newlyUnlocked = afterEligible.filter(id => !current.unlocked.includes(id));
   const unlocked = bondSceneIds.filter(id => current.unlocked.includes(id) || newlyUnlocked.includes(id));
-  const newlyRewarded = afterEligible.filter(id => unlocked.includes(id) && !current.rewarded.includes(id));
+  const newlyRewarded = unlocked.filter(id => !current.rewarded.includes(id));
   if (!newlyUnlocked.length && !newlyRewarded.length) return {
     changed:false,
     unlocked:current.unlocked,
