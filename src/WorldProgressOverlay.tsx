@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameState } from './game';
 import { worldUiSummary } from './world-ui';
 
 export default function WorldProgressOverlay({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
   const summary = worldUiSummary(state);
 
+  useEffect(() => {
+    if (wasOpen.current && !open) launcherRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
   if (!open) {
-    return <button className="world-progress-card" onClick={() => setOpen(true)} aria-label={`${summary.homeCard.title}, ${summary.homeCard.seasonLabel}, ${summary.homeCard.contractLabel}`}>
+    return <button ref={launcherRef} className="world-progress-card" onClick={() => setOpen(true)} aria-label={`${summary.homeCard.title}, ${summary.homeCard.seasonLabel}, ${summary.homeCard.contractLabel}`}>
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
       <span>
         <small>{summary.homeCard.eyebrow}</small>
