@@ -70,13 +70,16 @@ export function advanceWeeklyDirectives(
     const before = Math.max(0,Math.floor(next[directive.id] ?? 0));
     const after = matches(directive,event) ? Math.min(directive.target,before + 1) : before;
     next[directive.id] = after;
-    if (before < directive.target && after >= directive.target) {
-      const rewardKey = key ? `${key}:${directive.id}` : null;
-      if (!rewardKey || !rewardedKeys.includes(rewardKey)) {
-        completed.push(directive);
-        journeyPoints += directive.reward.journeyPoints;
-        tokens += directive.reward.tokens;
-      }
+    const reached = after >= directive.target;
+    const justCompleted = before < directive.target && reached;
+    const rewardKey = key ? `${key}:${directive.id}` : null;
+    const shouldReward = key
+      ? reached && !rewardedKeys.includes(rewardKey!)
+      : justCompleted;
+    if (shouldReward) {
+      completed.push(directive);
+      journeyPoints += directive.reward.journeyPoints;
+      tokens += directive.reward.tokens;
     }
   }
 
