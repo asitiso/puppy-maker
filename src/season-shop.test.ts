@@ -6,7 +6,7 @@ describe('season shop', () => {
     expect(seasonShopOffers('1-spring').map(offer => [offer.id, offer.cost, offer.limit])).toEqual([
       ['gold_pouch',20,2],
       ['recovery_bundle',25,1],
-      ['expedition_cache',30,1],
+      ['expedition_cache',30,6],
       ['seasonal_keepsake',40,1],
       ['spring_garden_pack',18,1],
     ]);
@@ -77,7 +77,7 @@ describe('season shop', () => {
     }));
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'expedition_cache', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
       accepted:true,
-      reward:{ gold:0, inventory:{}, materials:{ star_bark:2, arcane_shard:2, wind_pearl:2 }, keepsake:false },
+      reward:{ gold:0, inventory:{}, materials:{ star_bark:3, arcane_shard:3, wind_pearl:3 }, keepsake:false },
     }));
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'seasonal_keepsake', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
       accepted:true,
