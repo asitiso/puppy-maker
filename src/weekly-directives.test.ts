@@ -42,4 +42,36 @@ describe('weekly directives', () => {
     const repeat = advanceWeeklyDirectives(directives, progress, { kind:target.counter === 'high_grade' ? 'expedition' : target.counter, grade:'S' }, rewarded, '1-4-1');
     expect(repeat.completed.map(item => item.id)).not.toContain(target.id);
   });
+
+  it('recovers a completed directive when its weekly reward key is missing', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const progress = Object.fromEntries(directives.map(item => [item.id, item.id === target.id ? target.target : 0]));
+    const result = advanceWeeklyDirectives(
+      directives,
+      progress,
+      { kind:'training', grade:'B' },
+      [],
+      '1-4-1',
+    );
+
+    expect(result.completed.map(item => item.id)).toContain(target.id);
+    expect(result.reward).toEqual(target.reward);
+  });
+
+  it('does not recover a completed directive after its weekly reward key exists', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const progress = Object.fromEntries(directives.map(item => [item.id, item.id === target.id ? target.target : 0]));
+    const result = advanceWeeklyDirectives(
+      directives,
+      progress,
+      { kind:'training', grade:'B' },
+      [`1-4-1:${target.id}`],
+      '1-4-1',
+    );
+
+    expect(result.completed.map(item => item.id)).not.toContain(target.id);
+    expect(result.reward).toEqual({ journeyPoints:0, tokens:0 });
+  });
 });
