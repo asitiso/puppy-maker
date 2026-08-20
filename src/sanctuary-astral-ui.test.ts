@@ -17,6 +17,36 @@ describe('sanctuary astral ui summary', () => {
     expect(summary.trial.canChallenge).toBe(false);
   });
 
+  it('shows an unlocked fallback trial instead of a locked featured trial', () => {
+    const summary = sanctuaryAstralUiSummary({
+      ...initialState,
+      year:1,
+      month:2,
+      sanctuaryConstellations:['dawn_compass','scholar_star'] as typeof initialState.sanctuaryConstellations,
+      claimedAstralTrials:[],
+    });
+
+    expect(summary.trial.id).toBe('scholar_trial');
+    expect(summary.trial.unlocked).toBe(true);
+    expect(summary.trial.claimed).toBe(false);
+    expect(summary.trial.canChallenge).toBe(true);
+  });
+
+  it('shows the month as claimed after a fallback clear even if the featured trial unlocks later', () => {
+    const summary = sanctuaryAstralUiSummary({
+      ...initialState,
+      year:1,
+      month:2,
+      sanctuaryConstellations:['dawn_compass','scholar_star','wayfarer_star'] as typeof initialState.sanctuaryConstellations,
+      claimedAstralTrials:['1-2:scholar_trial'],
+    });
+
+    expect(summary.trial.id).toBe('wayfarer_trial');
+    expect(summary.trial.unlocked).toBe(true);
+    expect(summary.trial.claimed).toBe(true);
+    expect(summary.trial.canChallenge).toBe(false);
+  });
+
   it('shows power, grade preview and completed monthly trial state', () => {
     const summary = sanctuaryAstralUiSummary({
       ...initialState,
