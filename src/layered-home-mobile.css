@@ -16,6 +16,11 @@
   .layered-home .lh-dialogue{bottom:calc(17.2% + env(safe-area-inset-bottom)*.35)}
 }
 
+@media(max-width:340px){
+  .layered-home .lh-shortcuts{width:58%;gap:.5%}
+  .layered-home .lh-goal{width:31%}
+}
+
 @media(max-height:650px){
   .layered-home .lh-goal p:nth-of-type(3){display:none}
   .layered-home .lh-goal>div{inset:9% 9%}
