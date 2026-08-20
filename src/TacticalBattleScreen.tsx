@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import type {BattleResult,BattleSession} from './tactical-battle';
 import type {CompanionId} from './tactical-companions';
 import {resolveTacticalAction} from './tactical-engine';
-import {chooseTacticalEngineAction} from './tactical-ai';
+import {chooseAutoCombinationUltimate,chooseTacticalEngineAction} from './tactical-ai';
 import {buildCombinationUltimateViews,buildTacticalBattleView} from './tactical-ui';
 import {resolveCombinationUltimate} from './tactical-ultimate';
 import type {TacticalActionId} from './tactical-actions';
@@ -22,7 +22,10 @@ export type TacticalBattleScreenProps={
   onExit?:()=>void;
 };
 
-export function TacticalBattleScreen({session,auto,speed,party=[],bondLevels={},onToggleAuto,onToggleSpeed,onSessionChange,onComplete,onRetry,onExit}:TacticalBattleScreenProps){
+const EMPTY_PARTY:readonly CompanionId[]=[];
+const EMPTY_BOND_LEVELS:Partial<Record<CompanionId,number>>={};
+
+export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondLevels=EMPTY_BOND_LEVELS,onToggleAuto,onToggleSpeed,onSessionChange,onComplete,onRetry,onExit}:TacticalBattleScreenProps){
   const [current,setCurrent]=useState(session);
   const [selectedAction,setSelectedAction]=useState<TacticalActionId|null>(null);
   const [selectedUltimate,setSelectedUltimate]=useState<CompanionId|null>(null);
@@ -43,11 +46,22 @@ export function TacticalBattleScreen({session,auto,speed,party=[],bondLevels={},
   useEffect(()=>{
     if(v.result){if(completedRef.current!==v.result){completedRef.current=v.result;onComplete?.(v.result,current)}return;}
     if(!activeRaw||(activeRaw.side==='ally'&&!auto))return;
+    if(activeRaw.side==='ally'&&auto){
+      const ultimateMove=chooseAutoCombinationUltimate(current,party,bondLevels);
+      if(ultimateMove){
+        const next=resolveCombinationUltimate(current,ultimateMove);
+        if(next!==current){
+          const label=ultimateViews.find(view=>view.companionId===ultimateMove.companionId)?.label??ultimateMove.companionId;
+          const timer=window.setTimeout(()=>commit(next,`${activeRaw.id} · ${label} → ${ultimateMove.targetId}`),speed===2?90:180);
+          return()=>window.clearTimeout(timer);
+        }
+      }
+    }
     const move=chooseTacticalEngineAction(current,activeRaw.id,current.seed+current.round+current.acted.length);
     if(!move)return;
     const next=resolveTacticalAction(current,move);
     if(next!==current){const timer=window.setTimeout(()=>commit(next,`${activeRaw.id} · ${move.actionId.toUpperCase()}`),speed===2?90:180);return()=>window.clearTimeout(timer)}
-  },[activeRaw,auto,current,onComplete,speed,v.result]);
+  },[activeRaw,auto,bondLevels,current,onComplete,party,speed,ultimateViews,v.result]);
 
   const chooseAction=(id:TacticalActionId)=>{
     if(!activeRaw||activeRaw.side!=='ally'||auto||v.result)return;
