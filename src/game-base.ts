@@ -672,7 +672,10 @@ export function reducer(state: GameState, action: Action): GameState {
   }
 
   if (action.type === 'CRAFT_EXPEDITION_RECIPE') {
-    const result = applyCrafting(action.recipe, state.expeditionMaterials);
+    const result = applyCrafting(action.recipe, state.expeditionMaterials, {
+      craftingMilestones: state.craftingMilestones,
+      ownedRelics: state.ownedExpeditionRelics,
+    });
     if (!result.crafted || !result.milestone) return state;
     const inventory = result.gift ? { ...state.inventory, [result.gift]: state.inventory[result.gift] + 1 } : state.inventory;
     const ownedExpeditionRelics = result.relic && !state.ownedExpeditionRelics.includes(result.relic)

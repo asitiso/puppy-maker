@@ -93,7 +93,7 @@ export function worldUiSummary(state:GameState): WorldUiSummary {
   });
 
   const contracts = monthlyWorldContracts(state.year, state.month, event).map(contract => {
-    const progress = Math.max(0, Math.floor(state.worldContractProgress[contract.id] ?? 0));
+    const progress = Math.min(contract.target, Math.max(0, Math.floor(state.worldContractProgress[contract.id] ?? 0)));
     const rewardKey = worldContractRewardKey(state.year, state.month, contract.id);
     const rewardLabel = [contract.reward.gold ? `${contract.reward.gold}G` : '', contract.reward.gems ? `보석 ${contract.reward.gems}` : ''].filter(Boolean).join(' · ');
     return {
@@ -154,6 +154,12 @@ export type WorldResultSummary = {
 export function worldResultSummary(state:GameState): WorldResultSummary|null {
   const progress = state.lastWorldProgress;
   if (!progress) return null;
+  const meaningful = progress.renownGain > 0
+    || progress.seasonPoints > 0
+    || progress.eventMaterialBonus > 0
+    || progress.seasonTiersClaimed.length > 0
+    || progress.completedContracts.length > 0;
+  if (!meaningful) return null;
   const contracts = monthlyWorldContracts(state.year, state.month, worldEvent(state.year, state.month));
   const completedLabels = progress.completedContracts
     .map(id => contracts.find(contract => contract.id === id)?.label)

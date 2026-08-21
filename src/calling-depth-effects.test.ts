@@ -17,11 +17,24 @@ describe('Calling depth effects', () => {
   });
 
   it('detects specialist Calling mastery from expedition actions', () => {
-    expect(specialistMasteryCalling('vanguard', { attack:2, dodge:0, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBe('vanguard');
-    expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:1 }, { grade:'S', discovery:null, materialReward:2 })).toBe('arcanist');
-    expect(specialistMasteryCalling('caretaker', { attack:0, dodge:1, charge:0 }, { grade:'B', discovery:null, materialReward:1 })).toBe('caretaker');
-    expect(specialistMasteryCalling('pathfinder', { attack:1, dodge:0, charge:0 }, { grade:'A', discovery:'forest_echo', materialReward:0 })).toBe('pathfinder');
-    expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBeNull();
+    expect(specialistMasteryCalling('vanguard', { attack:2, dodge:0, charge:0 }, { stageId:'forest_path', grade:'A', discovery:null, materialReward:1 })).toBe('vanguard');
+    expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:1 }, { stageId:'forest_path', grade:'S', discovery:null, materialReward:2 })).toBe('arcanist');
+    expect(specialistMasteryCalling('caretaker', { attack:0, dodge:1, charge:0 }, { stageId:'forest_path', grade:'B', discovery:null, materialReward:1 })).toBe('caretaker');
+    expect(specialistMasteryCalling('pathfinder', { attack:1, dodge:0, charge:0 }, { stageId:'forest_path', grade:'A', discovery:'forest_echo', materialReward:0 })).toBe('pathfinder');
+    expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { stageId:'forest_path', grade:'A', discovery:null, materialReward:1 })).toBeNull();
+  });
+
+  it('lets Pathfinder mastery progress on successful boss clears and re-clears', () => {
+    expect(specialistMasteryCalling(
+      'pathfinder',
+      { attack:1, dodge:1, charge:1 },
+      { stageId:'forest_guardian', grade:'B', discovery:null, materialReward:0 },
+    )).toBe('pathfinder');
+    expect(specialistMasteryCalling(
+      'pathfinder',
+      { attack:1, dodge:1, charge:1 },
+      { stageId:'forest_guardian', grade:'C', discovery:null, materialReward:0 },
+    )).toBeNull();
   });
 
   it('applies Pathfinder signature rewards without duplicating the existing supply trait', () => {

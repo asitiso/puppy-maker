@@ -325,11 +325,11 @@ export function reducer(state:GameState, action:Action): GameState {
 
   if (action.type === 'FINISH_EXPEDITION_STAGE') {
     const baseNext = Base.reducer(state, action);
-    if (baseNext === state || !baseNext.lastExpeditionResult?.accepted) return state;
+    const summary = baseNext.lastExpeditionResult;
+    if (baseNext === state || !summary?.accepted) return state;
+    if (!summary.cleared) return preservePersistentState(state, baseNext);
     const stage = expeditionStageDefinitions.find(item => item.id === action.stageId);
     if (!stage) return preservePersistentState(state, baseNext);
-
-    const summary = baseNext.lastExpeditionResult;
     const firstBossClear = Boolean(stage.boss && summary.firstClear);
     const renownGain = renownGainForExpedition(summary.grade, firstBossClear);
     const nextRegionalRenown = {
