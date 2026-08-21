@@ -1,5 +1,5 @@
 import type { BattleSession, TacticalUnit } from './tactical-battle';
-import { isBattleFinished, orderedTimeline } from './tactical-battle';
+import { isBattleFinished, orderedTimeline, repairTacticalHealth } from './tactical-battle';
 import { tacticalAction, validTacticalTargets, type TacticalActionId } from './tactical-actions';
 import { advanceTacticalStatuses, tacticalStatusPower } from './tactical-status';
 
@@ -9,8 +9,8 @@ const mpGainByAction:Record<TacticalActionId,number> = { attack:2, skill:3, supp
 const TACTICAL_AP_CAP=3;
 const TACTICAL_MP_CAP=10;
 export function nextTacticalActor(session:BattleSession):string|null { if(isBattleFinished(session))return null;return session.timeline.find(id => { const unit=session.units.find(entry=>entry.id===id); return Boolean(unit&&Number.isFinite(unit.hp)&&unit.hp>0&&!session.acted.includes(id)); }) ?? null; }
-function applyDamage(target:TacticalUnit,rawDamage:number):TacticalUnit { const damage=Math.max(0,Math.floor(rawDamage)),shield=Number.isFinite(target.shield)?Math.max(0,Math.floor(target.shield)):0,blocked=Math.min(shield,damage); return {...target,shield:shield-blocked,hp:Math.max(0,target.hp-(damage-blocked))}; }
-function applySupport(target:TacticalUnit,power:number):TacticalUnit { return {...target,hp:Math.min(target.maxHp,target.hp+Math.max(0,Math.floor(power)))}; }
+function applyDamage(target:TacticalUnit,rawDamage:number):TacticalUnit { const safe=repairTacticalHealth(target),damage=Math.max(0,Math.floor(rawDamage)),shield=Number.isFinite(safe.shield)?Math.max(0,Math.floor(safe.shield)):0,blocked=Math.min(shield,damage); return {...safe,shield:shield-blocked,hp:Math.max(0,safe.hp-(damage-blocked))}; }
+function applySupport(target:TacticalUnit,power:number):TacticalUnit { const safe=repairTacticalHealth(target);return {...safe,hp:Math.min(safe.maxHp,safe.hp+Math.max(0,Math.floor(power)))}; }
 function actionPower(actor:PoweredTacticalUnit,actionId:TacticalActionId,basePower:number):number { let raw=basePower;if(actionId==='attack'&&Number.isFinite(actor.attackPower))raw=Math.max(0,Math.floor(actor.attackPower!));else if(actionId==='skill'&&Number.isFinite(actor.skillPower))raw=Math.max(0,Math.floor(actor.skillPower!));else if(actionId==='support'&&Number.isFinite(actor.supportPower))raw=Math.max(0,Math.floor(actor.supportPower!));else if(actionId==='special'){const strongest=Math.max(actor.attackPower??0,actor.skillPower??0,basePower);raw=Math.max(basePower,Math.floor(strongest*1.2));}return tacticalStatusPower(actor,raw); }
 function repairResourceUnit(unit:TacticalUnit):TacticalUnit {
  const rawAp=Number.isFinite(unit.ap)?Math.max(0,Math.floor(unit.ap)):0;
