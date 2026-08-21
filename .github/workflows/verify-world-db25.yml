@@ -1,0 +1,142 @@
+name: Verify World on core-compatible baseline
+
+on:
+  push:
+    branches:
+      - verify/world-db25-preflight
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  verify-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Apply minimal shared World wiring patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          game_base = Path('src/game-base.ts')
+          text = game_base.read_text()
+          old = "const result = applyCrafting(action.recipe, state.expeditionMaterials);"
+          new = """const result = applyCrafting(action.recipe, state.expeditionMaterials, {
+                craftingMilestones: state.craftingMilestones,
+                ownedRelics: state.ownedExpeditionRelics,
+              });"""
+          if old in text:
+              text = text.replace(old, new, 1)
+              game_base.write_text(text)
+          elif new not in text:
+              raise SystemExit('game-base crafting wiring anchor not found')
+
+          game_live = Path('src/game-live-base.ts')
+          text = game_live.read_text()
+          old = """    const baseNext = Base.reducer(state, action);
+              if (baseNext === state || !baseNext.lastExpeditionResult?.accepted) return state;
+              const stage = expeditionStageDefinitions.find(item => item.id === action.stageId);
+              if (!stage) return preservePersistentState(state, baseNext);
+
+              const summary = baseNext.lastExpeditionResult;"""
+          new = """    const baseNext = Base.reducer(state, action);
+              const summary = baseNext.lastExpeditionResult;
+              if (baseNext === state || !summary?.accepted) return state;
+              if (!summary.cleared) return preservePersistentState(state, baseNext);
+              const stage = expeditionStageDefinitions.find(item => item.id === action.stageId);
+              if (!stage) return preservePersistentState(state, baseNext);"""
+          if old in text:
+              text = text.replace(old, new, 1)
+              game_live.write_text(text)
+          elif new not in text:
+              raise SystemExit('game-live cleared wiring anchor not found')
+          PY
+          git diff -- src/game-base.ts src/game-live-base.ts
+
+      - name: Targeted World/core/save tests
+        id: targeted
+        continue-on-error: true
+        run: >-
+          npx vitest run
+          src/core-compat-recovery.test.ts
+          src/game.test.ts
+          src/save-schema.test.ts
+          src/save-resilience.test.ts
+          src/expedition-progression.test.ts
+          src/adventure-expedition-loop.test.ts
+          src/expedition-world-loop.test.ts
+          src/expedition-state.test.ts
+          src/expedition-crafting.test.ts
+          src/expedition-rewards.test.ts
+          src/world-contracts.test.ts
+          src/world-ui.test.ts
+          src/world-integration-wiring.test.ts
+
+      - name: World suite
+        id: world
+        continue-on-error: true
+        shell: bash
+        run: |
+          mapfile -t tests < <(find src -maxdepth 1 -type f \( \
+            -name '*expedition*.test.ts' -o \
+            -name 'world*.test.ts' -o \
+            -name 'calling-depth-effects.test.ts' \
+          \) | sort)
+          printf 'World suite files (%s):\n' "${#tests[@]}"
+          printf '  %s\n' "${tests[@]}"
+          test "${#tests[@]}" -gt 0
+          npx vitest run "${tests[@]}"
+
+      - name: Full test suite
+        id: full
+        continue-on-error: true
+        run: npm run test
+
+      - name: TypeScript project check
+        id: typecheck
+        continue-on-error: true
+        run: npx tsc -b --pretty false
+
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Enforce all gates
+        if: always()
+        shell: bash
+        run: |
+          echo "targeted=${{ steps.targeted.outcome }}"
+          echo "world=${{ steps.world.outcome }}"
+          echo "full=${{ steps.full.outcome }}"
+          echo "typecheck=${{ steps.typecheck.outcome }}"
+          echo "build=${{ steps.build.outcome }}"
+          test "${{ steps.targeted.outcome }}" = success
+          test "${{ steps.world.outcome }}" = success
+          test "${{ steps.full.outcome }}" = success
+          test "${{ steps.typecheck.outcome }}" = success
+          test "${{ steps.build.outcome }}" = success
+
+      - name: Commit verified shared wiring patch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/verify/world-db25-preflight'
+        shell: bash
+        run: |
+          if git diff --quiet -- src/game-base.ts src/game-live-base.ts; then
+            echo 'World shared wiring already committed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/game-base.ts src/game-live-base.ts
+          git commit -m 'fix: wire World cleared and crafting persistence'
+          git push origin HEAD:verify/world-db25-preflight
