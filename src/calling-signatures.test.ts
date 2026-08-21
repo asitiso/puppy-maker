@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { callingSignatureDefinitions, callingSignatures } from './calling-signatures';
+import { growthTraitDefinitions } from './growth-traits';
 
 describe('calling signature abilities', () => {
   it('defines two signatures for each calling with increasing mastery requirements', () => {
     expect(callingSignatureDefinitions).toHaveLength(8);
+    expect(new Set(callingSignatureDefinitions.map(item => item.id)).size).toBe(callingSignatureDefinitions.length);
     for (const calling of ['vanguard','arcanist','caretaker','pathfinder'] as const) {
       const signatures = callingSignatureDefinitions.filter(item => item.calling === calling);
       expect(signatures).toHaveLength(2);
       expect(signatures.map(item => item.requiredMasteryLevel)).toEqual([2,4]);
+      expect(signatures.map(item => growthTraitDefinitions.find(trait => trait.id === item.requiredTrait)?.calling)).toEqual([calling, calling]);
+      expect(signatures.map(item => growthTraitDefinitions.find(trait => trait.id === item.requiredTrait)?.tier)).toEqual([2,4]);
     }
   });
 
