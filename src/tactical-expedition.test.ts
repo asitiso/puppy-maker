@@ -7,4 +7,9 @@ describe('tactical expedition integration',()=>{
  it('returns deterministic victory rewards',()=>expect(resolveTacticalExpeditionReward('forest-1','victory')).toEqual(resolveTacticalExpeditionReward('forest-1','victory')));
  it('never grants expedition score or coins on defeat',()=>expect(resolveTacticalExpeditionReward('forest-1','defeat')).toMatchObject({coins:0,expeditionScore:0}));
  it('never advances expedition stage score on tactical defeat',()=>{expect(tacticalExpeditionFinishScore(120,'defeat')).toBe(0);expect(tacticalExpeditionFinishScore(120,'victory')).toBeGreaterThan(120)});
+ it('sanitizes non-finite or negative expedition finish targets',()=>{
+   expect(tacticalExpeditionFinishScore(Number.NaN,'victory')).toBe(0);
+   expect(tacticalExpeditionFinishScore(Number.POSITIVE_INFINITY,'victory')).toBe(0);
+   expect(tacticalExpeditionFinishScore(-100,'victory')).toBe(0);
+ });
 });
