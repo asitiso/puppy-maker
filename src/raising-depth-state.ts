@@ -83,7 +83,7 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
     activeCalling,
     callingHistory:hydrateCallingHistory(source.callingHistory, activeCalling),
     callingMastery:Object.fromEntries(guardianCallingIds.map(id => [id, int(masterySource[id])])) as CallingMasteryState,
-    callingLastSwitchKey:hydrateSwitchKey(source.callingLastSwitchKey),
+    callingLastSwitchKey:activeCalling ? hydrateSwitchKey(source.callingLastSwitchKey) : null,
     growthPoints:int(source.growthPoints),
     purchasedTraits,
     unlockedBondScenes,
