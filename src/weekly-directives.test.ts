@@ -50,6 +50,7 @@ describe('weekly directives', () => {
       { kind:'training' as const, grade:'B' as const },
       { kind:'outing' as const, grade:'B' as const },
       { kind:'gift' as const, grade:'B' as const },
+      { kind:'expedition' as const, grade:'A' as const },
       { kind:'expedition' as const, grade:'S' as const },
     ];
     for (let year = 1; year <= 3; year += 1) {
@@ -119,6 +120,35 @@ describe('weekly directives', () => {
     const rewarded = [`1-4-1:${target.id}`];
     const repeat = advanceWeeklyDirectives(directives, progress, { kind:target.counter === 'high_grade' ? 'expedition' : target.counter, grade:'S' }, rewarded, '1-4-1');
     expect(repeat.completed.map(item => item.id)).not.toContain(target.id);
+  });
+
+  it('lets the same directive reward again in a later week', () => {
+    const previous = weeklyDirectives(1,1,1);
+    const current = weeklyDirectives(1,1,2);
+    const target = current.find(item => previous.some(old => old.id === item.id));
+    expect(target).toBeDefined();
+    const progress = Object.fromEntries(current.map(item => [item.id, item.id === target!.id ? target!.target : 0]));
+    const result = advanceWeeklyDirectives(
+      current,
+      progress,
+      { kind:'gift', grade:'B' },
+      [`1-1-1:${target!.id}`],
+      '1-1-2',
+    );
+    expect(result.completed.map(item => item.id)).toContain(target!.id);
+    expect(result.reward).toEqual(target!.reward);
+  });
+
+  it('does not reward a completed directive twice in the same week', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const event = { kind:target.counter === 'high_grade' ? 'expedition' as const : target.counter, grade:'S' as const };
+    const progress = Object.fromEntries(directives.map(item => [item.id, item.id === target.id ? target.target : 0]));
+    const first = advanceWeeklyDirectives(directives,progress,event,[],'1-4-1');
+    const second = advanceWeeklyDirectives(directives,first.progress,event,[`1-4-1:${target.id}`],'1-4-1');
+    expect(first.reward).toEqual(target.reward);
+    expect(second.completed).toEqual([]);
+    expect(second.reward).toEqual({ journeyPoints:0, tokens:0 });
   });
 
   it('recovers a completed directive when its weekly reward key is missing', () => {
