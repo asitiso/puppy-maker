@@ -92,6 +92,23 @@ describe('expedition combat', () => {
     expect(overflow).toEqual(capped);
   });
 
+  it('cannot bypass the action cap when a reloaded battle has a stale actionCount', () => {
+    const staleReloadedBattle = {
+      ...startExpeditionBattle('forest_path'),
+      score: 500,
+      actionCount: 0,
+      actionKinds: { attack: 2, dodge: 1, charge: 0 },
+    };
+
+    const overflow = applyExpeditionAction(staleReloadedBattle, 'charge', 1, {
+      ...base,
+      magic: 999,
+      magicMastery: 99,
+    });
+
+    expect(overflow).toEqual(staleReloadedBattle);
+  });
+
   it('keeps the final boss gated from a low-growth build', () => {
     const result = runActions('lake_tempest', 'attack', {
       ...base,
