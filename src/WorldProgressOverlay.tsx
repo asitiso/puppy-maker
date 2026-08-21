@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState } from './game';
+import { trapModalTab } from './modal-focus';
 import { worldUiSummary } from './world-ui';
 
 export default function WorldProgressOverlay({ state }: { state: GameState }) {
@@ -36,7 +37,7 @@ export default function WorldProgressOverlay({ state }: { state: GameState }) {
   }
 
   return <div className="world-progress-backdrop" role="dialog" aria-modal="true" aria-label="월드 진행">
-    <section className="world-progress-panel">
+    <section className="world-progress-panel" onKeyDown={trapModalTab}>
       <img className="world-progress-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="world-progress-content">
         <button autoFocus className="world-progress-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
