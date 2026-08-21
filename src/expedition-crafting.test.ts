@@ -43,6 +43,46 @@ describe('expedition crafting', () => {
     })).toBe(false);
   });
 
+  it('blocks guardian thread recrafting from the milestone even if relic ownership is stale', () => {
+    const materials = { star_bark: 3, arcane_shard: 3, wind_pearl: 3 };
+    const result = applyCrafting('guardian_thread_recipe', materials, {
+      craftingMilestones:['crafted_guardian_thread'],
+      ownedRelics:[],
+    });
+
+    expect(result.crafted).toBe(false);
+    expect(result.materials).toEqual(materials);
+    expect(result.relic).toBeNull();
+    expect(result.milestone).toBeNull();
+  });
+
+  it('blocks guardian thread recrafting from relic ownership even if the milestone is stale', () => {
+    const materials = { star_bark: 3, arcane_shard: 3, wind_pearl: 3 };
+    const result = applyCrafting('guardian_thread_recipe', materials, {
+      craftingMilestones:[],
+      ownedRelics:['guardian_thread'],
+    });
+
+    expect(result.crafted).toBe(false);
+    expect(result.materials).toEqual(materials);
+    expect(result.relic).toBeNull();
+    expect(result.milestone).toBeNull();
+  });
+
+  it('fails guardian thread crafting atomically when any one material is short', () => {
+    const materials = { star_bark: 3, arcane_shard: 2, wind_pearl: 3 };
+    const result = applyCrafting('guardian_thread_recipe', materials);
+
+    expect(result).toEqual({
+      crafted: false,
+      materials,
+      gift: null,
+      relic: null,
+      milestone: null,
+    });
+    expect(materials).toEqual({ star_bark: 3, arcane_shard: 2, wind_pearl: 3 });
+  });
+
   it('keeps gift recipes repeatable after their milestone was recorded', () => {
     const materials = { star_bark: 4, arcane_shard: 0, wind_pearl: 0 };
     expect(canCraft('star_cookie_recipe', materials, { craftingMilestones:['crafted_star_cookie'] })).toBe(true);
