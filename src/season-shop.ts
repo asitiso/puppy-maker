@@ -45,7 +45,7 @@ export function seasonPurchaseKey(seasonKey:SeasonJourneyKey, offerId:SeasonShop
 }
 
 export function isValidSeasonPurchaseKey(value:string):boolean {
-  const match = /^(\d+)-(spring|summer|autumn|winter):([a-z_]+):(\d+)$/.exec(value);
+  const match = /^([1-9]\d*)-(spring|summer|autumn|winter):([a-z_]+):([1-9]\d*)$/.exec(value);
   if (!match || Number(match[1]) < 1) return false;
   const seasonKey = `${match[1]}-${match[2]}` as SeasonJourneyKey;
   const offer = seasonShopOffers(seasonKey).find(item => item.id === match[3]);
