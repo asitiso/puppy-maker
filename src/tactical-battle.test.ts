@@ -27,6 +27,13 @@ describe('tactical battle domain', () => {
     expect(() => createBattleSession(allies,enemies,17)).toThrow('non-empty unit ids');
   });
 
+  it('rejects non-string runtime unit ids without crashing while validating them', () => {
+    const corrupted = { ...unit('runa','ally',12),id:42 } as unknown as TacticalUnit;
+    const allies = [corrupted,unit('bear','ally',6),unit('owl','ally',8)];
+    const enemies = [unit('wolf_e','enemy',10),unit('tree_e','enemy',4),unit('bat_e','enemy',14)];
+    expect(() => createBattleSession(allies,enemies,17)).toThrow('non-empty unit ids');
+  });
+
   it('rejects party-side mismatches before they can corrupt win/loss state', () => {
     const allies = [unit('runa','ally',12), unit('bear','enemy',6), unit('owl','ally',8)];
     const enemies = [unit('wolf_e','enemy',10), unit('tree_e','enemy',4), unit('bat_e','enemy',14)];
