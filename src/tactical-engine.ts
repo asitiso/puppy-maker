@@ -15,13 +15,13 @@ export function completeTacticalTurn(session:BattleSession,actorId:string,units:
 export function skipTacticalTurnIfNoPlayableAction(session:BattleSession,actorId:string,hand:readonly TacticalActionId[]):BattleSession {
  if(isBattleFinished(session)||nextTacticalActor(session)!==actorId)return session;
  const actor=session.units.find(unit=>unit.id===actorId);if(!actor||actor.hp<=0)return session;
- const hasPlayableAction=hand.some(actionId=>{const action=tacticalAction(actionId);return actor.ap>=action.apCost&&actor.mp>=action.mpCost&&validTacticalTargets(session,actorId,actionId).length>0;});
+ const hasPlayableAction=hand.some(actionId=>{const action=tacticalAction(actionId);return Boolean(action&&actor.ap>=action.apCost&&actor.mp>=action.mpCost&&validTacticalTargets(session,actorId,actionId).length>0);});
  return hasPlayableAction?session:completeTacticalTurn(session,actorId,session.units);
 }
 export function resolveTacticalAction(session:BattleSession,input:TacticalActionInput):BattleSession {
  if(isBattleFinished(session))return session;if(nextTacticalActor(session)!==input.actorId)return session;
  const actor=session.units.find(unit=>unit.id===input.actorId) as PoweredTacticalUnit|undefined;if(!actor||actor.hp<=0)return session;
- const action=tacticalAction(input.actionId);if(actor.ap<action.apCost||actor.mp<action.mpCost)return session;if(!validTacticalTargets(session,input.actorId,input.actionId).includes(input.targetId))return session;
+ const action=tacticalAction(input.actionId);if(!action||actor.ap<action.apCost||actor.mp<action.mpCost)return session;if(!validTacticalTargets(session,input.actorId,input.actionId).includes(input.targetId))return session;
  const power=actionPower(actor,input.actionId,action.power);
  const units=session.units.map(unit=>{let next:TacticalUnit=unit;if(unit.id===input.targetId)next=input.actionId==='support'?applySupport(next,power):applyDamage(next,power);if(unit.id===input.actorId)next={...next,ap:next.ap-action.apCost,mp:Math.min(next.maxMp,next.mp-action.mpCost+mpGainByAction[input.actionId])};return next;});
  return completeTacticalTurn(session,input.actorId,units);
