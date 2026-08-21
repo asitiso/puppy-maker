@@ -21,6 +21,18 @@ describe('tactical battle domain', () => {
     expect(() => createBattleSession(allies,enemies,17)).toThrow('unique unit ids');
   });
 
+  it('rejects blank unit ids that would be mistaken for no active actor', () => {
+    const allies = [unit(' ','ally',12), unit('bear','ally',6), unit('owl','ally',8)];
+    const enemies = [unit('wolf_e','enemy',10), unit('tree_e','enemy',4), unit('bat_e','enemy',14)];
+    expect(() => createBattleSession(allies,enemies,17)).toThrow('non-empty unit ids');
+  });
+
+  it('rejects party-side mismatches before they can corrupt win/loss state', () => {
+    const allies = [unit('runa','ally',12), unit('bear','enemy',6), unit('owl','ally',8)];
+    const enemies = [unit('wolf_e','enemy',10), unit('tree_e','enemy',4), unit('bat_e','enemy',14)];
+    expect(() => createBattleSession(allies,enemies,17)).toThrow('party sides');
+  });
+
   it('breaks equal-agility ties by stable unit id', () => {
     expect(orderedTimeline([unit('z','ally',10),unit('a','enemy',10),unit('m','ally',11)])).toEqual(['m','a','z']);
   });
