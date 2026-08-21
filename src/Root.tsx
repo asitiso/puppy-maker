@@ -8,11 +8,15 @@ import RaisingIdentityOverlay from './RaisingIdentityOverlay';
 import SanctuaryOverlay from './SanctuaryOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
 import SeasonLiveOpsOverlay from './SeasonLiveOpsOverlay';
+import TacticalExpeditionFlow from './TacticalExpeditionFlow';
 import WorldProgressOverlay from './WorldProgressOverlay';
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
 import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
+import type { BattleResult } from './tactical-battle';
+import type { CompanionId } from './tactical-companions';
+import type { TacticalEncounterId } from './tactical-encounters';
 import {
   initialState,
   type AchievementId,
@@ -71,6 +75,9 @@ export default function Root() {
   const [equipExpedition, setEquipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
   const [unequipExpedition, setUnequipExpedition] = useState<((relic: ExpeditionRelicId) => void) | null>(null);
   const [craftExpedition, setCraftExpedition] = useState<((recipe: ExpeditionCraftingRecipeId) => void) | null>(null);
+  const [setTacticalParty, setSetTacticalParty] = useState<((companions:[CompanionId,CompanionId])=>void)|null>(null);
+  const [setTacticalPreferences, setSetTacticalPreferences] = useState<((auto:boolean,speed:1|2)=>void)|null>(null);
+  const [completeTacticalBattle, setCompleteTacticalBattle] = useState<((encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void)|null>(null);
   const [expeditionOpen, setExpeditionOpen] = useState(false);
   const [raisingOpen, setRaisingOpen] = useState(false);
   const [seasonLiveOpen, setSeasonLiveOpen] = useState(false);
@@ -98,6 +105,9 @@ export default function Root() {
   const captureExpeditionEquip = useCallback((next: (relic: ExpeditionRelicId) => void) => setEquipExpedition(() => next), []);
   const captureExpeditionUnequip = useCallback((next: (relic: ExpeditionRelicId) => void) => setUnequipExpedition(() => next), []);
   const captureExpeditionCraft = useCallback((next: (recipe: ExpeditionCraftingRecipeId) => void) => setCraftExpedition(() => next), []);
+  const captureTacticalParty = useCallback((next:(companions:[CompanionId,CompanionId])=>void)=>setSetTacticalParty(()=>next),[]);
+  const captureTacticalPreferences = useCallback((next:(auto:boolean,speed:1|2)=>void)=>setSetTacticalPreferences(()=>next),[]);
+  const captureTacticalComplete = useCallback((next:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void)=>setCompleteTacticalBattle(()=>next),[]);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -141,6 +151,9 @@ export default function Root() {
       onSanctuaryMasterworkReady={captureSanctuaryMasterwork}
       onAstralRiftClearReady={captureAstralRiftClear}
       onAstralRiftRelicReady={captureAstralRiftRelic}
+      onTacticalPartyReady={captureTacticalParty}
+      onTacticalPreferencesReady={captureTacticalPreferences}
+      onTacticalCompleteReady={captureTacticalComplete}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -198,6 +211,15 @@ export default function Root() {
         onUnequip={relic => unequipExpedition?.(relic)}
         onCraft={recipe => craftExpedition?.(recipe)}
       />
+      {setTacticalParty && setTacticalPreferences && completeTacticalBattle && finishExpedition && <TacticalExpeditionFlow
+        state={gameState}
+        expeditionOpen={expeditionOpen}
+        onSetParty={setTacticalParty}
+        onSetPreferences={setTacticalPreferences}
+        onComplete={completeTacticalBattle}
+        onExpeditionFinish={finishExpedition}
+        onExitToHome={() => setExpeditionOpen(false)}
+      />}
     </>}
   </>;
 }

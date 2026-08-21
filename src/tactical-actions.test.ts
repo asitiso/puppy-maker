@@ -24,6 +24,16 @@ describe('tactical action rules', () => {
     expect(availableTacticalActions(unit('runa','ally','front',3,10)).map(action => action.id)).toEqual(['attack','skill','support','special']);
   });
 
+  it('rejects non-finite runtime battle resources instead of treating them as playable', () => {
+    const corruptedAp = unit('runa','ally','front');
+    corruptedAp.ap = Number.NaN;
+    expect(availableTacticalActions(corruptedAp)).toEqual([]);
+
+    const corruptedMp = session();
+    corruptedMp.units = corruptedMp.units.map(entry => entry.id === 'runa' ? { ...entry,mp:Number.POSITIVE_INFINITY } : entry);
+    expect(validTacticalTargets(corruptedMp,'runa','special')).toEqual([]);
+  });
+
   it('protects enemy back-row units from direct attack while a front enemy lives', () => {
     expect(validTacticalTargets(session(),'runa','attack')).toEqual(['tree','wolf']);
     const exposed = session();

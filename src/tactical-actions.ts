@@ -18,21 +18,25 @@ export const tacticalActions:TacticalActionDefinition[] = [
   { id:'special', label:'SPECIAL', apCost:0, mpCost:10, target:'enemy_any', power:50 },
 ];
 
-export function tacticalAction(id:TacticalActionId) {
-  return tacticalActions.find(action => action.id === id)!;
+function hasFiniteActionState(unit:TacticalUnit) {
+  return Number.isFinite(unit.hp) && Number.isFinite(unit.ap) && Number.isFinite(unit.mp);
+}
+
+export function tacticalAction(id:TacticalActionId):TacticalActionDefinition|null {
+  return tacticalActions.find(action => action.id === id) ?? null;
 }
 
 export function availableTacticalActions(unit:TacticalUnit) {
-  if (unit.hp <= 0) return [];
+  if (!hasFiniteActionState(unit) || unit.hp <= 0) return [];
   return tacticalActions.filter(action => unit.ap >= action.apCost && unit.mp >= action.mpCost);
 }
 
 export function validTacticalTargets(session:BattleSession,actorId:string,actionId:TacticalActionId):string[] {
   const actor = session.units.find(unit => unit.id === actorId);
-  if (!actor || actor.hp <= 0) return [];
+  if (!actor || !hasFiniteActionState(actor) || actor.hp <= 0) return [];
   const action = tacticalAction(actionId);
-  if (actor.ap < action.apCost || actor.mp < action.mpCost) return [];
-  const living = session.units.filter(unit => unit.hp > 0);
+  if (!action || actor.ap < action.apCost || actor.mp < action.mpCost) return [];
+  const living = session.units.filter(unit => Number.isFinite(unit.hp) && unit.hp > 0);
   if (action.target === 'ally') {
     return living.filter(unit => unit.side === actor.side).map(unit => unit.id).sort();
   }

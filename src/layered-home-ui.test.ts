@@ -8,6 +8,7 @@ import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
 import expeditionOverlay from './GuardianExpeditionOverlay.tsx?raw';
 
 const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const globalCss = css('./styles.css');
 const homeCss = css('./layered-home.css');
 const mobileCss = css('./layered-home-mobile.css');
 const flowCss = css('./hub-flow-mobile.css');
@@ -30,6 +31,16 @@ describe('Layered Home mobile UI contract', () => {
   it('suppresses unsupported weather copy instead of presenting it as game state', () => {
     expect(home).toContain('☀ 맑음');
     expect(homeCss).toContain('.lh-weather span{display:none}');
+  });
+
+  it('uses a dynamic viewport override without removing the existing vh fallback', () => {
+    expect(globalCss).toContain('.page{min-height:100vh');
+    expect(globalCss).toContain('.game-shell{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.78vw)');
+    expect(homeCss).toContain('@supports(height:100dvh){.page{min-height:100dvh}.game-shell{width:min(100vw,56.25dvh);height:min(100dvh,177.78vw)}}');
+  });
+
+  it('keeps long goal copy clipped inside the card at 430px-class widths', () => {
+    expect(homeCss).toContain('.lh-goal p{font-size:clamp(8px,1.98vw,12px);margin:4.5% 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}');
   });
 
   it('keeps four compact shortcuts at usable touch size without overflowing their lane', () => {
@@ -64,6 +75,15 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).toContain('useState(-1)');
     expect(home).toContain("aria-current={activeNav === index ? 'page' : undefined}");
     expect(home).toContain('setActiveNav(-1);');
+  });
+
+  it('supports a keyboard round trip for home panels', () => {
+    expect(home).toContain('panelLauncherRef');
+    expect(home).toContain('panelCloseRef');
+    expect(home).toContain("event.key !== 'Escape'");
+    expect(home).toContain('panelCloseRef.current?.focus()');
+    expect(home).toContain('panelLauncherRef.current?.focus()');
+    expect(home).toContain('ref={panelCloseRef}');
   });
 
   it('keeps panel navigation visible while long content scrolls independently', () => {
