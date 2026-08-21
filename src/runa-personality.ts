@@ -27,9 +27,13 @@ const outcomeByArchetype: Record<RunaPersonalityArchetype, PersonalityOutcome> =
   balanced: { dialogue: 'adaptive', event: 'open_choice', reward: 'flexible', career: null },
 };
 
+function safeTendency(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+}
+
 export function personalityArchetype(personality: Personality): RunaPersonalityArchetype {
   const ranked = personalityKeys
-    .map(key => ({ key, value: Number.isFinite(personality[key]) ? personality[key] : 0 }))
+    .map(key => ({ key, value:safeTendency(personality[key]) }))
     .sort((a, b) => b.value - a.value);
   if (ranked.length < 2 || ranked[0].value - ranked[1].value < 5) return 'balanced';
   return archetypeByKey[ranked[0].key];
