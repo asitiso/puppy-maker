@@ -57,7 +57,7 @@ function hydrateNumberMap(raw:unknown, keyPattern:RegExp) {
 
 function hydrateWeeklyProgress(raw:unknown, weekKey:string|null):Record<string,number> {
   const hydrated = hydrateNumberMap(raw,directiveIdPattern);
-  if (!weekKey) return hydrated;
+  if (!weekKey) return {};
   const [year,month,week] = weekKey.split('-').map(Number);
   const assigned = new Set(weeklyDirectives(year,month,week).map(directive => directive.id));
   return Object.fromEntries(Object.entries(hydrated).filter(([id]) => assigned.has(id as never)));
