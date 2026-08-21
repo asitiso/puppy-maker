@@ -1,0 +1,41 @@
+name: Verify World after Season integration
+
+on:
+  push:
+    branches:
+      - verify/world-after-season
+  pull_request:
+
+jobs:
+  verify-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Targeted World/core/save
+        run: >-
+          npx vitest run
+          src/core-compat-recovery.test.ts
+          src/game.test.ts
+          src/save-schema.test.ts
+          src/save-resilience.test.ts
+          src/expedition-progression.test.ts
+          src/adventure-expedition-loop.test.ts
+          src/expedition-world-loop.test.ts
+          src/expedition-state.test.ts
+          src/expedition-crafting.test.ts
+          src/expedition-rewards.test.ts
+          src/calling-depth-effects.test.ts
+          src/world-contracts.test.ts
+          src/world-ui.test.ts
+          src/world-integration-wiring.test.ts
+      - name: Full test
+        run: npm run test
+      - name: TypeScript
+        run: npx tsc -b --pretty false
+      - name: Production build
+        run: npm run build
