@@ -57,4 +57,22 @@ describe('live ops persistent state', () => {
     expect(hydrated.weeklyDirectiveProgress).toEqual({ steady_training:2 });
     expect(hydrated.rewardedWeeklyDirectives).toEqual(['1-4-2:steady_training']);
   });
+
+  it('rejects impossible season year zero across scores, tokens, tiers, and history', () => {
+    const hydrated = hydrateLiveOpsState({
+      seasonJourneyScores:{ '0-spring':999, '1-spring':88 },
+      claimedSeasonJourneyTiers:['0-spring:10','1-spring:1'],
+      seasonTokenBalances:{ '0-spring':999, '1-spring':12 },
+      seasonJourneyHistory:[
+        { key:'0-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+        { key:'1-spring', score:88, tiersCompleted:1, tokensEarned:12 },
+      ],
+    });
+    expect(hydrated.seasonJourneyScores).toEqual({ '1-spring':88 });
+    expect(hydrated.claimedSeasonJourneyTiers).toEqual(['1-spring:1']);
+    expect(hydrated.seasonTokenBalances).toEqual({ '1-spring':12 });
+    expect(hydrated.seasonJourneyHistory).toEqual([
+      { key:'1-spring', score:88, tiersCompleted:1, tokensEarned:12 },
+    ]);
+  });
 });
