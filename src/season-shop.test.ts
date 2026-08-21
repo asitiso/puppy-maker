@@ -29,6 +29,14 @@ describe('season shop', () => {
     });
   });
 
+  it('canonicalizes fractional token balances before spending so reload cannot change the ledger', () => {
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:20.9, purchaseKeys:[] })).toEqual(expect.objectContaining({
+      accepted:true,
+      tokens:0,
+    }));
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:19.9, purchaseKeys:[] })).toEqual({ accepted:false });
+  });
+
   it('uses the first free purchase ordinal when purchase history is sparse', () => {
     const secondKey = seasonPurchaseKey('1-spring','gold_pouch',2);
     const result = resolveSeasonPurchase({
