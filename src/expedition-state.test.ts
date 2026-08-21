@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isExpeditionStageUnlocked } from './expedition-regions';
 import { emptyExpeditionPersistentState, hydrateExpeditionPersistentState } from './expedition-state';
 
 describe('expedition persistent state repair', () => {
@@ -91,5 +92,15 @@ describe('expedition persistent state repair', () => {
     expect(state.expeditionDiscoveries).toEqual(['forest_path_discovery']);
     expect(state.expeditionStoryEntries).toEqual(['forest_path']);
     expect(state.craftingMilestones).toEqual(['crafted_star_cookie']);
+  });
+
+  it('uses a paid stage reward as durable clear evidence so old saves cannot soft-lock progression', () => {
+    const state = hydrateExpeditionPersistentState({
+      expeditionRecords: {},
+      rewardedExpeditionStages: ['forest_path'],
+    });
+
+    expect(state.expeditionRecords.forest_path.cleared).toBe(true);
+    expect(isExpeditionStageUnlocked('forest_glade', state.expeditionRecords)).toBe(true);
   });
 });
