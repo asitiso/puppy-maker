@@ -78,7 +78,8 @@ export function resolveCombinationUltimate(session:BattleSession,input:Combinati
   const units = session.units.map(unit => {
     let next:TacticalUnit = unit;
     if (input.companionId === 'bear' && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) {
-      next = { ...next,shield:next.shield+ultimate.power };
+      const shield = Number.isFinite(next.shield) ? Math.max(0,Math.floor(next.shield)) : 0;
+      next = { ...next,shield:shield+ultimate.power };
     } else if (input.companionId === 'owl' && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) {
       next = addTacticalStatus({ ...next,hp:Math.min(next.maxHp,next.hp+ultimate.power) },'regen',2);
     } else if (input.companionId === 'wolf' && unit.id === input.targetId) {
