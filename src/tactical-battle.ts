@@ -53,6 +53,8 @@ export function orderedTimeline(units:TacticalUnit[]) {
 
 export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[], seed:number):BattleSession {
   if (allies.length !== 3 || enemies.length !== 3) throw new Error('Tactical battle requires exactly 3 allies and 3 enemies.');
+  const ids=[...allies,...enemies].map(unit=>unit.id);
+  if (new Set(ids).size !== ids.length) throw new Error('Tactical battle requires unique unit ids.');
   const units = [...allies,...enemies].map(unit => {
     const maxHp=Math.max(1,finiteInteger(unit.maxHp,1));
     const maxAp=Math.max(0,Math.min(TACTICAL_AP_CAP,finiteInteger(unit.maxAp,0)));
