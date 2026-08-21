@@ -43,15 +43,14 @@ export function resolveCard(session:BattleSession, actorId:string, cardId:string
   return {
     ...session,
     units:session.units.map(unit => {
-      if (unit.id === actorId) {
-        if (card.id === 'focus_magic') return { ...unit, ap:Math.min(unit.maxAp,unit.ap + 2), mp:Math.min(unit.maxMp,unit.mp + 2) };
-        return { ...unit, ap:unit.ap-card.apCost, mp:unit.mp-card.mpCost };
-      }
-      if (unit.id !== targetId) return unit;
-      if (card.id === 'healing_light') return { ...unit, hp:Math.min(unit.maxHp,unit.hp+amount) };
-      if (card.id === 'guardian_veil') return { ...unit, shield:unit.shield+amount };
-      const absorbed = Math.min(unit.shield,amount);
-      return { ...unit, shield:unit.shield-absorbed, hp:Math.max(0,unit.hp-(amount-absorbed)) };
+      if (unit.id !== actorId && unit.id !== targetId) return unit;
+      if (unit.id === actorId && card.id === 'focus_magic') return { ...unit, ap:Math.min(unit.maxAp,unit.ap + 2), mp:Math.min(unit.maxMp,unit.mp + 2) };
+      const next = unit.id === actorId ? { ...unit, ap:unit.ap-card.apCost, mp:unit.mp-card.mpCost } : unit;
+      if (unit.id !== targetId) return next;
+      if (card.id === 'healing_light') return { ...next, hp:Math.min(next.maxHp,next.hp+amount) };
+      if (card.id === 'guardian_veil') return { ...next, shield:next.shield+amount };
+      const absorbed = Math.min(next.shield,amount);
+      return { ...next, shield:next.shield-absorbed, hp:Math.max(0,next.hp-(amount-absorbed)) };
     }),
   };
 }

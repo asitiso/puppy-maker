@@ -21,6 +21,13 @@ describe('tactical turn engine', () => {
     expect(resolveTacticalAction(session,{ actorId:'runa', actionId:'attack', targetId:'wolf' })).toBe(session);
   });
 
+  it('rejects a stale or dead target without spending the turn', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, hp:0 } : entry);
+    expect(resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' })).toBe(session);
+    expect(session.acted).toEqual([]);
+  });
+
   it('spends AP, gains MP and lets shield absorb damage first', () => {
     const session = battle();
     session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, shield:8 } : entry);
@@ -40,6 +47,14 @@ describe('tactical turn engine', () => {
     const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'support', targetId:'bat' });
     expect(next.units.find(entry => entry.id === 'bat')?.hp).toBe(74);
     expect(next.acted).toEqual(['bat']);
+  });
+
+  it('becomes terminal immediately after a lethal action', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.side === 'ally' ? { ...entry, hp:entry.id === 'runa' ? 10 : 0 } : entry);
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
+    expect(next.units.find(entry => entry.id === 'runa')?.hp).toBe(0);
+    expect(nextTacticalActor(next)).toBeNull();
   });
 
   it('starts the next round after every living unit acts and refreshes AP', () => {
