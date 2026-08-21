@@ -67,6 +67,22 @@ describe('world contracts', () => {
     expect(result.reward).toEqual({ gold:0, gems:0 });
   });
 
+  it('repairs malformed stored counters before advancing a successful clear', () => {
+    const result = advanceWorldContracts({
+      year:1,
+      month:1,
+      event:worldEvent(1, 1),
+      progress:{ expedition_clear:Number.NaN, high_grade:-5, featured_region:Number.POSITIVE_INFINITY },
+      rewardedKeys:[],
+      region:'starlight_forest',
+      grade:'A',
+    });
+
+    expect(result.progress).toEqual({ expedition_clear:1, high_grade:1, featured_region:1 });
+    expect(result.reward).toEqual({ gold:0, gems:0 });
+    expect(result.newlyCompleted).toEqual([]);
+  });
+
   it('auto-pays newly completed contracts once and caps completed counters', () => {
     const result = advanceWorldContracts({
       year:1,
