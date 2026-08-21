@@ -87,4 +87,15 @@ describe('Calling depth effects', () => {
     expect(result.stressDelta).toBe(4);
     expect(result.applied).toContain('heart_anchor');
   });
+
+  it('does not leak non-finite fatigue or stress deltas from expedition Calling rewards', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:null, traits:[], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+      fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
+    });
+
+    expect(result.fatigueDelta).toBe(0);
+    expect(result.stressDelta).toBe(0);
+  });
 });
