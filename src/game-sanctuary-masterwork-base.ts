@@ -66,8 +66,8 @@ const prestigeRanks:{ id:Exclude<SanctuaryPrestigeRankId,'outpost'>; threshold:n
 ];
 const seasonLegacyNodeIds = seasonLegacyNodes.map(node => node.id);
 const specializationByFacility = new Map(sanctuarySpecializationDefinitions.map(item => [`${item.facility}:${item.id}`,item]));
-const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
-const rewardKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(training_focus|field_patrol|warm_bond|guardian_sortie)$/;
+const weekKeyPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]$/;
+const rewardKeyPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]:(training_focus|field_patrol|warm_bond|guardian_sortie)$/;
 const isRecord = (value:unknown):value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const safeInt = (value:unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : 0;
 

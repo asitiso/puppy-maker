@@ -92,4 +92,18 @@ describe('sanctuary astral trials', () => {
     expect(result.accepted).toBe(false);
     expect(result.reason).toBe('already_claimed');
   });
+
+  it('canonicalizes non-finite calendar inputs before creating monthly claim keys', () => {
+    const result = resolveAstralTrial({
+      year:Number.NaN,
+      month:Number.POSITIVE_INFINITY,
+      power:90,
+      constellations:['dawn_compass','scholar_star'],
+      claimedKeys:[],
+    });
+    expect(result).toEqual(expect.objectContaining({
+      accepted:true,
+      key:'1-1:scholar_trial',
+    }));
+  });
 });
