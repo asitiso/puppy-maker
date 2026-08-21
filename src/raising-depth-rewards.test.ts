@@ -108,7 +108,7 @@ describe('raising depth rewards and bond progression', () => {
     expect(caughtUp.gold).toBe(600);
   });
 
-  it('restores a missing unlock from an existing reward claim without paying twice', () => {
+  it('restores a missing unlock from an existing reward claim without treating it as a new scene or paying twice', () => {
     const progress = {
       affection:0,
       outings:0,
@@ -126,6 +126,7 @@ describe('raising depth rewards and bond progression', () => {
     expect(repaired.changed).toBe(true);
     expect(repaired.unlocked).toEqual(['first_trust']);
     expect(repaired.rewarded).toEqual(['first_trust']);
+    expect(repaired.newlyUnlocked).toEqual([]);
     expect(repaired.gold).toBe(500);
     expect(repaired.gems).toBe(2);
   });
