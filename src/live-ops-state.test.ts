@@ -51,7 +51,7 @@ describe('live ops persistent state', () => {
     expect(hydrated.weeklyDirectiveProgress).toEqual({ guardian_sortie:1 });
   });
 
-  it('rejects impossible weekly years and retired directive ids during hydration', () => {
+  it('rejects impossible weekly years and clears progress that has no valid week owner', () => {
     const hydrated = hydrateLiveOpsState({
       weeklyDirectiveKey:'0-4-2',
       weeklyDirectiveProgress:{ steady_training:2, retired_directive:99 },
@@ -62,7 +62,7 @@ describe('live ops persistent state', () => {
       ],
     });
     expect(hydrated.weeklyDirectiveKey).toBeNull();
-    expect(hydrated.weeklyDirectiveProgress).toEqual({ steady_training:2 });
+    expect(hydrated.weeklyDirectiveProgress).toEqual({});
     expect(hydrated.rewardedWeeklyDirectives).toEqual(['1-4-2:steady_training']);
   });
 
