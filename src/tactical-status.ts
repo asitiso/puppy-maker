@@ -1,7 +1,7 @@
 import type { TacticalStatusId, TacticalUnit } from './tactical-battle';
 
 export function addTacticalStatus(unit:TacticalUnit,id:TacticalStatusId,turns:number):TacticalUnit {
-  const duration = Math.max(1,Math.floor(turns));
+  const duration = Math.max(1,Math.floor(Number.isFinite(turns) ? turns : 1));
   const statuses = [...(unit.statuses ?? []).filter(status => status.id !== id),{ id,turns:duration }];
   return {
     ...unit,
@@ -11,10 +11,11 @@ export function addTacticalStatus(unit:TacticalUnit,id:TacticalStatusId,turns:nu
 }
 
 export function tacticalStatusPower(unit:TacticalUnit,rawPower:number):number {
+  const safePower = Number.isFinite(rawPower) ? rawPower : 0;
   let multiplier = 1;
   if ((unit.statuses ?? []).some(status => status.id === 'focus')) multiplier += .2;
   if ((unit.statuses ?? []).some(status => status.id === 'break')) multiplier -= .2;
-  return Math.max(0,Math.floor(rawPower * multiplier));
+  return Math.max(0,Math.floor(safePower * multiplier));
 }
 
 export function advanceTacticalStatuses(unit:TacticalUnit):TacticalUnit {
