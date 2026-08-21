@@ -40,6 +40,11 @@ describe('regional renown', () => {
     expect(regionalRenownLevel(999)).toBe(5);
   });
 
+  it('fails high on positive overflow instead of regressing max renown to level one', () => {
+    expect(regionalRenownLevel(Number.POSITIVE_INFINITY)).toBe(5);
+    expect(regionalRenownLevel(Number.NEGATIVE_INFINITY)).toBe(1);
+  });
+
   it('defines one-time rewards for levels two through five', () => {
     expect(regionalRenownReward(1)).toEqual({ gold:0, gems:0 });
     expect(regionalRenownReward(2)).toEqual({ gold:100, gems:0 });
