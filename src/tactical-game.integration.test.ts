@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { hydrateGameState, initialState, reducer } from './game';
-import { closeTacticalFlow } from './TacticalExpeditionFlow';
+import { closeTacticalFlow, tacticalBattleStageForRetry } from './TacticalExpeditionFlow';
 
 describe('tactical game persistence integration', () => {
   it('hydrates old saves with safe tactical defaults and sanitizes party/bonds', () => {
@@ -49,6 +49,11 @@ describe('tactical game persistence integration', () => {
     expect(lost.claimedTacticalFirstClears).toEqual([]);
     expect(lost.tacticalCompanionBonds.wolf.xp).toBeGreaterThan(0);
     expect(lost.tacticalCompanionBonds.cat.xp).toBeGreaterThan(0);
+  });
+
+  it('keeps retry bound to the completed battle stage after expedition progression advances', () => {
+    expect(tacticalBattleStageForRetry('forest_path','river_gate')).toBe('forest_path');
+    expect(tacticalBattleStageForRetry(null,'river_gate')).toBe('river_gate');
   });
 
   it('closes the tactical battle state and outer expedition before returning home', () => {

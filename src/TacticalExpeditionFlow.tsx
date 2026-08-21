@@ -32,6 +32,10 @@ function seedFor(state:GameState,stageId:ExpeditionStageId) {
   return hash;
 }
 
+export function tacticalBattleStageForRetry(activeStageId:ExpeditionStageId|null,currentStageId:ExpeditionStageId) {
+  return activeStageId ?? currentStageId;
+}
+
 export function closeTacticalFlow(clearSession:()=>void,closeBattle:()=>void,onExitToHome:()=>void) {
   clearSession();
   closeBattle();
@@ -41,11 +45,14 @@ export function closeTacticalFlow(clearSession:()=>void,closeBattle:()=>void,onE
 export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,onSetPreferences,onComplete,onExpeditionFinish,onExitToHome}:TacticalExpeditionFlowProps) {
   const [open,setOpen] = useState(false);
   const [session,setSession] = useState<BattleSession|null>(null);
+  const [battleStageId,setBattleStageId] = useState<ExpeditionStageId|null>(null);
   const [party,setParty] = useState<[CompanionId,CompanionId]>(()=>tacticalPartyForGame(state));
   const [auto,setAuto] = useState(state.tacticalAutoBattle);
   const [speed,setSpeed] = useState<1|2>(state.tacticalBattleSpeed);
   const stageId = (nextExpeditionStage(state.expeditionRecords) ?? 'forest_path') as ExpeditionStageId;
   const stage = useMemo(()=>expeditionStageDefinitions.find(item=>item.id===stageId)!,[stageId]);
+  const activeStageId = tacticalBattleStageForRetry(battleStageId,stageId);
+  const activeStage = useMemo(()=>expeditionStageDefinitions.find(item=>item.id===activeStageId)!,[activeStageId]);
   const bondLevels = useMemo(()=>({
     bear:state.tacticalCompanionBonds.bear.level,
     owl:state.tacticalCompanionBonds.owl.level,
@@ -62,6 +69,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
 
   const start = () => {
     onSetParty(party);
+    setBattleStageId(stageId);
     setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)));
     setOpen(true);
   };
@@ -79,10 +87,10 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
 
   const complete = (result:BattleResult,finalSession:BattleSession) => {
     const metrics = tacticalCompletionMetrics(finalSession);
-    onComplete(tacticalEncounterForExpeditionStage(stageId),result,metrics.rounds,metrics.survivingAllies,metrics.damageTaken,party);
+    onComplete(tacticalEncounterForExpeditionStage(activeStageId),result,metrics.rounds,metrics.survivingAllies,metrics.damageTaken,party);
     const actionKinds:ExpeditionActionCounts = { attack:metrics.rounds,dodge:0,charge:0 };
-    const expeditionScore = tacticalExpeditionFinishScore(stage.target,result);
-    onExpeditionFinish(stageId,expeditionScore,result==='victory'?2:6,result==='victory'?1:5,actionKinds);
+    const expeditionScore = tacticalExpeditionFinishScore(activeStage.target,result);
+    onExpeditionFinish(activeStageId,expeditionScore,result==='victory'?2:6,result==='victory'?1:5,actionKinds);
   };
 
   if (open && session) {
@@ -96,8 +104,8 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         onToggleAuto={toggleAuto}
         onToggleSpeed={toggleSpeed}
         onComplete={complete}
-        onRetry={()=>setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+1))}
-        onExit={()=>closeTacticalFlow(()=>setSession(null),()=>setOpen(false),onExitToHome)}
+        onRetry={()=>setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},activeStageId,seedFor(state,activeStageId)+1))}
+        onExit={()=>closeTacticalFlow(()=>{setSession(null);setBattleStageId(null)},()=>setOpen(false),onExitToHome)}
       />
     </div>;
   }
