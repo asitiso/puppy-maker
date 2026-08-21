@@ -37,6 +37,10 @@ export const growthTraitDefinitions: GrowthTraitDefinition[] = [
 
 export const growthTraitIds = growthTraitDefinitions.map(item => item.id);
 
+function canonicalGrowthPoints(points:number): number {
+  return Number.isFinite(points) ? Math.max(0, Math.floor(points)) : 0;
+}
+
 export function canonicalGrowthTraits(purchased: readonly GrowthTraitId[]): GrowthTraitId[] {
   const requested = new Set(purchased);
   const accepted = new Set<GrowthTraitId>();
@@ -51,15 +55,18 @@ export function canonicalGrowthTraits(purchased: readonly GrowthTraitId[]): Grow
 export function canPurchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number): boolean {
   if (purchased.includes(id)) return false;
   const definition = growthTraitDefinitions.find(item => item.id === id);
-  if (!definition || points < definition.cost) return false;
+  const validPoints = canonicalGrowthPoints(points);
+  if (!definition || !Number.isFinite(points) || validPoints < definition.cost) return false;
   const validPurchased = canonicalGrowthTraits(purchased);
   return definition.prerequisite === null || validPurchased.includes(definition.prerequisite);
 }
 
 export function purchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number) {
-  if (!canPurchaseGrowthTrait(id, purchased, points)) return { purchased:false, traits:purchased, points };
+  const validPurchased = canonicalGrowthTraits(purchased);
+  const validPoints = canonicalGrowthPoints(points);
+  if (!canPurchaseGrowthTrait(id, validPurchased, points)) return { purchased:false, traits:validPurchased, points:validPoints };
   const definition = growthTraitDefinitions.find(item => item.id === id)!;
-  return { purchased:true, traits:[...canonicalGrowthTraits(purchased), id], points:points - definition.cost };
+  return { purchased:true, traits:[...validPurchased, id], points:validPoints - definition.cost };
 }
 
 export function activeCallingTraits(calling: GuardianCallingId | null, purchased: GrowthTraitId[]): GrowthTraitId[] {
