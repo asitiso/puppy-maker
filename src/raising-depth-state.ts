@@ -41,6 +41,19 @@ function uniqueAllowed<T extends string>(raw: unknown, allowed: readonly T[]): T
   return allowed.filter(id => raw.includes(id));
 }
 
+function hydrateCallingHistory(raw:unknown, activeCalling:GuardianCallingId | null): GuardianCallingId[] {
+  const history:GuardianCallingId[] = [];
+  if (Array.isArray(raw)) {
+    for (const value of raw) {
+      if (typeof value !== 'string' || !guardianCallingIds.includes(value as GuardianCallingId)) continue;
+      const id = value as GuardianCallingId;
+      if (!history.includes(id)) history.push(id);
+    }
+  }
+  if (activeCalling && !history.includes(activeCalling)) history.push(activeCalling);
+  return history;
+}
+
 function hydrateSwitchKey(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const match = /^(\d+)-(\d+)$/.exec(raw);
@@ -68,7 +81,7 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
   const purchasedTraits = canonicalGrowthTraits(uniqueAllowed(source.purchasedTraits, growthTraitIds));
   return {
     activeCalling,
-    callingHistory:uniqueAllowed(source.callingHistory, guardianCallingIds),
+    callingHistory:hydrateCallingHistory(source.callingHistory, activeCalling),
     callingMastery:Object.fromEntries(guardianCallingIds.map(id => [id, int(masterySource[id])])) as CallingMasteryState,
     callingLastSwitchKey:hydrateSwitchKey(source.callingLastSwitchKey),
     growthPoints:int(source.growthPoints),
