@@ -44,6 +44,8 @@ describe('career record progression', () => {
       discoveries:['moon_feather','star_mushroom','tiny_bell','old_spellbook'] as typeof initialState.discoveries,
       mastery:{hunt:{xp:18},magic:{xp:18},rest:{xp:18},herb:{xp:18}},
       visitedOutings:['forest','village','lakeside'] as typeof initialState.visitedOutings,
+      unlockedBondScenes:['shared_secret'] as typeof initialState.unlockedBondScenes,
+      activeCalling:'caretaker' as const,
       rewardedStoryChapters:['first_step','wide_world','trusted_bond','guardian_oath'] as typeof initialState.rewardedStoryChapters,
     };
     expect(currentCareerTitles(state)).toEqual([

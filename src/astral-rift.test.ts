@@ -4,6 +4,7 @@ import {
   astralRiftPower,
   astralRiftChallenge,
   canEnterAstralRift,
+  nextAstralRiftUnlock,
   resolveAstralRift,
   updateAstralRiftRecord,
   type AstralRiftRecordMap,
@@ -19,6 +20,25 @@ describe('Astral Rift domain', () => {
     expect(astralRiftChallenge('nebula_garden',1).targetPower).toBe(60);
     expect(astralRiftChallenge('nebula_garden',3).targetPower).toBe(130);
     expect(astralRiftChallenge('empyrean_gate',3).targetPower).toBe(245);
+  });
+
+  it('reports the next Rift unlock as a clear Celestial Ascension goal', () => {
+    expect(nextAstralRiftUnlock(11)).toEqual({
+      threshold:12,
+      remaining:1,
+      riftIds:['nebula_garden','lunar_ruins'],
+    });
+    expect(nextAstralRiftUnlock(12)).toEqual({
+      threshold:28,
+      remaining:16,
+      riftIds:['comet_pass','eclipse_vault'],
+    });
+    expect(nextAstralRiftUnlock(48)).toEqual({
+      threshold:72,
+      remaining:24,
+      riftIds:['empyrean_gate'],
+    });
+    expect(nextAstralRiftUnlock(72)).toBeNull();
   });
 
   it('derives rift power from ascension, sanctuary, calling mastery and blessings', () => {

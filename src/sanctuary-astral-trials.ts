@@ -24,6 +24,22 @@ export function astralTrialFor(year:number,month:number):AstralTrialDefinition {
   return astralTrialDefinitions[index];
 }
 
+export function eligibleAstralTrialFor(
+  year:number,
+  month:number,
+  constellations:ReadonlyArray<SanctuaryConstellationId>,
+):AstralTrialDefinition {
+  const featured = astralTrialFor(year,month);
+  if (constellations.includes(featured.requiredConstellation)) return featured;
+
+  const featuredIndex = astralTrialDefinitions.indexOf(featured);
+  for (let offset = 1; offset < astralTrialDefinitions.length; offset += 1) {
+    const candidate = astralTrialDefinitions[(featuredIndex + offset) % astralTrialDefinitions.length];
+    if (constellations.includes(candidate.requiredConstellation)) return candidate;
+  }
+  return featured;
+}
+
 type TrialPowerInput = {
   trial:AstralTrialId;
   stats:{ strength:number; intelligence:number; magic:number; morality:number };
@@ -65,12 +81,15 @@ export function resolveAstralTrial(input:{
   constellations:SanctuaryConstellationId[];
   claimedKeys:string[];
 }) {
-  const trial = astralTrialFor(input.year,input.month);
-  const key = `${Math.max(1,Math.floor(input.year))}-${Math.max(1,Math.min(12,Math.floor(input.month)))}:${trial.id}`;
+  const safeYear = Math.max(1,Math.floor(input.year));
+  const safeMonth = Math.max(1,Math.min(12,Math.floor(input.month)));
+  const trial = eligibleAstralTrialFor(safeYear,safeMonth,input.constellations);
+  const key = `${safeYear}-${safeMonth}:${trial.id}`;
   if (!input.constellations.includes(trial.requiredConstellation)) {
     return { accepted:false as const, reason:'constellation_locked' as const, trial, key, grade:null, starShards:0, gold:0 };
   }
-  if (input.claimedKeys.includes(key)) {
+  const monthPrefix = `${safeYear}-${safeMonth}:`;
+  if (input.claimedKeys.some(claimedKey => claimedKey.startsWith(monthPrefix))) {
     return { accepted:false as const, reason:'already_claimed' as const, trial, key, grade:null, starShards:0, gold:0 };
   }
   const power = Number.isFinite(input.power) ? Math.max(0,Math.floor(input.power)) : 0;

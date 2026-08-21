@@ -37,13 +37,17 @@ export function weeklyDirectiveKey(year:number, month:number, week:number) {
   return `${Math.max(1,Math.floor(year))}-${Math.max(1,Math.min(12,Math.floor(month)))}-${Math.max(1,Math.min(4,Math.floor(week)))}` as const;
 }
 
+function directiveActionGroup(counter:WeeklyDirectiveCounter) {
+  return counter === 'high_grade' ? 'expedition' : counter;
+}
+
 export function weeklyDirectives(year:number, month:number, week:number): WeeklyDirective[] {
   const seed = Math.max(0,Math.floor(year * 37 + month * 11 + week * 5));
   const result: WeeklyDirective[] = [];
   let cursor = seed % directivePool.length;
   while (result.length < 3) {
     const candidate = directivePool[cursor % directivePool.length];
-    if (!result.some(item => item.id === candidate.id)) result.push(candidate);
+    if (!result.some(item => item.id === candidate.id || directiveActionGroup(item.counter) === directiveActionGroup(candidate.counter))) result.push(candidate);
     cursor += 3;
   }
   return result;
@@ -70,13 +74,16 @@ export function advanceWeeklyDirectives(
     const before = Math.max(0,Math.floor(next[directive.id] ?? 0));
     const after = matches(directive,event) ? Math.min(directive.target,before + 1) : before;
     next[directive.id] = after;
-    if (before < directive.target && after >= directive.target) {
-      const rewardKey = key ? `${key}:${directive.id}` : null;
-      if (!rewardKey || !rewardedKeys.includes(rewardKey)) {
-        completed.push(directive);
-        journeyPoints += directive.reward.journeyPoints;
-        tokens += directive.reward.tokens;
-      }
+    const reached = after >= directive.target;
+    const justCompleted = before < directive.target && reached;
+    const rewardKey = key ? `${key}:${directive.id}` : null;
+    const shouldReward = key
+      ? reached && !rewardedKeys.includes(rewardKey!)
+      : justCompleted;
+    if (shouldReward) {
+      completed.push(directive);
+      journeyPoints += directive.reward.journeyPoints;
+      tokens += directive.reward.tokens;
     }
   }
 

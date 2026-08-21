@@ -52,17 +52,19 @@ export function advanceWorldContracts(input:AdvanceInput): {
     return { progress:{ ...input.progress }, rewardedKeys:[...input.rewardedKeys], reward:{ gold:0, gems:0 }, newlyCompleted:[] };
   }
 
+  const contracts = monthlyWorldContracts(input.year, input.month, input.event);
+  const targetFor = (id:WorldContractId) => contracts.find(contract => contract.id === id)?.target ?? Number.MAX_SAFE_INTEGER;
   const progress:WorldContractProgress = {
-    expedition_clear:input.progress.expedition_clear + 1,
-    high_grade:input.progress.high_grade + (input.grade === 'A' || input.grade === 'S' ? 1 : 0),
-    featured_region:input.progress.featured_region + (input.region === input.event.region ? 1 : 0),
+    expedition_clear:Math.min(targetFor('expedition_clear'),input.progress.expedition_clear + 1),
+    high_grade:Math.min(targetFor('high_grade'),input.progress.high_grade + (input.grade === 'A' || input.grade === 'S' ? 1 : 0)),
+    featured_region:Math.min(targetFor('featured_region'),input.progress.featured_region + (input.region === input.event.region ? 1 : 0)),
   };
   const rewardedKeys = [...input.rewardedKeys];
   const newlyCompleted:WorldContractId[] = [];
   let gold = 0;
   let gems = 0;
 
-  for (const contract of monthlyWorldContracts(input.year, input.month, input.event)) {
+  for (const contract of contracts) {
     const key = worldContractRewardKey(input.year, input.month, contract.id);
     if (progress[contract.id] < contract.target || rewardedKeys.includes(key)) continue;
     rewardedKeys.push(key);

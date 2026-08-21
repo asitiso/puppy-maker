@@ -17,9 +17,10 @@ describe('monthly challenge progression', () => {
   });
 
   it('rewards the training mission exactly once and can unlock a bond scene on later training', () => {
-    const first = reducer(initialState, { type:'FINISH_TRAINING', eventRoll:0.999 });
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const first = reducer(ready, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(first.monthlyCounters.trainings).toBe(1);
-    expect(first.gold).toBe(initialState.gold + 120);
+    expect(first.gold).toBe(ready.gold + 120);
     expect(first.rewardedMonthlyMissions).toContain('training_once');
     const second = reducer({ ...first, screen:'training' }, { type:'FINISH_TRAINING', eventRoll:0.999 });
     expect(second.monthlyCounters.trainings).toBe(2);
@@ -28,9 +29,10 @@ describe('monthly challenge progression', () => {
   });
 
   it('rewards the outing mission on the second outing and story on the third unique outing', () => {
-    const first = reducer(initialState, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
+    const ready = reducer({ ...initialState, memories:['first_training'] as typeof initialState.memories }, { type:'GO', screen:'hub' });
+    const first = reducer(ready, { type:'GO_OUTING', location:'forest', eventRoll:0.999 });
     expect(first.monthlyCounters.outings).toBe(1);
-    expect(first.gems).toBe(initialState.gems + 1);
+    expect(first.gems).toBe(ready.gems + 1);
     const second = reducer(first, { type:'GO_OUTING', location:'village', eventRoll:0.999 });
     expect(second.monthlyCounters.outings).toBe(2);
     expect(second.gems).toBe(initialState.gems + 2);
@@ -44,9 +46,10 @@ describe('monthly challenge progression', () => {
     const noOp = reducer(empty, { type:'GIVE_GIFT', item:'herb_tea' });
     expect(noOp).toBe(empty);
     expect(noOp.monthlyCounters.gifts).toBe(0);
-    const gifted = reducer(initialState, { type:'GIVE_GIFT', item:'star_cookie' });
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const gifted = reducer(ready, { type:'GIVE_GIFT', item:'star_cookie' });
     expect(gifted.monthlyCounters.gifts).toBe(1);
-    expect(gifted.gold).toBe(initialState.gold + 250);
+    expect(gifted.gold).toBe(ready.gold + 250);
     expect(gifted.unlockedBondScenes).toContain('shared_secret');
   });
 

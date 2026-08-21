@@ -58,9 +58,10 @@ describe('expedition persistent progression', () => {
   });
 
   it('FINISH_EXPEDITION_STAGE commits the reward pipeline into GameState', () => {
-    const next = reducer(initialState, { type: 'FINISH_EXPEDITION_STAGE', stageId: 'forest_path', score: 700 } as any);
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const next = reducer(ready, { type: 'FINISH_EXPEDITION_STAGE', stageId: 'forest_path', score: 700 } as any);
     expect(next.expeditionRecords.forest_path.cleared).toBe(true);
-    expect(next.gold).toBe(initialState.gold + 150);
+    expect(next.gold).toBe(ready.gold + 150);
     expect(next.expeditionMaterials.star_bark).toBe(1);
     expect(next.expeditionStoryEntries).toContain('forest_path');
     expect(next.expeditionDiscoveries).toContain('forest_path_discovery');

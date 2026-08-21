@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { currentAdvancedTalents, masteryLevel, type ExpeditionActionCounts, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
 import { applyExpeditionAction, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
-import { craftingRecipes } from './expedition-crafting';
+import { canCraft, craftingRecipes } from './expedition-crafting';
 import { expeditionDiscoveryDefinitions } from './expedition-discoveries';
 import { expeditionRegionDefinitions, expeditionStageDefinitions, isExpeditionStageCleared, isExpeditionStageUnlocked, nextExpeditionStage } from './expedition-regions';
 import { expeditionRelicDefinitions, relicModifiers } from './expedition-relics';
@@ -97,7 +97,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
   const launcherRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(open);
   const cleared = expeditionStageDefinitions.filter(stage => isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
-  const bosses = ['forest_guardian', 'city_core', 'lake_tempest'].filter(id => state.rewardedExpeditionStages.includes(id as ExpeditionStageId)).length;
+  const bosses = expeditionStageDefinitions.filter(stage => stage.boss && isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const recommended = nextExpeditionStage(state.expeditionRecords);
   const world = worldUiSummary(state);
 
@@ -134,17 +134,17 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
       <img className="expedition-result-burst" src="/assets/effects/success_burst.png" alt=""/>
       <small>EXPEDITION RECORD</small><h2>{stage.name}</h2>
       <strong className={`expedition-grade grade-${result?.grade ?? 'C'}`}>{result?.grade ?? '...'}</strong>
-      <p>{result ? `최고 기록이 원정 연대기에 저장됐어요.` : '원정 기록을 정리하고 있어요.'}</p>
+      <p>{result ? result.cleared ? '최고 기록이 원정 연대기에 저장됐어요.' : `목표 ${stage.target}점에 못 미쳤어요. 기록을 보완해 다시 도전하세요.` : '원정 기록을 정리하고 있어요.'}</p>
       {result && <div className="expedition-result-grid">
-        <span><b>첫 클리어</b>{result.firstClear ? '달성' : '재도전'}</span>
+        <span><b>클리어</b>{!result.cleared ? '실패' : result.firstClear ? '첫 달성' : '재도전 성공'}</span>
         <span><b>재료</b>+{result.materialReward}</span>
-        <span><b>스토리</b>{result.storyUnlocked ? '새 장면' : '기록됨'}</span>
+        <span><b>스토리</b>{!result.cleared ? '-' : result.storyUnlocked ? '새 장면' : '기록됨'}</span>
         <span><b>발견</b>{discovery?.label ?? '없음'}</span>
         <span><b>보스 휘장</b>{result.bossBadge ? '획득' : '-'}</span>
         <span><b>유물</b>{result.relicsUnlocked.length ? result.relicsUnlocked.length + '개' : '-'}</span>
         {calling && <span><b>Calling</b>{calling.label} · Lv.{mastery}</span>}
       </div>}
-      {worldResult && <div className="expedition-world-result">
+      {result?.cleared && worldResult && <div className="expedition-world-result">
         <small>WORLD PROGRESS</small>
         <div><b>{worldResult.regionLabel} 명성</b><span>{worldResult.renownLabel}</span></div>
         <div><b>계절 원정</b><span>{worldResult.seasonLabel}</span></div>
@@ -177,7 +177,17 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
         const equipped = state.equippedExpeditionRelics.includes(relic.id);
         return <button key={relic.id} disabled={!owned} onClick={() => equipped ? onUnequip(relic.id) : onEquip(relic.id)}><b>{owned ? relic.label : '미발견 유물'}<small>{relic.description}</small></b><i>{equipped ? '해제' : owned ? '장착' : '잠김'}</i></button>;
       })}</article>
-      <article><h3>원정 제작소</h3>{craftingRecipes.map(recipe => <button key={recipe.id} onClick={() => onCraft(recipe.id)}><b>{recipe.label}<small>{Object.entries(recipe.costs).map(([id, value]) => `${materialLabels[id as keyof typeof materialLabels]} ${value}`).join(' · ')}</small></b><i>제작</i></button>)}</article>
+      <article><h3>원정 제작소</h3>{craftingRecipes.map(recipe => {
+        const completed = Boolean(recipe.relic && (
+          state.ownedExpeditionRelics.includes(recipe.relic)
+          || state.craftingMilestones.includes(recipe.milestone)
+        ));
+        const craftable = canCraft(recipe.id, state.expeditionMaterials, {
+          craftingMilestones:state.craftingMilestones,
+          ownedRelics:state.ownedExpeditionRelics,
+        });
+        return <button key={recipe.id} disabled={!craftable} onClick={() => onCraft(recipe.id)}><b>{recipe.label}<small>{Object.entries(recipe.costs).map(([id, value]) => `${materialLabels[id as keyof typeof materialLabels]} ${value}`).join(' · ')}</small></b><i>{completed ? '제작 완료' : craftable ? '제작' : '재료 부족'}</i></button>;
+      })}</article>
     </div>
     <footer><span>스토리 {state.expeditionStoryEntries.length}/9</span><span>발견 {state.expeditionDiscoveries.length}/9</span><span>유물 {state.ownedExpeditionRelics.length}/6</span></footer>
   </section></div>;

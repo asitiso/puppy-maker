@@ -35,7 +35,21 @@ describe('world contracts', () => {
     expect(result.reward).toEqual({ gold:0, gems:0 });
   });
 
-  it('auto-pays newly completed contracts once', () => {
+  it('does not advance failed C-grade attempts', () => {
+    const result = advanceWorldContracts({
+      year:1,
+      month:1,
+      event:worldEvent(1, 1),
+      progress:{ expedition_clear:1, high_grade:1, featured_region:1 },
+      rewardedKeys:[],
+      region:'starlight_forest',
+      grade:'C',
+    });
+    expect(result.progress).toEqual({ expedition_clear:1, high_grade:1, featured_region:1 });
+    expect(result.reward).toEqual({ gold:0, gems:0 });
+  });
+
+  it('auto-pays newly completed contracts once and caps completed counters', () => {
     const result = advanceWorldContracts({
       year:1,
       month:1,
@@ -62,6 +76,7 @@ describe('world contracts', () => {
       grade:'S',
     });
     expect(repeat.reward).toEqual({ gold:0, gems:0 });
+    expect(repeat.progress).toEqual({ expedition_clear:3, high_grade:2, featured_region:2 });
   });
 
   it('creates stable monthly reward keys', () => {

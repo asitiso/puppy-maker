@@ -1,5 +1,5 @@
 import type { GameState } from './game';
-import { astralRiftDefinitions, astralRiftPower, canEnterAstralRift, type AstralRiftIntensity } from './astral-rift';
+import { astralRiftDefinitions, astralRiftPower, canEnterAstralRift, nextAstralRiftUnlock, type AstralRiftIntensity } from './astral-rift';
 import { astralRiftRelics } from './astral-rift-relics';
 import { astralRiftWeeklyDirectives, astralRiftWeeklyKey } from './astral-rift-weekly';
 import { astralRiftHonors, astralRiftHonorProgress } from './astral-rift-honors';
@@ -66,6 +66,7 @@ export function astralRiftUiSummary(state:GameState) {
     power,
     echoes:state.astralRiftEchoes,
     ascension:celestialAscensionRank(ascension),
+    nextUnlock:nextAstralRiftUnlock(ascension),
     rifts,
     directives,
     relics,

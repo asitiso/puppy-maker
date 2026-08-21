@@ -41,6 +41,20 @@ const gradeEchoes:Record<Exclude<AstralRiftGrade,'C'>,number> = { B:0, A:2, S:4 
 const clampInt = (value:number,min:number,max:number) => Math.min(max,Math.max(min,Number.isFinite(value) ? Math.floor(value) : min));
 const recordKey = (riftId:AstralRiftId,intensity:AstralRiftIntensity) => `${riftId}:${intensity}`;
 
+export function nextAstralRiftUnlock(rawAscensionScore:number) {
+  const score = clampInt(rawAscensionScore,0,83);
+  const thresholds = astralRiftDefinitions
+    .map(item => item.ascensionThreshold)
+    .filter(threshold => threshold > score);
+  if (thresholds.length === 0) return null;
+  const threshold = Math.min(...thresholds);
+  return {
+    threshold,
+    remaining:threshold - score,
+    riftIds:astralRiftDefinitions.filter(item => item.ascensionThreshold === threshold).map(item => item.id),
+  };
+}
+
 export function astralRiftPower(input:{
   ascensionScore:number;
   sanctuaryGrandProgress:number;

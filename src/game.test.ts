@@ -132,7 +132,7 @@ describe('game engine', () => {
     const next = reducer({ ...progressed, screen: 'result' }, { type: 'NEXT_MONTH' });
     expect(next.month).toBe(5);
     expect(next.screen).toBe('hub');
-    expect(next.gold).toBe(5470);
+    expect(next.gold).toBe(progressed.gold + 350);
     expect(next.mastery.hunt.xp).toBe(progressed.mastery.hunt.xp);
     expect(next.memories).toContain('first_month_complete');
   });
@@ -185,8 +185,9 @@ describe('game engine', () => {
       personality: { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
       stats: { ...initialState.stats, fatigue: 10 }, condition: 'normal' as const,
     };
+    const baseline = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });
     const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });
-    expect(trained.gold).toBe(initialState.gold + 220);
+    expect(trained.gold).toBe(baseline.gold + 100);
     expect(trained.personality.curiosity).toBeGreaterThan(state.personality.curiosity);
     expect(trained.lastGrowthReport?.randomEvent).toBe('rare_herb');
   });

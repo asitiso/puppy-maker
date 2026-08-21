@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   discoveryIds,
   explorationLevel,
@@ -113,8 +113,6 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const panelLauncherRef = useRef<HTMLElement | null>(null);
-  const panelCloseRef = useRef<HTMLButtonElement | null>(null);
   const staticPanel = activePanel ? getHomePanel(activePanel) : null;
   const stamina = Math.max(0, 100 - state.stats.fatigue);
   const rank = relationshipRank(state.stats.affection);
@@ -156,17 +154,14 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     if (typeof index === 'number') setActiveNav(index);
     else setActiveNav(-1);
     if (id === 'schedule') return onSchedule();
-    const activeElement = document.activeElement;
-    panelLauncherRef.current = activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
   }, [onSchedule]);
 
-  const closePanel = useCallback(() => {
+  const closePanel = () => {
     setActivePanel(null);
     setActiveNav(-1);
-    panelLauncherRef.current?.focus();
-  }, []);
+  };
 
   const primaryTask = unclaimedMail.length > 0
     ? { label: `우편 보상 ${unclaimedMail.length}개 확인`, detail: '받을 보상이 있어요.', action: () => openMenu('mail') }
@@ -177,18 +172,6 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
         : { label: '이번 주 스케줄 정하기', detail: `${conditionLabels[state.condition]} · 체력 ${stamina}/100`, action: onSchedule };
 
   useEffect(() => onMenuReady?.((id: HomeMenuId) => openMenu(id)), [openMenu, onMenuReady]);
-
-  useEffect(() => {
-    if (!activePanel) return;
-    panelCloseRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      closePanel();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activePanel, closePanel]);
 
   return <section
     className="layered-home"
@@ -227,7 +210,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
       <section className="lh-panel" role="dialog" aria-modal="true" aria-label={panelTitle} onClick={event => event.stopPropagation()}>
         <header className="lh-panel-header">
           <div><small>{panelEyebrow}</small><h2>{panelTitle}</h2></div>
-          <button ref={panelCloseRef} className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">×</button>
+          <button className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">×</button>
         </header>
         {isQuestPanel ? <div className="lh-panel-list">{achievementDefinitions.map((item, index) => {
           const claimed = state.claimedAchievements.includes(item.id);

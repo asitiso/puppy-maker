@@ -6,13 +6,17 @@ describe('season shop', () => {
     expect(seasonShopOffers('1-spring').map(offer => [offer.id, offer.cost, offer.limit])).toEqual([
       ['gold_pouch',20,2],
       ['recovery_bundle',25,1],
-      ['expedition_cache',30,1],
+      ['expedition_cache',30,6],
       ['seasonal_keepsake',40,1],
       ['spring_garden_pack',18,1],
     ]);
     expect(seasonShopOffers('1-summer').at(-1)?.id).toBe('summer_lake_cache');
     expect(seasonShopOffers('1-autumn').at(-1)?.id).toBe('autumn_arcane_cache');
     expect(seasonShopOffers('1-winter').at(-1)?.id).toBe('winter_starlight_cache');
+  });
+
+  it('makes the Sanctuary use of the shared material cache explicit', () => {
+    expect(seasonShopOffers('1-spring').find(offer => offer.id === 'expedition_cache')?.label).toBe('원정·성소 재료 상자');
   });
 
   it('resolves a valid purchase and emits a deterministic purchase key', () => {
@@ -23,6 +27,37 @@ describe('season shop', () => {
       purchaseKey:seasonPurchaseKey('1-spring','gold_pouch',1),
       reward:{ gold:300, inventory:{}, materials:{}, keepsake:false },
     });
+  });
+
+  it('uses the first free purchase ordinal when purchase history is sparse', () => {
+    const secondKey = seasonPurchaseKey('1-spring','gold_pouch',2);
+    const result = resolveSeasonPurchase({
+      seasonKey:'1-spring',
+      offerId:'gold_pouch',
+      tokens:40,
+      purchaseKeys:[secondKey],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted:true,
+      purchaseKey:seasonPurchaseKey('1-spring','gold_pouch',1),
+    }));
+    expect(result.accepted && result.purchaseKey).not.toBe(secondKey);
+  });
+
+  it('deduplicates repeated purchase keys before applying the season limit', () => {
+    const firstKey = seasonPurchaseKey('1-spring','gold_pouch',1);
+    const result = resolveSeasonPurchase({
+      seasonKey:'1-spring',
+      offerId:'gold_pouch',
+      tokens:40,
+      purchaseKeys:[firstKey,firstKey],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted:true,
+      purchaseKey:seasonPurchaseKey('1-spring','gold_pouch',2),
+    }));
   });
 
   it('rejects a purchase when tokens are insufficient', () => {
@@ -42,7 +77,7 @@ describe('season shop', () => {
     }));
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'expedition_cache', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
       accepted:true,
-      reward:{ gold:0, inventory:{}, materials:{ star_bark:2, arcane_shard:2, wind_pearl:2 }, keepsake:false },
+      reward:{ gold:0, inventory:{}, materials:{ star_bark:3, arcane_shard:3, wind_pearl:3 }, keepsake:false },
     }));
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'seasonal_keepsake', tokens:99, purchaseKeys:[] })).toEqual(expect.objectContaining({
       accepted:true,
