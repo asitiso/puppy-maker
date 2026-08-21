@@ -133,6 +133,25 @@ describe('tactical vertical slice stability', () => {
     assertResourceBounds(session);
   });
 
+  it('owns fresh unit, status, timeline and acted state instead of sharing battle input references', () => {
+    const runa = { ...basicUnit('runa','ally',20),statuses:[{ id:'focus' as const,turns:2 }] };
+    const allies = [runa,basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)];
+    const enemies = [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)];
+    const session = createBattleSession(allies,enemies,23);
+
+    expect(session.units[0]).not.toBe(runa);
+    expect(session.units[0].statuses).not.toBe(runa.statuses);
+    expect(session.round).toBe(1);
+    expect(session.acted).toEqual([]);
+    expect(session.timeline).toEqual(['runa','enemy-1','ally-2','enemy-2','ally-3','enemy-3']);
+
+    session.units[0].hp = 1;
+    session.units[0].statuses?.push({ id:'guard',turns:1 });
+    session.acted.push('runa');
+    expect(runa.hp).toBe(100);
+    expect(runa.statuses).toEqual([{ id:'focus',turns:2 }]);
+  });
+
   it('repeats complete manual and AUTO battles without stalls or resource corruption', () => {
     let sawUltimate = false;
     for (const mode of ['manual','auto'] as const) {
@@ -157,7 +176,19 @@ describe('tactical vertical slice stability', () => {
     expect(digest(runBattle('auto',73).session)).toEqual(digest(runBattle('auto',73).session));
   });
 
-  it('safely advances a live turn when the hand is empty or has no playable action', () => {
+  it('rejects a dead target without spending resources or advancing the turn', () => {
+    const session = createBattleSession(
+      [basicUnit('runa','ally',20),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-dead','enemy',15,0),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      31,
+    );
+    const before = digest(session);
+    expect(validTacticalTargets(session,'runa','skill')).not.toContain('enemy-dead');
+    expect(resolveTacticalAction(session,{actorId:'runa',actionId:'skill',targetId:'enemy-dead'})).toBe(session);
+    expect(digest(session)).toEqual(before);
+  });
+
+  it('safely advances exactly one live turn when the hand is empty or has no playable action', () => {
     const session = createBattleSession(
       [basicUnit('runa','ally',20),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
       [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
@@ -166,7 +197,17 @@ describe('tactical vertical slice stability', () => {
     const actorId = nextTacticalActor(session)!;
     const emptyHandPass = skipTacticalTurnIfNoPlayableAction(session,actorId,[]);
     expect(emptyHandPass).not.toBe(session);
-    expect(emptyHandPass.acted).toContain(actorId);
+    expect(emptyHandPass.acted).toEqual([actorId]);
+    expect(skipTacticalTurnIfNoPlayableAction(emptyHandPass,actorId,[])).toBe(emptyHandPass);
+
+    const noResource = createBattleSession(
+      [basicUnit('runa','ally',20,100,0,0),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      12,
+    );
+    const noPlayablePass = skipTacticalTurnIfNoPlayableAction(noResource,'runa',['attack','skill','special']);
+    expect(noPlayablePass.acted).toEqual(['runa']);
+    expect(noPlayablePass.units.find(unit => unit.id === 'runa')).toEqual(noResource.units.find(unit => unit.id === 'runa'));
 
     const legalHandDoesNotPass = skipTacticalTurnIfNoPlayableAction(session,actorId,['attack']);
     expect(legalHandDoesNotPass).toBe(session);
@@ -224,6 +265,20 @@ describe('tactical vertical slice stability', () => {
     expect(nextTacticalActor(mutualWipe)).toBeNull();
   });
 
+  it('blocks regular actions, skips and Joint Ultimate after a terminal result', () => {
+    const won = createBattleSession(
+      [basicUnit('runa','ally',20,100,3,10),basicUnit('companion-wolf','ally',12),basicUnit('companion-owl','ally',8)],
+      [basicUnit('enemy-1','enemy',10,0),basicUnit('enemy-2','enemy',7,0),basicUnit('enemy-3','enemy',5,0)],
+      41,
+    );
+    expect(isBattleFinished(won)).toBe('victory');
+    expect(resolveTacticalAction(won,{actorId:'runa',actionId:'support',targetId:'runa'})).toBe(won);
+    expect(skipTacticalTurnIfNoPlayableAction(won,'runa',[])).toBe(won);
+    expect(validCombinationUltimateTargets(won,'runa','wolf',5)).toEqual([]);
+    expect(resolveCombinationUltimate(won,{actorId:'runa',companionId:'wolf',bondLevel:5,targetId:'enemy-1'})).toBe(won);
+    expect(digest(won)).toEqual(digest(won));
+  });
+
   it('does not leak HP, AP, MP, acted units or terminal state into a consecutive battle', () => {
     const first = runBattle('auto',101).session;
     expect(isBattleFinished(first)).not.toBeNull();
@@ -231,6 +286,11 @@ describe('tactical vertical slice stability', () => {
     const second = createTacticalExpeditionBattle('city_gate',party,progression,101);
     const fresh = createTacticalExpeditionBattle('city_gate',party,progression,101);
     expect(second).toEqual(fresh);
+    expect(second).not.toBe(fresh);
+    expect(second.units).not.toBe(fresh.units);
+    expect(second.acted).not.toBe(fresh.acted);
+    expect(second.timeline).not.toBe(fresh.timeline);
+    for (let index=0;index<second.units.length;index+=1) expect(second.units[index]).not.toBe(fresh.units[index]);
     expect(second.round).toBe(1);
     expect(second.acted).toEqual([]);
     expect(isBattleFinished(second)).toBeNull();
