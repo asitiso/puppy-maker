@@ -89,4 +89,14 @@ describe('manual versus AUTO tactical stability',()=>{
       expect(fingerprint(run('auto',seed).session)).toBe(fingerprint(run('auto',seed).session));
     }
   });
+
+  it('preserves real decision diversity instead of making manual and AUTO identical',()=>{
+    let distinct=0;
+    for(let seed=1;seed<=25;seed+=1){
+      const manual=run('manual',seed);
+      const auto=run('auto',seed);
+      if(fingerprint(manual.session)!==fingerprint(auto.session)||manual.steps!==auto.steps)distinct+=1;
+    }
+    expect(distinct).toBeGreaterThan(0);
+  });
 });
