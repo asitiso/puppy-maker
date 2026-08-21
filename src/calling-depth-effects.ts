@@ -36,13 +36,21 @@ function sanitizeLegendRewardKeys(raw: unknown): string[] {
   return keys;
 }
 
+function safeTraits(raw: unknown): readonly GrowthTraitId[] {
+  return Array.isArray(raw) ? raw as readonly GrowthTraitId[] : [];
+}
+
+function safeSignatures(raw: unknown): readonly CallingSignatureId[] {
+  return Array.isArray(raw) ? raw as readonly CallingSignatureId[] : [];
+}
+
 export function effectivePathfinderExplorationXp(
   xp:number,
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
   const safeXp = Math.max(0, Math.floor(Number.isFinite(xp) ? xp : 0));
-  return safeXp + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  return safeXp + (calling === 'pathfinder' && safeTraits(traits).includes('pathfinder_eye') ? 3 : 0);
 }
 
 function hasValidAction(value:number): boolean {
@@ -109,8 +117,8 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   let stressDelta = safeNonNegativeDelta(input.stressDelta);
   const legendRewardKeys = sanitizeLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
-  const signatures = new Set(input.signatures);
-  const traits = new Set(input.traits);
+  const signatures = new Set(safeSignatures(input.signatures));
+  const traits = new Set(safeTraits(input.traits));
   const successful = input.grade === 'B' || input.grade === 'A' || input.grade === 'S';
   const hasMaterialReward = Number.isFinite(input.materialReward) && input.materialReward > 0;
   const firstClear = input.firstClear === true;
@@ -161,7 +169,7 @@ export function applyPathfinderOutingLegend(
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
   const legendRewardKeys = sanitizeLegendRewardKeys(existingKeys);
-  if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || discovered !== true) {
+  if (calling !== 'pathfinder' || !safeTraits(traits).includes('pathfinder_legend') || discovered !== true) {
     return { goldBonus:0, legendRewardKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
