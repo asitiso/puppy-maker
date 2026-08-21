@@ -9,11 +9,16 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(2.9, 13.4, 'vanguard_legend')).toBe('2-12:vanguard_legend');
+    expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
   it('accelerates discovery eligibility only with Pathfinder eye', () => {
     expect(effectivePathfinderExplorationXp(3, 'pathfinder', ['pathfinder_eye'])).toBe(6);
     expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.NaN, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.POSITIVE_INFINITY, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(-4, 'pathfinder', ['pathfinder_eye'])).toBe(3);
   });
 
   it('detects specialist Calling mastery from expedition actions', () => {
@@ -22,6 +27,13 @@ describe('Calling depth effects', () => {
     expect(specialistMasteryCalling('caretaker', { attack:0, dodge:1, charge:0 }, { grade:'B', discovery:null, materialReward:1 })).toBe('caretaker');
     expect(specialistMasteryCalling('pathfinder', { attack:1, dodge:0, charge:0 }, { grade:'A', discovery:'forest_echo', materialReward:0 })).toBe('pathfinder');
     expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBeNull();
+  });
+
+  it('does not grant Calling mastery from corrupted action counts', () => {
+    expect(specialistMasteryCalling('vanguard', { attack:Number.POSITIVE_INFINITY, dodge:0, charge:0 }, { grade:'A', discovery:null, materialReward:1 })).toBeNull();
+    expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:Number.NaN }, { grade:'S', discovery:null, materialReward:2 })).toBeNull();
+    expect(specialistMasteryCalling('caretaker', { attack:0, dodge:-1, charge:0 }, { grade:'B', discovery:null, materialReward:1 })).toBeNull();
+    expect(specialistMasteryCalling('pathfinder', { attack:Number.NaN, dodge:Number.POSITIVE_INFINITY, charge:-3 }, { grade:'A', discovery:'forest_echo', materialReward:2 })).toBeNull();
   });
 
   it('applies Pathfinder signature rewards without duplicating the existing supply trait', () => {
@@ -56,6 +68,19 @@ describe('Calling depth effects', () => {
     });
     expect(arcanist.stressDelta).toBe(4);
     expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
+  });
+
+  it('normalizes corrupted reward deltas and duplicate monthly keys', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'vanguard', traits:['vanguard_legend'], signatures:[],
+      legendRewardKeys:['1-4:vanguard_legend','1-4:vanguard_legend'],
+      stageId:'forest_path', grade:'A', firstClear:true, discovery:null, regionCompleted:null,
+      materialReward:Number.POSITIVE_INFINITY, fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
+    });
+    expect(result.fatigueDelta).toBe(0);
+    expect(result.stressDelta).toBe(0);
+    expect(result.legendRewardKeys).toEqual(['1-4:vanguard_legend']);
+    expect(result.applied).toEqual([]);
   });
 
   it('applies heart anchor stress protection whenever its signature is active', () => {
