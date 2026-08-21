@@ -50,8 +50,12 @@ const conditionMultiplier: Record<ExpeditionCombatCondition, number> = {
   tired: 0.86,
 };
 
+function finite(value: number, fallback = 0) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
 function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+  return Math.min(max, Math.max(min, finite(value, min)));
 }
 
 function stageFor(id: ExpeditionStageId) {
@@ -120,43 +124,47 @@ export function applyExpeditionAction(
   if (currentActionCount >= EXPEDITION_ACTION_LIMIT) return battle;
 
   const quality = 0.35 + clamp(accuracy, 0, 1) * 0.65;
-  const fatiguePenalty = clamp((Math.max(0, input.fatigue) - 25) / 220, 0, 0.28);
+  const fatiguePenalty = clamp((Math.max(0, finite(input.fatigue)) - 25) / 220, 0, 0.28);
   const readiness = conditionMultiplier[input.condition] * (1 - fatiguePenalty);
   const allBonus = clamp(input.relics.all, 0, 0.15);
   const advancedBonus = clamp(talentBonus(input.talents, kind), 0, 0.1);
   const identityBonus = clamp(input.identity?.[kind] ?? 0, 0, 0.1);
   const callingBonus = signatureBonus(battle, kind, input);
   const counts = withActionCount(battle, kind, currentActionCount);
+  const baseScore = Math.max(0, finite(battle.score));
+  const baseGuard = Math.max(0, finite(battle.pressureGuard));
 
   if (kind === 'dodge') {
     const dodgeBonus = clamp(input.relics.dodge, 0, 0.2);
-    const guard = (18 + input.calmness * 0.34 + input.restMastery * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus + advancedBonus + identityBonus + callingBonus);
+    const guard = (18 + finite(input.calmness) * 0.34 + finite(input.restMastery) * 4.5) * quality * readiness * (1 + allBonus + dodgeBonus + advancedBonus + identityBonus + callingBonus);
     return {
       ...battle,
-      pressureGuard: battle.pressureGuard + Math.max(0, guard),
-      score: battle.score + Math.round(Math.max(0, guard) * 0.55),
+      pressureGuard: baseGuard + Math.max(0, finite(guard)),
+      score: baseScore + Math.round(Math.max(0, finite(guard)) * 0.55),
       ...counts,
     };
   }
 
   if (kind === 'attack') {
     const bonus = clamp(input.relics.attack, 0, 0.15);
-    const value = (70 + input.strength * 3.1 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
-    return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
+    const value = (70 + finite(input.strength) * 3.1 + finite(input.huntMastery) * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+    return { ...battle, pressureGuard: baseGuard, score: baseScore + Math.max(0, Math.round(finite(value))), ...counts };
   }
 
   const bonus = clamp(input.relics.charge, 0, 0.15);
-  const value = (68 + input.magic * 3.15 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
-  return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
+  const value = (68 + finite(input.magic) * 3.15 + finite(input.magicMastery) * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+  return { ...battle, pressureGuard: baseGuard, score: baseScore + Math.max(0, Math.round(finite(value))), ...counts };
 }
 
 export function finishExpeditionBattle(battle: ExpeditionBattleState): ExpeditionBattleResult {
   const stage = stageFor(battle.stageId);
-  const mitigatedPressure = Math.max(0, stage.pressure - battle.pressureGuard / 18);
+  const score = Math.max(0, Math.floor(finite(battle.score)));
+  const pressureGuard = Math.max(0, finite(battle.pressureGuard));
+  const mitigatedPressure = Math.max(0, stage.pressure - pressureGuard / 18);
   return {
     stageId: battle.stageId,
-    score: Math.max(0, Math.floor(battle.score)),
-    grade: expeditionGrade(battle.score, stage.target),
+    score,
+    grade: expeditionGrade(score, stage.target),
     fatigueDelta: Math.max(0, Math.round(mitigatedPressure * 0.72)),
     stressDelta: Math.max(0, Math.round(mitigatedPressure * 0.48)),
     actionKinds: { ...battle.actionKinds },
