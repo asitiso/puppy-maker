@@ -29,6 +29,11 @@ describe('weekly directives', () => {
     expect(weeklyDirectives(0,13,4)).toEqual(weeklyDirectives(1,12,4));
   });
 
+  it('falls back to the first canonical period for non-finite calendar inputs', () => {
+    expect(weeklyDirectiveKey(Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY)).toBe('1-1-1');
+    expect(weeklyDirectives(Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY)).toEqual(weeklyDirectives(1,1,1));
+  });
+
   it('never assigns two directives that reward the same action counter in one week', () => {
     for (let year = 1; year <= 3; year += 1) {
       for (let month = 1; month <= 12; month += 1) {
