@@ -28,6 +28,42 @@ describe('tactical turn engine', () => {
     expect(session.acted).toEqual([]);
   });
 
+  it('rejects insufficient resources without partial mutation or negative balances', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:1, mp:9 } : entry);
+    const before = session.units.find(entry => entry.id === 'bat')!;
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    expect(next).toBe(session);
+    expect(next.units.find(entry => entry.id === 'bat')).toEqual(before);
+    expect(next.acted).toEqual([]);
+    expect(before.ap).toBeGreaterThanOrEqual(0);
+    expect(before.mp).toBeGreaterThanOrEqual(0);
+  });
+
+  it('spends an exact cost once and blocks a same-turn double spend', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:2, mp:0 } : entry);
+    const once = resolveTacticalAction(session,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    const spent = once.units.find(entry => entry.id === 'bat')!;
+    expect(spent.ap).toBe(0);
+    expect(spent.mp).toBe(3);
+    expect(once.acted).toEqual(['bat']);
+
+    const twice = resolveTacticalAction(once,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    expect(twice).toBe(once);
+    expect(twice.units.find(entry => entry.id === 'bat')).toEqual(spent);
+    expect(twice.acted).toEqual(['bat']);
+  });
+
+  it('clamps MP gain at maxMp instead of overflowing the resource cap', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, mp:9 } : entry);
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
+    const bat = next.units.find(entry => entry.id === 'bat')!;
+    expect(bat.mp).toBe(10);
+    expect(bat.mp).toBeLessThanOrEqual(bat.maxMp);
+  });
+
   it('spends AP, gains MP and lets shield absorb damage first', () => {
     const session = battle();
     session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, shield:8 } : entry);
