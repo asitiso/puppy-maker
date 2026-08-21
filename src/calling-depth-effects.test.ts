@@ -9,11 +9,13 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
   it('accelerates discovery eligibility only with Pathfinder eye', () => {
     expect(effectivePathfinderExplorationXp(3, 'pathfinder', ['pathfinder_eye'])).toBe(6);
     expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.NaN, 'pathfinder', ['pathfinder_eye'])).toBe(3);
   });
 
   it('detects specialist Calling mastery from expedition actions', () => {
@@ -78,5 +80,17 @@ describe('Calling depth effects', () => {
     });
     expect(result.stressDelta).toBe(4);
     expect(result.applied).toContain('heart_anchor');
+  });
+
+  it('sanitizes non-finite expedition burden deltas instead of returning NaN', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'caretaker', traits:[], signatures:['heart_anchor'], legendRewardKeys:[],
+      stageId:'lake_channel', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+      fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
+    });
+    expect(result.fatigueDelta).toBe(0);
+    expect(result.stressDelta).toBe(0);
+    expect(Number.isFinite(result.fatigueDelta)).toBe(true);
+    expect(Number.isFinite(result.stressDelta)).toBe(true);
   });
 });
