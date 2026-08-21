@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,type KeyboardEvent} from 'react';
 import type {BattleResult,BattleSession} from './tactical-battle';
 import type {CompanionId} from './tactical-companions';
 import {resolveTacticalAction,skipTacticalTurnIfNoPlayableAction} from './tactical-engine';
@@ -99,7 +99,7 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
     const next=resolveTacticalAction(current,{actorId:activeRaw.id,actionId:selectedAction,targetId});
     commit(next,`${activeRaw.id} · ${selectedAction.toUpperCase()} → ${targetId}`);
   };
-  const targetKeyDown=(event:React.KeyboardEvent<HTMLElement>,targetId:string)=>{
+  const targetKeyDown=(event:KeyboardEvent<HTMLElement>,targetId:string)=>{
     if((event.key==='Enter'||event.key===' ')&&validTargetIds.includes(targetId)){
       event.preventDefault();
       chooseTarget(targetId);
