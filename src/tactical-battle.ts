@@ -52,6 +52,14 @@ function normalizeStatuses(statuses:TacticalStatus[]|undefined):TacticalStatus[]
     .map(status=>({id:status.id as TacticalStatusId,turns:Math.max(1,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(status.turns)))}));
 }
 
+export function repairTacticalHealth(unit:TacticalUnit):TacticalUnit {
+  const rawHp=Number.isFinite(unit.hp)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(unit.hp))):0;
+  const fallbackMaxHp=Math.max(1,rawHp||1);
+  const maxHp=Number.isFinite(unit.maxHp)?Math.max(1,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(unit.maxHp))):fallbackMaxHp;
+  const hp=Math.min(rawHp,maxHp);
+  return maxHp===unit.maxHp&&hp===unit.hp?unit:{...unit,maxHp,hp};
+}
+
 function isLivingUnit(unit:TacticalUnit) {
   return Number.isFinite(unit.hp) && unit.hp > 0;
 }
