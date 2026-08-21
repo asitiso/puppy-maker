@@ -73,8 +73,15 @@ export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersis
     : storedOwned;
   const equipped = uniqueAllowed(source.equippedExpeditionRelics, expeditionRelicIds).filter(id => owned.includes(id)).slice(0, 3);
   const rewardedExpeditionStages = uniqueAllowed(source.rewardedExpeditionStages, stageIds);
+  const rewardedExpeditionRegions = uniqueAllowed(source.rewardedExpeditionRegions, regionIds);
+  const expeditionStoryEntries = uniqueAllowed(source.expeditionStoryEntries, stageIds);
+  const clearEvidence = new Set<ExpeditionStageId>([...rewardedExpeditionStages, ...expeditionStoryEntries]);
+  for (const regionId of rewardedExpeditionRegions) {
+    const region = expeditionRegionDefinitions.find(item => item.id === regionId);
+    for (const stageId of region?.stages ?? []) clearEvidence.add(stageId);
+  }
   const expeditionRecords = hydrateRecords(source.expeditionRecords);
-  for (const stageId of rewardedExpeditionStages) {
+  for (const stageId of clearEvidence) {
     expeditionRecords[stageId] = { ...expeditionRecords[stageId], cleared: true };
   }
   return {
@@ -83,9 +90,9 @@ export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersis
     ownedExpeditionRelics: owned,
     equippedExpeditionRelics: equipped,
     rewardedExpeditionStages,
-    rewardedExpeditionRegions: uniqueAllowed(source.rewardedExpeditionRegions, regionIds),
+    rewardedExpeditionRegions,
     expeditionDiscoveries: uniqueAllowed(source.expeditionDiscoveries, expeditionDiscoveryIds),
-    expeditionStoryEntries: uniqueAllowed(source.expeditionStoryEntries, stageIds),
+    expeditionStoryEntries,
     craftingMilestones: milestones,
   };
 }
