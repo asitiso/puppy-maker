@@ -40,4 +40,7 @@ export function recommendedFormation(selected: readonly CompanionId[]) {
   if (selected.length !== 2 || selected[0] === selected[1]) throw new Error('Select two distinct companions')
   return { runa:'front' as BattlePosition, [selected[0]]:COMPANIONS[selected[0]].preferredPosition, [selected[1]]:COMPANIONS[selected[1]].preferredPosition } as {runa:BattlePosition}&Partial<Record<CompanionId,BattlePosition>>
 }
-export function bondUnlocks(level:number){ return { passive:level>=2, signature:level>=3, teamPassive:level>=4, combinationUltimate:level>=5 } }
+export function bondUnlocks(level:number){
+  const safe=Number.isFinite(level)?Math.max(1,Math.min(5,Math.floor(level))):1
+  return { passive:safe>=2, signature:safe>=3, teamPassive:safe>=4, combinationUltimate:safe>=5 }
+}
