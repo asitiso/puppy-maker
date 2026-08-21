@@ -7,6 +7,7 @@ import type { GrowthTraitId } from './growth-traits';
 
 const legendEffectIds = ['vanguard_legend', 'arcanist_legend', 'pathfinder_legend'] as const;
 type LegendEffectId = typeof legendEffectIds[number];
+const expeditionRegionIds: readonly ExpeditionRegionId[] = ['starlight_forest', 'ancient_city', 'wind_lakes'];
 
 export function legendRewardKey(year:number, month:number, effectId:string): string {
   const safeYear = Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
@@ -48,6 +49,14 @@ function hasValidAction(value:number): boolean {
   return Number.isFinite(value) && value > 0;
 }
 
+function hasValidDiscovery(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function hasValidRegion(value: unknown): value is ExpeditionRegionId {
+  return typeof value === 'string' && expeditionRegionIds.includes(value as ExpeditionRegionId);
+}
+
 export function specialistMasteryCalling(
   calling:GuardianCallingId | null,
   actions:ExpeditionActionCounts,
@@ -59,9 +68,8 @@ export function specialistMasteryCalling(
   if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
   if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
   const acted = hasValidAction(actions.attack) || hasValidAction(actions.dodge) || hasValidAction(actions.charge);
-  const hasDiscovery = typeof summary.discovery === 'string' && summary.discovery.length > 0;
   const hasMaterialReward = Number.isFinite(summary.materialReward) && summary.materialReward > 0;
-  const explored = hasDiscovery || hasMaterialReward || isBossStage(summary.stageId);
+  const explored = hasValidDiscovery(summary.discovery) || hasMaterialReward || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
 }
 
@@ -111,7 +119,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
       extraMaterial += 1;
       applied.push('trail_reading');
     }
-    if (signatures.has('star_compass') && input.regionCompleted) {
+    if (signatures.has('star_compass') && hasValidRegion(input.regionCompleted)) {
       extraMaterial += 1;
       applied.push('star_compass');
     }
@@ -131,7 +139,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     }
   }
 
-  if (input.calling === 'arcanist' && traits.has('arcanist_legend') && (input.grade === 'A' || input.grade === 'S') && input.discovery) {
+  if (input.calling === 'arcanist' && traits.has('arcanist_legend') && (input.grade === 'A' || input.grade === 'S') && hasValidDiscovery(input.discovery)) {
     const key = legendRewardKey(input.year, input.month, 'arcanist_legend');
     if (!legendRewardKeys.includes(key)) {
       stressDelta = Math.max(0, stressDelta - 2);
