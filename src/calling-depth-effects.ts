@@ -81,6 +81,7 @@ export function specialistMasteryCalling(
   actions:ExpeditionActionCounts,
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
+  if (typeof summary !== 'object' || summary === null || Array.isArray(summary)) return null;
   const successful = summary.grade === 'B' || summary.grade === 'A' || summary.grade === 'S';
   if (!hasValidCalling(calling) || !successful) return null;
   const actionCounts = safeActions(actions);
