@@ -11,6 +11,10 @@ function safeNonNegativeInt(value:number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
+function safeNonNegativeNumber(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 function safePositiveInt(value:number): number {
   return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1;
 }
@@ -87,8 +91,8 @@ export type ExpeditionCallingRewardResult = {
 
 export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput): ExpeditionCallingRewardResult {
   let extraMaterial = 0;
-  let fatigueDelta = safeNonNegativeInt(input.fatigueDelta);
-  let stressDelta = safeNonNegativeInt(input.stressDelta);
+  let fatigueDelta = safeNonNegativeNumber(input.fatigueDelta);
+  let stressDelta = safeNonNegativeNumber(input.stressDelta);
   let legendRewardKeys = canonicalLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
   const traitBackedSignatures = new Set(callingSignatures(input.calling, [...input.traits]));
