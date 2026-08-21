@@ -22,6 +22,7 @@ const regionCompletionRelics: Partial<Record<ExpeditionRelicId, ExpeditionRegion
   moonfang_charm: 'starlight_forest',
   mana_prism: 'ancient_city',
   wind_feather: 'wind_lakes',
+  bond_locket: 'starlight_forest',
 };
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const finite = (value: unknown, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? value : fallback;
