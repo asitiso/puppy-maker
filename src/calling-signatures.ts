@@ -1,6 +1,6 @@
 import { callingMasteryLevel } from './calling-mastery';
 import type { GuardianCallingId } from './guardian-callings';
-import type { GrowthTraitId } from './growth-traits';
+import { canonicalGrowthTraits, type GrowthTraitId } from './growth-traits';
 
 export type CallingSignatureId =
   | 'rally_strike' | 'guardian_breaker'
@@ -30,8 +30,9 @@ export const callingSignatureDefinitions: CallingSignatureDefinition[] = [
 
 export function callingSignatures(calling: GuardianCallingId | null, purchasedTraits: GrowthTraitId[]): CallingSignatureId[] {
   if (!calling) return [];
+  const validTraits = canonicalGrowthTraits(purchasedTraits);
   return callingSignatureDefinitions
-    .filter(item => item.calling === calling && purchasedTraits.includes(item.requiredTrait))
+    .filter(item => item.calling === calling && validTraits.includes(item.requiredTrait))
     .map(item => item.id);
 }
 
@@ -42,7 +43,8 @@ export function callingSignaturesForMastery(
 ): CallingSignatureId[] {
   if (!calling) return [];
   const masteryLevel = callingMasteryLevel(masteryXp);
+  const validTraits = canonicalGrowthTraits(purchasedTraits);
   return callingSignatureDefinitions
-    .filter(item => item.calling === calling && masteryLevel >= item.requiredMasteryLevel && purchasedTraits.includes(item.requiredTrait))
+    .filter(item => item.calling === calling && masteryLevel >= item.requiredMasteryLevel && validTraits.includes(item.requiredTrait))
     .map(item => item.id);
 }
