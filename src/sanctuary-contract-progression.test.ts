@@ -22,6 +22,19 @@ describe('sanctuary contract reducer progression', () => {
     expect(hydrated.claimedSanctuaryPrestigeRanks).toEqual(['haven','celestial']);
   });
 
+  it('rejects impossible year-zero sanctuary contract keys during hydration', () => {
+    const hydrated = hydrateGameState({
+      ...initialState,
+      sanctuaryContractWeekKey:'0-4-1',
+      sanctuaryContractProgress:{ training_focus:2 },
+      rewardedSanctuaryContracts:['0-4-1:training_focus','1-4-1:field_patrol'],
+      claimedSanctuaryWeeklyChests:['0-4-1','1-4-1'],
+    });
+    expect(hydrated.sanctuaryContractWeekKey).toBeNull();
+    expect(hydrated.rewardedSanctuaryContracts).toEqual(['1-4-1:field_patrol']);
+    expect(hydrated.claimedSanctuaryWeeklyChests).toEqual(['1-4-1']);
+  });
+
   it('advances and rewards a matching successful outing contract exactly once', () => {
     const contracts = sanctuaryContractSet(initialState.year,initialState.month,initialState.week,unlockedSanctuary);
     const outing = contracts.find(item => item.kind === 'outing')!;
