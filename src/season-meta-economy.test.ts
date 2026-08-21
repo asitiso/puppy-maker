@@ -48,7 +48,7 @@ describe('season meta economy chain', () => {
       year:1,
       month:1,
       power:0,
-      constellations:['dawn_star','scholar_star'],
+      constellations:['dawn_compass','scholar_star'],
       claimedKeys:[],
     });
     expect(clear.accepted).toBe(true);
