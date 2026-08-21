@@ -5,7 +5,8 @@ import type { TacticalEncounterId } from './tactical-encounters';
 import { createTacticalExpeditionBattle } from './tactical-expedition';
 import type { ExpeditionStageId } from './expedition-regions';
 
-const fallbackParty:[CompanionId,CompanionId] = ['bear','owl'];
+const fallbackParty:readonly [CompanionId,CompanionId] = ['bear','owl'];
+const companionIds:readonly CompanionId[] = ['bear','owl','wolf','cat'];
 
 type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
   selectedTacticalCompanions:readonly CompanionId[];
@@ -13,6 +14,10 @@ type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
 
 function finiteNonNegative(value:number) {
   return Number.isFinite(value) ? Math.max(0,value) : 0;
+}
+
+function isCompanionId(value:unknown):value is CompanionId {
+  return typeof value === 'string' && companionIds.includes(value as CompanionId);
 }
 
 export function tacticalEncounterForExpeditionStage(stageId:ExpeditionStageId):TacticalEncounterId {
@@ -23,8 +28,8 @@ export function tacticalEncounterForExpeditionStage(stageId:ExpeditionStageId):T
 
 export function tacticalPartyForGame(state:{selectedTacticalCompanions:readonly CompanionId[]}):[CompanionId,CompanionId] {
   const selected = state.selectedTacticalCompanions;
-  if (selected.length === 2 && selected[0] !== selected[1]) return [selected[0],selected[1]];
-  return fallbackParty;
+  if (selected.length === 2 && isCompanionId(selected[0]) && isCompanionId(selected[1]) && selected[0] !== selected[1]) return [selected[0],selected[1]];
+  return [...fallbackParty];
 }
 
 export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personality'>):LeaderCombatProgression {
