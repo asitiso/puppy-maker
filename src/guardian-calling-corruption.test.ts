@@ -18,8 +18,7 @@ describe('guardian calling corruption boundaries', () => {
       lastSwitchKey:null,
       history:['vanguard'],
     });
-    expect(result).toMatchObject({ changed:false, reason:'insufficient_gold', current:'vanguard' });
-    expect(Number.isFinite(result.gold)).toBe(false);
+    expect(result).toMatchObject({ changed:false, reason:'insufficient_gold', current:'vanguard', gold:0 });
   });
 
   it('canonicalizes duplicate history when a new Calling is selected', () => {
