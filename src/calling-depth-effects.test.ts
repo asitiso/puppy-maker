@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyExpeditionCallingRewards,
+  applyPathfinderOutingLegend,
   effectivePathfinderExplorationXp,
   legendRewardKey,
   specialistMasteryCalling,
@@ -71,6 +72,24 @@ describe('Calling depth effects', () => {
     });
     expect(arcanist.stressDelta).toBe(4);
     expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
+  });
+
+  it('treats zero-padded legend claims as the same month for once-only rewards', () => {
+    const vanguard = applyExpeditionCallingRewards({
+      year:2, month:6, calling:'vanguard', traits:['vanguard_legend'], signatures:[],
+      legendRewardKeys:['2-06:vanguard_legend'],
+      stageId:'forest_path', grade:'A', firstClear:true, discovery:null, regionCompleted:null,
+      materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(vanguard.fatigueDelta).toBe(8);
+    expect(vanguard.legendRewardKeys).toEqual(['2-6:vanguard_legend']);
+
+    const pathfinder = applyPathfinderOutingLegend(
+      2, 6, 'pathfinder', ['pathfinder_herb','pathfinder_eye','pathfinder_supply','pathfinder_legend'], true,
+      ['2-06:pathfinder_legend'],
+    );
+    expect(pathfinder.goldBonus).toBe(0);
+    expect(pathfinder.legendRewardKeys).toEqual(['2-6:pathfinder_legend']);
   });
 
   it('applies heart anchor stress protection whenever its signature is active', () => {
