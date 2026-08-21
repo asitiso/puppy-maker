@@ -41,6 +41,8 @@ export type ExpeditionBattleResult = {
   actionKinds: ExpeditionActionCounts;
 };
 
+export const EXPEDITION_ACTION_LIMIT = 3;
+
 const conditionMultiplier: Record<ExpeditionCombatCondition, number> = {
   energetic: 1.08,
   normal: 1,
@@ -102,6 +104,8 @@ export function applyExpeditionAction(
   accuracy: number,
   input: ExpeditionCombatInput,
 ): ExpeditionBattleState {
+  if (battle.actionCount >= EXPEDITION_ACTION_LIMIT) return battle;
+
   const quality = 0.35 + clamp(accuracy, 0, 1) * 0.65;
   const fatiguePenalty = clamp((Math.max(0, input.fatigue) - 25) / 220, 0, 0.28);
   const readiness = conditionMultiplier[input.condition] * (1 - fatiguePenalty);
