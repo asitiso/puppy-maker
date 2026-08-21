@@ -13,6 +13,11 @@ const personalityKeyByActivity: Record<ActivityId, keyof Personality> = {
   herb:'curiosity',
 };
 
+function incrementMasteryXp(mastery: MasteryState, activity: ActivityId): void {
+  const currentXp = Number.isFinite(mastery[activity]?.xp) ? Math.max(0, Math.floor(mastery[activity].xp)) : 0;
+  mastery[activity] = { xp:currentXp + 1 };
+}
+
 export type TrainingIdentityInput = {
   stats:Stats;
   personality:Personality;
@@ -33,6 +38,7 @@ export function applyTrainingIdentityEffects(input:TrainingIdentityInput) {
   if (input.schedule.includes(preferences.favoriteActivity)) {
     const key = personalityKeyByActivity[preferences.favoriteActivity];
     personality[key] = clamp(personality[key] + 1);
+    incrementMasteryXp(mastery, preferences.favoriteActivity);
   }
 
   if (activeTraits.has('vanguard_power') && input.schedule.includes('hunt')) stats.strength = clamp(stats.strength + 1);
@@ -40,8 +46,9 @@ export function applyTrainingIdentityEffects(input:TrainingIdentityInput) {
   if (activeTraits.has('arcanist_insight') && input.schedule.includes('magic')) stats.intelligence = clamp(stats.intelligence + 1);
   if (activeTraits.has('caretaker_rest') && input.schedule.includes('rest')) stats.fatigue = clamp(stats.fatigue - 2);
   if (activeTraits.has('pathfinder_herb') && input.schedule.includes('herb')) stats.intelligence = clamp(stats.intelligence + 1);
-  if (activeTraits.has('vanguard_focus') && input.schedule.includes('hunt') && input.trainingScore >= 650) {
-    mastery.hunt = { xp: mastery.hunt.xp + 1 };
+  const trainingScore = Number.isFinite(input.trainingScore) ? Math.max(0, input.trainingScore) : 0;
+  if (activeTraits.has('vanguard_focus') && input.schedule.includes('hunt') && trainingScore >= 650) {
+    incrementMasteryXp(mastery, 'hunt');
   }
 
   return { stats, personality, mastery, preferences };
