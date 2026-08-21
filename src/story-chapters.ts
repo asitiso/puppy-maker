@@ -3,7 +3,7 @@ import type { OutingLocationId } from './adventure';
 import type { BondSceneId } from './bond-scenes';
 import { expeditionStoryDefinitions } from './expedition-story';
 import type { ExpeditionStageId } from './expedition-regions';
-import type { GuardianCallingId } from './guardian-callings';
+import { guardianCallingIds, type GuardianCallingId } from './guardian-callings';
 import type { GuardianRankId } from './guardian-rank';
 
 export type CoreStoryChapterId = 'first_step' | 'wide_world' | 'trusted_bond' | 'guardian_oath' | 'starlight_road';
@@ -73,7 +73,8 @@ function trustedBondReady(progress: StoryProgress): boolean {
 }
 
 function callingChosen(progress: StoryProgress): boolean {
-  return progress.activeCalling === undefined || progress.activeCalling !== null;
+  if (progress.activeCalling === undefined) return true;
+  return progress.activeCalling !== null && guardianCallingIds.includes(progress.activeCalling);
 }
 
 export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[] {
