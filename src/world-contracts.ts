@@ -92,8 +92,9 @@ export function advanceWorldContracts(input:AdvanceInput): {
     featured_region:storedProgress('featured_region'),
   };
   const rewardedKeys = sanitizedRewardedKeys(input.rewardedKeys);
+  const successful = input.grade === 'B' || input.grade === 'A' || input.grade === 'S';
 
-  if (input.grade === 'C') {
+  if (!successful) {
     return { progress:current, rewardedKeys, reward:{ gold:0, gems:0 }, newlyCompleted:[] };
   }
 
