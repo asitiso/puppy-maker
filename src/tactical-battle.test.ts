@@ -33,6 +33,16 @@ describe('tactical battle domain', () => {
     expect(() => createBattleSession(allies,enemies,17)).toThrow('party sides');
   });
 
+  it('normalizes unusable max AP to at least one so a battle cannot pass forever', () => {
+    const zeroAp = (id:string,side:'ally'|'enemy',agility:number):TacticalUnit => ({...unit(id,side,agility),ap:0,maxAp:0});
+    const session = createBattleSession(
+      [zeroAp('runa','ally',12),zeroAp('bear','ally',6),zeroAp('owl','ally',8)],
+      [zeroAp('wolf_e','enemy',10),zeroAp('tree_e','enemy',4),zeroAp('bat_e','enemy',14)],
+      17,
+    );
+    expect(session.units.every(entry => entry.maxAp >= 1)).toBe(true);
+  });
+
   it('breaks equal-agility ties by stable unit id', () => {
     expect(orderedTimeline([unit('z','ally',10),unit('a','enemy',10),unit('m','ally',11)])).toEqual(['m','a','z']);
   });
