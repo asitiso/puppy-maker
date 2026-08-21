@@ -22,12 +22,20 @@ export type ResilientSaveLoad = {
 
 type Candidate = { state:GameState; serialized:string };
 const acceptableStatuses = new Set(['valid','legacy','migrated-v1','future-version']);
+const allSaveKeys = [saveStorageKeys.primary, ...saveStorageKeys.backups] as const;
 
 function decodeCandidate(serialized:string|null): Candidate | null {
   if (!serialized) return null;
   const inspection = inspectSavedGame(serialized);
   if (!acceptableStatuses.has(inspection.status)) return null;
   return { state:inspection.state, serialized };
+}
+
+function hasFutureVersionSave(storage:SaveStorage): boolean {
+  return allSaveKeys.some(key => {
+    const serialized = storage.getItem(key);
+    return serialized ? inspectSavedGame(serialized).status === 'future-version' : false;
+  });
 }
 
 export function loadResilientSave(storage:SaveStorage): ResilientSaveLoad {
@@ -50,6 +58,8 @@ function validSerialized(storage:SaveStorage, key:string): string | null {
 }
 
 export function writeResilientSave(storage:SaveStorage, state:GameState): void {
+  if (hasFutureVersionSave(storage)) return;
+
   const primary = validSerialized(storage, saveStorageKeys.primary);
   const backup1 = validSerialized(storage, saveStorageKeys.backups[0]);
   const backup2 = validSerialized(storage, saveStorageKeys.backups[1]);
@@ -61,6 +71,6 @@ export function writeResilientSave(storage:SaveStorage, state:GameState): void {
 }
 
 export function repairPrimarySave(storage:SaveStorage, loaded:ResilientSaveLoad): void {
-  if (!loaded.recovered) return;
+  if (!loaded.recovered || hasFutureVersionSave(storage)) return;
   storage.setItem(saveStorageKeys.primary, serializeSavedGame(loaded.state));
 }
