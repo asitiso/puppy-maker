@@ -59,6 +59,15 @@ describe('bond level five combination ultimates', () => {
     expect(Number.isFinite(enemy.shield)).toBe(true);
   });
 
+  it('contains non-finite ally shields when Bear Ultimate applies formation', () => {
+    const session = battle('bear');
+    session.units = session.units.map(entry => entry.id === 'companion-owl' ? { ...entry,shield:Number.NaN } : entry);
+    const next = resolveCombinationUltimate(session,{ actorId:'runa', companionId:'bear', bondLevel:5, targetId:'runa' });
+    const ally = next.units.find(entry => entry.id === 'companion-owl')!;
+    expect(ally.shield).toBe(28);
+    expect(Number.isFinite(ally.shield)).toBe(true);
+  });
+
   it('stays locked one MP below the charge boundary without spending a turn', () => {
     const session = battle('wolf',9);
     expect(validCombinationUltimateTargets(session,'runa','wolf',5)).toEqual([]);
