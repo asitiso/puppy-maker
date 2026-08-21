@@ -62,8 +62,9 @@ describe('bond collection and achievements', () => {
       ...initialState,
       memories: ['first_training'] as typeof initialState.memories,
     };
-    const claimed = reducer(eligible, { type: 'CLAIM_ACHIEVEMENT', achievement: 'first_steps' });
-    expect(claimed.gold).toBe(initialState.gold + 150);
+    const ready = reducer(eligible, { type:'GO', screen:'hub' });
+    const claimed = reducer(ready, { type: 'CLAIM_ACHIEVEMENT', achievement: 'first_steps' });
+    expect(claimed.gold).toBe(ready.gold + 150);
     expect(claimed.claimedAchievements).toEqual(['first_steps']);
 
     const duplicate = reducer(claimed, { type: 'CLAIM_ACHIEVEMENT', achievement: 'first_steps' });
