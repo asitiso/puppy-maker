@@ -23,4 +23,13 @@ describe('Raising Calling history hydration', () => {
     });
     expect(present.callingHistory).toEqual(['arcanist','vanguard']);
   });
+
+  it('clears a stale monthly switch lock when no Calling is active', () => {
+    const hydrated = hydrateRaisingDepthState({
+      activeCalling:null,
+      callingHistory:[],
+      callingLastSwitchKey:'2-7',
+    });
+    expect(hydrated.callingLastSwitchKey).toBeNull();
+  });
 });
