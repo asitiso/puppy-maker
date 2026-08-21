@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { currentAdvancedTalents, masteryLevel, type ExpeditionActionCounts, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
-import { applyExpeditionAction, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
+import { applyExpeditionAction, EXPEDITION_ACTION_LIMIT, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
 import { canCraft, craftingRecipes } from './expedition-crafting';
 import { expeditionDiscoveryDefinitions } from './expedition-discoveries';
 import { expeditionRegionDefinitions, expeditionStageDefinitions, isExpeditionStageCleared, isExpeditionStageUnlocked, nextExpeditionStage } from './expedition-regions';
@@ -67,6 +67,7 @@ function Battle({ state, stageId, onFinish, onCancel }: {
     return () => window.clearInterval(timer);
   }, []);
   const accuracy = 1 - Math.min(1, Math.abs(0.5 - needle) * 2);
+  const actionLimitReached = battle.actionCount >= EXPEDITION_ACTION_LIMIT;
   const act = (kind: ExpeditionActionKind) => {
     setBattle(current => applyExpeditionAction(current, kind, accuracy, input));
     setFlash(accuracy > 0.72 ? 'PERFECT!' : accuracy > 0.45 ? 'GOOD!' : 'MISS');
@@ -83,11 +84,11 @@ function Battle({ state, stageId, onFinish, onCancel }: {
       <div className="expedition-timing"><i className="sweet"/><em style={{ transform: `rotate(${needle * 360}deg)` }}/>{flash && <img src="/assets/effects/success_burst.png" alt=""/>}<b>{flash}</b></div>
     </div>
     <div className="expedition-actions">
-      <button onClick={() => act('attack')}><b>공격</b><span>근력 · 사냥 숙련</span></button>
-      <button onClick={() => act('dodge')}><b>회피</b><span>침착함 · 휴식 숙련</span></button>
-      <button onClick={() => act('charge')}><b>기 모으기</b><span>마력 · 마법 숙련</span></button>
+      <button disabled={actionLimitReached} onClick={() => act('attack')}><b>공격</b><span>근력 · 사냥 숙련</span></button>
+      <button disabled={actionLimitReached} onClick={() => act('dodge')}><b>회피</b><span>침착함 · 휴식 숙련</span></button>
+      <button disabled={actionLimitReached} onClick={() => act('charge')}><b>기 모으기</b><span>마력 · 마법 숙련</span></button>
     </div>
-    <button className="expedition-finish" disabled={battle.actionCount < 3} onClick={() => onFinish(battle)}>원정 결과 확인</button>
+    <button className="expedition-finish" disabled={battle.actionCount < EXPEDITION_ACTION_LIMIT} onClick={() => onFinish(battle)}>원정 결과 확인</button>
   </section>;
 }
 
