@@ -1,6 +1,7 @@
 import type { SeasonJourneyKey } from './season-journey';
 import { isValidSeasonPurchaseKey } from './season-shop';
 import type { SeasonKeepsakeMilestoneId } from './season-keepsakes';
+import { weeklyDirectives } from './weekly-directives';
 
 export type SeasonJourneyHistoryEntry = {
   key:SeasonJourneyKey;
@@ -54,6 +55,14 @@ function hydrateNumberMap(raw:unknown, keyPattern:RegExp) {
   return result;
 }
 
+function hydrateWeeklyProgress(raw:unknown, weekKey:string|null):Record<string,number> {
+  const hydrated = hydrateNumberMap(raw,directiveIdPattern);
+  if (!weekKey) return hydrated;
+  const [year,month,week] = weekKey.split('-').map(Number);
+  const assigned = new Set(weeklyDirectives(year,month,week).map(directive => directive.id));
+  return Object.fromEntries(Object.entries(hydrated).filter(([id]) => assigned.has(id as never)));
+}
+
 function hydrateUniqueStrings(raw:unknown, pattern:RegExp) {
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((value):value is string => typeof value === 'string' && pattern.test(value)))];
@@ -82,12 +91,13 @@ function hydrateShopPurchases(raw:unknown):string[] {
 
 export function hydrateLiveOpsState(raw:unknown): LiveOpsPersistentState {
   const source = isRecord(raw) ? raw : {};
+  const weeklyDirectiveKey = typeof source.weeklyDirectiveKey === 'string' && weekKeyPattern.test(source.weeklyDirectiveKey) ? source.weeklyDirectiveKey : null;
   return {
     seasonJourneyScores:hydrateNumberMap(source.seasonJourneyScores,seasonKeyPattern),
     claimedSeasonJourneyTiers:hydrateUniqueStrings(source.claimedSeasonJourneyTiers,seasonTierPattern),
     seasonTokenBalances:hydrateNumberMap(source.seasonTokenBalances,seasonKeyPattern),
-    weeklyDirectiveKey:typeof source.weeklyDirectiveKey === 'string' && weekKeyPattern.test(source.weeklyDirectiveKey) ? source.weeklyDirectiveKey : null,
-    weeklyDirectiveProgress:hydrateNumberMap(source.weeklyDirectiveProgress,directiveIdPattern),
+    weeklyDirectiveKey,
+    weeklyDirectiveProgress:hydrateWeeklyProgress(source.weeklyDirectiveProgress,weeklyDirectiveKey),
     rewardedWeeklyDirectives:hydrateUniqueStrings(source.rewardedWeeklyDirectives,weeklyRewardPattern),
     seasonJourneyHistory:hydrateHistory(source.seasonJourneyHistory),
     seasonShopPurchases:hydrateShopPurchases(source.seasonShopPurchases),
