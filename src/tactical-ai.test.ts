@@ -20,6 +20,11 @@ describe('tactical ai',()=>{
  });
  it('returns no legacy enemy action when every opposing target is dead',()=>expect(chooseEnemyAction('brute',u('e','enemy'),[u('a','ally',0),u('b','ally',0)],[u('e','enemy')])).toBeNull());
  it('returns no auto action when every enemy target is dead',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy',0)])).toBeNull());
+ it('legacy selectors ignore non-finite runtime hp targets',()=>{
+   const corrupted={...u('bad','ally'),hp:Number.POSITIVE_INFINITY};
+   expect(chooseEnemyAction('brute',u('e','enemy'),[corrupted,u('safe','ally',80)],[u('e','enemy')])?.targetId).toBe('safe');
+   expect(chooseAutoAction(u('runa','ally'),[{...corrupted,side:'enemy'},u('safe-enemy','enemy',70)])?.targetId).toBe('safe-enemy');
+ });
  it('engine AI uses SPECIAL at full MP',()=>{const actor={...u('bat','enemy'),agility:20,mp:10};const s=createBattleSession([u('runa','ally',40),u('owl','ally'),u('bear','ally')],[actor,u('e2','enemy'),u('e3','enemy')],3);expect(chooseTacticalEngineAction(s,'bat',3)?.actionId).toBe('special')});
  it('engine AI sanitizes non-finite tie-break seeds instead of crashing',()=>{
    const actor={...u('bat','enemy'),agility:20};
