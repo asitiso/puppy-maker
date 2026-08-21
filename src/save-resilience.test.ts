@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './game';
-import { parseSavedGame, serializeSavedGame } from './save-schema';
+import { CURRENT_SAVE_SCHEMA_VERSION, parseSavedGame, serializeSavedGame } from './save-schema';
 import {
   loadResilientSave,
+  repairPrimarySave,
   saveStorageKeys,
   writeResilientSave,
   type SaveStorage,
@@ -13,6 +14,14 @@ class MemoryStorage implements SaveStorage {
   getItem(key:string) { return this.data.get(key) ?? null; }
   setItem(key:string, value:string) { this.data.set(key, value); }
   removeItem(key:string) { this.data.delete(key); }
+}
+
+function futureSave(gold:number) {
+  return JSON.stringify({
+    schemaVersion:CURRENT_SAVE_SCHEMA_VERSION + 1,
+    integrity:'future-integrity-format-is-opaque-to-this-version',
+    state:{ ...initialState, gold, unknownFutureField:{ keep:true } },
+  });
 }
 
 describe('save resilience', () => {
@@ -66,5 +75,37 @@ describe('save resilience', () => {
     writeResilientSave(storage, { ...initialState, gold:120 });
     expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[0])).gold).toBe(90);
     expect(loadResilientSave(storage).state.gold).toBe(120);
+  });
+
+  it('keeps a future-version primary byte-for-byte intact instead of downgrading it on autosave', () => {
+    const storage = new MemoryStorage();
+    const future = futureSave(999);
+    storage.setItem(saveStorageKeys.primary, future);
+
+    const loaded = loadResilientSave(storage);
+    expect(loaded.source).toBe('primary');
+    expect(loaded.state.gold).toBe(999);
+
+    writeResilientSave(storage, { ...loaded.state, gold:1000 });
+
+    expect(storage.getItem(saveStorageKeys.primary)).toBe(future);
+    expect(storage.getItem(saveStorageKeys.backups[0])).toBeNull();
+  });
+
+  it('does not repair a future-version backup into a lossy current-schema primary', () => {
+    const storage = new MemoryStorage();
+    const future = futureSave(888);
+    storage.setItem(saveStorageKeys.primary, '{broken');
+    storage.setItem(saveStorageKeys.backups[0], future);
+
+    const loaded = loadResilientSave(storage);
+    expect(loaded.source).toBe('backup-1');
+    expect(loaded.recovered).toBe(true);
+    expect(loaded.state.gold).toBe(888);
+
+    repairPrimarySave(storage, loaded);
+
+    expect(storage.getItem(saveStorageKeys.primary)).toBe('{broken');
+    expect(storage.getItem(saveStorageKeys.backups[0])).toBe(future);
   });
 });
