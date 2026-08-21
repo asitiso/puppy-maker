@@ -49,4 +49,23 @@ describe('personality choice impact', () => {
     expect(Object.values(result.personality).every(Number.isFinite)).toBe(true);
     expect(Object.values(result.mastery).every(entry => Number.isFinite(entry.xp))).toBe(true);
   });
+
+  it('restores a complete mastery shape when a direct caller supplies a damaged partial object', () => {
+    const result = applyTrainingIdentityEffects({
+      stats,
+      personality:{ courage:20, kindness:20, curiosity:60, calmness:20 },
+      mastery:{ magic:{ xp:2 } } as typeof mastery,
+      schedule:['magic'],
+      trainingScore:500,
+      activeCalling:null,
+      purchasedTraits:[],
+    });
+
+    expect(result.mastery).toEqual({
+      hunt:{ xp:0 },
+      magic:{ xp:3 },
+      rest:{ xp:0 },
+      herb:{ xp:0 },
+    });
+  });
 });
