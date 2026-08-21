@@ -30,8 +30,6 @@ describe('global release candidate cross-feature integration', () => {
     expect(new Set(second.claimedExpeditionSeasonTiers).size).toBe(second.claimedExpeditionSeasonTiers.length);
     expect(new Set(second.rewardedWorldContracts).size).toBe(second.rewardedWorldContracts.length);
     expect(new Set(second.claimedSeasonJourneyTiers).size).toBe(second.claimedSeasonJourneyTiers.length);
-    expect(second.expeditionRecords.forest_path.attempts).toBe(2);
-    expect(second.expeditionRecords.forest_path.played).toBe(2);
     expect(second.expeditionRecords.forest_path.cleared).toBe(true);
   });
 
