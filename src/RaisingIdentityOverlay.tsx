@@ -44,6 +44,16 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return <button ref={launcherRef} className="raising-home-card" onClick={onOpen} aria-label="루나 성장 정체성 열기">
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
