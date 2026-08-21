@@ -37,6 +37,16 @@ function canonicalHistory(history:readonly GuardianCallingId[]): GuardianCalling
   return result;
 }
 
+function canonicalSwitchKey(raw:string | null): string | null {
+  if (raw === null) return null;
+  const match = /^(\d+)-(\d+)$/.exec(raw);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (year < 1 || month < 1 || month > 12) return null;
+  return `${year}-${month}`;
+}
+
 export function callingSwitchKey(year: number, month: number): string {
   const safeYear = positiveInt(year);
   const safeMonth = Number.isFinite(month) ? Math.max(1, Math.min(12, Math.floor(month))) : 1;
@@ -62,14 +72,15 @@ export type CallingSelectionResult = CallingSelectionInput & {
 export function applyCallingSelection(input: CallingSelectionInput): CallingSelectionResult {
   const gold = canonicalGold(input.gold);
   const history = canonicalHistory(input.history);
+  const lastSwitchKey = canonicalSwitchKey(input.lastSwitchKey);
   if (guardianRankOrder.indexOf(input.guardianRank) < guardianRankOrder.indexOf('guardian')) {
-    return { ...input, gold, history, changed:false, reason:'rank_locked' };
+    return { ...input, gold, history, lastSwitchKey, changed:false, reason:'rank_locked' };
   }
-  if (input.current === input.next) return { ...input, gold, history, changed:false, reason:'same_calling' };
+  if (input.current === input.next) return { ...input, gold, history, lastSwitchKey, changed:false, reason:'same_calling' };
   const key = callingSwitchKey(input.year, input.month);
   const switching = input.current !== null;
-  if (switching && input.lastSwitchKey === key) return { ...input, gold, history, changed:false, reason:'monthly_lock' };
-  if (switching && gold < 300) return { ...input, gold, history, changed:false, reason:'insufficient_gold' };
+  if (switching && lastSwitchKey === key) return { ...input, gold, history, lastSwitchKey, changed:false, reason:'monthly_lock' };
+  if (switching && gold < 300) return { ...input, gold, history, lastSwitchKey, changed:false, reason:'insufficient_gold' };
   return {
     ...input,
     current: input.next,
