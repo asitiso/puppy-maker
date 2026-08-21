@@ -50,7 +50,7 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
   const provenUnlocks = bondSceneIds.filter(id => claimedUnlocks.includes(id) || claimedRewards.includes(id));
   const afterEligible = eligible({ ...current, unlocked:provenUnlocks });
   const unlocked = bondSceneIds.filter(id => provenUnlocks.includes(id) || afterEligible.includes(id));
-  const newlyUnlocked = unlocked.filter(id => !claimedUnlocks.includes(id));
+  const newlyUnlocked = unlocked.filter(id => !claimedUnlocks.includes(id) && !claimedRewards.includes(id));
   const newlyRewarded = unlocked.filter(id => !claimedRewards.includes(id));
   const rewarded = bondSceneIds.filter(id => claimedRewards.includes(id) || newlyRewarded.includes(id));
   const safeGold = safeNonNegativeInt(current.gold);
