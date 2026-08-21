@@ -65,8 +65,9 @@ export function validCombinationUltimateTargets(
 
 function damage(target:TacticalUnit,power:number):TacticalUnit {
   const raw = Math.max(0,Math.floor(power));
-  const blocked = Math.min(target.shield,raw);
-  return { ...target,shield:target.shield-blocked,hp:Math.max(0,target.hp-(raw-blocked)) };
+  const shield = Number.isFinite(target.shield) ? Math.max(0,Math.floor(target.shield)) : 0;
+  const blocked = Math.min(shield,raw);
+  return { ...target,shield:shield-blocked,hp:Math.max(0,target.hp-(raw-blocked)) };
 }
 
 export function resolveCombinationUltimate(session:BattleSession,input:CombinationUltimateInput):BattleSession {
