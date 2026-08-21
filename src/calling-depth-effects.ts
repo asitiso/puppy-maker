@@ -1,4 +1,4 @@
-import type { CallingSignatureId } from './calling-signatures';
+import { callingSignatures, type CallingSignatureId } from './calling-signatures';
 import type { ExpeditionActionCounts } from './expedition-combat';
 import { isBossStage } from './expedition-bosses';
 import type { ExpeditionGrade, ExpeditionRegionId, ExpeditionStageId } from './expedition-regions';
@@ -91,7 +91,8 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   let stressDelta = safeNonNegativeInt(input.stressDelta);
   let legendRewardKeys = canonicalLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
-  const signatures = new Set(input.signatures);
+  const traitBackedSignatures = new Set(callingSignatures(input.calling, [...input.traits]));
+  const signatures = new Set(input.signatures.filter(id => traitBackedSignatures.has(id)));
   const traits = new Set(activeCallingTraits(input.calling, [...input.traits]));
 
   if (input.calling === 'pathfinder') {
