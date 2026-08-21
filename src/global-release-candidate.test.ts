@@ -48,7 +48,7 @@ describe('global release candidate save and regression matrix', () => {
     expect(hydrated.discoveries).toEqual([]);
     expect(hydrated.rewardedMonthlyMissions).toEqual(['training_once']);
     expect(hydrated.seasonStamps).toEqual(['spring']);
-    expect(hydrated.selectedTacticalCompanions).toEqual(initialState.selectedTacticalCompanions);
+    expect(hydrated.selectedTacticalCompanions).toEqual(['bear']);
     expect(hydrated.claimedTacticalFirstClears).toEqual(['training_ground']);
     expect(Object.keys(hydrated.tacticalBattleRecords)).toEqual(['training_ground']);
   });
