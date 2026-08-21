@@ -94,7 +94,7 @@ describe('global release candidate save and regression matrix', () => {
       screen:'result',
       monthlyCounters:{ trainings:1,outings:2,gifts:1 },
       rewardedMonthlyMissions:['training_once','outing_twice','gift_once'],
-      monthlyFocus:'training',
+      monthlyFocus:'hunt',
     };
     const next = reducer(state,{ type:'NEXT_MONTH' });
     expect(next.monthlyCounters).toEqual({ trainings:0,outings:0,gifts:0 });
