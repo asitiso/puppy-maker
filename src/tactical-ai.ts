@@ -6,10 +6,11 @@ import {tacticalActionHand} from './tactical-hand';
 import {validCombinationUltimateTargets,type CombinationUltimateInput} from './tactical-ultimate';
 export type EnemyArchetype=TacticalEnemyArchetype;
 export type AiAction={kind:'attack'|'guard'|'hex'|'heal';targetId:string};
-const living=(xs:TacticalUnit[])=>xs.filter(x=>x.hp>0);
+const living=(xs:TacticalUnit[])=>xs.filter(x=>Number.isFinite(x.hp)&&x.hp>0);
 const lowest=(xs:TacticalUnit[])=>living(xs).slice().sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.id.localeCompare(b.id))[0];
-export function chooseEnemyAction(kind:EnemyArchetype,actor:TacticalUnit,allies:TacticalUnit[],enemies:TacticalUnit[]):AiAction{const foe=lowest(allies);if(kind==='medic'){const patient=lowest(enemies);if(patient&&patient.hp<patient.maxHp)return {kind:'heal',targetId:patient.id};}if(kind==='guardian'&&actor.shield<15)return {kind:'guard',targetId:actor.id};if(kind==='hexer'&&foe)return {kind:'hex',targetId:foe.id};return {kind:'attack',targetId:(kind==='assassin'?lowest(allies):living(allies)[0]??foe)?.id??actor.id};}
-export function chooseAutoAction(actor:TacticalUnit,enemies:TacticalUnit[]):AiAction{const target=lowest(enemies);return {kind:'attack',targetId:target?.id??actor.id};}
+const safeSeed=(seed:number)=>Number.isFinite(seed)?Math.floor(seed):0;
+export function chooseEnemyAction(kind:EnemyArchetype,actor:TacticalUnit,allies:TacticalUnit[],enemies:TacticalUnit[]):AiAction|null{if(!Number.isFinite(actor.hp)||actor.hp<=0)return null;const foe=lowest(allies);if(!foe)return null;if(kind==='medic'){const patient=lowest(enemies);if(patient&&patient.hp<patient.maxHp)return {kind:'heal',targetId:patient.id};}if(kind==='guardian'&&actor.shield<15)return {kind:'guard',targetId:actor.id};if(kind==='hexer')return {kind:'hex',targetId:foe.id};return {kind:'attack',targetId:(kind==='assassin'?lowest(allies):living(allies)[0]??foe)?.id??foe.id};}
+export function chooseAutoAction(actor:TacticalUnit,enemies:TacticalUnit[]):AiAction|null{if(!Number.isFinite(actor.hp)||actor.hp<=0)return null;const target=lowest(enemies);return target?{kind:'attack',targetId:target.id}:null;}
 
 export function chooseAutoCombinationUltimate(session:BattleSession,party:readonly CompanionId[],bondLevels:Partial<Record<CompanionId,number>>):CombinationUltimateInput|null {
   const available=(companionId:CompanionId)=>{
@@ -18,8 +19,8 @@ export function chooseAutoCombinationUltimate(session:BattleSession,party:readon
     const targetIds=validCombinationUltimateTargets(session,'runa',companionId,bondLevel);
     return targetIds.length?{companionId,bondLevel,targetIds}:null;
   };
-  const allies=session.units.filter(unit=>unit.side==='ally'&&unit.hp>0);
-  const enemies=session.units.filter(unit=>unit.side==='enemy'&&unit.hp>0);
+  const allies=session.units.filter(unit=>unit.side==='ally'&&Number.isFinite(unit.hp)&&unit.hp>0);
+  const enemies=session.units.filter(unit=>unit.side==='enemy'&&Number.isFinite(unit.hp)&&unit.hp>0);
   const owl=available('owl');
   const owlPatient=owl?lowest(allies.filter(unit=>owl.targetIds.includes(unit.id))):undefined;
   if(owl&&owlPatient&&owlPatient.hp/owlPatient.maxHp<=.55)return {actorId:'runa',companionId:'owl',bondLevel:owl.bondLevel,targetId:owlPatient.id};
@@ -45,8 +46,8 @@ function legalTarget(session:BattleSession,actorId:string,actionId:TacticalActio
 function chooseArchetypeEngineAction(session:BattleSession,actor:TacticalUnit,hand:readonly TacticalActionInput['actionId'][]):TacticalActionInput|null{
   const archetype=actor.aiArchetype;
   if(!archetype||actor.side!=='enemy')return null;
-  const allies=session.units.filter(unit=>unit.side===actor.side&&unit.hp>0);
-  const enemies=session.units.filter(unit=>unit.side!==actor.side&&unit.hp>0);
+  const allies=session.units.filter(unit=>unit.side===actor.side&&Number.isFinite(unit.hp)&&unit.hp>0);
+  const enemies=session.units.filter(unit=>unit.side!==actor.side&&Number.isFinite(unit.hp)&&unit.hp>0);
   const has=(actionId:TacticalActionInput['actionId'])=>hand.includes(actionId);
   const patient=lowest(allies);
   const supportThreshold=archetype==='medic' ? 0.8 : archetype==='guardian' ? 0.65 : 0;
@@ -62,9 +63,9 @@ function chooseArchetypeEngineAction(session:BattleSession,actor:TacticalUnit,ha
 
 export function chooseTacticalEngineAction(session:BattleSession,actorId:string,seed:number):TacticalActionInput|null {
   const actor=session.units.find(unit=>unit.id===actorId);
-  if(!actor||actor.hp<=0)return null;
-  const allies=session.units.filter(unit=>unit.side===actor.side&&unit.hp>0);
-  const enemies=session.units.filter(unit=>unit.side!==actor.side&&unit.hp>0);
+  if(!actor||!Number.isFinite(actor.hp)||actor.hp<=0)return null;
+  const allies=session.units.filter(unit=>unit.side===actor.side&&Number.isFinite(unit.hp)&&unit.hp>0);
+  const enemies=session.units.filter(unit=>unit.side!==actor.side&&Number.isFinite(unit.hp)&&unit.hp>0);
   if(!enemies.length)return null;
   const hand=tacticalActionHand(session,actorId);
   const has=(actionId:TacticalActionInput['actionId'])=>hand.includes(actionId);
@@ -76,7 +77,7 @@ export function chooseTacticalEngineAction(session:BattleSession,actorId:string,
   if(has('attack')){
     const attackTargets=validTacticalTargets(session,actorId,'attack');
     const exposed=enemies.filter(unit=>attackTargets.includes(unit.id));
-    if(exposed.length){const sorted=exposed.slice().sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.id.localeCompare(b.id));const minRatio=sorted[0].hp/sorted[0].maxHp;const tied=sorted.filter(unit=>unit.hp/unit.maxHp===minRatio);const target=tied[Math.abs(Math.floor(seed))%tied.length];return{actorId,actionId:'attack',targetId:target.id};}
+    if(exposed.length){const sorted=exposed.slice().sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.id.localeCompare(b.id));const minRatio=sorted[0].hp/sorted[0].maxHp;const tied=sorted.filter(unit=>unit.hp/unit.maxHp===minRatio);const target=tied[Math.abs(safeSeed(seed))%tied.length];return{actorId,actionId:'attack',targetId:target.id};}
   }
   if(has('skill')){const target=legalTarget(session,actorId,'skill',enemies);if(target)return{actorId,actionId:'skill',targetId:target.id};}
   if(has('support')&&patient){const supportTargets=validTacticalTargets(session,actorId,'support');if(supportTargets.includes(patient.id))return{actorId,actionId:'support',targetId:patient.id};}

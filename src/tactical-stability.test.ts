@@ -10,6 +10,7 @@ import { resolveCombinationUltimate, validCombinationUltimateTargets } from './t
 const progression = { power: 42, magic: 32, agility: 13, maxHp: 150 };
 const party = ['wolf', 'owl'] as const;
 const bonds = { wolf: 5, owl: 1 } as const;
+const stressStages = Array.from({length:10},(_,index)=>`stress-${index}`);
 
 function assertResourceBounds(session:BattleSession) {
   for (const unit of session.units) {
@@ -66,8 +67,8 @@ function autoStep(session:BattleSession):BattleSession {
   return skipTacticalTurnIfNoPlayableAction(session, actorId, tacticalActionHand(session, actorId));
 }
 
-function runBattle(mode:'manual'|'auto', seed:number) {
-  let session = createTacticalExpeditionBattle('city_gate', party, progression, seed);
+function runBattle(mode:'manual'|'auto', seed:number, stageId='city_gate') {
+  let session = createTacticalExpeditionBattle(stageId, party, progression, seed);
   const initialHand = tacticalActionHand(session, 'runa');
   expect(initialHand).toHaveLength(4);
   expect(tacticalActionHand(session, 'runa')).toEqual(initialHand);
@@ -76,9 +77,11 @@ function runBattle(mode:'manual'|'auto', seed:number) {
 
   while (!isBattleFinished(session) && steps < 160) {
     const before = session;
+    const beforeDigest = digest(session);
     const beforeRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     session = mode === 'manual' ? manualStep(session) : autoStep(session);
-    expect(session, `${mode} seed ${seed} stalled at step ${steps}`).not.toBe(before);
+    expect(session, `${mode} ${stageId} seed ${seed} stalled at step ${steps}`).not.toBe(before);
+    expect(digest(session), `${mode} ${stageId} seed ${seed} made no meaningful progress at step ${steps}`).not.toEqual(beforeDigest);
     const afterRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     ultimateUsed = ultimateUsed || beforeRunaMp === 10 && afterRunaMp === 0;
     assertResourceBounds(session);
@@ -87,7 +90,7 @@ function runBattle(mode:'manual'|'auto', seed:number) {
     steps += 1;
   }
 
-  expect(isBattleFinished(session), `${mode} seed ${seed} did not finish`).not.toBeNull();
+  expect(isBattleFinished(session), `${mode} ${stageId} seed ${seed} did not finish`).not.toBeNull();
   expect(steps).toBeLessThan(160);
   return { session,steps,ultimateUsed };
 }
@@ -106,6 +109,52 @@ const basicUnit = (id:string,side:'ally'|'enemy',agility:number,hp=100,ap=3,mp=0
 });
 
 describe('tactical vertical slice stability', () => {
+  it('sanitizes non-finite battle inputs so a fresh session cannot start corrupted', () => {
+    const corrupted = {
+      ...basicUnit('runa','ally',20),
+      maxHp:Number.NaN,
+      hp:Number.POSITIVE_INFINITY,
+      agility:Number.NEGATIVE_INFINITY,
+      ap:Number.NaN,
+      maxAp:Number.POSITIVE_INFINITY,
+      mp:Number.NEGATIVE_INFINITY,
+      maxMp:Number.NaN,
+      shield:Number.POSITIVE_INFINITY,
+    };
+    const session = createBattleSession(
+      [corrupted,basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      Number.NaN,
+    );
+
+    expect(Number.isFinite(session.seed)).toBe(true);
+    for (const unit of session.units) {
+      for (const value of [unit.maxHp,unit.hp,unit.agility,unit.ap,unit.maxAp,unit.mp,unit.maxMp,unit.shield]) {
+        expect(Number.isFinite(value), `${unit.id} contains non-finite battle state`).toBe(true);
+      }
+    }
+    assertResourceBounds(session);
+  });
+
+  it('owns fresh unit, status, timeline and acted state instead of sharing battle input references', () => {
+    const runa = { ...basicUnit('runa','ally',20),statuses:[{ id:'focus' as const,turns:2 }] };
+    const allies = [runa,basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)];
+    const enemies = [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)];
+    const session = createBattleSession(allies,enemies,23);
+
+    expect(session.units[0]).not.toBe(runa);
+    expect(session.units[0].statuses).not.toBe(runa.statuses);
+    expect(session.round).toBe(1);
+    expect(session.acted).toEqual([]);
+    expect(session.timeline).toEqual(['runa','enemy-1','ally-2','enemy-2','ally-3','enemy-3']);
+
+    session.units[0].hp = 1;
+    session.units[0].statuses?.push({ id:'guard',turns:1 });
+    session.acted.push('runa');
+    expect(runa.hp).toBe(100);
+    expect(runa.statuses).toEqual([{ id:'focus',turns:2 }]);
+  });
+
   it('repeats complete manual and AUTO battles without stalls or resource corruption', () => {
     let sawUltimate = false;
     for (const mode of ['manual','auto'] as const) {
@@ -130,7 +179,47 @@ describe('tactical vertical slice stability', () => {
     expect(digest(runBattle('auto',73).session)).toEqual(digest(runBattle('auto',73).session));
   });
 
-  it('safely advances a live turn when the hand is empty or has no playable action', () => {
+  it('keeps AUTO bounded and making meaningful progress through 10, 50 and 100 battle checkpoints across mixed stage archetypes', () => {
+    const checkpoints = new Map<number,{victories:number;defeats:number}>();
+    let victories = 0;
+    let defeats = 0;
+    for (let seed=1;seed<=100;seed+=1) {
+      const stageId=stressStages[(seed-1)%stressStages.length];
+      const { session,steps } = runBattle('auto',seed,stageId);
+      const result = isBattleFinished(session);
+      expect(result).not.toBeNull();
+      expect(steps).toBeGreaterThan(0);
+      expect(steps).toBeLessThan(160);
+      if (result === 'victory') victories += 1;
+      else defeats += 1;
+      if (seed === 10 || seed === 50 || seed === 100) checkpoints.set(seed,{victories,defeats});
+    }
+
+    expect(checkpoints.get(10)).toBeDefined();
+    expect(checkpoints.get(50)).toBeDefined();
+    expect(checkpoints.get(100)).toEqual({victories,defeats});
+    expect(victories + defeats).toBe(100);
+  });
+
+  it('replays representative AUTO seeds identically after the 100-battle stress run', () => {
+    for (const seed of [1,10,50,100]) {
+      expect(digest(runBattle('auto',seed).session)).toEqual(digest(runBattle('auto',seed).session));
+    }
+  });
+
+  it('rejects a dead target without spending resources or advancing the turn', () => {
+    const session = createBattleSession(
+      [basicUnit('runa','ally',20),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-dead','enemy',15,0),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      31,
+    );
+    const before = digest(session);
+    expect(validTacticalTargets(session,'runa','skill')).not.toContain('enemy-dead');
+    expect(resolveTacticalAction(session,{actorId:'runa',actionId:'skill',targetId:'enemy-dead'})).toBe(session);
+    expect(digest(session)).toEqual(before);
+  });
+
+  it('safely advances exactly one live turn when the hand is empty or has no playable action', () => {
     const session = createBattleSession(
       [basicUnit('runa','ally',20),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
       [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
@@ -139,7 +228,17 @@ describe('tactical vertical slice stability', () => {
     const actorId = nextTacticalActor(session)!;
     const emptyHandPass = skipTacticalTurnIfNoPlayableAction(session,actorId,[]);
     expect(emptyHandPass).not.toBe(session);
-    expect(emptyHandPass.acted).toContain(actorId);
+    expect(emptyHandPass.acted).toEqual([actorId]);
+    expect(skipTacticalTurnIfNoPlayableAction(emptyHandPass,actorId,[])).toBe(emptyHandPass);
+
+    const noResource = createBattleSession(
+      [basicUnit('runa','ally',20,100,0,0),basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      12,
+    );
+    const noPlayablePass = skipTacticalTurnIfNoPlayableAction(noResource,'runa',['attack','skill','special']);
+    expect(noPlayablePass.acted).toEqual(['runa']);
+    expect(noPlayablePass.units.find(unit => unit.id === 'runa')).toEqual(noResource.units.find(unit => unit.id === 'runa'));
 
     const legalHandDoesNotPass = skipTacticalTurnIfNoPlayableAction(session,actorId,['attack']);
     expect(legalHandDoesNotPass).toBe(session);
@@ -197,6 +296,20 @@ describe('tactical vertical slice stability', () => {
     expect(nextTacticalActor(mutualWipe)).toBeNull();
   });
 
+  it('blocks regular actions, skips and Joint Ultimate after a terminal result', () => {
+    const won = createBattleSession(
+      [basicUnit('runa','ally',20,100,3,10),basicUnit('companion-wolf','ally',12),basicUnit('companion-owl','ally',8)],
+      [basicUnit('enemy-1','enemy',10,0),basicUnit('enemy-2','enemy',7,0),basicUnit('enemy-3','enemy',5,0)],
+      41,
+    );
+    expect(isBattleFinished(won)).toBe('victory');
+    expect(resolveTacticalAction(won,{actorId:'runa',actionId:'support',targetId:'runa'})).toBe(won);
+    expect(skipTacticalTurnIfNoPlayableAction(won,'runa',[])).toBe(won);
+    expect(validCombinationUltimateTargets(won,'runa','wolf',5)).toEqual([]);
+    expect(resolveCombinationUltimate(won,{actorId:'runa',companionId:'wolf',bondLevel:5,targetId:'enemy-1'})).toBe(won);
+    expect(digest(won)).toEqual(digest(won));
+  });
+
   it('does not leak HP, AP, MP, acted units or terminal state into a consecutive battle', () => {
     const first = runBattle('auto',101).session;
     expect(isBattleFinished(first)).not.toBeNull();
@@ -204,6 +317,11 @@ describe('tactical vertical slice stability', () => {
     const second = createTacticalExpeditionBattle('city_gate',party,progression,101);
     const fresh = createTacticalExpeditionBattle('city_gate',party,progression,101);
     expect(second).toEqual(fresh);
+    expect(second).not.toBe(fresh);
+    expect(second.units).not.toBe(fresh.units);
+    expect(second.acted).not.toBe(fresh.acted);
+    expect(second.timeline).not.toBe(fresh.timeline);
+    for (let index=0;index<second.units.length;index+=1) expect(second.units[index]).not.toBe(fresh.units[index]);
     expect(second.round).toBe(1);
     expect(second.acted).toEqual([]);
     expect(isBattleFinished(second)).toBeNull();

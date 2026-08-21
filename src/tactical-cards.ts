@@ -38,13 +38,23 @@ export function resolveCard(session:BattleSession, actorId:string, cardId:string
   const card = tacticalCards.find(entry => entry.id === cardId);
   if (!actor || !target || !card || !canPlayCard(actor,card)) return session;
   if ((card.target === 'enemy' && actor.side === target.side) || (card.target === 'ally' && actor.side !== target.side) || target.hp <= 0) return session;
-  const scale = Math.max(0,stats[card.scaling]);
+  if (card.id === 'focus_magic') {
+    if (targetId !== actorId) return session;
+    const ap = Math.min(actor.maxAp,actor.ap + 2);
+    const mp = Math.min(actor.maxMp,actor.mp + 2);
+    if (ap === actor.ap && mp === actor.mp) return session;
+    return {
+      ...session,
+      units:session.units.map(unit => unit.id === actorId ? { ...unit,ap,mp } : unit),
+    };
+  }
+  const rawScale = stats[card.scaling];
+  const scale = Number.isFinite(rawScale) ? Math.max(0,rawScale) : 0;
   const amount = Math.max(1,Math.floor(card.power + scale * 0.6));
   return {
     ...session,
     units:session.units.map(unit => {
       if (unit.id !== actorId && unit.id !== targetId) return unit;
-      if (unit.id === actorId && card.id === 'focus_magic') return { ...unit, ap:Math.min(unit.maxAp,unit.ap + 2), mp:Math.min(unit.maxMp,unit.mp + 2) };
       const next = unit.id === actorId ? { ...unit, ap:unit.ap-card.apCost, mp:unit.mp-card.mpCost } : unit;
       if (unit.id !== targetId) return next;
       if (card.id === 'healing_light') return { ...next, hp:Math.min(next.maxHp,next.hp+amount) };

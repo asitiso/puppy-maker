@@ -11,9 +11,28 @@ describe('tactical status effects', () => {
     expect(second.statuses).toEqual([{ id:'focus', turns:3 }]);
   });
 
+  it('sanitizes non-finite status duration instead of persisting NaN', () => {
+    expect(addTacticalStatus(unit('runa'),'focus',Number.NaN).statuses).toEqual([{ id:'focus',turns:1 }]);
+    expect(addTacticalStatus(unit('runa'),'regen',Number.POSITIVE_INFINITY).statuses).toEqual([{ id:'regen',turns:1 }]);
+  });
+
+  it('caps finite-but-huge status duration and power to safe integers', () => {
+    const focused=addTacticalStatus(unit('runa'),'focus',Number.MAX_VALUE);
+    expect(Number.isSafeInteger(focused.statuses?.[0].turns)).toBe(true);
+    expect(focused.statuses?.[0].turns).toBe(Number.MAX_SAFE_INTEGER);
+    const power=tacticalStatusPower(focused,Number.MAX_VALUE);
+    expect(Number.isSafeInteger(power)).toBe(true);
+    expect(power).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
   it('focus raises outgoing power while break reduces it', () => {
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'focus',1),40)).toBe(48);
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'break',1),40)).toBe(32);
+  });
+
+  it('does not emit non-finite combat power from corrupted raw input', () => {
+    expect(tacticalStatusPower(unit('runa'),Number.NaN)).toBe(0);
+    expect(tacticalStatusPower(unit('runa'),Number.POSITIVE_INFINITY)).toBe(0);
   });
 
   it('regen heals at round transition and decrements durations', () => {
@@ -29,9 +48,38 @@ describe('tactical status effects', () => {
     expect(guarded.shield).toBeGreaterThanOrEqual(15);
   });
 
+  it('guard replaces non-finite runtime shield with a finite protection value', () => {
+    const corrupted={...unit('runa'),shield:Number.NaN};
+    const guarded=addTacticalStatus(corrupted,'guard',2);
+    expect(guarded.shield).toBe(15);
+    expect(Number.isFinite(guarded.shield)).toBe(true);
+  });
+
+  it('status helpers tolerate malformed runtime status containers', () => {
+    const malformed={...unit('runa'),statuses:'focus' as unknown as TacticalUnit['statuses']};
+    expect(addTacticalStatus(malformed,'regen',2).statuses).toEqual([{id:'regen',turns:2}]);
+    expect(tacticalStatusPower(malformed,40)).toBe(40);
+    expect(advanceTacticalStatuses(malformed).statuses).toEqual([]);
+  });
+
   it('battle sessions preserve sanitized status arrays', () => {
     const runa = addTacticalStatus(unit('runa'),'focus',2);
     const session = createBattleSession([runa,unit('a2'),unit('a3')],[{...unit('e1'),side:'enemy'},{...unit('e2'),side:'enemy'},{...unit('e3'),side:'enemy'}],1);
     expect(session.units[0].statuses).toEqual([{ id:'focus', turns:2 }]);
+  });
+
+  it('drops malformed runtime status payloads instead of crashing battle creation', () => {
+    const malformedArray = {
+      ...unit('runa'),
+      statuses:[null,{id:'focus',turns:Number.NaN},{id:'regen',turns:2},{id:'unknown',turns:3}] as unknown as TacticalUnit['statuses'],
+    };
+    const malformedContainer = { ...unit('a2'),statuses:'focus' as unknown as TacticalUnit['statuses'] };
+    const session = createBattleSession(
+      [malformedArray,malformedContainer,unit('a3')],
+      [{...unit('e1'),side:'enemy'},{...unit('e2'),side:'enemy'},{...unit('e3'),side:'enemy'}],
+      1,
+    );
+    expect(session.units.find(entry=>entry.id==='runa')?.statuses).toEqual([{id:'regen',turns:2}]);
+    expect(session.units.find(entry=>entry.id==='a2')?.statuses).toEqual([]);
   });
 });

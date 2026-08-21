@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
-import { nextTacticalActor, resolveTacticalAction } from './tactical-engine';
+import type { TacticalActionId } from './tactical-actions';
+import { completeTacticalTurn, nextTacticalActor, resolveTacticalAction, skipTacticalTurnIfNoPlayableAction } from './tactical-engine';
 
 const unit = (id:string, side:'ally'|'enemy', agility:number, ap=3, mp=0, shield=0):TacticalUnit => ({
   id, side, position:'front', maxHp:100, hp:100, agility, ap, maxAp:3, mp, maxMp:10, shield,
@@ -21,11 +22,83 @@ describe('tactical turn engine', () => {
     expect(resolveTacticalAction(session,{ actorId:'runa', actionId:'attack', targetId:'wolf' })).toBe(session);
   });
 
+  it('rejects an unknown runtime action id instead of throwing or spending a turn', () => {
+    const session = battle();
+    const invalid = 'stale-action' as TacticalActionId;
+    expect(resolveTacticalAction(session,{ actorId:'bat', actionId:invalid, targetId:'runa' })).toBe(session);
+    expect(skipTacticalTurnIfNoPlayableAction(session,'bat',[invalid])).not.toBe(session);
+  });
+
   it('rejects a stale or dead target without spending the turn', () => {
     const session = battle();
     session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, hp:0 } : entry);
     expect(resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' })).toBe(session);
     expect(session.acted).toEqual([]);
+  });
+
+  it('rejects insufficient resources without partial mutation or negative balances', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:1, mp:9 } : entry);
+    const before = session.units.find(entry => entry.id === 'bat')!;
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    expect(next).toBe(session);
+    expect(next.units.find(entry => entry.id === 'bat')).toEqual(before);
+    expect(next.acted).toEqual([]);
+    expect(before.ap).toBeGreaterThanOrEqual(0);
+    expect(before.mp).toBeGreaterThanOrEqual(0);
+  });
+
+  it('repairs non-finite runtime resources and advances instead of deadlocking on PASS', () => {
+    for (const corrupt of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY]) {
+      const session = battle();
+      session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:corrupt, mp:corrupt } : entry);
+      const next = skipTacticalTurnIfNoPlayableAction(session,'bat',['attack','skill','support','special']);
+      expect(next).not.toBe(session);
+      expect(next.acted).toEqual(['bat']);
+      const bat = next.units.find(entry => entry.id === 'bat')!;
+      expect(bat.ap).toBe(0);
+      expect(bat.mp).toBe(0);
+      expect(Number.isFinite(bat.ap)).toBe(true);
+      expect(Number.isFinite(bat.mp)).toBe(true);
+    }
+  });
+
+  it('clamps inflated finite max resources to the tactical AP and MP caps', () => {
+    const inflated = { ...unit('bat','enemy',14),ap:999,maxAp:999,mp:999,maxMp:999 };
+    const session = createBattleSession(
+      [unit('runa','ally',12),unit('owl','ally',8),unit('bear','ally',6)],
+      [inflated,unit('wolf','enemy',10),unit('tree','enemy',4)],
+      3,
+    );
+    const bat = session.units.find(entry => entry.id === 'bat')!;
+    expect(bat.maxAp).toBe(3);
+    expect(bat.ap).toBe(3);
+    expect(bat.maxMp).toBe(10);
+    expect(bat.mp).toBe(10);
+  });
+
+  it('spends an exact cost once and blocks a same-turn double spend', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:2, mp:0 } : entry);
+    const once = resolveTacticalAction(session,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    const spent = once.units.find(entry => entry.id === 'bat')!;
+    expect(spent.ap).toBe(0);
+    expect(spent.mp).toBe(3);
+    expect(once.acted).toEqual(['bat']);
+
+    const twice = resolveTacticalAction(once,{ actorId:'bat', actionId:'skill', targetId:'runa' });
+    expect(twice).toBe(once);
+    expect(twice.units.find(entry => entry.id === 'bat')).toEqual(spent);
+    expect(twice.acted).toEqual(['bat']);
+  });
+
+  it('clamps MP gain at maxMp instead of overflowing the resource cap', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, mp:9 } : entry);
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
+    const bat = next.units.find(entry => entry.id === 'bat')!;
+    expect(bat.mp).toBe(10);
+    expect(bat.mp).toBeLessThanOrEqual(bat.maxMp);
   });
 
   it('spends AP, gains MP and lets shield absorb damage first', () => {
@@ -39,6 +112,17 @@ describe('tactical turn engine', () => {
     expect(runa.shield).toBe(0);
     expect(runa.hp).toBe(88);
     expect(next.acted).toEqual(['bat']);
+  });
+
+  it('contains a non-finite runtime shield instead of propagating NaN into HP', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, shield:Number.NaN } : entry);
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
+    const runa = next.units.find(entry => entry.id === 'runa')!;
+    expect(runa.hp).toBe(80);
+    expect(runa.shield).toBe(0);
+    expect(Number.isFinite(runa.hp)).toBe(true);
+    expect(Number.isFinite(runa.shield)).toBe(true);
   });
 
   it('support heals an ally and still consumes the acting turn', () => {
@@ -55,6 +139,13 @@ describe('tactical turn engine', () => {
     const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
     expect(next.units.find(entry => entry.id === 'runa')?.hp).toBe(0);
     expect(nextTacticalActor(next)).toBeNull();
+  });
+
+  it('keeps an already terminal session immutable when completing a turn directly', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.side === 'enemy' ? { ...entry, hp:0 } : entry);
+    expect(completeTacticalTurn(session,'runa',session.units)).toBe(session);
+    expect(session.acted).toEqual([]);
   });
 
   it('starts the next round after every living unit acts and refreshes AP', () => {

@@ -23,4 +23,13 @@ describe('TacticalBattleScreen combination ultimates',()=>{
     expect(html).toContain('BOND 5');
     expect(html).not.toContain('Moonlight Prayer');
   });
+
+  it('announces battle feedback and exposes unit cards as keyboard-aware target controls',()=>{
+    const html=renderToStaticMarkup(<TacticalBattleScreen session={battle()} auto={false} speed={1}/>);
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('aria-label="Battle log"');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain('tabindex="-1"');
+  });
 });

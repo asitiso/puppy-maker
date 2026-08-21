@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './game';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
-import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage } from './tactical-launcher';
+import type { CompanionId } from './tactical-companions';
+import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage, tacticalLeaderProgression, tacticalPartyForGame } from './tactical-launcher';
 
 describe('tactical expedition launcher', () => {
   it('maps expedition regions onto reusable tactical encounters', () => {
@@ -26,6 +27,46 @@ describe('tactical expedition launcher', () => {
     expect(battle.units.map(unit=>unit.id)).toEqual(expect.arrayContaining(['companion-bear','companion-owl']));
   });
 
+  it('returns fresh fallback party tuples instead of leaking shared mutable state', () => {
+    const first = tacticalPartyForGame({selectedTacticalCompanions:[]});
+    const second = tacticalPartyForGame({selectedTacticalCompanions:[]});
+    expect(first).toEqual(['bear','owl']);
+    expect(second).toEqual(['bear','owl']);
+    expect(first).not.toBe(second);
+  });
+
+  it('falls back when a corrupted save loses the party array entirely', () => {
+    const missing={selectedTacticalCompanions:null} as unknown as {selectedTacticalCompanions:readonly CompanionId[]};
+    expect(tacticalPartyForGame(missing)).toEqual(['bear','owl']);
+  });
+
+  it('falls back safely when a corrupted save contains an unknown companion id', () => {
+    const corrupted = ['dragon','owl'] as unknown as readonly CompanionId[];
+    expect(tacticalPartyForGame({selectedTacticalCompanions:corrupted})).toEqual(['bear','owl']);
+    const state = { ...initialState, selectedTacticalCompanions:corrupted };
+    expect(() => createTacticalBattleFromGame(state,'forest_path',17)).not.toThrow();
+  });
+
+  it('sanitizes non-finite raising stats before deriving tactical combat progression', () => {
+    const progression = tacticalLeaderProgression({
+      stats:{...initialState.stats,strength:Number.NaN,magic:Number.POSITIVE_INFINITY,intelligence:Number.NEGATIVE_INFINITY},
+      personality:{...initialState.personality,calmness:Number.NaN},
+    });
+    expect(Object.values(progression).every(Number.isFinite)).toBe(true);
+    expect(progression.power).toBeGreaterThanOrEqual(20);
+    expect(progression.magic).toBeGreaterThanOrEqual(10);
+    expect(progression.agility).toBeGreaterThanOrEqual(8);
+    expect(progression.maxHp).toBeGreaterThanOrEqual(100);
+  });
+
+  it('caps finite-but-huge raising stats before arithmetic can overflow', () => {
+    const progression = tacticalLeaderProgression({
+      stats:{...initialState.stats,strength:Number.MAX_VALUE,magic:Number.MAX_VALUE,intelligence:Number.MAX_VALUE},
+      personality:{...initialState.personality,calmness:Number.MAX_VALUE},
+    });
+    expect(Object.values(progression).every(Number.isSafeInteger)).toBe(true);
+  });
+
   it('derives completion metrics from the final battle state', () => {
     const unit=(id:string,side:'ally'|'enemy',hp:number,maxHp=100):TacticalUnit=>({id,side,position:'front',maxHp,hp,agility:10,ap:3,maxAp:3,mp:0,maxMp:10,shield:0});
     const battle=createBattleSession([unit('runa','ally',70),unit('bear','ally',0),unit('owl','ally',90)],[unit('e1','enemy',0),unit('e2','enemy',0),unit('e3','enemy',0)],3);
@@ -33,5 +74,18 @@ describe('tactical expedition launcher', () => {
     expect(metrics.survivingAllies).toBe(2);
     expect(metrics.damageTaken).toBe(140);
     expect(metrics.rounds).toBe(1);
+  });
+
+  it('caps corrupted completion metrics before handing them to shared progression', () => {
+    const huge=(id:string,side:'ally'|'enemy',hp:number):TacticalUnit=>({id,side,position:'front',maxHp:Number.MAX_VALUE,hp,agility:10,ap:3,maxAp:3,mp:0,maxMp:10,shield:0});
+    const battle=createBattleSession(
+      [huge('runa','ally',0),huge('bear','ally',0),huge('owl','ally',0)],
+      [huge('e1','enemy',0),huge('e2','enemy',0),huge('e3','enemy',0)],
+      3,
+    );
+    const metrics=tacticalCompletionMetrics({...battle,round:Number.NaN});
+    expect(metrics.rounds).toBe(1);
+    expect(Number.isSafeInteger(metrics.damageTaken)).toBe(true);
+    expect(metrics.damageTaken).toBe(Number.MAX_SAFE_INTEGER);
   });
 });
