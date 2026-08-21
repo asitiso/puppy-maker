@@ -1,0 +1,86 @@
+name: Verify core compatibility recovery
+
+on:
+  push:
+    branches:
+      - verify/core-compat-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  recover-and-verify:
+    if: github.event.head_commit.message != 'fix: restore core public API compatibility'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Guard expected baseline blobs
+        run: |
+          test "$(git rev-parse HEAD:src/game-core.ts)" = "4efdc3353a2685892538f859cb0f1710f081dde3"
+          test "$(git rev-parse HEAD:src/game.ts)" = "5eba37c4f60121c85aeea706b2d4a4e454eb802f"
+
+      - name: Apply minimal core compatibility recovery
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          parent = 'c8622851bf9476129ef83a75c76ddc836fecc41a'
+          restored = subprocess.run(
+              ['git', 'show', f'{parent}:src/game-core.ts'],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout
+
+          old_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result';"
+          new_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result' | 'event' | 'ending';"
+          old_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result'];"
+          new_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result', 'event', 'ending'];"
+          assert restored.count(old_screen) == 1, 'unexpected Screen declaration in historical core'
+          assert restored.count(old_whitelist) == 1, 'unexpected hydration screen whitelist in historical core'
+          restored = restored.replace(old_screen, new_screen, 1).replace(old_whitelist, new_whitelist, 1)
+          Path('src/game-core.ts').write_text(restored)
+
+          game_path = Path('src/game.ts')
+          game = game_path.read_text()
+          old_growth = 'export type GrowthReport = Partial<Base.GrowthReport> & {'
+          new_growth = 'export type GrowthReport = Base.GrowthReport & {'
+          assert game.count(old_growth) == 1, 'unexpected GrowthReport compatibility declaration'
+          game_path.write_text(game.replace(old_growth, new_growth, 1))
+          PY
+
+      - name: Limit production changes
+        run: |
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' src/game-core.ts src/game.ts | sort)"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Targeted core and save tests
+        run: npx vitest run src/core-compat-recovery.test.ts src/game.test.ts src/save-schema.test.ts src/save-resilience.test.ts
+
+      - name: Full test suite
+        run: npm run test
+
+      - name: TypeScript project check
+        run: npx tsc -b --pretty false
+
+      - name: Production build
+        run: npm run build
+
+      - name: Commit verified recovery to verify branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/game-core.ts src/game.ts
+          git commit -m "fix: restore core public API compatibility"
+          git push origin HEAD:verify/core-compat-recovery

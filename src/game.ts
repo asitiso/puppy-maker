@@ -15,7 +15,7 @@ import type { BattleResult } from './tactical-battle';
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
 
-export type GrowthReport = Partial<Base.GrowthReport> & {
+export type GrowthReport = Base.GrowthReport & {
   quality:Base.ResultQuality;
   grade:ReturnType<typeof Base.trainingGrade>;
   mostImprovedStat?:keyof Base.Stats;

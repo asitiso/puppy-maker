@@ -40,8 +40,9 @@ describe('Calling depth reducer progression', () => {
       purchasedTraits:['pathfinder_herb','pathfinder_eye','pathfinder_supply','pathfinder_legend'] as typeof initialState.purchasedTraits,
       explorationXp:{ forest:3, village:3, lakeside:3 },
     };
-    const first = reducer(state, { type:'GO_OUTING', location:'forest', eventRoll:0.5 });
-    expect(first.gold).toBe(state.gold + 200); // favorite_place bond +100, Pathfinder Legend +100
+    const ready = reducer(state, { type:'GO', screen:'hub' });
+    const first = reducer(ready, { type:'GO_OUTING', location:'forest', eventRoll:0.5 });
+    expect(first.gold).toBe(ready.gold + 200); // favorite_place bond +100, Pathfinder Legend +100
     expect(first.legendRewardKeys).toContain('1-4:pathfinder_legend');
     const second = reducer(first, { type:'GO_OUTING', location:'village', eventRoll:0.5 });
     expect(second.gold).toBe(first.gold);

@@ -30,6 +30,8 @@ describe('guardian rank progression', () => {
       ...initialState,
       memories: ['first_training', 'first_hug', 'first_month_complete', 'first_skill', 'close_bond', 'forest_memory', 'first_perfect'] as typeof initialState.memories,
       inventory: { ...initialState.inventory, star_cookie: 1 },
+      visitedOutings: ['forest','village','lakeside'] as typeof initialState.visitedOutings,
+      rewardedStoryChapters: ['first_step','wide_world'] as typeof initialState.rewardedStoryChapters,
     };
     expect(currentGuardianStatus(nearRank).points).toBe(7);
     const ranked = reducer(nearRank, { type:'GIVE_GIFT', item:'star_cookie' });
@@ -49,12 +51,15 @@ describe('guardian rank progression', () => {
       memories: Array(13).fill('first_training') as typeof initialState.memories,
       discoveries: ['moon_feather','star_mushroom','tiny_bell'] as typeof initialState.discoveries,
       mastery: { hunt:{xp:18}, magic:{xp:18}, rest:{xp:18}, herb:{xp:18} },
+      visitedOutings: ['forest','village','lakeside'] as typeof initialState.visitedOutings,
+      unlockedBondScenes: ['shared_secret'] as typeof initialState.unlockedBondScenes,
+      activeCalling: 'caretaker' as const,
     };
     const reconciled = reducer(advanced, { type:'GO', screen:'schedule' });
     expect(currentGuardianStatus(reconciled).rank).toBe('veteran');
     expect(reconciled.rewardedGuardianRanks).toEqual(['junior','guardian','veteran']);
     expect(reconciled.rewardedStoryChapters).toContain('guardian_oath');
-    expect(reconciled.gems).toBe(initialState.gems + 8);
+    expect(reconciled.gems).toBe(initialState.gems + 10);
   });
 
   it('preserves guardian reward claims across month advancement', () => {
