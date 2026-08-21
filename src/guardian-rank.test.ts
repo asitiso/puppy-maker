@@ -11,6 +11,11 @@ describe('guardian rank rules', () => {
     expect(guardianGrowthPoints({ memories:3.9, skills:2.9, discoveries:4.9, masteryLevels:[1.9,2.9,4.9,1] })).toBe(15);
   });
 
+  it('caps mastery levels at the real level-five maximum', () => {
+    expect(guardianGrowthPoints({ memories:0, skills:0, discoveries:0, masteryLevels:[1,5,99,-1] })).toBe(8);
+    expect(guardianGrowthPoints({ memories:0, skills:0, discoveries:0, masteryLevels:[999,999,999,999] })).toBe(16);
+  });
+
   it('maps stable guardian rank thresholds', () => {
     expect(guardianRank(0)).toBe('trainee');
     expect(guardianRank(7)).toBe('trainee');

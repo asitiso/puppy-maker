@@ -21,9 +21,13 @@ function normalizeProgress(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
+function normalizeMasteryLevel(value: number): number {
+  return Math.min(5, normalizeProgress(value));
+}
+
 export function guardianGrowthPoints(progress: GuardianProgress): number {
   const masteryPoints = progress.masteryLevels.reduce((sum, rawLevel) => {
-    const level = normalizeProgress(rawLevel);
+    const level = normalizeMasteryLevel(rawLevel);
     return sum + Math.max(0, level - 1);
   }, 0);
   return normalizeProgress(progress.memories)

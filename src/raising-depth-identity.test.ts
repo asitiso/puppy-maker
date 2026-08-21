@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyTrainingIdentityEffects } from './raising-depth-effects';
+import { applyGiftIdentityEffects, applyTrainingIdentityEffects } from './raising-depth-effects';
 
 const stats = {
   strength:30,
@@ -81,6 +81,52 @@ describe('Runa personality growth identity', () => {
     expect(curiousPathfinder.mastery.magic.xp).toBe(0);
     expect(curiousPathfinder.mastery.herb.xp).toBe(1);
     expect(balancedVanguard.mastery.hunt.xp).toBe(1);
+  });
+
+  it('repairs malformed personality and stat values touched by training identity effects', () => {
+    const gentle = applyTrainingIdentityEffects({
+      stats:{ ...stats, fatigue:Number.POSITIVE_INFINITY },
+      personality:{ courage:20, kindness:60, curiosity:20, calmness:Number.NaN },
+      mastery,
+      schedule:['rest'],
+      trainingScore:500,
+      activeCalling:'caretaker',
+      purchasedTraits:['caretaker_rest'],
+    });
+    expect(gentle.personality.calmness).toBe(1);
+    expect(gentle.stats.fatigue).toBe(0);
+
+    const balancedVanguard = applyTrainingIdentityEffects({
+      stats:{ ...stats, strength:Number.NaN },
+      personality:{ courage:Number.NaN, kindness:Number.NaN, curiosity:Number.NaN, calmness:Number.NaN },
+      mastery,
+      schedule:['hunt'],
+      trainingScore:500,
+      activeCalling:'vanguard',
+      purchasedTraits:['vanguard_power'],
+    });
+    expect(balancedVanguard.personality.courage).toBe(1);
+    expect(balancedVanguard.stats.strength).toBe(1);
+  });
+
+  it('repairs malformed affection when favorite-gift or caretaker bonuses apply', () => {
+    const favorite = applyGiftIdentityEffects({
+      stats:{ ...stats, affection:Number.NaN },
+      personality:{ courage:50, kindness:50, curiosity:50, calmness:50 },
+      item:'herb_tea',
+      activeCalling:null,
+      purchasedTraits:[],
+    });
+    expect(favorite.stats.affection).toBe(2);
+
+    const caretaker = applyGiftIdentityEffects({
+      stats:{ ...stats, affection:Number.POSITIVE_INFINITY },
+      personality:{ courage:60, kindness:20, curiosity:20, calmness:20 },
+      item:'star_cookie',
+      activeCalling:'caretaker',
+      purchasedTraits:['caretaker_rest','caretaker_bond'],
+    });
+    expect(caretaker.stats.affection).toBe(1);
   });
 
   it('does not grant the vanguard focus mastery bonus from malformed training scores', () => {

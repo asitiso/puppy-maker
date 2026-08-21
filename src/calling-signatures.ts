@@ -1,6 +1,6 @@
 import { callingMasteryLevel } from './calling-mastery';
 import type { GuardianCallingId } from './guardian-callings';
-import type { GrowthTraitId } from './growth-traits';
+import { hasCompleteGrowthTraitPath, type GrowthTraitId } from './growth-traits';
 
 export type CallingSignatureId =
   | 'rally_strike' | 'guardian_breaker'
@@ -33,7 +33,7 @@ export function callingSignatures(calling: GuardianCallingId | null, purchasedTr
   const masteryLevel = masteryXp === undefined ? null : callingMasteryLevel(masteryXp);
   return callingSignatureDefinitions
     .filter(item => item.calling === calling
-      && purchasedTraits.includes(item.requiredTrait)
+      && hasCompleteGrowthTraitPath(item.requiredTrait, purchasedTraits)
       && (masteryLevel === null || masteryLevel >= item.requiredMasteryLevel))
     .map(item => item.id);
 }

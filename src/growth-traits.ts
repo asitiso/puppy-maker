@@ -41,22 +41,48 @@ function normalizeGrowthPoints(points: number): number {
   return Number.isFinite(points) ? Math.max(0, Math.floor(points)) : 0;
 }
 
+function growthTraitDefinition(id: GrowthTraitId): GrowthTraitDefinition | undefined {
+  return growthTraitDefinitions.find(item => item.id === id);
+}
+
+export function hasCompleteGrowthTraitPath(id: GrowthTraitId, purchased: readonly GrowthTraitId[]): boolean {
+  if (!purchased.includes(id)) return false;
+  const seen = new Set<GrowthTraitId>();
+  let current = growthTraitDefinition(id);
+  while (current) {
+    if (seen.has(current.id)) return false;
+    seen.add(current.id);
+    if (current.prerequisite === null) return true;
+    if (!purchased.includes(current.prerequisite)) return false;
+    current = growthTraitDefinition(current.prerequisite);
+  }
+  return false;
+}
+
+function hasPurchasePrerequisites(id: GrowthTraitId, purchased: readonly GrowthTraitId[]): boolean {
+  const definition = growthTraitDefinition(id);
+  if (!definition) return false;
+  return definition.prerequisite === null || hasCompleteGrowthTraitPath(definition.prerequisite, purchased);
+}
+
 export function canPurchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number): boolean {
   if (purchased.includes(id)) return false;
-  const definition = growthTraitDefinitions.find(item => item.id === id);
+  const definition = growthTraitDefinition(id);
   const availablePoints = normalizeGrowthPoints(points);
   if (!definition || availablePoints < definition.cost) return false;
-  return definition.prerequisite === null || purchased.includes(definition.prerequisite);
+  return hasPurchasePrerequisites(id, purchased);
 }
 
 export function purchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number) {
   const availablePoints = normalizeGrowthPoints(points);
   if (!canPurchaseGrowthTrait(id, purchased, availablePoints)) return { purchased:false, traits:purchased, points:availablePoints };
-  const definition = growthTraitDefinitions.find(item => item.id === id)!;
+  const definition = growthTraitDefinition(id)!;
   return { purchased:true, traits:[...purchased, id], points:availablePoints - definition.cost };
 }
 
 export function activeCallingTraits(calling: GuardianCallingId | null, purchased: GrowthTraitId[]): GrowthTraitId[] {
   if (!calling) return [];
-  return growthTraitDefinitions.filter(item => item.calling === calling && purchased.includes(item.id)).map(item => item.id);
+  return growthTraitDefinitions
+    .filter(item => item.calling === calling && hasCompleteGrowthTraitPath(item.id, purchased))
+    .map(item => item.id);
 }

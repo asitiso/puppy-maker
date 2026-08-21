@@ -4,10 +4,16 @@ import { activeCallingTraits, canPurchaseGrowthTrait, growthTraitDefinitions, pu
 describe('growth trait board', () => {
   it('defines sixteen ordered traits with costs 1,1,2,2 per calling', () => {
     expect(growthTraitDefinitions).toHaveLength(16);
+    expect(new Set(growthTraitDefinitions.map(item => item.id)).size).toBe(growthTraitDefinitions.length);
     for (const calling of ['vanguard','arcanist','caretaker','pathfinder'] as const) {
       const path = growthTraitDefinitions.filter(item => item.calling === calling);
       expect(path.map(item => item.tier)).toEqual([1,2,3,4]);
       expect(path.map(item => item.cost)).toEqual([1,1,2,2]);
+      expect(path[0].prerequisite).toBeNull();
+      for (let index = 1; index < path.length; index += 1) {
+        expect(path[index].prerequisite).toBe(path[index - 1].id);
+        expect(growthTraitDefinitions.find(item => item.id === path[index].prerequisite)?.calling).toBe(calling);
+      }
     }
   });
 
@@ -16,6 +22,12 @@ describe('growth trait board', () => {
     expect(canPurchaseGrowthTrait('vanguard_power', [], 0)).toBe(false);
     expect(canPurchaseGrowthTrait('vanguard_power', [], 1)).toBe(true);
     expect(canPurchaseGrowthTrait('vanguard_focus', ['vanguard_power'], 1)).toBe(true);
+  });
+
+  it('requires the complete prerequisite chain instead of trusting an orphaned upper trait', () => {
+    expect(canPurchaseGrowthTrait('vanguard_assault', ['vanguard_focus'], 2)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_legend', ['vanguard_assault'], 2)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_legend', ['vanguard_power','vanguard_focus','vanguard_assault'], 2)).toBe(true);
   });
 
   it('spends exact points and never duplicates a purchased trait', () => {
@@ -29,7 +41,7 @@ describe('growth trait board', () => {
     expect(canPurchaseGrowthTrait('vanguard_power', [], Number.NaN)).toBe(false);
     expect(canPurchaseGrowthTrait('vanguard_power', [], Number.POSITIVE_INFINITY)).toBe(false);
     expect(canPurchaseGrowthTrait('vanguard_power', [], -3)).toBe(false);
-    expect(canPurchaseGrowthTrait('vanguard_assault', ['vanguard_focus'], 1.9)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_assault', ['vanguard_power','vanguard_focus'], 1.9)).toBe(false);
     expect(canPurchaseGrowthTrait('vanguard_power', [], 1.9)).toBe(true);
 
     expect(purchaseGrowthTrait('vanguard_power', [], Number.NaN)).toEqual({ purchased:false, traits:[], points:0 });
@@ -43,5 +55,13 @@ describe('growth trait board', () => {
     expect(activeCallingTraits('arcanist', [...owned])).toEqual(['arcanist_mana','arcanist_insight']);
     expect(activeCallingTraits('vanguard', [...owned])).toEqual(['vanguard_power']);
     expect(activeCallingTraits(null, [...owned])).toEqual([]);
+  });
+
+  it('does not activate orphaned upper-tier traits from corrupted progression state', () => {
+    expect(activeCallingTraits('vanguard', ['vanguard_focus'])).toEqual([]);
+    expect(activeCallingTraits('vanguard', ['vanguard_power','vanguard_assault'])).toEqual(['vanguard_power']);
+    expect(activeCallingTraits('vanguard', ['vanguard_power','vanguard_focus','vanguard_legend'])).toEqual(['vanguard_power','vanguard_focus']);
+    expect(activeCallingTraits('vanguard', ['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend']))
+      .toEqual(['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend']);
   });
 });

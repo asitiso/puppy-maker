@@ -49,7 +49,12 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
   const newlyUnlocked = unlocked.filter(id => !provenUnlocks.includes(id));
   const newlyRewarded = unlocked.filter(id => !claimedRewards.includes(id));
   const rewarded = bondSceneIds.filter(id => claimedRewards.includes(id) || newlyRewarded.includes(id));
-  const canonicalized = !sameIds(current.unlocked, unlocked) || !sameIds(current.rewarded, rewarded);
+  const safeGold = normalizeProgressValue(current.gold);
+  const safeGems = normalizeProgressValue(current.gems);
+  const canonicalized = !sameIds(current.unlocked, unlocked)
+    || !sameIds(current.rewarded, rewarded)
+    || safeGold !== current.gold
+    || safeGems !== current.gems;
 
   if (!newlyUnlocked.length && !newlyRewarded.length && !canonicalized) return {
     changed:false,
@@ -60,8 +65,8 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
     newlyUnlocked:[] as BondSceneId[],
   };
 
-  let gold = current.gold;
-  let gems = current.gems;
+  let gold = safeGold;
+  let gems = safeGems;
   for (const id of newlyRewarded) {
     const reward = bondSceneDefinitions.find(item => item.id === id)?.reward;
     gold += reward?.gold ?? 0;

@@ -84,7 +84,7 @@ export type CareerTitleProgress = {
 export function careerTitles(input: CareerTitleProgress): CareerTitleId[] {
   const unlocked = new Set<CareerTitleId>();
   const records = normalizeCareerRecords(input.records);
-  const relevantStories = normalizeCount(input.openedRaisingStories ?? input.openedStories);
+  const relevantStories = normalizeCount(input.openedRaisingStories ?? 0);
   if (records.trainings >= 10) unlocked.add('steady_trainer');
   if (records.bestScore >= 900) unlocked.add('perfect_chaser');
   if (records.outings >= 10) unlocked.add('seasoned_explorer');

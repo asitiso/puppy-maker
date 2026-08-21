@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBossGrowthPointReward, incrementCallingMonthMastery, monthGrowthPointReward } from './raising-depth-rewards';
+import { applyBossGrowthPointReward, incrementCallingMonthMastery, monthGrowthPointReward, reconcileBondSceneRewards } from './raising-depth-rewards';
 
 describe('raising depth pure reward boundaries', () => {
   it('keeps the S-month bonus threshold exact and ignores malformed training scores', () => {
@@ -19,6 +19,34 @@ describe('raising depth pure reward boundaries', () => {
     expect(incrementCallingMonthMastery(base, 'caretaker')).toEqual({ ...base, caretaker:1 });
     expect(incrementCallingMonthMastery(base, 'pathfinder')).toEqual({ ...base, pathfinder:1 });
     expect(incrementCallingMonthMastery(base, null)).toBe(base);
+  });
+
+  it('normalizes malformed Bond reward currency before applying rewards', () => {
+    const base = {
+      affection:55,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:[],
+      rewarded:[],
+    };
+
+    const malformed = reconcileBondSceneRewards(
+      { ...base, gold:Number.NaN, gems:Number.POSITIVE_INFINITY },
+      { ...base, gold:Number.NaN, gems:Number.POSITIVE_INFINITY },
+    );
+    expect(malformed.gold).toBe(100);
+    expect(malformed.gems).toBe(0);
+
+    const fractional = reconcileBondSceneRewards(
+      { ...base, gold:500.9, gems:2.9 },
+      { ...base, gold:500.9, gems:2.9 },
+    );
+    expect(fractional.gold).toBe(600);
+    expect(fractional.gems).toBe(2);
   });
 
   it('normalizes Growth Points and does not duplicate boss first-clear rewards', () => {

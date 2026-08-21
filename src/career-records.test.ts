@@ -40,7 +40,7 @@ describe('career records and titles', () => {
 
   it('derives long-term titles from records and existing growth progress', () => {
     const records = { trainings: 12, bestScore: 930, sGrades: 3, outings: 10, gifts: 5, monthsCompleted: 6 };
-    expect(careerTitles({ records, guardianRank: 'veteran', openedStories: 4 })).toEqual([
+    expect(careerTitles({ records, guardianRank: 'veteran', openedStories: 4, openedRaisingStories: 4 })).toEqual([
       'steady_trainer', 'perfect_chaser', 'seasoned_explorer', 'warm_giver', 'story_witness', 'veteran_guardian',
     ]);
   });
@@ -68,6 +68,14 @@ describe('career records and titles', () => {
       openedStories: 9,
       openedRaisingStories: 4,
     })).toContain('story_witness');
+  });
+
+  it('does not treat aggregate story count as raising-story progress when the dedicated count is missing', () => {
+    expect(careerTitles({
+      records: emptyCareerRecords(),
+      guardianRank: 'trainee',
+      openedStories: 9,
+    })).not.toContain('story_witness');
   });
 
   it('keeps different raising records meaningfully distinct in career results', () => {
