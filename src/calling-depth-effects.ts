@@ -60,10 +60,14 @@ export type ExpeditionCallingRewardResult = {
   applied:string[];
 };
 
+function safeNonNegativeDelta(value:number): number {
+  return Math.max(0, Number.isFinite(value) ? value : 0);
+}
+
 export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput): ExpeditionCallingRewardResult {
   let extraMaterial = 0;
-  let fatigueDelta = Math.max(0, input.fatigueDelta);
-  let stressDelta = Math.max(0, input.stressDelta);
+  let fatigueDelta = safeNonNegativeDelta(input.fatigueDelta);
+  let stressDelta = safeNonNegativeDelta(input.stressDelta);
   let legendRewardKeys = [...input.legendRewardKeys];
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
