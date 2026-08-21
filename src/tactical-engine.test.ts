@@ -99,6 +99,17 @@ describe('tactical turn engine', () => {
     expect(next.acted).toEqual(['bat']);
   });
 
+  it('contains a non-finite runtime shield instead of propagating NaN into HP', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry, shield:Number.NaN } : entry);
+    const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
+    const runa = next.units.find(entry => entry.id === 'runa')!;
+    expect(runa.hp).toBe(80);
+    expect(runa.shield).toBe(0);
+    expect(Number.isFinite(runa.hp)).toBe(true);
+    expect(Number.isFinite(runa.shield)).toBe(true);
+  });
+
   it('support heals an ally and still consumes the acting turn', () => {
     const session = battle();
     session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, hp:50 } : entry);
