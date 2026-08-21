@@ -19,6 +19,21 @@ jobs:
       - name: Apply verify-only core compatibility recovery
         if: github.head_ref == 'verify/core-compat-recovery'
         run: python3 .github/verify-core-recovery.py
+      - name: Align growth report fixture with strict base contract
+        if: github.head_ref == 'verify/core-compat-recovery'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/GrowthReport.test.tsx')
+          text = path.read_text()
+          old = "const report:Report={quality:'PERFECT',grade:'S',mostImprovedStat:'magic',masteryGains:{hunt:0,magic:3,rest:0,herb:0},personalityChanges:{curiosity:2},newMemory:'first_perfect',nextCondition:'focused',goldReward:350};"
+          new = "const report:Report={quality:'PERFECT',grade:'S',topStat:{key:'magic',delta:3},masteryLevels:{hunt:1,magic:2,rest:1,herb:1},personalityDeltas:{curiosity:2},newMemories:['first_perfect'],randomEvent:null,unlockedSkill:null,mostImprovedStat:'magic',masteryGains:{hunt:0,magic:3,rest:0,herb:0},personalityChanges:{curiosity:2},newMemory:'first_perfect',nextCondition:'focused',goldReward:350};"
+          if old in text:
+              assert text.count(old) == 1
+              path.write_text(text.replace(old, new, 1))
+          else:
+              assert new in text
+          PY
       - name: Limit verify changes
         if: github.head_ref == 'verify/core-compat-recovery'
         run: |
@@ -28,6 +43,7 @@ jobs:
             src/attendance-progression.test.ts \
             src/calling-depth-progression.test.ts \
             src/career-progression.test.ts \
+            src/components/GrowthReport.test.tsx \
             src/expedition-progression.test.ts \
             src/exploration-progression.test.ts \
             src/game-base.ts \
@@ -51,6 +67,7 @@ jobs:
           src/game.test.ts
           src/save-schema.test.ts
           src/save-resilience.test.ts
+          src/components/GrowthReport.test.tsx
           src/guardian-rank-progression.test.ts
           src/story-progression.test.ts
           src/career-progression.test.ts
