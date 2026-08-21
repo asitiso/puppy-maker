@@ -9,6 +9,8 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(0, 99, 'vanguard_legend')).toBe('1-12:vanguard_legend');
+    expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
   it('accelerates discovery eligibility only with Pathfinder eye', () => {
