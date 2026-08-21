@@ -26,4 +26,22 @@ describe('Calling mastery action sanitation', () => {
       charge:-1,
     }, { ...summary, discovery:'forest_echo' })).toBeNull();
   });
+
+  it('does not treat malformed material rewards as Pathfinder exploration evidence', () => {
+    const actions = { attack:1, dodge:0, charge:0 };
+    const base = { stageId:'forest_path' as const, grade:'A' as const, discovery:null };
+
+    expect(specialistMasteryCalling('pathfinder', actions, {
+      ...base,
+      materialReward:Number.POSITIVE_INFINITY,
+    })).toBeNull();
+    expect(specialistMasteryCalling('pathfinder', actions, {
+      ...base,
+      materialReward:Number.NaN,
+    })).toBeNull();
+    expect(specialistMasteryCalling('pathfinder', actions, {
+      ...base,
+      materialReward:-1,
+    })).toBeNull();
+  });
 });
