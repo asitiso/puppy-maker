@@ -50,6 +50,26 @@ describe('tactical battle domain', () => {
     expect(session.units.every(entry => entry.maxAp >= 1)).toBe(true);
   });
 
+  it('caps finite-but-huge battle values to safe integers before downstream arithmetic', () => {
+    const huge:TacticalUnit={
+      ...unit('runa','ally',Number.MAX_VALUE,Number.MAX_VALUE),
+      maxHp:Number.MAX_VALUE,
+      shield:Number.MAX_VALUE,
+      attackPower:Number.MAX_VALUE,
+      skillPower:Number.MAX_VALUE,
+      supportPower:Number.MAX_VALUE,
+    };
+    const session=createBattleSession(
+      [huge,unit('bear','ally',6),unit('owl','ally',8)],
+      [unit('wolf_e','enemy',10),unit('tree_e','enemy',4),unit('bat_e','enemy',14)],
+      Number.MAX_VALUE,
+    );
+    const runa=session.units.find(entry=>entry.id==='runa')!;
+    for(const value of [runa.maxHp,runa.hp,runa.agility,runa.shield,runa.attackPower!,runa.skillPower!,runa.supportPower!,session.seed]) {
+      expect(Number.isSafeInteger(value)).toBe(true);
+    }
+  });
+
   it('breaks equal-agility ties by stable unit id', () => {
     expect(orderedTimeline([unit('z','ally',10),unit('a','enemy',10),unit('m','ally',11)])).toEqual(['m','a','z']);
   });
