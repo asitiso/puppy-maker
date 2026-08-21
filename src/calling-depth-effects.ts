@@ -3,7 +3,7 @@ import type { ExpeditionActionCounts } from './expedition-combat';
 import { isBossStage } from './expedition-bosses';
 import type { ExpeditionGrade, ExpeditionRegionId, ExpeditionStageId } from './expedition-regions';
 import type { GuardianCallingId } from './guardian-callings';
-import type { GrowthTraitId } from './growth-traits';
+import { activeCallingTraits, type GrowthTraitId } from './growth-traits';
 
 const legendEffects = ['vanguard_legend','arcanist_legend','pathfinder_legend'] as const;
 
@@ -41,7 +41,8 @@ export function effectivePathfinderExplorationXp(
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
-  return safeNonNegativeInt(xp) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  const active = new Set(activeCallingTraits(calling, [...traits]));
+  return safeNonNegativeInt(xp) + (active.has('pathfinder_eye') ? 3 : 0);
 }
 
 export function specialistMasteryCalling(
@@ -91,7 +92,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   let legendRewardKeys = canonicalLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
-  const traits = new Set(input.traits);
+  const traits = new Set(activeCallingTraits(input.calling, [...input.traits]));
 
   if (input.calling === 'pathfinder') {
     if (signatures.has('trail_reading') && input.firstClear && safeNonNegativeInt(input.materialReward) > 0) {
@@ -139,7 +140,8 @@ export function applyPathfinderOutingLegend(
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
   const canonicalKeys = canonicalLegendRewardKeys(existingKeys);
-  if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || !discovered) {
+  const active = new Set(activeCallingTraits(calling, [...traits]));
+  if (!active.has('pathfinder_legend') || !discovered) {
     return { goldBonus:0, legendRewardKeys:canonicalKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
