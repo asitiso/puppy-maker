@@ -38,6 +38,26 @@ describe('sanctuary specializations', () => {
     expect(conflict.reason).toBe('chosen');
   });
 
+  it('ignores valid specialization ids stored under the wrong facility slot', () => {
+    const malformed = {
+      training_hall:'moonwell_garden',
+      archive_library:'season_lens',
+      herb_garden:'warrior_doctrine',
+      observatory:'mastery_codex',
+    } as never;
+    expect(sanctuarySpecializationEffects(malformed)).toEqual({
+      trainingPercent:0,
+      masteryXp:0,
+      monthlyJourneyBonus:0,
+      fatigueRecovery:0,
+      stressRecovery:0,
+      bondAffectionBonus:0,
+      expeditionJourneyBonus:0,
+      weeklyTokenBonus:0,
+    });
+    expect(sanctuarySpecializationSynergies(malformed)).toEqual([]);
+  });
+
   it('derives focused additive effects from selected specializations', () => {
     const effects = sanctuarySpecializationEffects({
       training_hall:'warrior_doctrine',
