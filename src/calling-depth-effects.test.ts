@@ -10,6 +10,7 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(2.9, 13.4, 'vanguard_legend')).toBe('2-12:vanguard_legend');
     expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
@@ -26,6 +27,14 @@ describe('Calling depth effects', () => {
     expect(specialistMasteryCalling('caretaker', { attack:0, dodge:1, charge:0 }, { stageId:'forest_path', grade:'B', discovery:null, materialReward:1 })).toBe('caretaker');
     expect(specialistMasteryCalling('pathfinder', { attack:1, dodge:0, charge:0 }, { stageId:'forest_path', grade:'A', discovery:'forest_echo', materialReward:0 })).toBe('pathfinder');
     expect(specialistMasteryCalling('vanguard', { attack:0, dodge:2, charge:0 }, { stageId:'forest_path', grade:'A', discovery:null, materialReward:1 })).toBeNull();
+  });
+
+  it('does not grant Calling mastery from corrupted action counts', () => {
+    const summary = { stageId:'forest_path' as const, grade:'A' as const, discovery:'forest_echo', materialReward:2 };
+    expect(specialistMasteryCalling('vanguard', { attack:Number.POSITIVE_INFINITY, dodge:0, charge:0 }, summary)).toBeNull();
+    expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:Number.NaN }, summary)).toBeNull();
+    expect(specialistMasteryCalling('caretaker', { attack:0, dodge:-1, charge:0 }, summary)).toBeNull();
+    expect(specialistMasteryCalling('pathfinder', { attack:Number.NaN, dodge:Number.POSITIVE_INFINITY, charge:-3 }, summary)).toBeNull();
   });
 
   it('lets Pathfinder mastery progress on successful boss clears and re-clears', () => {
