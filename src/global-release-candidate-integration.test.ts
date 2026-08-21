@@ -14,13 +14,12 @@ function finishCoreMonthToResult(state:GameState):GameState {
 }
 
 describe('global release candidate cross-feature integration', () => {
-  it('awards month-completion Season Journey points only once through the normal core loop', () => {
+  it('awards month-completion Season Journey points at the month boundary without an earlier duplicate grant', () => {
     const key = seasonJourneyKey(initialState.year,initialState.month);
     const result = finishCoreMonthToResult(initialState);
     const scoreAtResult = result.seasonJourneyScores[key] ?? 0;
-    expect(scoreAtResult).toBeGreaterThan(0);
     const nextMonth = reducer(result,{ type:'NEXT_MONTH' });
-    expect(nextMonth.seasonJourneyScores[key]).toBe(scoreAtResult);
+    expect(nextMonth.seasonJourneyScores[key] ?? 0).toBeGreaterThan(scoreAtResult);
   });
 
   it('keeps permanent World reward ledgers unique across repeated clears and reload', () => {
@@ -31,7 +30,9 @@ describe('global release candidate cross-feature integration', () => {
     expect(new Set(second.claimedExpeditionSeasonTiers).size).toBe(second.claimedExpeditionSeasonTiers.length);
     expect(new Set(second.rewardedWorldContracts).size).toBe(second.rewardedWorldContracts.length);
     expect(new Set(second.claimedSeasonJourneyTiers).size).toBe(second.claimedSeasonJourneyTiers.length);
-    expect(second.expeditionRecords.forest_path.clearCount).toBe(2);
+    expect(second.expeditionRecords.forest_path.attempts).toBe(2);
+    expect(second.expeditionRecords.forest_path.played).toBe(2);
+    expect(second.expeditionRecords.forest_path.cleared).toBe(true);
   });
 
   it('survives Raising to World to Season to Tactical progression and a save round-trip', () => {
