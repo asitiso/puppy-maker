@@ -40,4 +40,17 @@ describe('raising depth state hydration', () => {
     expect(reconciled.gems).toBe(2);
     expect(reconciled.newlyUnlocked).toEqual([]);
   });
+
+  it('canonicalizes persisted monthly Legend reward keys across zero-padded dates', () => {
+    const hydrated = hydrateRaisingDepthState({
+      legendRewardKeys:[
+        '2-06:vanguard_legend',
+        '2-6:vanguard_legend',
+        '0-6:vanguard_legend',
+        '2-13:vanguard_legend',
+      ],
+    });
+
+    expect(hydrated.legendRewardKeys).toEqual(['2-6:vanguard_legend']);
+  });
 });
