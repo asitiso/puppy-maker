@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPANIONS, bondLevelForXp, deriveCompanionUnit, grantBattleBond, recommendedFormation } from './tactical-companions'
+import { COMPANIONS, bondLevelForXp, bondUnlocks, deriveCompanionUnit, grantBattleBond, recommendedFormation } from './tactical-companions'
 
 describe('tactical companions', () => {
   it('defines four distinct companion roles', () => {
@@ -65,5 +65,12 @@ describe('tactical companions', () => {
     expect(grantBattleBond({ xp: Number.POSITIVE_INFINITY }, 20)).toEqual({ xp: 20, level: 1 })
     expect(grantBattleBond({ xp: 150 }, Number.NaN)).toEqual({ xp: 150, level: 4 })
     expect(grantBattleBond({ xp: -100 }, 5)).toEqual({ xp: 5, level: 1 })
+  })
+
+  it('does not unlock bond features from non-finite or out-of-range levels', () => {
+    expect(bondUnlocks(Number.NaN)).toEqual({passive:false,signature:false,teamPassive:false,combinationUltimate:false})
+    expect(bondUnlocks(Number.POSITIVE_INFINITY)).toEqual({passive:false,signature:false,teamPassive:false,combinationUltimate:false})
+    expect(bondUnlocks(-100)).toEqual({passive:false,signature:false,teamPassive:false,combinationUltimate:false})
+    expect(bondUnlocks(999)).toEqual({passive:true,signature:true,teamPassive:true,combinationUltimate:true})
   })
 })
