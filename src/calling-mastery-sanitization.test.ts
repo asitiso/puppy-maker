@@ -44,4 +44,20 @@ describe('Calling mastery action sanitation', () => {
       materialReward:-1,
     })).toBeNull();
   });
+
+  it('requires a non-empty string discovery for Pathfinder exploration evidence', () => {
+    const actions = { attack:1, dodge:0, charge:0 };
+    const base = { stageId:'forest_path' as const, grade:'A' as const, materialReward:0 };
+
+    for (const discovery of [undefined, 42, '', false] as any[]) {
+      expect(specialistMasteryCalling('pathfinder', actions, {
+        ...base,
+        discovery,
+      } as any)).toBeNull();
+    }
+    expect(specialistMasteryCalling('pathfinder', actions, {
+      ...base,
+      discovery:'forest_echo',
+    })).toBe('pathfinder');
+  });
 });
