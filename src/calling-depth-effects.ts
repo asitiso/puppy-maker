@@ -30,9 +30,9 @@ export function effectivePathfinderExplorationXp(
 export function specialistMasteryCalling(
   calling:GuardianCallingId | null,
   actions:ExpeditionActionCounts,
-  summary:{ grade:ExpeditionGrade; discovery:string | null; materialReward:number },
+  summary:{ accepted?:boolean; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
-  if (!calling || summary.grade === 'C') return null;
+  if (!calling || summary.accepted === false || summary.grade === 'C') return null;
   const attack = nonNegativeInt(actions.attack);
   const dodge = nonNegativeInt(actions.dodge);
   const charge = nonNegativeInt(actions.charge);
