@@ -81,8 +81,8 @@ export function resolveAstralTrial(input:{
   constellations:SanctuaryConstellationId[];
   claimedKeys:string[];
 }) {
-  const safeYear = Math.max(1,Math.floor(input.year));
-  const safeMonth = Math.max(1,Math.min(12,Math.floor(input.month)));
+  const safeYear = Number.isFinite(input.year) ? Math.max(1,Math.floor(input.year)) : 1;
+  const safeMonth = Number.isFinite(input.month) ? Math.max(1,Math.min(12,Math.floor(input.month))) : 1;
   const trial = eligibleAstralTrialFor(safeYear,safeMonth,input.constellations);
   const key = `${safeYear}-${safeMonth}:${trial.id}`;
   if (!input.constellations.includes(trial.requiredConstellation)) {
