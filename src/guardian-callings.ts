@@ -20,8 +20,14 @@ export const guardianCallingDefinitions: GuardianCallingDefinition[] = [
 export const guardianCallingIds = guardianCallingDefinitions.map(item => item.id);
 const guardianRankOrder: GuardianRankId[] = ['trainee','junior','guardian','veteran','starlight'];
 
+function normalizeNonnegativeInteger(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 export function callingSwitchKey(year: number, month: number): string {
-  return `${Math.max(1, Math.floor(year))}-${Math.max(1, Math.min(12, Math.floor(month)))}`;
+  const safeYear = Math.max(1, normalizeNonnegativeInteger(year));
+  const safeMonth = Math.max(1, Math.min(12, normalizeNonnegativeInteger(month)));
+  return `${safeYear}-${safeMonth}`;
 }
 
 export type CallingSelectionInput = {
@@ -41,18 +47,20 @@ export type CallingSelectionResult = CallingSelectionInput & {
 };
 
 export function applyCallingSelection(input: CallingSelectionInput): CallingSelectionResult {
+  const gold = normalizeNonnegativeInteger(input.gold);
+  const normalizedInput = { ...input, gold };
   if (guardianRankOrder.indexOf(input.guardianRank) < guardianRankOrder.indexOf('guardian')) {
-    return { ...input, changed:false, reason:'rank_locked' };
+    return { ...normalizedInput, changed:false, reason:'rank_locked' };
   }
-  if (input.current === input.next) return { ...input, changed:false, reason:'same_calling' };
+  if (input.current === input.next) return { ...normalizedInput, changed:false, reason:'same_calling' };
   const key = callingSwitchKey(input.year, input.month);
-  if (input.lastSwitchKey === key) return { ...input, changed:false, reason:'monthly_lock' };
+  if (input.lastSwitchKey === key) return { ...normalizedInput, changed:false, reason:'monthly_lock' };
   const switching = input.current !== null;
-  if (switching && input.gold < 300) return { ...input, changed:false, reason:'insufficient_gold' };
+  if (switching && gold < 300) return { ...normalizedInput, changed:false, reason:'insufficient_gold' };
   return {
-    ...input,
+    ...normalizedInput,
     current: input.next,
-    gold: switching ? input.gold - 300 : input.gold,
+    gold: switching ? gold - 300 : gold,
     lastSwitchKey: key,
     history: input.history.includes(input.next) ? input.history : [...input.history, input.next],
     changed:true,
