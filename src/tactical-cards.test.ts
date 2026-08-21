@@ -25,6 +25,14 @@ describe('tactical cards', () => {
     expect(next.units.find(unit => unit.id === 'e1')?.hp).toBeLessThan(100);
   });
 
+  it('sanitizes non-finite card scaling instead of corrupting target HP', () => {
+    const start = session();
+    const next = resolveCard(start,'runa','basic_strike','e1',{ str:Number.NaN,mag:10,sen:10,mor:10 });
+    const target = next.units.find(unit => unit.id === 'e1')!;
+    expect(Number.isFinite(target.hp)).toBe(true);
+    expect(target.hp).toBeLessThan(100);
+  });
+
   it('applies a support card when the actor targets themself', () => {
     const start = session();
     start.units = start.units.map(unit => unit.id === 'runa' ? { ...unit,hp:45 } : unit);
@@ -33,6 +41,18 @@ describe('tactical cards', () => {
     expect(runa.hp).toBeGreaterThan(45);
     expect(runa.ap).toBe(1);
     expect(runa.mp).toBe(3);
+  });
+
+  it('keeps focus_magic self-only so it cannot damage a friendly target', () => {
+    const start = session();
+    expect(resolveCard(start,'runa','focus_magic','bear',{ str:20,mag:10,sen:10,mor:10 })).toBe(start);
+    expect(start.units.find(unit => unit.id === 'bear')?.hp).toBe(100);
+  });
+
+  it('returns the same session when focus_magic cannot restore any more resource', () => {
+    const start = session();
+    start.units = start.units.map(unit => unit.id === 'runa' ? { ...unit,ap:3,mp:10 } : unit);
+    expect(resolveCard(start,'runa','focus_magic','runa',{ str:20,mag:10,sen:10,mor:10 })).toBe(start);
   });
 
   it('returns the same session for an illegal target', () => {
