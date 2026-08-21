@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { giftDefinitions } from './adventure';
 import { bondSceneDefinitions } from './bond-scenes';
 import { callingMasteryLevel } from './calling-mastery';
@@ -27,6 +27,8 @@ const rankOrder = ['trainee','junior','guardian','veteran','starlight'] as const
 
 export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, onCalling, onTrait }: RaisingIdentityOverlayProps) {
   const [tab, setTab] = useState<'calling'|'traits'|'bond'>('calling');
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
   const guardian = currentGuardianStatus(state);
   const rankReady = rankOrder.indexOf(guardian.rank) >= rankOrder.indexOf('guardian');
   const archetype = personalityArchetype(state.personality);
@@ -37,8 +39,13 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   const switchLocked = state.callingLastSwitchKey === callingSwitchKey(state.year, state.month);
   const canSwitch = rankReady && !switchLocked;
 
+  useEffect(() => {
+    if (wasOpen.current && !open) launcherRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
   if (!open) {
-    return <button className="raising-home-card" onClick={onOpen} aria-label="루나 성장 정체성 열기">
+    return <button ref={launcherRef} className="raising-home-card" onClick={onOpen} aria-label="루나 성장 정체성 열기">
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
       <span><small>RUNA IDENTITY</small><strong>{activeDefinition?.label ?? archetypeLabels[archetype]}</strong><b>성장 포인트 {state.growthPoints} · 장면 {state.unlockedBondScenes.length}/10</b><em>{activeDefinition ? `Calling Lv.${callingMasteryLevel(state.callingMastery[activeDefinition.id])}` : rankReady ? '수호자의 길을 선택할 수 있어요' : '정식 수호자부터 Calling 해금'}</em></span>
     </button>;
