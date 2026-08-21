@@ -11,9 +11,19 @@ describe('tactical status effects', () => {
     expect(second.statuses).toEqual([{ id:'focus', turns:3 }]);
   });
 
+  it('sanitizes non-finite status duration instead of persisting NaN', () => {
+    expect(addTacticalStatus(unit('runa'),'focus',Number.NaN).statuses).toEqual([{ id:'focus',turns:1 }]);
+    expect(addTacticalStatus(unit('runa'),'regen',Number.POSITIVE_INFINITY).statuses).toEqual([{ id:'regen',turns:1 }]);
+  });
+
   it('focus raises outgoing power while break reduces it', () => {
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'focus',1),40)).toBe(48);
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'break',1),40)).toBe(32);
+  });
+
+  it('does not emit non-finite combat power from corrupted raw input', () => {
+    expect(tacticalStatusPower(unit('runa'),Number.NaN)).toBe(0);
+    expect(tacticalStatusPower(unit('runa'),Number.POSITIVE_INFINITY)).toBe(0);
   });
 
   it('regen heals at round transition and decrements durations', () => {
