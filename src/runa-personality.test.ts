@@ -14,6 +14,12 @@ describe('Runa personality identity', () => {
     expect(personalityArchetype({ courage: 50, kindness: 50, curiosity: 20, calmness: 10 })).toBe('balanced');
   });
 
+  it('sanitizes out-of-range and non-finite tendencies before choosing an archetype', () => {
+    expect(personalityArchetype({ courage:-100, kindness:-90, curiosity:-80, calmness:-70 })).toBe('balanced');
+    expect(personalityArchetype({ courage:Number.POSITIVE_INFINITY, kindness:20, curiosity:20, calmness:20 })).toBe('balanced');
+    expect(personalityArchetype({ courage:500, kindness:90, curiosity:20, calmness:20 })).toBe('brave');
+  });
+
   it('derives favorite activity and gift from personality and calling', () => {
     expect(runaPreferences('brave', 'vanguard')).toEqual({ favoriteActivity:'hunt', favoriteGift:'fox_charm' });
     expect(runaPreferences('serene', 'caretaker')).toEqual({ favoriteActivity:'rest', favoriteGift:'herb_tea' });
