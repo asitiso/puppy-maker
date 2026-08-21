@@ -54,6 +54,10 @@ function finite(value: number, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function nonNegativeCount(value: number) {
+  return Math.max(0, Math.floor(finite(value)));
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, finite(value, min)));
 }
@@ -92,11 +96,13 @@ function signatureBonus(battle: ExpeditionBattleState, kind: ExpeditionActionKin
 }
 
 function recordedActionCount(battle: ExpeditionBattleState): number {
-  return battle.actionKinds.attack + battle.actionKinds.dodge + battle.actionKinds.charge;
+  return nonNegativeCount(battle.actionKinds.attack)
+    + nonNegativeCount(battle.actionKinds.dodge)
+    + nonNegativeCount(battle.actionKinds.charge);
 }
 
 function usedActionCount(battle: ExpeditionBattleState): number {
-  return Math.max(battle.actionCount, recordedActionCount(battle));
+  return Math.max(nonNegativeCount(battle.actionCount), recordedActionCount(battle));
 }
 
 function withActionCount(
@@ -106,7 +112,7 @@ function withActionCount(
 ): Pick<ExpeditionBattleState, 'actionCount' | 'actionKinds'> {
   return {
     actionCount: currentActionCount + 1,
-    actionKinds: { ...battle.actionKinds, [kind]: battle.actionKinds[kind] + 1 },
+    actionKinds: { ...battle.actionKinds, [kind]: nonNegativeCount(battle.actionKinds[kind]) + 1 },
   };
 }
 
