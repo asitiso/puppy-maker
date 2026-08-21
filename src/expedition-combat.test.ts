@@ -122,6 +122,24 @@ describe('expedition combat', () => {
     expect(overflow).toEqual(malformedReloadedBattle);
   });
 
+  it('fails closed when reloaded action counters contain positive infinity', () => {
+    const malformedActionCount = {
+      ...startExpeditionBattle('forest_path'),
+      score: 500,
+      actionCount: Number.POSITIVE_INFINITY,
+      actionKinds: { attack: 0, dodge: 0, charge: 0 },
+    };
+    const malformedActionKinds = {
+      ...startExpeditionBattle('forest_path'),
+      score: 500,
+      actionCount: 0,
+      actionKinds: { attack: Number.POSITIVE_INFINITY, dodge: 0, charge: 0 },
+    };
+
+    expect(applyExpeditionAction(malformedActionCount, 'charge', 1, base)).toEqual(malformedActionCount);
+    expect(applyExpeditionAction(malformedActionKinds, 'charge', 1, base)).toEqual(malformedActionKinds);
+  });
+
   it('repairs a stale low actionCount when one legal action remains', () => {
     const staleReloadedBattle = {
       ...startExpeditionBattle('forest_path'),
