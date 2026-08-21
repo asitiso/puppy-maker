@@ -18,6 +18,11 @@ export type ExpeditionPersistentState = {
 const stageIds = expeditionStageDefinitions.map(stage => stage.id);
 const regionIds = expeditionRegionDefinitions.map(region => region.id);
 const validGrades: ExpeditionGrade[] = ['S', 'A', 'B', 'C'];
+const regionCompletionRelics: Partial<Record<ExpeditionRelicId, ExpeditionRegionId>> = {
+  moonfang_charm: 'starlight_forest',
+  mana_prism: 'ancient_city',
+  wind_feather: 'wind_lakes',
+};
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const finite = (value: unknown, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
@@ -82,6 +87,14 @@ export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersis
   for (const regionId of rewardedExpeditionRegions) {
     const region = expeditionRegionDefinitions.find(item => item.id === regionId);
     for (const stageId of region?.stages ?? []) clearEvidence.add(stageId);
+  }
+  for (const relicId of owned) {
+    const regionId = regionCompletionRelics[relicId];
+    const region = regionId ? expeditionRegionDefinitions.find(item => item.id === regionId) : null;
+    for (const stageId of region?.stages ?? []) clearEvidence.add(stageId);
+  }
+  if (owned.includes('explorer_compass')) {
+    for (const stageId of stageIds) clearEvidence.add(stageId);
   }
   const expeditionRecords = hydrateRecords(source.expeditionRecords);
   for (const stageId of clearEvidence) {
