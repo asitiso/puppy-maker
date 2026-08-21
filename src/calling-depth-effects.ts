@@ -95,7 +95,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     applied.push('heart_anchor');
   }
 
-  if (input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
+  if (input.calling === 'vanguard' && traits.has('vanguard_legend') && input.grade !== 'C') {
     const key = legendRewardKey(input.year, input.month, 'vanguard_legend');
     if (!legendRewardKeys.includes(key)) {
       fatigueDelta = Math.max(0, fatigueDelta - 2);
