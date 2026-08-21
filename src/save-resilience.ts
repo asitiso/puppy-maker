@@ -21,7 +21,7 @@ export type ResilientSaveLoad = {
 };
 
 type Candidate = { state:GameState; serialized:string };
-const acceptableStatuses = new Set(['valid','legacy','migrated-v1','future-version']);
+const acceptableStatuses = new Set(['valid','legacy','migrated-v1','migrated-v2','future-version']);
 
 function decodeCandidate(serialized:string|null): Candidate | null {
   if (!serialized) return null;
