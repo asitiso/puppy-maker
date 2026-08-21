@@ -17,4 +17,9 @@ describe('tactical expedition integration',()=>{
    expect(tacticalExpeditionFinishScore(Number.POSITIVE_INFINITY,'victory')).toBe(0);
    expect(tacticalExpeditionFinishScore(-100,'victory')).toBe(0);
  });
+ it('caps a finite but overflowing finish target to a safe integer score',()=>{
+   const score=tacticalExpeditionFinishScore(Number.MAX_VALUE,'victory');
+   expect(Number.isSafeInteger(score)).toBe(true);
+   expect(score).toBe(Number.MAX_SAFE_INTEGER);
+ });
 });
