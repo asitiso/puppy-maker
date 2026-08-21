@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './game';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
-import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage } from './tactical-launcher';
+import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage, tacticalLeaderProgression } from './tactical-launcher';
 
 describe('tactical expedition launcher', () => {
   it('maps expedition regions onto reusable tactical encounters', () => {
@@ -24,6 +24,18 @@ describe('tactical expedition launcher', () => {
     const state = { ...initialState, selectedTacticalCompanions:[] };
     const battle = createTacticalBattleFromGame(state,'forest_path',17);
     expect(battle.units.map(unit=>unit.id)).toEqual(expect.arrayContaining(['companion-bear','companion-owl']));
+  });
+
+  it('sanitizes non-finite raising stats before deriving tactical combat progression', () => {
+    const progression = tacticalLeaderProgression({
+      stats:{...initialState.stats,strength:Number.NaN,magic:Number.POSITIVE_INFINITY,intelligence:Number.NEGATIVE_INFINITY},
+      personality:{...initialState.personality,calmness:Number.NaN},
+    });
+    expect(Object.values(progression).every(Number.isFinite)).toBe(true);
+    expect(progression.power).toBeGreaterThanOrEqual(20);
+    expect(progression.magic).toBeGreaterThanOrEqual(10);
+    expect(progression.agility).toBeGreaterThanOrEqual(8);
+    expect(progression.maxHp).toBeGreaterThanOrEqual(100);
   });
 
   it('derives completion metrics from the final battle state', () => {
