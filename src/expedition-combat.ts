@@ -87,9 +87,21 @@ function signatureBonus(battle: ExpeditionBattleState, kind: ExpeditionActionKin
   return clamp(bonus, 0, 0.16);
 }
 
-function withActionCount(battle: ExpeditionBattleState, kind: ExpeditionActionKind): Pick<ExpeditionBattleState, 'actionCount' | 'actionKinds'> {
+function recordedActionCount(battle: ExpeditionBattleState): number {
+  return battle.actionKinds.attack + battle.actionKinds.dodge + battle.actionKinds.charge;
+}
+
+function usedActionCount(battle: ExpeditionBattleState): number {
+  return Math.max(battle.actionCount, recordedActionCount(battle));
+}
+
+function withActionCount(
+  battle: ExpeditionBattleState,
+  kind: ExpeditionActionKind,
+  currentActionCount: number,
+): Pick<ExpeditionBattleState, 'actionCount' | 'actionKinds'> {
   return {
-    actionCount: battle.actionCount + 1,
+    actionCount: currentActionCount + 1,
     actionKinds: { ...battle.actionKinds, [kind]: battle.actionKinds[kind] + 1 },
   };
 }
@@ -104,7 +116,8 @@ export function applyExpeditionAction(
   accuracy: number,
   input: ExpeditionCombatInput,
 ): ExpeditionBattleState {
-  if (battle.actionCount >= EXPEDITION_ACTION_LIMIT) return battle;
+  const currentActionCount = usedActionCount(battle);
+  if (currentActionCount >= EXPEDITION_ACTION_LIMIT) return battle;
 
   const quality = 0.35 + clamp(accuracy, 0, 1) * 0.65;
   const fatiguePenalty = clamp((Math.max(0, input.fatigue) - 25) / 220, 0, 0.28);
@@ -113,7 +126,7 @@ export function applyExpeditionAction(
   const advancedBonus = clamp(talentBonus(input.talents, kind), 0, 0.1);
   const identityBonus = clamp(input.identity?.[kind] ?? 0, 0, 0.1);
   const callingBonus = signatureBonus(battle, kind, input);
-  const counts = withActionCount(battle, kind);
+  const counts = withActionCount(battle, kind, currentActionCount);
 
   if (kind === 'dodge') {
     const dodgeBonus = clamp(input.relics.dodge, 0, 0.2);
