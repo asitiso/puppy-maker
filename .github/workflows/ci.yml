@@ -3,14 +3,83 @@ on:
   pull_request:
   push:
     branches: [main, feat/v2-core-growth]
+permissions:
+  contents: write
 jobs:
   test-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Apply verify-only core compatibility recovery
+        if: github.head_ref == 'verify/core-compat-recovery'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          parent = 'c8622851bf9476129ef83a75c76ddc836fecc41a'
+          expected_truncated = '4efdc3353a2685892538f859cb0f1710f081dde3'
+          current_core = subprocess.run(['git', 'rev-parse', 'HEAD:src/game-core.ts'], check=True, capture_output=True, text=True).stdout.strip()
+
+          if current_core == expected_truncated:
+              restored = subprocess.run(
+                  ['git', 'show', f'{parent}:src/game-core.ts'],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              ).stdout
+              old_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result';"
+              new_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result' | 'event' | 'ending';"
+              old_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result'];"
+              new_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result', 'event', 'ending'];"
+              assert restored.count(old_screen) == 1
+              assert restored.count(old_whitelist) == 1
+              restored = restored.replace(old_screen, new_screen, 1).replace(old_whitelist, new_whitelist, 1)
+              Path('src/game-core.ts').write_text(restored)
+
+          game_path = Path('src/game.ts')
+          game = game_path.read_text()
+          old_growth = 'export type GrowthReport = Partial<Base.GrowthReport> & {'
+          new_growth = 'export type GrowthReport = Base.GrowthReport & {'
+          if old_growth in game:
+              assert game.count(old_growth) == 1
+              game_path.write_text(game.replace(old_growth, new_growth, 1))
+          else:
+              assert new_growth in game, 'GrowthReport compatibility declaration drifted'
+          PY
+      - name: Limit verify production changes
+        if: github.head_ref == 'verify/core-compat-recovery'
+        run: |
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          if [ -n "$changed" ]; then
+            test "$changed" = "$(printf '%s\n' src/game-core.ts src/game.ts | sort)"
+          fi
       - run: npm install
-      - run: npm run test
-      - run: npm run build
+      - name: Targeted core and save tests
+        if: github.head_ref == 'verify/core-compat-recovery'
+        run: npx vitest run src/core-compat-recovery.test.ts src/game.test.ts src/save-schema.test.ts src/save-resilience.test.ts
+      - name: Full test suite
+        run: npm run test
+      - name: TypeScript project check
+        run: npx tsc -b --pretty false
+      - name: Production build
+        run: npm run build
+      - name: Commit verified recovery to verify branch
+        if: github.head_ref == 'verify/core-compat-recovery'
+        run: |
+          if git diff --quiet -- src/game-core.ts src/game.ts; then
+            echo "Verified recovery already committed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/game-core.ts src/game.ts
+          git commit -m "fix: restore core public API compatibility"
+          git push origin HEAD:verify/core-compat-recovery
