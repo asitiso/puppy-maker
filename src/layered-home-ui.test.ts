@@ -29,10 +29,10 @@ describe('Layered Home mobile UI contract', () => {
     expect(homeCss).toContain('.lh-weather span{display:none}');
   });
 
-  it('uses the dynamic visual viewport so mobile browser chrome does not strand the game shell', () => {
-    expect(globalCss).toContain('min-height:100dvh');
-    expect(globalCss).toContain('width:min(100vw,56.25dvh)');
-    expect(globalCss).toContain('height:min(100dvh,177.78vw)');
+  it('uses a dynamic viewport override without removing the existing vh fallback', () => {
+    expect(globalCss).toContain('.page{min-height:100vh');
+    expect(globalCss).toContain('.game-shell{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.78vw)');
+    expect(homeCss).toContain('@supports(height:100dvh){.page{min-height:100dvh}.game-shell{width:min(100vw,56.25dvh);height:min(100dvh,177.78vw)}}');
   });
 
   it('keeps long goal copy clipped inside the card at 430px-class widths', () => {
