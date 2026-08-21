@@ -65,8 +65,9 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
   const traits = new Set(input.traits);
+  const successful = input.grade !== 'C';
 
-  if (input.calling === 'pathfinder') {
+  if (successful && input.calling === 'pathfinder') {
     if (signatures.has('trail_reading') && input.firstClear && input.materialReward > 0) {
       extraMaterial += 1;
       applied.push('trail_reading');
@@ -82,7 +83,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     applied.push('heart_anchor');
   }
 
-  if (input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
+  if (successful && input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
     const key = legendRewardKey(input.year, input.month, 'vanguard_legend');
     if (!legendRewardKeys.includes(key)) {
       fatigueDelta = Math.max(0, fatigueDelta - 2);
