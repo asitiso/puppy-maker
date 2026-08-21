@@ -118,6 +118,14 @@ describe('Layered Home mobile UI contract', () => {
     }
   });
 
+  it('lets keyboard users back out of each major overlay with Escape', () => {
+    for (const overlay of [raisingOverlay, worldOverlay, seasonOverlay, expeditionOverlay]) {
+      expect(overlay).toContain("event.key !== 'Escape'");
+      expect(overlay).toContain("window.addEventListener('keydown'");
+      expect(overlay).toContain("window.removeEventListener('keydown'");
+    }
+  });
+
   it('keeps major overlay chrome inside safe areas with usable close targets', () => {
     for (const rawCss of [raisingCss, worldCss, seasonCss, expeditionCss]) {
       expect(rawCss).toContain('safe-area-inset-top');
