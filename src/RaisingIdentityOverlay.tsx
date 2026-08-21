@@ -8,6 +8,7 @@ import { activities } from './game-core';
 import { canPurchaseGrowthTrait, growthTraitDefinitions } from './growth-traits';
 import { callingSwitchKey, guardianCallingDefinitions } from './guardian-callings';
 import { guardianRankDefinitions } from './guardian-rank';
+import { trapModalTab } from './modal-focus';
 import { personalityArchetype, runaPreferences } from './runa-personality';
 
 export type RaisingIdentityOverlayProps = {
@@ -62,7 +63,7 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   }
 
   return <div className="raising-overlay">
-    <section className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성">
+    <section className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성" onKeyDown={trapModalTab}>
       <img className="raising-panel-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="raising-content">
         <header>
