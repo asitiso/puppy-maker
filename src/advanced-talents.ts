@@ -41,7 +41,10 @@ export function advancedTalents(levels: MasteryLevels): AdvancedTalentId[] {
     .map(talent => talent.id);
 }
 
-const clamp = (value: number) => Math.max(0, Math.min(100, value));
+const clamp = (value: number) => {
+  const safe = Number.isFinite(value) ? value : 0;
+  return Math.max(0, Math.min(100, safe));
+};
 
 export function applyAdvancedTalentBonuses(
   stats: Stats,
@@ -53,17 +56,17 @@ export function applyAdvancedTalentBonuses(
   const nextPersonality = { ...personality };
   const active = new Set(schedule);
 
-  for (const id of talents) {
+  for (const id of new Set(talents)) {
     const definition = talentDefinitions.find(item => item.id === id);
     if (!definition || !active.has(definition.activity)) continue;
-    if (id === 'hunter_instinct') nextStats.strength = clamp(nextStats.strength + 2);
-    if (id === 'guardian_strike') nextPersonality.courage = clamp(nextPersonality.courage + 1);
-    if (id === 'arcane_rhythm') nextStats.magic = clamp(nextStats.magic + 2);
-    if (id === 'star_channel') nextStats.intelligence = clamp(nextStats.intelligence + 2);
-    if (id === 'steady_recovery') nextStats.fatigue = clamp(nextStats.fatigue - 3);
-    if (id === 'deep_rest') nextStats.stress = clamp(nextStats.stress - 3);
-    if (id === 'field_scholar') nextStats.morality = clamp(nextStats.morality + 2);
-    if (id === 'ancient_remedy') nextPersonality.curiosity = clamp(nextPersonality.curiosity + 1);
+    if (id === 'hunter_instinct') nextStats.strength = clamp(clamp(nextStats.strength) + 2);
+    if (id === 'guardian_strike') nextPersonality.courage = clamp(clamp(nextPersonality.courage) + 1);
+    if (id === 'arcane_rhythm') nextStats.magic = clamp(clamp(nextStats.magic) + 2);
+    if (id === 'star_channel') nextStats.intelligence = clamp(clamp(nextStats.intelligence) + 2);
+    if (id === 'steady_recovery') nextStats.fatigue = clamp(clamp(nextStats.fatigue) - 3);
+    if (id === 'deep_rest') nextStats.stress = clamp(clamp(nextStats.stress) - 3);
+    if (id === 'field_scholar') nextStats.morality = clamp(clamp(nextStats.morality) + 2);
+    if (id === 'ancient_remedy') nextPersonality.curiosity = clamp(clamp(nextPersonality.curiosity) + 1);
   }
 
   return { stats: nextStats, personality: nextPersonality };
