@@ -21,7 +21,7 @@ describe('guardian calling corruption boundaries', () => {
     expect(result).toMatchObject({ changed:false, reason:'insufficient_gold', current:'vanguard', gold:0 });
   });
 
-  it('canonicalizes duplicate history when a new Calling is selected', () => {
+  it('canonicalizes duplicate history without destroying first-seen chronology', () => {
     const result = applyCallingSelection({
       current:'vanguard',
       next:'caretaker',
@@ -30,8 +30,8 @@ describe('guardian calling corruption boundaries', () => {
       year:2,
       month:8,
       lastSwitchKey:null,
-      history:['vanguard','vanguard','arcanist'],
+      history:['pathfinder','vanguard','pathfinder','arcanist'],
     });
-    expect(result.history).toEqual(['vanguard','arcanist','caretaker']);
+    expect(result.history).toEqual(['pathfinder','vanguard','arcanist','caretaker']);
   });
 });
