@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import battleCss from './tactical-battle.css?raw';
-import expeditionCss from './tactical-expedition-flow.css?raw';
+// @ts-ignore Node builtin is used only by this Vitest contract test.
+import { readFileSync } from 'node:fs';
+
+const battleCss = readFileSync(new URL('./tactical-battle.css', import.meta.url),'utf8');
+const expeditionCss = readFileSync(new URL('./tactical-expedition-flow.css', import.meta.url),'utf8');
 
 describe('tactical mobile interaction contract', () => {
   it('keeps the battle viewport safe, touchable and compact on phones', () => {
