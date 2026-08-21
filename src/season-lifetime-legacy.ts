@@ -17,6 +17,15 @@ const milestones = [
   { id:'eternal' as const, threshold:50, label:'영원의 계절 유산' },
 ];
 
+function uniqueSeasonHistory(history:SeasonJourneyHistoryEntry[]):SeasonJourneyHistoryEntry[] {
+  const seen = new Set<string>();
+  return history.filter(entry => {
+    if (seen.has(entry.key)) return false;
+    seen.add(entry.key);
+    return true;
+  });
+}
+
 export function seasonLifetimeAward(input:{ tiersCompleted:number; score:number; tokensEarned:number; keepsake:boolean }):number {
   const tiers = Number.isFinite(input.tiersCompleted) ? Math.max(0,Math.floor(input.tiersCompleted)) : 0;
   const score = Number.isFinite(input.score) ? Math.max(0,Math.floor(input.score)) : 0;
@@ -53,7 +62,7 @@ export function seasonLifetimeMilestone(rawPoints:number) {
 }
 
 export function seasonLifetimePoints(history:SeasonJourneyHistoryEntry[], purchaseKeys:string[]):number {
-  return history.reduce((sum,entry) => {
+  return uniqueSeasonHistory(history).reduce((sum,entry) => {
     const keepsake = purchaseKeys.some(key => key.startsWith(`${entry.key}:seasonal_keepsake:`));
     return sum + seasonLifetimeAward({
       tiersCompleted:entry.tiersCompleted,
@@ -65,11 +74,12 @@ export function seasonLifetimePoints(history:SeasonJourneyHistoryEntry[], purcha
 }
 
 export function seasonLifetimeSummary(history:SeasonJourneyHistoryEntry[], purchaseKeys:string[]) {
-  const points = seasonLifetimePoints(history,purchaseKeys);
+  const canonicalHistory = uniqueSeasonHistory(history);
+  const points = seasonLifetimePoints(canonicalHistory,purchaseKeys);
   return {
     points,
     milestone:seasonLifetimeMilestone(points),
     bonuses:seasonLifetimeBonuses(points),
-    completedSeasons:history.filter(entry => entry.tiersCompleted >= 10).length,
+    completedSeasons:canonicalHistory.filter(entry => entry.tiersCompleted >= 10).length,
   };
 }
