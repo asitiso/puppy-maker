@@ -66,7 +66,7 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
       <img className="raising-panel-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="raising-content">
         <header>
-          <button onClick={onClose}>‹ 홈</button>
+          <button autoFocus onClick={onClose}>‹ 홈</button>
           <div><small>RUNA RAISING IDENTITY</small><h1>루나의 성장 방향</h1></div>
           <span><b>{state.growthPoints}</b> GROWTH PT</span>
         </header>
