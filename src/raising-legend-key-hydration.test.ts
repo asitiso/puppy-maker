@@ -20,4 +20,15 @@ describe('Raising legend reward key hydration', () => {
       '3-7:pathfinder_legend',
     ]);
   });
+
+  it('canonicalizes zero-padded dates before deduping claims', () => {
+    const hydrated = hydrateRaisingDepthState({
+      legendRewardKeys:[
+        '2-06:vanguard_legend',
+        '2-6:vanguard_legend',
+        '0002-006:vanguard_legend',
+      ],
+    });
+    expect(hydrated.legendRewardKeys).toEqual(['2-6:vanguard_legend']);
+  });
 });
