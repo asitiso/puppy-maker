@@ -113,9 +113,10 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   const traits = new Set(input.traits);
   const successful = input.grade === 'B' || input.grade === 'A' || input.grade === 'S';
   const hasMaterialReward = Number.isFinite(input.materialReward) && input.materialReward > 0;
+  const firstClear = input.firstClear === true;
 
   if (successful && input.calling === 'pathfinder') {
-    if (signatures.has('trail_reading') && input.firstClear && hasMaterialReward) {
+    if (signatures.has('trail_reading') && firstClear && hasMaterialReward) {
       extraMaterial += 1;
       applied.push('trail_reading');
     }
@@ -130,7 +131,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     applied.push('heart_anchor');
   }
 
-  if (successful && input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
+  if (successful && input.calling === 'vanguard' && traits.has('vanguard_legend') && firstClear) {
     const key = legendRewardKey(input.year, input.month, 'vanguard_legend');
     if (!legendRewardKeys.includes(key)) {
       fatigueDelta = Math.max(0, fatigueDelta - 2);
@@ -160,7 +161,7 @@ export function applyPathfinderOutingLegend(
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
   const legendRewardKeys = sanitizeLegendRewardKeys(existingKeys);
-  if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || !discovered) {
+  if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || discovered !== true) {
     return { goldBonus:0, legendRewardKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
