@@ -12,6 +12,16 @@ describe('expedition persistent state repair', () => {
     expect(state.ownedExpeditionRelics).toContain('guardian_thread');
   });
 
+  it('restores the guardian thread crafting milestone when relic ownership survived', () => {
+    const state = hydrateExpeditionPersistentState({
+      craftingMilestones:[],
+      ownedExpeditionRelics:['guardian_thread'],
+    });
+
+    expect(state.ownedExpeditionRelics).toContain('guardian_thread');
+    expect(state.craftingMilestones).toContain('crafted_guardian_thread');
+  });
+
   it('keeps only owned relics equipped after hydration', () => {
     const state = hydrateExpeditionPersistentState({
       ownedExpeditionRelics:['moonfang_charm'],
