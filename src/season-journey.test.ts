@@ -13,6 +13,12 @@ describe('season journey', () => {
     expect(seasonJourneyKey(2,1)).toBe('2-winter');
   });
 
+  it('canonicalizes malformed calendar values before creating journey reward keys', () => {
+    expect(seasonJourneyKey(Number.NaN,Number.NaN)).toBe('1-winter');
+    expect(seasonJourneyKey(Number.POSITIVE_INFINITY,4)).toBe('1-spring');
+    expect(seasonJourneyKey(0,4)).toBe('1-spring');
+  });
+
   it('awards account-wide journey points for core play actions', () => {
     expect(seasonJourneyPoints({ kind:'month_complete', grade:'B' })).toBe(25);
     expect(seasonJourneyPoints({ kind:'month_complete', grade:'S' })).toBe(35);
