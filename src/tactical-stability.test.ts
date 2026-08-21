@@ -10,6 +10,7 @@ import { resolveCombinationUltimate, validCombinationUltimateTargets } from './t
 const progression = { power: 42, magic: 32, agility: 13, maxHp: 150 };
 const party = ['wolf', 'owl'] as const;
 const bonds = { wolf: 5, owl: 1 } as const;
+const stressStages = Array.from({length:10},(_,index)=>`stress-${index}`);
 
 function assertResourceBounds(session:BattleSession) {
   for (const unit of session.units) {
@@ -66,8 +67,8 @@ function autoStep(session:BattleSession):BattleSession {
   return skipTacticalTurnIfNoPlayableAction(session, actorId, tacticalActionHand(session, actorId));
 }
 
-function runBattle(mode:'manual'|'auto', seed:number) {
-  let session = createTacticalExpeditionBattle('city_gate', party, progression, seed);
+function runBattle(mode:'manual'|'auto', seed:number, stageId='city_gate') {
+  let session = createTacticalExpeditionBattle(stageId, party, progression, seed);
   const initialHand = tacticalActionHand(session, 'runa');
   expect(initialHand).toHaveLength(4);
   expect(tacticalActionHand(session, 'runa')).toEqual(initialHand);
@@ -79,8 +80,8 @@ function runBattle(mode:'manual'|'auto', seed:number) {
     const beforeDigest = digest(session);
     const beforeRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     session = mode === 'manual' ? manualStep(session) : autoStep(session);
-    expect(session, `${mode} seed ${seed} stalled at step ${steps}`).not.toBe(before);
-    expect(digest(session), `${mode} seed ${seed} made no meaningful progress at step ${steps}`).not.toEqual(beforeDigest);
+    expect(session, `${mode} ${stageId} seed ${seed} stalled at step ${steps}`).not.toBe(before);
+    expect(digest(session), `${mode} ${stageId} seed ${seed} made no meaningful progress at step ${steps}`).not.toEqual(beforeDigest);
     const afterRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     ultimateUsed = ultimateUsed || beforeRunaMp === 10 && afterRunaMp === 0;
     assertResourceBounds(session);
@@ -89,7 +90,7 @@ function runBattle(mode:'manual'|'auto', seed:number) {
     steps += 1;
   }
 
-  expect(isBattleFinished(session), `${mode} seed ${seed} did not finish`).not.toBeNull();
+  expect(isBattleFinished(session), `${mode} ${stageId} seed ${seed} did not finish`).not.toBeNull();
   expect(steps).toBeLessThan(160);
   return { session,steps,ultimateUsed };
 }
@@ -178,12 +179,13 @@ describe('tactical vertical slice stability', () => {
     expect(digest(runBattle('auto',73).session)).toEqual(digest(runBattle('auto',73).session));
   });
 
-  it('keeps AUTO bounded and making meaningful progress through 10, 50 and 100 battle checkpoints', () => {
+  it('keeps AUTO bounded and making meaningful progress through 10, 50 and 100 battle checkpoints across mixed stage archetypes', () => {
     const checkpoints = new Map<number,{victories:number;defeats:number}>();
     let victories = 0;
     let defeats = 0;
     for (let seed=1;seed<=100;seed+=1) {
-      const { session,steps } = runBattle('auto',seed);
+      const stageId=stressStages[(seed-1)%stressStages.length];
+      const { session,steps } = runBattle('auto',seed,stageId);
       const result = isBattleFinished(session);
       expect(result).not.toBeNull();
       expect(steps).toBeGreaterThan(0);
