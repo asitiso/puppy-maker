@@ -8,13 +8,15 @@ describe('raising depth expedition effects', () => {
     expect(expeditionIdentityModifiers('caretaker', ['caretaker_rest','caretaker_bond','caretaker_guard'])).toEqual({ attack:0, charge:0, dodge:0.05 });
   });
 
-  it('ignores purchased combat traits from an inactive Calling', () => {
+  it('ignores purchased combat traits from an inactive Calling or an orphan chain', () => {
     expect(expeditionIdentityModifiers('arcanist', ['vanguard_assault'])).toEqual({ attack:0, charge:0, dodge:0 });
+    expect(expeditionIdentityModifiers('vanguard', ['vanguard_assault'])).toEqual({ attack:0, charge:0, dodge:0 });
     expect(expeditionIdentityModifiers(null, ['vanguard_assault','arcanist_channel','caretaker_guard'])).toEqual({ attack:0, charge:0, dodge:0 });
   });
 
   it('grants one extra regional material on S clear for active Pathfinder supply trait', () => {
     expect(pathfinderSupplyBonus('pathfinder', ['pathfinder_herb','pathfinder_eye','pathfinder_supply'], 'forest_guardian', 'S')).toBe('star_bark');
+    expect(pathfinderSupplyBonus('pathfinder', ['pathfinder_supply'], 'city_core', 'S')).toBeNull();
     expect(pathfinderSupplyBonus('pathfinder', ['pathfinder_supply'], 'city_core', 'A')).toBeNull();
     expect(pathfinderSupplyBonus('vanguard', ['pathfinder_supply'], 'lake_tempest', 'S')).toBeNull();
   });
