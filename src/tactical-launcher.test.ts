@@ -27,6 +27,14 @@ describe('tactical expedition launcher', () => {
     expect(battle.units.map(unit=>unit.id)).toEqual(expect.arrayContaining(['companion-bear','companion-owl']));
   });
 
+  it('returns fresh fallback party tuples instead of leaking shared mutable state', () => {
+    const first = tacticalPartyForGame({selectedTacticalCompanions:[]});
+    const second = tacticalPartyForGame({selectedTacticalCompanions:[]});
+    expect(first).toEqual(['bear','owl']);
+    expect(second).toEqual(['bear','owl']);
+    expect(first).not.toBe(second);
+  });
+
   it('falls back safely when a corrupted save contains an unknown companion id', () => {
     const corrupted = ['dragon','owl'] as unknown as readonly CompanionId[];
     expect(tacticalPartyForGame({selectedTacticalCompanions:corrupted})).toEqual(['bear','owl']);
