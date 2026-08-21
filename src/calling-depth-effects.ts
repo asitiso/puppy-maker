@@ -53,7 +53,8 @@ export function specialistMasteryCalling(
   actions:ExpeditionActionCounts,
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
-  if (!calling || summary.grade === 'C') return null;
+  const successful = summary.grade === 'B' || summary.grade === 'A' || summary.grade === 'S';
+  if (!calling || !successful) return null;
   if (calling === 'vanguard') return hasValidAction(actions.attack) ? calling : null;
   if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
   if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
