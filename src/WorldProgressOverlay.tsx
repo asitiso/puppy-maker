@@ -13,6 +13,16 @@ export default function WorldProgressOverlay({ state }: { state: GameState }) {
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
   if (!open) {
     return <button ref={launcherRef} className="world-progress-card" onClick={() => setOpen(true)} aria-label={`${summary.homeCard.title}, ${summary.homeCard.seasonLabel}, ${summary.homeCard.contractLabel}`}>
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
