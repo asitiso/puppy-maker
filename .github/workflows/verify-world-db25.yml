@@ -36,6 +36,7 @@ jobs:
           src/expedition-rewards.test.ts
           src/world-contracts.test.ts
           src/world-ui.test.ts
+          src/world-integration-wiring.test.ts
 
       - name: World suite
         id: world
