@@ -16,6 +16,19 @@ describe('expedition relic hydration evidence', () => {
     expect(isExpeditionStageUnlocked('city_square', state.expeditionRecords)).toBe(true);
   });
 
+  it('uses the forest boss bond locket as durable evidence that the forest chain was cleared', () => {
+    const state = hydrateExpeditionPersistentState({
+      expeditionRecords: {},
+      ownedExpeditionRelics: ['bond_locket'],
+      rewardedExpeditionRegions: [],
+    });
+
+    for (const stageId of expeditionRegionDefinitions[0].stages) {
+      expect(state.expeditionRecords[stageId].cleared).toBe(true);
+    }
+    expect(isExpeditionStageUnlocked('city_square', state.expeditionRecords)).toBe(true);
+  });
+
   it('uses the full-completion relic as durable evidence that all expedition stages were cleared', () => {
     const state = hydrateExpeditionPersistentState({
       expeditionRecords: {},
