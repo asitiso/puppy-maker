@@ -18,72 +18,49 @@ jobs:
           node-version: 22
       - name: Apply verify-only core compatibility recovery
         if: github.head_ref == 'verify/core-compat-recovery'
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import subprocess
-
-          parent = 'c8622851bf9476129ef83a75c76ddc836fecc41a'
-          expected_truncated = '4efdc3353a2685892538f859cb0f1710f081dde3'
-          current_core = subprocess.run(['git', 'rev-parse', 'HEAD:src/game-core.ts'], check=True, capture_output=True, text=True).stdout.strip()
-
-          if current_core == expected_truncated:
-              restored = subprocess.run(
-                  ['git', 'show', f'{parent}:src/game-core.ts'],
-                  check=True,
-                  capture_output=True,
-                  text=True,
-              ).stdout
-              old_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result';"
-              new_screen = "export type Screen = 'hub' | 'schedule' | 'training' | 'dialogue' | 'result' | 'event' | 'ending';"
-              old_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result'];"
-              new_whitelist = "const screens: Screen[] = ['hub', 'schedule', 'training', 'dialogue', 'result', 'event', 'ending'];"
-              assert restored.count(old_screen) == 1
-              assert restored.count(old_whitelist) == 1
-              restored = restored.replace(old_screen, new_screen, 1).replace(old_whitelist, new_whitelist, 1)
-              Path('src/game-core.ts').write_text(restored)
-
-          game_path = Path('src/game.ts')
-          game = game_path.read_text()
-          old_growth = 'export type GrowthReport = Partial<Base.GrowthReport> & {'
-          new_growth = 'export type GrowthReport = Base.GrowthReport & {'
-          if old_growth in game:
-              assert game.count(old_growth) == 1
-              game_path.write_text(game.replace(old_growth, new_growth, 1))
-          else:
-              assert new_growth in game, 'GrowthReport compatibility declaration drifted'
-
-          test_path = Path('src/game.test.ts')
-          tests = test_path.read_text()
-          old_month = '    expect(next.gold).toBe(5470);'
-          new_month = '    expect(next.gold).toBe(progressed.gold + 350);'
-          if old_month in tests:
-              assert tests.count(old_month) == 1
-              tests = tests.replace(old_month, new_month, 1)
-          else:
-              assert new_month in tests, 'month reward expectation drifted'
-
-          old_event = "    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });\n    expect(trained.gold).toBe(initialState.gold + 220);"
-          new_event = "    const baseline = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });\n    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });\n    expect(trained.gold).toBe(baseline.gold + 100);"
-          if old_event in tests:
-              assert tests.count(old_event) == 1
-              tests = tests.replace(old_event, new_event, 1)
-          else:
-              assert new_event in tests, 'random-event reward expectation drifted'
-          test_path.write_text(tests)
-          PY
+        run: python3 .github/verify-core-recovery.py
       - name: Limit verify changes
         if: github.head_ref == 'verify/core-compat-recovery'
         run: |
           git diff --check
           changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            src/attendance-progression.test.ts \
+            src/calling-depth-progression.test.ts \
+            src/career-progression.test.ts \
+            src/expedition-progression.test.ts \
+            src/exploration-progression.test.ts \
+            src/game-base.ts \
+            src/game-core.ts \
+            src/game.test.ts \
+            src/game.ts \
+            src/guardian-rank-progression.test.ts \
+            src/mail-reward-progression.test.ts \
+            src/monthly-progression.test.ts \
+            src/progression.test.ts \
+            src/story-progression.test.ts | sort)"
           if [ -n "$changed" ]; then
-            test "$changed" = "$(printf '%s\n' src/game-core.ts src/game.test.ts src/game.ts | sort)"
+            test "$changed" = "$expected"
           fi
       - run: npm install
-      - name: Targeted core and save tests
+      - name: Targeted core, save, and shared-adapter tests
         if: github.head_ref == 'verify/core-compat-recovery'
-        run: npx vitest run src/core-compat-recovery.test.ts src/game.test.ts src/save-schema.test.ts src/save-resilience.test.ts
+        run: >-
+          npx vitest run
+          src/core-compat-recovery.test.ts
+          src/game.test.ts
+          src/save-schema.test.ts
+          src/save-resilience.test.ts
+          src/guardian-rank-progression.test.ts
+          src/story-progression.test.ts
+          src/career-progression.test.ts
+          src/monthly-progression.test.ts
+          src/attendance-progression.test.ts
+          src/mail-reward-progression.test.ts
+          src/expedition-progression.test.ts
+          src/exploration-progression.test.ts
+          src/calling-depth-progression.test.ts
+          src/progression.test.ts
       - name: Full test suite
         run: npm run test
       - name: TypeScript project check
@@ -93,12 +70,12 @@ jobs:
       - name: Commit verified recovery to verify branch
         if: github.head_ref == 'verify/core-compat-recovery'
         run: |
-          if git diff --quiet -- src/game-core.ts src/game.ts src/game.test.ts; then
+          if git diff --quiet -- src; then
             echo "Verified recovery already committed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/game-core.ts src/game.ts src/game.test.ts
+          git add src
           git commit -m "fix: restore core public API compatibility"
           git push origin HEAD:verify/core-compat-recovery
