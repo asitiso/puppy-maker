@@ -67,6 +67,19 @@ describe('weekly directives', () => {
     }
   });
 
+  it('drops stale and unknown progress keys that are not assigned this week', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const assignedIds = directives.map(item => item.id);
+    const staleId = weeklyDirectives(1,4,3).map(item => item.id).find(id => !assignedIds.includes(id));
+    expect(staleId).toBeDefined();
+    const result = advanceWeeklyDirectives(
+      directives,
+      { [directives[0].id]:1, [staleId!]:99, unknown_directive:99 },
+      { kind:'training', grade:'B' },
+    );
+    expect(Object.keys(result.progress).sort()).toEqual([...assignedIds].sort());
+  });
+
   it('advances only matching directives and caps progress at targets', () => {
     const directives = weeklyDirectives(1,4,1);
     const expedition = directives.find(item => item.counter === 'expedition');
