@@ -72,12 +72,17 @@ export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersis
     ? [...storedOwned, 'guardian_thread']
     : storedOwned;
   const equipped = uniqueAllowed(source.equippedExpeditionRelics, expeditionRelicIds).filter(id => owned.includes(id)).slice(0, 3);
+  const rewardedExpeditionStages = uniqueAllowed(source.rewardedExpeditionStages, stageIds);
+  const expeditionRecords = hydrateRecords(source.expeditionRecords);
+  for (const stageId of rewardedExpeditionStages) {
+    expeditionRecords[stageId] = { ...expeditionRecords[stageId], cleared: true };
+  }
   return {
-    expeditionRecords: hydrateRecords(source.expeditionRecords),
+    expeditionRecords,
     expeditionMaterials: hydrateMaterials(source.expeditionMaterials),
     ownedExpeditionRelics: owned,
     equippedExpeditionRelics: equipped,
-    rewardedExpeditionStages: uniqueAllowed(source.rewardedExpeditionStages, stageIds),
+    rewardedExpeditionStages,
     rewardedExpeditionRegions: uniqueAllowed(source.rewardedExpeditionRegions, regionIds),
     expeditionDiscoveries: uniqueAllowed(source.expeditionDiscoveries, expeditionDiscoveryIds),
     expeditionStoryEntries: uniqueAllowed(source.expeditionStoryEntries, stageIds),
