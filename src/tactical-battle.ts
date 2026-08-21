@@ -37,18 +37,19 @@ const TACTICAL_MP_CAP=10;
 const tacticalStatusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 
 function finiteInteger(value:number,fallback:number) {
-  return Number.isFinite(value) ? Math.floor(value) : fallback;
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(-Number.MAX_SAFE_INTEGER,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value)));
 }
 
 function normalizeOptionalPower(value:number|undefined) {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : undefined;
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(Number.MAX_SAFE_INTEGER,Math.max(0,Math.floor(value))) : undefined;
 }
 
 function normalizeStatuses(statuses:TacticalStatus[]|undefined):TacticalStatus[] {
   const source=Array.isArray(statuses)?statuses:[];
   return source
     .filter(status=>Boolean(status)&&typeof status.id==='string'&&tacticalStatusIds.includes(status.id as TacticalStatusId)&&Number.isFinite(status.turns)&&status.turns>0)
-    .map(status=>({id:status.id as TacticalStatusId,turns:Math.max(1,Math.floor(status.turns))}));
+    .map(status=>({id:status.id as TacticalStatusId,turns:Math.max(1,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(status.turns)))}));
 }
 
 export function orderedTimeline(units:TacticalUnit[]) {
