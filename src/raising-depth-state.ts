@@ -18,6 +18,7 @@ export type RaisingDepthPersistentState = {
 };
 
 const bossStageIds = expeditionStageDefinitions.filter(item => item.boss).map(item => item.id);
+const legendRewardEffects = ['vanguard_legend','arcanist_legend','pathfinder_legend'] as const;
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const int = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 
@@ -65,8 +66,19 @@ function hydrateSwitchKey(raw: unknown): string | null {
 
 function hydrateLegendRewardKeys(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  const valid = raw.filter((value): value is string => typeof value === 'string' && /^\d+-\d+:[a-z0-9_:-]+$/.test(value));
-  return [...new Set(valid)];
+  const valid:string[] = [];
+  for (const value of raw) {
+    if (typeof value !== 'string') continue;
+    const match = /^(\d+)-(\d+):([a-z0-9_]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const effect = match[3];
+    if (year < 1 || month < 1 || month > 12 || !legendRewardEffects.includes(effect as typeof legendRewardEffects[number])) continue;
+    const key = `${year}-${month}:${effect}`;
+    if (!valid.includes(key)) valid.push(key);
+  }
+  return valid;
 }
 
 export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentState {
