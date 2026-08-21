@@ -16,7 +16,8 @@ export function effectivePathfinderExplorationXp(
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
-  return Math.max(0, Math.floor(xp)) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  const safeXp = Math.max(0, Math.floor(Number.isFinite(xp) ? xp : 0));
+  return safeXp + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
 }
 
 export function specialistMasteryCalling(
