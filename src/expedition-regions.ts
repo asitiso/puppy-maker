@@ -72,8 +72,9 @@ export function expeditionGrade(score: number, target: number): ExpeditionGrade 
   return 'C';
 }
 
-export function isExpeditionStageCleared(record: ExpeditionStageRecord): boolean {
-  return record.cleared || gradeRank[record.bestGrade] >= gradeRank.B;
+export function isExpeditionStageCleared(record: ExpeditionStageRecord | undefined): boolean {
+  if (!record) return false;
+  return record.cleared === true || gradeRank[safeGrade(record.bestGrade)] >= gradeRank.B;
 }
 
 export function isExpeditionStageUnlocked(stageId: ExpeditionStageId, records: Record<ExpeditionStageId, ExpeditionStageRecord>): boolean {
