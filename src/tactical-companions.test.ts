@@ -27,6 +27,13 @@ describe('tactical companions', () => {
     }
   })
 
+  it('caps finite-but-huge leader progression before derived arithmetic overflows', () => {
+    const companion = deriveCompanionUnit('wolf', {power:Number.MAX_VALUE,magic:Number.MAX_VALUE,agility:Number.MAX_VALUE,maxHp:Number.MAX_VALUE})
+    for (const value of [companion.maxHp,companion.hp,companion.agility,companion.power,companion.magic,companion.attackPower,companion.skillPower,companion.supportPower]) {
+      expect(Number.isSafeInteger(value)).toBe(true)
+    }
+  })
+
   it('keeps tank, support, striker and trickster identities distinct in derived combat stats', () => {
     const leader = { power: 60, magic: 50, agility: 30, maxHp: 140 }
     const bear = deriveCompanionUnit('bear', leader)
