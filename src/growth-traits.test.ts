@@ -4,10 +4,16 @@ import { activeCallingTraits, canPurchaseGrowthTrait, growthTraitDefinitions, pu
 describe('growth trait board', () => {
   it('defines sixteen ordered traits with costs 1,1,2,2 per calling', () => {
     expect(growthTraitDefinitions).toHaveLength(16);
+    expect(new Set(growthTraitDefinitions.map(item => item.id)).size).toBe(growthTraitDefinitions.length);
     for (const calling of ['vanguard','arcanist','caretaker','pathfinder'] as const) {
       const path = growthTraitDefinitions.filter(item => item.calling === calling);
       expect(path.map(item => item.tier)).toEqual([1,2,3,4]);
       expect(path.map(item => item.cost)).toEqual([1,1,2,2]);
+      expect(path[0].prerequisite).toBeNull();
+      for (let index = 1; index < path.length; index += 1) {
+        expect(path[index].prerequisite).toBe(path[index - 1].id);
+        expect(growthTraitDefinitions.find(item => item.id === path[index].prerequisite)?.calling).toBe(calling);
+      }
     }
   });
 
