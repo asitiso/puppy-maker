@@ -48,16 +48,26 @@ export function advanceWorldContracts(input:AdvanceInput): {
   reward:{ gold:number; gems:number };
   newlyCompleted:WorldContractId[];
 } {
-  if (input.grade === 'C') {
-    return { progress:{ ...input.progress }, rewardedKeys:[...input.rewardedKeys], reward:{ gold:0, gems:0 }, newlyCompleted:[] };
-  }
-
   const contracts = monthlyWorldContracts(input.year, input.month, input.event);
   const targetFor = (id:WorldContractId) => contracts.find(contract => contract.id === id)?.target ?? Number.MAX_SAFE_INTEGER;
+  const storedProgress = (id:WorldContractId) => {
+    const value = input.progress[id];
+    return Math.min(targetFor(id), Math.max(0, Math.floor(Number.isFinite(value) ? value : 0)));
+  };
+  const current:WorldContractProgress = {
+    expedition_clear:storedProgress('expedition_clear'),
+    high_grade:storedProgress('high_grade'),
+    featured_region:storedProgress('featured_region'),
+  };
+
+  if (input.grade === 'C') {
+    return { progress:current, rewardedKeys:[...input.rewardedKeys], reward:{ gold:0, gems:0 }, newlyCompleted:[] };
+  }
+
   const progress:WorldContractProgress = {
-    expedition_clear:Math.min(targetFor('expedition_clear'),input.progress.expedition_clear + 1),
-    high_grade:Math.min(targetFor('high_grade'),input.progress.high_grade + (input.grade === 'A' || input.grade === 'S' ? 1 : 0)),
-    featured_region:Math.min(targetFor('featured_region'),input.progress.featured_region + (input.region === input.event.region ? 1 : 0)),
+    expedition_clear:Math.min(targetFor('expedition_clear'),current.expedition_clear + 1),
+    high_grade:Math.min(targetFor('high_grade'),current.high_grade + (input.grade === 'A' || input.grade === 'S' ? 1 : 0)),
+    featured_region:Math.min(targetFor('featured_region'),current.featured_region + (input.region === input.event.region ? 1 : 0)),
   };
   const rewardedKeys = [...input.rewardedKeys];
   const newlyCompleted:WorldContractId[] = [];
