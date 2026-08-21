@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
@@ -10,6 +10,7 @@ import { currentAdvancedTalents, currentCareerTitles, currentGuardianStatus, cur
 import { guardianLegacy } from './guardian-legacy';
 import type { HomeMenuId } from './home-panels';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
+import { trapModalTab } from './modal-focus';
 import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
 
 const emptyExpeditionArchive = {
@@ -34,6 +35,8 @@ export default function CollectionArchiveOverlay({
   onExpedition?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
@@ -71,6 +74,22 @@ export default function CollectionArchiveOverlay({
   const streakHonor = ambitionStreakHonor(streak);
   const recommendedCategory = recommendation.categoryId ? archive.categories.find(item => item.id === recommendation.categoryId) ?? null : null;
 
+  useEffect(() => {
+    if (wasOpen.current && !open) launcherRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
   const followRecommendation = () => {
     if (recommendation.action === 'expedition') {
       setOpen(false);
@@ -84,15 +103,16 @@ export default function CollectionArchiveOverlay({
 
   return <>
     <button
+      ref={launcherRef}
       className="collection-archive-trigger"
       onClick={() => setOpen(true)}
       aria-label={`성장 도감 ${archive.percent}% 완성 · ${archiveStatus.label}`}
     />
     {open && <div className="collection-archive-backdrop" onClick={() => setOpen(false)}>
-      <section className="collection-archive-panel" role="dialog" aria-modal="true" aria-label="성장 도감" onClick={event => event.stopPropagation()}>
+      <section className="collection-archive-panel" role="dialog" aria-modal="true" aria-label="성장 도감" onClick={event => event.stopPropagation()} onKeyDown={trapModalTab}>
         <img className="collection-archive-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
         <div className="collection-archive-content">
-          <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
+          <button autoFocus className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
           <small>GROWTH ARCHIVE · 100 SLOTS</small>
           <h2>성장 도감</h2>
           <div className={`archive-rank-card archive-rank-${archiveStatus.id}`}>

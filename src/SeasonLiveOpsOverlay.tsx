@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
+import { trapModalTab } from './modal-focus';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 
@@ -48,6 +49,16 @@ export default function SeasonLiveOpsOverlay({
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return <button ref={launcherRef} className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
       <small>SEASON JOURNEY</small>
@@ -58,12 +69,12 @@ export default function SeasonLiveOpsOverlay({
   }
 
   return <div className="season-live-backdrop" role="presentation" onClick={onClose}>
-    <section className="season-live-panel" role="dialog" aria-modal="true" aria-label="시즌 여정" onClick={event => event.stopPropagation()}>
+    <section className="season-live-panel" role="dialog" aria-modal="true" aria-label="시즌 여정" onClick={event => event.stopPropagation()} onKeyDown={trapModalTab}>
       <img className="season-live-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="season-live-content">
         <header>
           <div><small>SEASON JOURNEY</small><h2>{summary.season.label}</h2></div>
-          <button onClick={onClose} aria-label="닫기">×</button>
+          <button autoFocus onClick={onClose} aria-label="닫기">×</button>
         </header>
 
         <div className="season-mastery-card">

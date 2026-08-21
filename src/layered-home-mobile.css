@@ -3,6 +3,10 @@
 .layered-home .lh-primary-action{bottom:calc(31.5% + env(safe-area-inset-bottom)*.12)}
 .layered-home .lh-dialogue{bottom:calc(16.8% + env(safe-area-inset-bottom)*.35)}
 
+@media(max-width:430px){
+  .layered-home .lh-currency-values{grid-template-columns:repeat(2,1fr)}
+}
+
 @media(max-width:390px){
   .layered-home .lh-shortcuts{left:max(2.5%,env(safe-area-inset-left));top:max(13.7%,calc(env(safe-area-inset-top) + 72px));width:54%;gap:1.5%}
   .layered-home .lh-shortcuts button{flex:1 1 44px;min-width:44px;width:auto}

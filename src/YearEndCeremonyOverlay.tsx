@@ -6,6 +6,7 @@ import type { GameState } from './game';
 import { guardianLegacy } from './guardian-legacy';
 import { newlyUnlockedLegacyRelics } from './legacy-relic-discovery';
 import { legacyRelicDefinitions } from './legacy-relics';
+import { trapModalTab } from './modal-focus';
 import { ceremonyRecord, shouldShowYearEndCeremony } from './year-end-ceremony';
 import { completedYearAmbition } from './yearly-ambition-history';
 import { ambitionStreak, ambitionStreakHonors } from './yearly-ambition-streak';
@@ -43,7 +44,7 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
   };
 
   return <div className="year-end-backdrop" role="presentation">
-    <section className="year-end-panel" role="dialog" aria-modal="true" aria-label={`${record.year}년차 수호식`}>
+    <section className="year-end-panel" role="dialog" aria-modal="true" aria-label={`${record.year}년차 수호식`} onKeyDown={trapModalTab}>
       <img className="year-end-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
       <img className="year-end-burst" src="/assets/effects/success_burst.png" alt="" draggable={false} />
       <div className="year-end-content">
@@ -73,7 +74,7 @@ export default function YearEndCeremonyOverlay({ state }: { state: GameState }) 
           <b>기억 <i>{record.memories}</i></b><b>발견 <i>{record.discoveries}</i></b><b>인장 <i>{record.seasonStamps}/4</i></b>
         </div>
         <div className="year-end-legacy"><small>현재 레거시</small><strong>{legacy.label}</strong><b>{legacy.points} LEGACY</b></div>
-        <button onClick={close}>새로운 해 시작</button>
+        <button autoFocus onClick={close}>새로운 해 시작</button>
       </div>
     </section>
   </div>;

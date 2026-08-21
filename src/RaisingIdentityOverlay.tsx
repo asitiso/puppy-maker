@@ -8,6 +8,7 @@ import { activities } from './game-core';
 import { canPurchaseGrowthTrait, growthTraitDefinitions } from './growth-traits';
 import { callingSwitchKey, guardianCallingDefinitions } from './guardian-callings';
 import { guardianRankDefinitions } from './guardian-rank';
+import { trapModalTab } from './modal-focus';
 import { personalityArchetype, runaPreferences } from './runa-personality';
 
 export type RaisingIdentityOverlayProps = {
@@ -44,6 +45,16 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return <button ref={launcherRef} className="raising-home-card" onClick={onOpen} aria-label="루나 성장 정체성 열기">
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
@@ -52,11 +63,11 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   }
 
   return <div className="raising-overlay">
-    <section className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성">
+    <section className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성" onKeyDown={trapModalTab}>
       <img className="raising-panel-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="raising-content">
         <header>
-          <button onClick={onClose}>‹ 홈</button>
+          <button autoFocus onClick={onClose}>‹ 홈</button>
           <div><small>RUNA RAISING IDENTITY</small><h1>루나의 성장 방향</h1></div>
           <span><b>{state.growthPoints}</b> GROWTH PT</span>
         </header>
