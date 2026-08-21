@@ -55,6 +55,7 @@ function finite(value: number, fallback = 0) {
 }
 
 function nonNegativeCount(value: number) {
+  if (value === Number.POSITIVE_INFINITY) return EXPEDITION_ACTION_LIMIT;
   return Math.max(0, Math.floor(finite(value)));
 }
 
