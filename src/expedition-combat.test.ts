@@ -109,6 +109,19 @@ describe('expedition combat', () => {
     expect(overflow).toEqual(staleReloadedBattle);
   });
 
+  it('cannot bypass the action cap when a reloaded actionCount is NaN', () => {
+    const malformedReloadedBattle = {
+      ...startExpeditionBattle('forest_path'),
+      score: 500,
+      actionCount: Number.NaN,
+      actionKinds: { attack: 2, dodge: 1, charge: 0 },
+    };
+
+    const overflow = applyExpeditionAction(malformedReloadedBattle, 'charge', 1, base);
+
+    expect(overflow).toEqual(malformedReloadedBattle);
+  });
+
   it('repairs a stale low actionCount when one legal action remains', () => {
     const staleReloadedBattle = {
       ...startExpeditionBattle('forest_path'),
