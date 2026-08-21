@@ -31,6 +31,14 @@ describe('bond level five combination ultimates', () => {
     expect(resolveCombinationUltimate(session,{ actorId:'runa', companionId:'wolf', bondLevel:4, targetId:'enemy-front' })).toBe(session);
   });
 
+  it('rejects non-finite bond levels instead of bypassing the Lv5 gate', () => {
+    const session = battle('wolf');
+    for (const bondLevel of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY]) {
+      expect(validCombinationUltimateTargets(session,'runa','wolf',bondLevel)).toEqual([]);
+      expect(resolveCombinationUltimate(session,{ actorId:'runa', companionId:'wolf', bondLevel, targetId:'enemy-front' })).toBe(session);
+    }
+  });
+
   it('stays locked one MP below the charge boundary without spending a turn', () => {
     const session = battle('wolf',9);
     expect(validCombinationUltimateTargets(session,'runa','wolf',5)).toEqual([]);
