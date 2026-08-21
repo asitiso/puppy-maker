@@ -1,7 +1,7 @@
 import { bondSceneIds, type BondSceneId } from './bond-scenes';
 import { emptyCallingMastery, type CallingMasteryState } from './calling-mastery';
 import { guardianCallingIds, type GuardianCallingId } from './guardian-callings';
-import { growthTraitIds, type GrowthTraitId } from './growth-traits';
+import { canonicalGrowthTraits, growthTraitIds, type GrowthTraitId } from './growth-traits';
 import { expeditionStageDefinitions, type ExpeditionStageId } from './expedition-regions';
 
 export type RaisingDepthPersistentState = {
@@ -64,13 +64,14 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
   const masterySource = isRecord(source.callingMastery) ? source.callingMastery : {};
   const unlockedBondScenes = uniqueAllowed(source.unlockedBondScenes, bondSceneIds);
   const rewardedBondScenes = uniqueAllowed(source.rewardedBondScenes, bondSceneIds).filter(id => unlockedBondScenes.includes(id));
+  const purchasedTraits = canonicalGrowthTraits(uniqueAllowed(source.purchasedTraits, growthTraitIds));
   return {
     activeCalling,
     callingHistory:uniqueAllowed(source.callingHistory, guardianCallingIds),
     callingMastery:Object.fromEntries(guardianCallingIds.map(id => [id, int(masterySource[id])])) as CallingMasteryState,
     callingLastSwitchKey:hydrateSwitchKey(source.callingLastSwitchKey),
     growthPoints:int(source.growthPoints),
-    purchasedTraits:uniqueAllowed(source.purchasedTraits, growthTraitIds),
+    purchasedTraits,
     unlockedBondScenes,
     rewardedBondScenes,
     growthPointBossRewards:uniqueAllowed(source.growthPointBossRewards, bossStageIds),
