@@ -18,6 +18,12 @@ describe('Calling depth effects', () => {
     expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
   });
 
+  it('sanitizes malformed exploration xp before applying Pathfinder eye', () => {
+    expect(effectivePathfinderExplorationXp(Number.NaN, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.POSITIVE_INFINITY, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(-50, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+  });
+
   it('detects specialist Calling mastery from expedition actions', () => {
     expect(specialistMasteryCalling('vanguard', { attack:2, dodge:0, charge:0 }, { stageId:'forest_path', grade:'A', discovery:null, materialReward:1 })).toBe('vanguard');
     expect(specialistMasteryCalling('arcanist', { attack:0, dodge:0, charge:1 }, { stageId:'forest_path', grade:'S', discovery:null, materialReward:2 })).toBe('arcanist');
