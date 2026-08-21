@@ -44,4 +44,19 @@ describe('tactical status effects', () => {
     const session = createBattleSession([runa,unit('a2'),unit('a3')],[{...unit('e1'),side:'enemy'},{...unit('e2'),side:'enemy'},{...unit('e3'),side:'enemy'}],1);
     expect(session.units[0].statuses).toEqual([{ id:'focus', turns:2 }]);
   });
+
+  it('drops malformed runtime status payloads instead of crashing battle creation', () => {
+    const malformedArray = {
+      ...unit('runa'),
+      statuses:[null,{id:'focus',turns:Number.NaN},{id:'regen',turns:2},{id:'unknown',turns:3}] as unknown as TacticalUnit['statuses'],
+    };
+    const malformedContainer = { ...unit('a2'),statuses:'focus' as unknown as TacticalUnit['statuses'] };
+    const session = createBattleSession(
+      [malformedArray,malformedContainer,unit('a3')],
+      [{...unit('e1'),side:'enemy'},{...unit('e2'),side:'enemy'},{...unit('e3'),side:'enemy'}],
+      1,
+    );
+    expect(session.units.find(entry=>entry.id==='runa')?.statuses).toEqual([{id:'regen',turns:2}]);
+    expect(session.units.find(entry=>entry.id==='a2')?.statuses).toEqual([]);
+  });
 });
