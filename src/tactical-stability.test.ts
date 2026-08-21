@@ -76,9 +76,11 @@ function runBattle(mode:'manual'|'auto', seed:number) {
 
   while (!isBattleFinished(session) && steps < 160) {
     const before = session;
+    const beforeDigest = digest(session);
     const beforeRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     session = mode === 'manual' ? manualStep(session) : autoStep(session);
     expect(session, `${mode} seed ${seed} stalled at step ${steps}`).not.toBe(before);
+    expect(digest(session), `${mode} seed ${seed} made no meaningful progress at step ${steps}`).not.toEqual(beforeDigest);
     const afterRunaMp = session.units.find(unit => unit.id === 'runa')?.mp ?? 0;
     ultimateUsed = ultimateUsed || beforeRunaMp === 10 && afterRunaMp === 0;
     assertResourceBounds(session);
@@ -174,6 +176,33 @@ describe('tactical vertical slice stability', () => {
   it('is deterministic when the same seed and control mode are replayed', () => {
     expect(digest(runBattle('manual',73).session)).toEqual(digest(runBattle('manual',73).session));
     expect(digest(runBattle('auto',73).session)).toEqual(digest(runBattle('auto',73).session));
+  });
+
+  it('keeps AUTO bounded and making meaningful progress through 10, 50 and 100 battle checkpoints', () => {
+    const checkpoints = new Map<number,{victories:number;defeats:number}>();
+    let victories = 0;
+    let defeats = 0;
+    for (let seed=1;seed<=100;seed+=1) {
+      const { session,steps } = runBattle('auto',seed);
+      const result = isBattleFinished(session);
+      expect(result).not.toBeNull();
+      expect(steps).toBeGreaterThan(0);
+      expect(steps).toBeLessThan(160);
+      if (result === 'victory') victories += 1;
+      else defeats += 1;
+      if (seed === 10 || seed === 50 || seed === 100) checkpoints.set(seed,{victories,defeats});
+    }
+
+    expect(checkpoints.get(10)).toBeDefined();
+    expect(checkpoints.get(50)).toBeDefined();
+    expect(checkpoints.get(100)).toEqual({victories,defeats});
+    expect(victories + defeats).toBe(100);
+  });
+
+  it('replays representative AUTO seeds identically after the 100-battle stress run', () => {
+    for (const seed of [1,10,50,100]) {
+      expect(digest(runBattle('auto',seed).session)).toEqual(digest(runBattle('auto',seed).session));
+    }
   });
 
   it('rejects a dead target without spending resources or advancing the turn', () => {
