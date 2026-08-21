@@ -84,6 +84,20 @@ describe('story chapter rules', () => {
     expect(eligibleStoryChapters({ ...base, activeCalling:'caretaker' as const })).toContain('guardian_oath');
   });
 
+  it('does not treat malformed Calling values as a completed guardian oath choice', () => {
+    const malformed = eligibleStoryChapters({
+      memories:['first_training'],
+      visitedOutings:['forest','village','lakeside'],
+      affection:95,
+      guardianRank:'guardian',
+      discoveries:0,
+      expeditionStoryEntries:[],
+      unlockedBondScenes:['shared_secret'],
+      activeCalling:'unknown_calling' as any,
+    });
+    expect(malformed).not.toContain('guardian_oath');
+  });
+
   it('describes Calling-dependent story gates in the player-facing unlock hints', () => {
     expect(storyChapterDefinitions.find(chapter => chapter.id === 'guardian_oath')?.unlockHint).toContain('Calling');
     expect(storyChapterDefinitions.find(chapter => chapter.id === 'starlight_road')?.unlockHint).toContain('Calling');
