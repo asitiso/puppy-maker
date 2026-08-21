@@ -44,6 +44,8 @@ jobs:
       - name: Full test
         run: npm run test
       - name: TypeScript
+        if: always()
         run: npx tsc -b --pretty false
       - name: Production build
+        if: always()
         run: npx vite build
