@@ -107,6 +107,17 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (view === 'map') onClose();
+      else setView('map');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, view, onClose]);
+
   if (!open) {
     return <button ref={launcherRef} className="expedition-home-card" onClick={onOpen} aria-label={`수호자 원정 ${cleared} / 9 클리어`}>
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
