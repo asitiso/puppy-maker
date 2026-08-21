@@ -129,7 +129,7 @@ export function hydrateGameState(raw:unknown):GameState {
   });
   return {
     ...base,
-    ...(typeof source.monthsCompleted==='number'?{monthsCompleted:Math.max(0,Math.floor(source.monthsCompleted))}:{}),
+    ...(typeof source.monthsCompleted==='number'?{monthsCompleted:safeInt(source.monthsCompleted)}:{}),
     ...(Array.isArray(source.eventHistory)?{eventHistory:source.eventHistory.filter((value):value is string=>typeof value==='string')}:{}),
     ...(Array.isArray(source.endingCollection)?{endingCollection:source.endingCollection.filter((value):value is string=>typeof value==='string')}:{}),
     ...(typeof source.activeEventId==='string'?{activeEventId:source.activeEventId}:{}),
