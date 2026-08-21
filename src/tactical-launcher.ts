@@ -11,6 +11,10 @@ type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
   selectedTacticalCompanions:readonly CompanionId[];
 };
 
+function finiteNonNegative(value:number) {
+  return Number.isFinite(value) ? Math.max(0,value) : 0;
+}
+
 export function tacticalEncounterForExpeditionStage(stageId:ExpeditionStageId):TacticalEncounterId {
   if (stageId.startsWith('city_')) return 'starlight_patrol';
   if (stageId.startsWith('lake_')) return 'rift_vanguard';
@@ -24,10 +28,10 @@ export function tacticalPartyForGame(state:{selectedTacticalCompanions:readonly 
 }
 
 export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personality'>):LeaderCombatProgression {
-  const strength = Math.max(0,state.stats.strength);
-  const magic = Math.max(0,state.stats.magic);
-  const intelligence = Math.max(0,state.stats.intelligence);
-  const calmness = Math.max(0,state.personality.calmness);
+  const strength = finiteNonNegative(state.stats.strength);
+  const magic = finiteNonNegative(state.stats.magic);
+  const intelligence = finiteNonNegative(state.stats.intelligence);
+  const calmness = finiteNonNegative(state.personality.calmness);
   return {
     power:Math.max(20,Math.round(strength * .75 + magic * .45 + 20)),
     magic:Math.max(10,Math.round(magic + intelligence * .2)),
