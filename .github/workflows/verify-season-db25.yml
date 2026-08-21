@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - verify/season-db25-compat
+  pull_request:
   workflow_dispatch:
 
 jobs:
