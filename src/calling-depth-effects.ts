@@ -8,6 +8,7 @@ import type { GrowthTraitId } from './growth-traits';
 const legendEffectIds = ['vanguard_legend', 'arcanist_legend', 'pathfinder_legend'] as const;
 type LegendEffectId = typeof legendEffectIds[number];
 const expeditionRegionIds: readonly ExpeditionRegionId[] = ['starlight_forest', 'ancient_city', 'wind_lakes'];
+const guardianCallingIds: readonly GuardianCallingId[] = ['vanguard', 'arcanist', 'caretaker', 'pathfinder'];
 
 export function legendRewardKey(year:number, month:number, effectId:string): string {
   const safeYear = Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
@@ -53,8 +54,8 @@ export function effectivePathfinderExplorationXp(
   return safeXp + (calling === 'pathfinder' && safeTraits(traits).includes('pathfinder_eye') ? 3 : 0);
 }
 
-function hasValidAction(value:number): boolean {
-  return Number.isFinite(value) && value > 0;
+function hasValidAction(value:unknown): boolean {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
 }
 
 function hasValidDiscovery(value: unknown): value is string {
@@ -65,17 +66,28 @@ function hasValidRegion(value: unknown): value is ExpeditionRegionId {
   return typeof value === 'string' && expeditionRegionIds.includes(value as ExpeditionRegionId);
 }
 
+function hasValidCalling(value: unknown): value is GuardianCallingId {
+  return typeof value === 'string' && guardianCallingIds.includes(value as GuardianCallingId);
+}
+
+function safeActions(raw: unknown): Partial<ExpeditionActionCounts> {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+    ? raw as Partial<ExpeditionActionCounts>
+    : {};
+}
+
 export function specialistMasteryCalling(
   calling:GuardianCallingId | null,
   actions:ExpeditionActionCounts,
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
   const successful = summary.grade === 'B' || summary.grade === 'A' || summary.grade === 'S';
-  if (!calling || !successful) return null;
-  if (calling === 'vanguard') return hasValidAction(actions.attack) ? calling : null;
-  if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
-  if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
-  const acted = hasValidAction(actions.attack) || hasValidAction(actions.dodge) || hasValidAction(actions.charge);
+  if (!hasValidCalling(calling) || !successful) return null;
+  const actionCounts = safeActions(actions);
+  if (calling === 'vanguard') return hasValidAction(actionCounts.attack) ? calling : null;
+  if (calling === 'arcanist') return hasValidAction(actionCounts.charge) ? calling : null;
+  if (calling === 'caretaker') return hasValidAction(actionCounts.dodge) ? calling : null;
+  const acted = hasValidAction(actionCounts.attack) || hasValidAction(actionCounts.dodge) || hasValidAction(actionCounts.charge);
   const hasMaterialReward = Number.isFinite(summary.materialReward) && summary.materialReward > 0;
   const explored = hasValidDiscovery(summary.discovery) || hasMaterialReward || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
