@@ -31,6 +31,19 @@ describe('sanctuary masterworks', () => {
     expect(canBuildSanctuaryMasterwork({ id:'guardian_arena', levels, specializations, completed:[], ...resources })).toEqual(expect.objectContaining({ accepted:true }));
   });
 
+  it('rejects non-finite resources before completing a permanent masterwork', () => {
+    expect(canBuildSanctuaryMasterwork({
+      id:'guardian_arena', levels, specializations, completed:[],
+      gold:Number.POSITIVE_INFINITY,
+      materials:{ star_bark:10, arcane_shard:4, wind_pearl:4 },
+    })).toEqual(expect.objectContaining({ accepted:false, reason:'resources' }));
+    expect(canBuildSanctuaryMasterwork({
+      id:'guardian_arena', levels, specializations, completed:[],
+      gold:2400,
+      materials:{ star_bark:Number.POSITIVE_INFINITY, arcane_shard:4, wind_pearl:4 },
+    })).toEqual(expect.objectContaining({ accepted:false, reason:'resources' }));
+  });
+
   it('derives small additive permanent effects without replacing facility or specialization effects', () => {
     expect(sanctuaryMasterworkEffects(['guardian_arena','living_archive','moonwell_conservatory','astral_nexus'])).toEqual({
       trainingPercent:1,

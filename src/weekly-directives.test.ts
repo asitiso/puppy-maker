@@ -19,6 +19,21 @@ describe('weekly directives', () => {
     expect(weeklyDirectives(1,4,1).map(item => item.id)).not.toEqual(weeklyDirectives(1,4,2).map(item => item.id));
   });
 
+  it('uses the same canonical week for keys and directive selection', () => {
+    expect(weeklyDirectiveKey(1,4,5)).toBe(weeklyDirectiveKey(1,4,4));
+    expect(weeklyDirectives(1,4,5)).toEqual(weeklyDirectives(1,4,4));
+  });
+
+  it('uses the same canonical year and month for keys and directive selection', () => {
+    expect(weeklyDirectiveKey(0,13,4)).toBe(weeklyDirectiveKey(1,12,4));
+    expect(weeklyDirectives(0,13,4)).toEqual(weeklyDirectives(1,12,4));
+  });
+
+  it('falls back to the first canonical period for non-finite calendar inputs', () => {
+    expect(weeklyDirectiveKey(Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY)).toBe('1-1-1');
+    expect(weeklyDirectives(Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY)).toEqual(weeklyDirectives(1,1,1));
+  });
+
   it('never assigns two directives that reward the same action counter in one week', () => {
     for (let year = 1; year <= 3; year += 1) {
       for (let month = 1; month <= 12; month += 1) {
@@ -35,6 +50,7 @@ describe('weekly directives', () => {
       { kind:'training' as const, grade:'B' as const },
       { kind:'outing' as const, grade:'B' as const },
       { kind:'gift' as const, grade:'B' as const },
+      { kind:'expedition' as const, grade:'A' as const },
       { kind:'expedition' as const, grade:'S' as const },
     ];
     for (let year = 1; year <= 3; year += 1) {
@@ -50,6 +66,36 @@ describe('weekly directives', () => {
         }
       }
     }
+  });
+
+  it('drops stale and unknown progress keys that are not assigned this week', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const assignedIds = directives.map(item => item.id);
+    const staleId = weeklyDirectives(1,4,3).map(item => item.id).find(id => !assignedIds.includes(id));
+    expect(staleId).toBeDefined();
+    const result = advanceWeeklyDirectives(
+      directives,
+      { [directives[0].id]:1, [staleId!]:99, unknown_directive:99 },
+      { kind:'training', grade:'B' },
+    );
+    expect(Object.keys(result.progress).sort()).toEqual([...assignedIds].sort());
+  });
+
+  it('sanitizes non-finite assigned progress before advancing', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const other = directives[1];
+    const result = advanceWeeklyDirectives(
+      directives,
+      {
+        [target.id]:Number.NaN,
+        [other.id]:Number.POSITIVE_INFINITY,
+      },
+      { kind:target.counter === 'high_grade' ? 'expedition' : target.counter, grade:'S' },
+    );
+    expect(result.progress[target.id]).toBe(1);
+    expect(result.progress[other.id]).toBe(0);
+    expect(Object.values(result.progress).every(Number.isFinite)).toBe(true);
   });
 
   it('advances only matching directives and caps progress at targets', () => {
@@ -74,6 +120,35 @@ describe('weekly directives', () => {
     const rewarded = [`1-4-1:${target.id}`];
     const repeat = advanceWeeklyDirectives(directives, progress, { kind:target.counter === 'high_grade' ? 'expedition' : target.counter, grade:'S' }, rewarded, '1-4-1');
     expect(repeat.completed.map(item => item.id)).not.toContain(target.id);
+  });
+
+  it('lets the same directive reward again in a later week', () => {
+    const previous = weeklyDirectives(1,1,1);
+    const current = weeklyDirectives(1,1,2);
+    const target = current.find(item => previous.some(old => old.id === item.id));
+    expect(target).toBeDefined();
+    const progress = Object.fromEntries(current.map(item => [item.id, item.id === target!.id ? target!.target : 0]));
+    const result = advanceWeeklyDirectives(
+      current,
+      progress,
+      { kind:'gift', grade:'B' },
+      [`1-1-1:${target!.id}`],
+      '1-1-2',
+    );
+    expect(result.completed.map(item => item.id)).toContain(target!.id);
+    expect(result.reward).toEqual(target!.reward);
+  });
+
+  it('does not reward a completed directive twice in the same week', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const event = { kind:target.counter === 'high_grade' ? 'expedition' as const : target.counter, grade:'S' as const };
+    const progress = Object.fromEntries(directives.map(item => [item.id, item.id === target.id ? target.target : 0]));
+    const first = advanceWeeklyDirectives(directives,progress,event,[],'1-4-1');
+    const second = advanceWeeklyDirectives(directives,first.progress,event,[`1-4-1:${target.id}`],'1-4-1');
+    expect(first.reward).toEqual(target.reward);
+    expect(second.completed).toEqual([]);
+    expect(second.reward).toEqual({ journeyPoints:0, tokens:0 });
   });
 
   it('recovers a completed directive when its weekly reward key is missing', () => {

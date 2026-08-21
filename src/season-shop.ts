@@ -45,7 +45,7 @@ export function seasonPurchaseKey(seasonKey:SeasonJourneyKey, offerId:SeasonShop
 }
 
 export function isValidSeasonPurchaseKey(value:string):boolean {
-  const match = /^(\d+)-(spring|summer|autumn|winter):([a-z_]+):(\d+)$/.exec(value);
+  const match = /^([1-9]\d*)-(spring|summer|autumn|winter):([a-z_]+):([1-9]\d*)$/.exec(value);
   if (!match || Number(match[1]) < 1) return false;
   const seasonKey = `${match[1]}-${match[2]}` as SeasonJourneyKey;
   const offer = seasonShopOffers(seasonKey).find(item => item.id === match[3]);
@@ -55,7 +55,8 @@ export function isValidSeasonPurchaseKey(value:string):boolean {
 
 export function resolveSeasonPurchase(input:{ seasonKey:SeasonJourneyKey; offerId:SeasonShopOfferId; tokens:number; purchaseKeys:string[] }) {
   const offer = seasonShopOffers(input.seasonKey).find(item => item.id === input.offerId);
-  if (!offer) return { accepted:false as const };
+  if (!offer || !Number.isFinite(input.tokens)) return { accepted:false as const };
+  const tokens = Math.max(0,Math.floor(input.tokens));
   const prefix = `${input.seasonKey}:${offer.id}:`;
   const usedOrdinals = new Set<number>();
   for (const key of input.purchaseKeys) {
@@ -65,13 +66,13 @@ export function resolveSeasonPurchase(input:{ seasonKey:SeasonJourneyKey; offerI
     const ordinal = Number(rawOrdinal);
     if (ordinal >= 1 && ordinal <= offer.limit) usedOrdinals.add(ordinal);
   }
-  if (usedOrdinals.size >= offer.limit || input.tokens < offer.cost) return { accepted:false as const };
+  if (usedOrdinals.size >= offer.limit || tokens < offer.cost) return { accepted:false as const };
   let nextOrdinal = 1;
   while (usedOrdinals.has(nextOrdinal) && nextOrdinal <= offer.limit) nextOrdinal += 1;
   if (nextOrdinal > offer.limit) return { accepted:false as const };
   return {
     accepted:true as const,
-    tokens:input.tokens - offer.cost,
+    tokens:tokens - offer.cost,
     purchaseKey:seasonPurchaseKey(input.seasonKey,offer.id,nextOrdinal),
     reward:offer.reward,
   };

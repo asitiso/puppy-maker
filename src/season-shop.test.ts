@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSeasonPurchase, seasonPurchaseKey, seasonShopOffers } from './season-shop';
+import { isValidSeasonPurchaseKey, resolveSeasonPurchase, seasonPurchaseKey, seasonShopOffers } from './season-shop';
 
 describe('season shop', () => {
   it('exposes four core offers plus one season-exclusive offer', () => {
@@ -27,6 +27,14 @@ describe('season shop', () => {
       purchaseKey:seasonPurchaseKey('1-spring','gold_pouch',1),
       reward:{ gold:300, inventory:{}, materials:{}, keepsake:false },
     });
+  });
+
+  it('canonicalizes fractional token balances before spending so reload cannot change the ledger', () => {
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:20.9, purchaseKeys:[] })).toEqual(expect.objectContaining({
+      accepted:true,
+      tokens:0,
+    }));
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:19.9, purchaseKeys:[] })).toEqual({ accepted:false });
   });
 
   it('uses the first free purchase ordinal when purchase history is sparse', () => {
@@ -60,8 +68,20 @@ describe('season shop', () => {
     }));
   });
 
+  it('rejects noncanonical purchase ledger keys that can bypass the canonical season prefix', () => {
+    expect(isValidSeasonPurchaseKey('1-spring:gold_pouch:1')).toBe(true);
+    expect(isValidSeasonPurchaseKey('01-spring:gold_pouch:1')).toBe(false);
+    expect(isValidSeasonPurchaseKey('1-spring:gold_pouch:01')).toBe(false);
+  });
+
   it('rejects a purchase when tokens are insufficient', () => {
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'expedition_cache', tokens:29, purchaseKeys:[] })).toEqual({ accepted:false });
+  });
+
+  it('rejects non-finite token balances instead of minting shop rewards', () => {
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.NaN, purchaseKeys:[] })).toEqual({ accepted:false });
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.POSITIVE_INFINITY, purchaseKeys:[] })).toEqual({ accepted:false });
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.NEGATIVE_INFINITY, purchaseKeys:[] })).toEqual({ accepted:false });
   });
 
   it('enforces per-season purchase limits without affecting another season', () => {

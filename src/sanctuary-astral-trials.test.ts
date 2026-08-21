@@ -81,6 +81,19 @@ describe('sanctuary astral trials', () => {
     expect(result.reason).toBe('already_claimed');
   });
 
+  it('ignores stale or removed trial ids when enforcing the monthly claim ledger', () => {
+    const result = resolveAstralTrial({
+      year:1,
+      month:2,
+      power:120,
+      constellations:['dawn_compass','scholar_star','wayfarer_star'],
+      claimedKeys:['1-2:retired_trial'],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.key).toBe('1-2:wayfarer_trial');
+  });
+
   it('allows only one reward claim per monthly trial', () => {
     const result = resolveAstralTrial({
       year:1,
@@ -91,5 +104,19 @@ describe('sanctuary astral trials', () => {
     });
     expect(result.accepted).toBe(false);
     expect(result.reason).toBe('already_claimed');
+  });
+
+  it('canonicalizes non-finite calendar inputs before creating monthly claim keys', () => {
+    const result = resolveAstralTrial({
+      year:Number.NaN,
+      month:Number.POSITIVE_INFINITY,
+      power:90,
+      constellations:['dawn_compass','scholar_star'],
+      claimedKeys:[],
+    });
+    expect(result).toEqual(expect.objectContaining({
+      accepted:true,
+      key:'1-1:scholar_trial',
+    }));
   });
 });

@@ -1,4 +1,4 @@
-import type { AstralTrialGrade } from './sanctuary-astral-trials';
+import type { AstralTrialGrade, AstralTrialId } from './sanctuary-astral-trials';
 
 export type CelestialRecord = { key:string; grade:AstralTrialGrade; power:number };
 export type CelestialHonorId = 'first_light'|'full_cycle'|'perfect_cycle'|'twelve_trials';
@@ -19,6 +19,7 @@ export const celestialHonors:CelestialHonor[] = [
 ];
 
 const gradeRank:Record<AstralTrialGrade,number> = { B:1, A:2, S:3 };
+const validTrialIds = new Set<AstralTrialId>(['scholar_trial','wayfarer_trial','guardian_trial','crown_trial']);
 const trialFromKey = (key:string) => key.split(':')[1] ?? '';
 const monthFromKey = (key:string) => key.split(':')[0] ?? '';
 
@@ -27,7 +28,7 @@ export function canonicalCelestialRecords(records:ReadonlyArray<CelestialRecord>
   for (const record of records) {
     const month = monthFromKey(record.key);
     const trial = trialFromKey(record.key);
-    if (!month || !trial) continue;
+    if (!month || !validTrialIds.has(trial as AstralTrialId)) continue;
     const existing = byMonth.get(month);
     if (!existing) {
       byMonth.set(month,record);

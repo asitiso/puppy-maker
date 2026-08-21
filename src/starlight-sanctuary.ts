@@ -86,9 +86,13 @@ export function resolveSanctuaryUpgrade(input:{
   if (current >= 3) return { accepted:false as const, reason:'max' as const };
   const nextLevel = (current + 1) as 1|2|3;
   const step = facility.upgrades.find(item => item.level === nextLevel)!;
-  const renownReady = Object.entries(step.renown).every(([id,required]) => input.renown[id as keyof SanctuaryRenown] >= (required ?? 0));
+  const renownReady = Object.entries(step.renown).every(([id,required]) => {
+    const value = input.renown[id as keyof SanctuaryRenown];
+    return Number.isFinite(value) && value >= (required ?? 0);
+  });
   if (!renownReady) return { accepted:false as const, reason:'renown' as const, nextLevel, cost:step.cost };
-  const resourcesReady = input.gold >= step.cost.gold && (Object.keys(step.cost.materials) as Array<keyof SanctuaryMaterials>).every(id => input.materials[id] >= step.cost.materials[id]);
+  const materialIds = Object.keys(step.cost.materials) as Array<keyof SanctuaryMaterials>;
+  const resourcesReady = Number.isFinite(input.gold) && input.gold >= step.cost.gold && materialIds.every(id => Number.isFinite(input.materials[id]) && input.materials[id] >= step.cost.materials[id]);
   if (!resourcesReady) return { accepted:false as const, reason:'resources' as const, nextLevel, cost:step.cost };
   return { accepted:true as const, nextLevel, cost:step.cost, renown:step.renown };
 }

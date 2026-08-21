@@ -37,8 +37,8 @@ export function canBuildSanctuaryMasterwork(input:{
   if (input.levels[definition.facility] < 3) return { accepted:false as const, reason:'level' as const, definition };
   if (!input.specializations[definition.facility]) return { accepted:false as const, reason:'specialization' as const, definition };
   const enoughMaterials = (Object.keys(definition.cost.materials) as Array<keyof SanctuaryMaterials>)
-    .every(id => input.materials[id] >= definition.cost.materials[id]);
-  if (input.gold < definition.cost.gold || !enoughMaterials) return { accepted:false as const, reason:'resources' as const, definition };
+    .every(id => Number.isFinite(input.materials[id]) && input.materials[id] >= definition.cost.materials[id]);
+  if (!Number.isFinite(input.gold) || input.gold < definition.cost.gold || !enoughMaterials) return { accepted:false as const, reason:'resources' as const, definition };
   return { accepted:true as const, definition };
 }
 

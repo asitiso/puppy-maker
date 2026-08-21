@@ -13,6 +13,12 @@ describe('season journey', () => {
     expect(seasonJourneyKey(2,1)).toBe('2-winter');
   });
 
+  it('canonicalizes malformed calendar values before creating journey reward keys', () => {
+    expect(seasonJourneyKey(Number.NaN,Number.NaN)).toBe('1-winter');
+    expect(seasonJourneyKey(Number.POSITIVE_INFINITY,4)).toBe('1-spring');
+    expect(seasonJourneyKey(0,4)).toBe('1-spring');
+  });
+
   it('awards account-wide journey points for core play actions', () => {
     expect(seasonJourneyPoints({ kind:'month_complete', grade:'B' })).toBe(25);
     expect(seasonJourneyPoints({ kind:'month_complete', grade:'S' })).toBe(35);
@@ -51,5 +57,11 @@ describe('season journey', () => {
       ['1-spring:1','1-spring:2','1-spring:3'],
       '1-spring',
     )).toEqual([]);
+  });
+
+  it('does not unlock every reward tier from non-finite journey scores', () => {
+    expect(newlyEarnedJourneyTiers(Number.NaN,Number.NaN,[],'1-spring')).toEqual([]);
+    expect(newlyEarnedJourneyTiers(40,Number.POSITIVE_INFINITY,[],'1-spring')).toEqual([]);
+    expect(newlyEarnedJourneyTiers(Number.NEGATIVE_INFINITY,60,[],'1-spring').map(tier => tier.tier)).toEqual([1]);
   });
 });

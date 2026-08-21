@@ -29,4 +29,18 @@ describe('season lifetime legacy', () => {
     expect(summary.milestone).toEqual(expect.objectContaining({ id:'traveler', nextThreshold:12 }));
     expect(summary.bonuses).toEqual({ trainingPercent:2, masteryXp:0, rewardPercent:2, startingCondition:1 });
   });
+
+  it('counts each archived season key only once if duplicate history leaks into multi-season state', () => {
+    const spring = { key:'1-spring' as const, score:1300, tiersCompleted:10, tokensEarned:120 };
+    const summary = seasonLifetimeSummary([spring,{ ...spring }],['1-spring:seasonal_keepsake:1']);
+    expect(summary.points).toBe(5);
+    expect(summary.completedSeasons).toBe(1);
+  });
+
+  it('does not award keepsake lifetime inflation from malformed purchase ledger keys', () => {
+    const spring = { key:'1-spring' as const, score:1300, tiersCompleted:10, tokensEarned:90 };
+    expect(seasonLifetimeSummary([spring],['1-spring:seasonal_keepsake:hack']).points).toBe(4);
+    expect(seasonLifetimeSummary([spring],['01-spring:seasonal_keepsake:1']).points).toBe(4);
+    expect(seasonLifetimeSummary([spring],['1-spring:seasonal_keepsake:1']).points).toBe(5);
+  });
 });

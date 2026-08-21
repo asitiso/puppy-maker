@@ -29,6 +29,15 @@ export const sanctuarySpecializations:SanctuarySpecializationDefinition[] = [
 
 const specializationById = new Map(sanctuarySpecializations.map(item => [item.id,item]));
 
+function validSelectedIds(selected:SanctuarySpecializationState):Set<SanctuarySpecializationId> {
+  const ids = new Set<SanctuarySpecializationId>();
+  for (const [facility,id] of Object.entries(selected)) {
+    const definition = specializationById.get(id as SanctuarySpecializationId);
+    if (definition?.facility === facility) ids.add(definition.id);
+  }
+  return ids;
+}
+
 export function resolveSanctuarySpecialization(input:{
   specialization:SanctuarySpecializationId;
   levels:SanctuaryLevels;
@@ -46,7 +55,7 @@ export function resolveSanctuarySpecialization(input:{
 }
 
 export function sanctuarySpecializationSynergies(selected:SanctuarySpecializationState):SanctuarySpecializationSynergyId[] {
-  const ids = new Set(Object.values(selected));
+  const ids = validSelectedIds(selected);
   const result:SanctuarySpecializationSynergyId[] = [];
   if (ids.has('warrior_doctrine') && ids.has('mastery_codex')) result.push('guardian_academy');
   if (ids.has('bonding_grove') && ids.has('living_chronicle')) result.push('living_haven');
@@ -56,7 +65,7 @@ export function sanctuarySpecializationSynergies(selected:SanctuarySpecializatio
 }
 
 export function sanctuarySpecializationEffects(selected:SanctuarySpecializationState) {
-  const ids = new Set(Object.values(selected));
+  const ids = validSelectedIds(selected);
   return {
     trainingPercent:(ids.has('warrior_doctrine') ? 2 : 0) + (ids.has('adaptive_drills') ? 1 : 0),
     masteryXp:ids.has('mastery_codex') ? 1 : 0,

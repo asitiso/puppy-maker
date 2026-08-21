@@ -22,8 +22,8 @@ describe('live ops persistent state', () => {
       claimedSeasonJourneyTiers:['1-spring:1','bad','1-spring:1'],
       seasonTokenBalances:{ '1-spring':12.7, nope:-2 },
       weeklyDirectiveKey:'1-4-2',
-      weeklyDirectiveProgress:{ steady_training:2.9, bad:-3 },
-      rewardedWeeklyDirectives:['1-4-2:steady_training','bad','1-4-2:steady_training'],
+      weeklyDirectiveProgress:{ guardian_sortie:2.9, bad:-3 },
+      rewardedWeeklyDirectives:['1-4-2:guardian_sortie','bad','1-4-2:guardian_sortie'],
       seasonJourneyHistory:[
         { key:'1-spring', score:500.8, tiersCompleted:5.7, tokensEarned:44.9 },
         { key:'bad', score:999, tiersCompleted:99, tokensEarned:-1 },
@@ -35,11 +35,78 @@ describe('live ops persistent state', () => {
       claimedSeasonJourneyTiers:['1-spring:1'],
       seasonTokenBalances:{ '1-spring':12 },
       weeklyDirectiveKey:'1-4-2',
-      weeklyDirectiveProgress:{ steady_training:2 },
-      rewardedWeeklyDirectives:['1-4-2:steady_training'],
+      weeklyDirectiveProgress:{ guardian_sortie:2 },
+      rewardedWeeklyDirectives:['1-4-2:guardian_sortie'],
       seasonJourneyHistory:[{ key:'1-spring', score:500, tiersCompleted:5, tokensEarned:44 }],
       seasonShopPurchases:['1-spring:gold_pouch:1'],
       claimedSeasonKeepsakeMilestones:['first_keepsake','eight_seasons'],
     });
+  });
+
+  it('is idempotent across repeated hydration of malformed live ops state', () => {
+    const raw = {
+      seasonJourneyScores:{ '1-spring':88.9, '01-spring':999, bad:Number.NaN },
+      claimedSeasonJourneyTiers:['1-spring:1','1-spring:1','01-spring:2','bad'],
+      seasonTokenBalances:{ '1-spring':20.9, '0-spring':999, bad:Number.POSITIVE_INFINITY },
+      weeklyDirectiveKey:'1-4-2',
+      weeklyDirectiveProgress:{ guardian_sortie:2.9, steady_training:9, retired_directive:99 },
+      rewardedWeeklyDirectives:['1-4-2:guardian_sortie','1-4-2:guardian_sortie','1-4-2:retired_directive'],
+      seasonJourneyHistory:[
+        { key:'1-spring', score:500.8, tiersCompleted:5.7, tokensEarned:44.9 },
+        { key:'1-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+        { key:'0-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+      ],
+      seasonShopPurchases:[
+        '1-spring:gold_pouch:1',
+        '1-spring:gold_pouch:1',
+        '01-spring:gold_pouch:1',
+        '1-spring:seasonal_keepsake:hack',
+      ],
+      claimedSeasonKeepsakeMilestones:['first_keepsake','first_keepsake','bad'],
+    };
+    const once = hydrateLiveOpsState(raw);
+    const twice = hydrateLiveOpsState(once);
+    expect(twice).toEqual(once);
+  });
+
+  it('drops valid but stale directive progress that is not assigned to the hydrated week', () => {
+    const hydrated = hydrateLiveOpsState({
+      weeklyDirectiveKey:'1-4-2',
+      weeklyDirectiveProgress:{ guardian_sortie:1, steady_training:2 },
+    });
+    expect(hydrated.weeklyDirectiveProgress).toEqual({ guardian_sortie:1 });
+  });
+
+  it('rejects impossible weekly years and clears progress that has no valid week owner', () => {
+    const hydrated = hydrateLiveOpsState({
+      weeklyDirectiveKey:'0-4-2',
+      weeklyDirectiveProgress:{ steady_training:2, retired_directive:99 },
+      rewardedWeeklyDirectives:[
+        '0-4-2:steady_training',
+        '1-4-2:retired_directive',
+        '1-4-2:steady_training',
+      ],
+    });
+    expect(hydrated.weeklyDirectiveKey).toBeNull();
+    expect(hydrated.weeklyDirectiveProgress).toEqual({});
+    expect(hydrated.rewardedWeeklyDirectives).toEqual(['1-4-2:steady_training']);
+  });
+
+  it('rejects impossible season year zero across scores, tokens, tiers, and history', () => {
+    const hydrated = hydrateLiveOpsState({
+      seasonJourneyScores:{ '0-spring':999, '1-spring':88 },
+      claimedSeasonJourneyTiers:['0-spring:10','1-spring:1'],
+      seasonTokenBalances:{ '0-spring':999, '1-spring':12 },
+      seasonJourneyHistory:[
+        { key:'0-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+        { key:'1-spring', score:88, tiersCompleted:1, tokensEarned:12 },
+      ],
+    });
+    expect(hydrated.seasonJourneyScores).toEqual({ '1-spring':88 });
+    expect(hydrated.claimedSeasonJourneyTiers).toEqual(['1-spring:1']);
+    expect(hydrated.seasonTokenBalances).toEqual({ '1-spring':12 });
+    expect(hydrated.seasonJourneyHistory).toEqual([
+      { key:'1-spring', score:88, tiersCompleted:1, tokensEarned:12 },
+    ]);
   });
 });
