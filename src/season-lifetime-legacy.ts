@@ -1,4 +1,5 @@
 import type { SeasonJourneyHistoryEntry } from './live-ops-state';
+import { isValidSeasonPurchaseKey } from './season-shop';
 
 export type SeasonLifetimeMilestoneId = 'seed'|'traveler'|'keeper'|'guardian'|'eternal';
 
@@ -62,8 +63,9 @@ export function seasonLifetimeMilestone(rawPoints:number) {
 }
 
 export function seasonLifetimePoints(history:SeasonJourneyHistoryEntry[], purchaseKeys:string[]):number {
+  const validPurchases = purchaseKeys.filter(isValidSeasonPurchaseKey);
   return uniqueSeasonHistory(history).reduce((sum,entry) => {
-    const keepsake = purchaseKeys.some(key => key.startsWith(`${entry.key}:seasonal_keepsake:`));
+    const keepsake = validPurchases.some(key => key.startsWith(`${entry.key}:seasonal_keepsake:`));
     return sum + seasonLifetimeAward({
       tiersCompleted:entry.tiersCompleted,
       score:entry.score,
