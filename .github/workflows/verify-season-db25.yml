@@ -1,0 +1,55 @@
+name: Verify Season on core-compatible baseline
+
+on:
+  push:
+    branches:
+      - verify/season-db25
+
+jobs:
+  verify-season:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Targeted compatibility tests
+        run: >-
+          npx vitest run
+          src/core-compat-recovery.test.ts
+          src/game.test.ts
+          src/save-schema.test.ts
+          src/save-resilience.test.ts
+          src/season-meta-economy.test.ts
+          src/season-shop.test.ts
+          src/season-journey.test.ts
+          src/weekly-directives.test.ts
+
+      - name: Season suite
+        shell: bash
+        run: |
+          mapfile -t tests < <(find src -maxdepth 1 -type f \( \
+            -name 'season*.test.ts' -o \
+            -name 'weekly-directives*.test.ts' -o \
+            -name 'sanctuary*.test.ts' -o \
+            -name 'astral*.test.ts' -o \
+            -name 'celestial*.test.ts' \
+          \) | sort)
+          printf 'Season suite files (%s):\n' "${#tests[@]}"
+          printf '  %s\n' "${tests[@]}"
+          test "${#tests[@]}" -gt 0
+          npx vitest run "${tests[@]}"
+
+      - name: Full test suite
+        run: npm run test
+
+      - name: TypeScript project check
+        run: npx tsc -b --pretty false
+
+      - name: Production build
+        run: npm run build
