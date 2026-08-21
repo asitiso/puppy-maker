@@ -25,6 +25,14 @@ describe('guardian expedition world progression', () => {
     expect(expeditionGrade(799, 1000)).toBe('C');
   });
 
+  it('rejects non-finite scores instead of letting them grant or corrupt progression', () => {
+    expect(expeditionGrade(Number.POSITIVE_INFINITY, 1000)).toBe('C');
+    expect(expeditionGrade(Number.NaN, 1000)).toBe('C');
+
+    const records = updateExpeditionRecord(emptyExpeditionRecords(), 'forest_path', Number.NaN, 1000);
+    expect(records.forest_path).toEqual({ bestScore: 0, bestGrade: 'C', cleared: false });
+  });
+
   it('counts only B or better as a clear', () => {
     expect(isExpeditionStageCleared({ bestScore: 799, bestGrade: 'C', cleared: false })).toBe(false);
     expect(isExpeditionStageCleared({ bestScore: 800, bestGrade: 'B', cleared: true })).toBe(true);
