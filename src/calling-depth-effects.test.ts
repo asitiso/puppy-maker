@@ -63,6 +63,24 @@ describe('Calling depth effects', () => {
     expect(first.legendRewardKeys).toEqual([]);
   });
 
+  it('ignores forged signatures that are not backed by their required Trait chain', () => {
+    const pathfinder = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'pathfinder', traits:[], signatures:['trail_reading','star_compass'], legendRewardKeys:[],
+      stageId:'forest_glade', grade:'S', firstClear:true, discovery:'forest_echo',
+      regionCompleted:'starlight_forest', materialReward:2, fatigueDelta:8, stressDelta:6,
+    });
+    expect(pathfinder.extraMaterial).toBe(0);
+    expect(pathfinder.applied).toEqual([]);
+
+    const caretaker = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'caretaker', traits:[], signatures:['heart_anchor'], legendRewardKeys:[],
+      stageId:'lake_channel', grade:'A', firstClear:false, discovery:null, regionCompleted:null,
+      materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(caretaker.stressDelta).toBe(6);
+    expect(caretaker.applied).toEqual([]);
+  });
+
   it('applies Vanguard and Arcanist monthly Legend effects once', () => {
     const vanguard = applyExpeditionCallingRewards({
       year:1, month:4, calling:'vanguard',
