@@ -42,8 +42,9 @@ export function journeyTierClaimKey(key:SeasonJourneyKey, tier:SeasonJourneyTier
 }
 
 export function newlyEarnedJourneyTiers(previousScore:number, nextScore:number, claimedKeys:string[], key?:SeasonJourneyKey): SeasonJourneyTier[] {
-  const floorPrevious = Math.max(0, Math.floor(previousScore));
-  const floorNext = Math.max(floorPrevious, Math.floor(nextScore));
+  const floorPrevious = Number.isFinite(previousScore) ? Math.max(0, Math.floor(previousScore)) : 0;
+  if (!Number.isFinite(nextScore)) return [];
+  const floorNext = Math.max(floorPrevious, Math.max(0, Math.floor(nextScore)));
   return seasonJourneyTiers.filter(tier => {
     if (floorNext < tier.threshold) return false;
     if (!key) return floorPrevious < tier.threshold;
