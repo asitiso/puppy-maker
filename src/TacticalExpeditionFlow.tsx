@@ -21,6 +21,7 @@ export type TacticalExpeditionFlowProps = {
   onSetPreferences:(auto:boolean,speed:1|2)=>void;
   onComplete:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void;
   onExpeditionFinish:(stageId:ExpeditionStageId,score:number,fatigueDelta:number,stressDelta:number,actionKinds:ExpeditionActionCounts)=>void;
+  onExitToHome:()=>void;
 };
 
 const companionLabels:Record<CompanionId,string> = { bear:'곰 · 탱커',owl:'올빼미 · 지원',wolf:'늑대 · 딜러',cat:'고양이 · 교란' };
@@ -31,7 +32,13 @@ function seedFor(state:GameState,stageId:ExpeditionStageId) {
   return hash;
 }
 
-export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,onSetPreferences,onComplete,onExpeditionFinish}:TacticalExpeditionFlowProps) {
+export function closeTacticalFlow(clearSession:()=>void,closeBattle:()=>void,onExitToHome:()=>void) {
+  clearSession();
+  closeBattle();
+  onExitToHome();
+}
+
+export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,onSetPreferences,onComplete,onExpeditionFinish,onExitToHome}:TacticalExpeditionFlowProps) {
   const [open,setOpen] = useState(false);
   const [session,setSession] = useState<BattleSession|null>(null);
   const [party,setParty] = useState<[CompanionId,CompanionId]>(()=>tacticalPartyForGame(state));
@@ -90,7 +97,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         onToggleSpeed={toggleSpeed}
         onComplete={complete}
         onRetry={()=>setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+1))}
-        onExit={()=>{setSession(null);setOpen(false)}}
+        onExit={()=>closeTacticalFlow(()=>setSession(null),()=>setOpen(false),onExitToHome)}
       />
     </div>;
   }
