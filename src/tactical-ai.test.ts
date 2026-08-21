@@ -9,10 +9,10 @@ function sessionWithHand(actor:TacticalUnit,required:TacticalActionId[],allies:T
  throw new Error(`Unable to find deterministic hand: ${required.join(',')}`);
 }
 describe('tactical ai',()=>{
- it('supports five enemy archetypes',()=>{const kinds:EnemyArchetype[]=['brute','guardian','hexer','medic','assassin'];expect(kinds.map(k=>chooseEnemyAction(k,u('e','enemy'),[u('a','ally',20),u('b','ally')],[u('e','enemy')]).kind)).toHaveLength(5)});
- it('assassin targets the lowest hp living ally',()=>expect(chooseEnemyAction('assassin',u('e','enemy'),[u('a','ally',20),u('b','ally',80)],[u('e','enemy')]).targetId).toBe('a'));
- it('medic heals the most injured living enemy',()=>expect(chooseEnemyAction('medic',u('m','enemy'),[u('a','ally')],[u('m','enemy'),u('e2','enemy',25)]).targetId).toBe('e2'));
- it('auto action chooses a legal living enemy',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy')]).targetId).toBe('e2'));
+ it('supports five enemy archetypes',()=>{const kinds:EnemyArchetype[]=['brute','guardian','hexer','medic','assassin'];expect(kinds.map(k=>chooseEnemyAction(k,u('e','enemy'),[u('a','ally',20),u('b','ally')],[u('e','enemy')])?.kind)).toHaveLength(5)});
+ it('assassin targets the lowest hp living ally',()=>expect(chooseEnemyAction('assassin',u('e','enemy'),[u('a','ally',20),u('b','ally',80)],[u('e','enemy')])?.targetId).toBe('a'));
+ it('medic heals the most injured living enemy',()=>expect(chooseEnemyAction('medic',u('m','enemy'),[u('a','ally')],[u('m','enemy'),u('e2','enemy',25)])?.targetId).toBe('e2'));
+ it('auto action chooses a legal living enemy',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy')])?.targetId).toBe('e2'));
  it('returns no legacy enemy action when every opposing target is dead',()=>expect(chooseEnemyAction('brute',u('e','enemy'),[u('a','ally',0),u('b','ally',0)],[u('e','enemy')])).toBeNull());
  it('returns no auto action when every enemy target is dead',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy',0)])).toBeNull());
  it('engine AI uses SPECIAL at full MP',()=>{const actor={...u('bat','enemy'),agility:20,mp:10};const s=createBattleSession([u('runa','ally',40),u('owl','ally'),u('bear','ally')],[actor,u('e2','enemy'),u('e3','enemy')],3);expect(chooseTacticalEngineAction(s,'bat',3)?.actionId).toBe('special')});
