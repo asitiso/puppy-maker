@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
-import { nextTacticalActor, resolveTacticalAction } from './tactical-engine';
+import type { TacticalActionId } from './tactical-actions';
+import { nextTacticalActor, resolveTacticalAction, skipTacticalTurnIfNoPlayableAction } from './tactical-engine';
 
 const unit = (id:string, side:'ally'|'enemy', agility:number, ap=3, mp=0, shield=0):TacticalUnit => ({
   id, side, position:'front', maxHp:100, hp:100, agility, ap, maxAp:3, mp, maxMp:10, shield,
@@ -19,6 +20,13 @@ describe('tactical turn engine', () => {
   it('rejects an out-of-turn action as the same session object', () => {
     const session = battle();
     expect(resolveTacticalAction(session,{ actorId:'runa', actionId:'attack', targetId:'wolf' })).toBe(session);
+  });
+
+  it('rejects an unknown runtime action id instead of throwing or spending a turn', () => {
+    const session = battle();
+    const invalid = 'stale-action' as TacticalActionId;
+    expect(resolveTacticalAction(session,{ actorId:'bat', actionId:invalid, targetId:'runa' })).toBe(session);
+    expect(skipTacticalTurnIfNoPlayableAction(session,'bat',[invalid])).not.toBe(session);
   });
 
   it('rejects a stale or dead target without spending the turn', () => {
