@@ -29,7 +29,12 @@ function canonicalGold(value:number): number {
 }
 
 function canonicalHistory(history:readonly GuardianCallingId[]): GuardianCallingId[] {
-  return guardianCallingIds.filter(id => history.includes(id));
+  const result:GuardianCallingId[] = [];
+  for (const id of history) {
+    if (!guardianCallingIds.includes(id) || result.includes(id)) continue;
+    result.push(id);
+  }
+  return result;
 }
 
 export function callingSwitchKey(year: number, month: number): string {
