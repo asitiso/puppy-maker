@@ -24,7 +24,7 @@ describe('season shop progression', () => {
     expect(recovery.inventory.herb_tea).toBe(ready.inventory.herb_tea + 1);
     expect(recovery.inventory.star_cookie).toBe(ready.inventory.star_cookie + 1);
     const cache = reducer(recovery,{ type:'PURCHASE_SEASON_OFFER', offerId:'expedition_cache' });
-    expect(cache.expeditionMaterials).toEqual({ star_bark:2, arcane_shard:2, wind_pearl:2 });
+    expect(cache.expeditionMaterials).toEqual({ star_bark:3, arcane_shard:3, wind_pearl:3 });
   });
 
   it('returns the identical state when purchase is unaffordable or exhausted', () => {
