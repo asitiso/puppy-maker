@@ -60,13 +60,15 @@ export const storyChapterDefinitions: StoryChapterDefinition[] = [...coreStoryCh
 export const storyChapterIds = storyChapterDefinitions.map(chapter => chapter.id);
 const guardianRankOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
 const requiredOutings: OutingLocationId[] = ['forest', 'village', 'lakeside'];
+const safeCount = (value:number):number => Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+const safeAffection = (value:number):number => Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 
 function rankAtLeast(rank: GuardianRankId, target: GuardianRankId): boolean {
   return guardianRankOrder.indexOf(rank) >= guardianRankOrder.indexOf(target);
 }
 
 function trustedBondReady(progress: StoryProgress): boolean {
-  if (progress.unlockedBondScenes === undefined) return progress.affection >= 75;
+  if (progress.unlockedBondScenes === undefined) return safeAffection(progress.affection) >= 75;
   return progress.unlockedBondScenes.includes('shared_secret');
 }
 
@@ -76,6 +78,7 @@ function callingChosen(progress: StoryProgress): boolean {
 
 export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[] {
   const unlocked = new Set<StoryChapterId>();
+  const discoveries = safeCount(progress.discoveries);
 
   const firstStepReady = progress.memories.includes('first_training');
   if (firstStepReady) {
@@ -92,7 +95,7 @@ export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[]
         const oathReady = rankAtLeast(progress.guardianRank, 'guardian') && callingChosen(progress);
         if (oathReady) {
           unlocked.add('guardian_oath');
-          if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4) unlocked.add('starlight_road');
+          if (rankAtLeast(progress.guardianRank, 'veteran') && discoveries >= 4) unlocked.add('starlight_road');
         }
       }
     }
