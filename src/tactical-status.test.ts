@@ -48,6 +48,13 @@ describe('tactical status effects', () => {
     expect(guarded.shield).toBeGreaterThanOrEqual(15);
   });
 
+  it('guard replaces non-finite runtime shield with a finite protection value', () => {
+    const corrupted={...unit('runa'),shield:Number.NaN};
+    const guarded=addTacticalStatus(corrupted,'guard',2);
+    expect(guarded.shield).toBe(15);
+    expect(Number.isFinite(guarded.shield)).toBe(true);
+  });
+
   it('status helpers tolerate malformed runtime status containers', () => {
     const malformed={...unit('runa'),statuses:'focus' as unknown as TacticalUnit['statuses']};
     expect(addTacticalStatus(malformed,'regen',2).statuses).toEqual([{id:'regen',turns:2}]);
