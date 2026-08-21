@@ -1,4 +1,4 @@
-import type { TacticalStatus, TacticalStatusId, TacticalUnit } from './tactical-battle';
+import { repairTacticalHealth, type TacticalStatus, type TacticalStatusId, type TacticalUnit } from './tactical-battle';
 
 const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 
@@ -17,7 +17,7 @@ export function addTacticalStatus(unit:TacticalUnit,id:TacticalStatusId,turns:nu
   const shield = Number.isFinite(unit.shield) ? Math.max(0,Math.floor(unit.shield)) : 0;
   return {
     ...unit,
-    shield:id === 'guard' ? Math.max(shield,15) : unit.shield,
+    shield:id === 'guard' ? Math.max(shield,15) : shield,
     statuses,
   };
 }
@@ -33,12 +33,13 @@ export function tacticalStatusPower(unit:TacticalUnit,rawPower:number):number {
 }
 
 export function advanceTacticalStatuses(unit:TacticalUnit):TacticalUnit {
-  const statuses=safeStatuses(unit);
-  if (unit.hp <= 0) return { ...unit,statuses:[] };
+  const safe=repairTacticalHealth(unit);
+  const statuses=safeStatuses(safe);
+  if (safe.hp <= 0) return { ...safe,statuses:[] };
   const hasRegen = statuses.some(status => status.id === 'regen');
   return {
-    ...unit,
-    hp:hasRegen ? Math.min(unit.maxHp,unit.hp + 8) : unit.hp,
+    ...safe,
+    hp:hasRegen ? Math.min(safe.maxHp,safe.hp + 8) : safe.hp,
     statuses:statuses
       .map(status => ({ ...status,turns:status.turns - 1 }))
       .filter(status => status.turns > 0),
