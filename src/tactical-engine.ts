@@ -12,11 +12,18 @@ function applySupport(target:TacticalUnit,power:number):TacticalUnit { return {.
 function actionPower(actor:PoweredTacticalUnit,actionId:TacticalActionId,basePower:number):number { let raw=basePower;if(actionId==='attack'&&Number.isFinite(actor.attackPower))raw=Math.max(0,Math.floor(actor.attackPower!));else if(actionId==='skill'&&Number.isFinite(actor.skillPower))raw=Math.max(0,Math.floor(actor.skillPower!));else if(actionId==='support'&&Number.isFinite(actor.supportPower))raw=Math.max(0,Math.floor(actor.supportPower!));else if(actionId==='special'){const strongest=Math.max(actor.attackPower??0,actor.skillPower??0,basePower);raw=Math.max(basePower,Math.floor(strongest*1.2));}return tacticalStatusPower(actor,raw); }
 function refreshRound(session:BattleSession):BattleSession { const units=session.units.map(unit=>unit.hp<=0?advanceTacticalStatuses(unit):{...advanceTacticalStatuses(unit),ap:unit.maxAp});return {...session,units,timeline:orderedTimeline(units),round:session.round+1,acted:[]}; }
 export function completeTacticalTurn(session:BattleSession,actorId:string,units:TacticalUnit[]):BattleSession { if(isBattleFinished(session))return session;const acted=[...session.acted,actorId],next:BattleSession={...session,units,acted};if(isBattleFinished(next))return next;const livingIds=units.filter(unit=>Number.isFinite(unit.hp)&&unit.hp>0).map(unit=>unit.id);return livingIds.every(id=>acted.includes(id))?refreshRound(next):next; }
+function repairRuntimeResources(session:BattleSession,actorId:string):BattleSession {
+ const actor=session.units.find(unit=>unit.id===actorId);if(!actor)return session;
+ if(Number.isFinite(actor.ap)&&Number.isFinite(actor.mp))return session;
+ const units=session.units.map(unit=>unit.id===actorId?{...unit,ap:Number.isFinite(unit.ap)?unit.ap:0,mp:Number.isFinite(unit.mp)?unit.mp:0}:unit);
+ return {...session,units};
+}
 export function skipTacticalTurnIfNoPlayableAction(session:BattleSession,actorId:string,hand:readonly TacticalActionId[]):BattleSession {
  if(isBattleFinished(session)||nextTacticalActor(session)!==actorId)return session;
- const actor=session.units.find(unit=>unit.id===actorId);if(!actor||!Number.isFinite(actor.hp)||actor.hp<=0||!Number.isFinite(actor.ap)||!Number.isFinite(actor.mp))return session;
- const hasPlayableAction=hand.some(actionId=>{const action=tacticalAction(actionId);return Boolean(action&&actor.ap>=action.apCost&&actor.mp>=action.mpCost&&validTacticalTargets(session,actorId,actionId).length>0);});
- return hasPlayableAction?session:completeTacticalTurn(session,actorId,session.units);
+ const repaired=repairRuntimeResources(session,actorId);
+ const actor=repaired.units.find(unit=>unit.id===actorId);if(!actor||!Number.isFinite(actor.hp)||actor.hp<=0)return session;
+ const hasPlayableAction=hand.some(actionId=>{const action=tacticalAction(actionId);return Boolean(action&&actor.ap>=action.apCost&&actor.mp>=action.mpCost&&validTacticalTargets(repaired,actorId,actionId).length>0);});
+ return hasPlayableAction?repaired:completeTacticalTurn(repaired,actorId,repaired.units);
 }
 export function resolveTacticalAction(session:BattleSession,input:TacticalActionInput):BattleSession {
  if(isBattleFinished(session))return session;if(nextTacticalActor(session)!==input.actorId)return session;
