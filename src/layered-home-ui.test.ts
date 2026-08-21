@@ -56,6 +56,12 @@ describe('Layered Home mobile UI contract', () => {
     expect(mobileCss).toContain('.layered-home .lh-goal{width:31%}');
   });
 
+  it('keeps the primary CTA readable at 360x640 without three stacked text rows', () => {
+    expect(mobileCss).toContain('@media(max-width:390px) and (max-height:650px)');
+    expect(mobileCss).toContain('.layered-home .lh-primary-action span{display:none}');
+    expect(mobileCss).toContain('.layered-home .lh-primary-action{min-height:48px;padding:5px 10px}');
+  });
+
   it('keeps tap controls and panel scrolling on deliberate touch gestures', () => {
     expect(homeCss).toContain('touch-action:manipulation');
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*touch-action:pan-y/);
