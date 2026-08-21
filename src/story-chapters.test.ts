@@ -110,4 +110,28 @@ describe('story chapter rules', () => {
     expect(eligibleStoryChapters({ ...base, discoveries: 3 })).not.toContain('starlight_road');
     expect(eligibleStoryChapters({ ...base, discoveries: 4 })).toContain('starlight_road');
   });
+
+  it('does not unlock Raising story gates from non-finite progress', () => {
+    const fallbackBond = eligibleStoryChapters({
+      memories:['first_training'],
+      visitedOutings:['forest','village','lakeside'],
+      affection:Number.POSITIVE_INFINITY,
+      guardianRank:'trainee',
+      discoveries:0,
+      expeditionStoryEntries:[],
+    });
+    expect(fallbackBond).toEqual(['first_step','wide_world']);
+
+    const finalGate = eligibleStoryChapters({
+      memories:['first_training'],
+      visitedOutings:['forest','village','lakeside'],
+      affection:95,
+      guardianRank:'veteran',
+      discoveries:Number.POSITIVE_INFINITY,
+      expeditionStoryEntries:[],
+      unlockedBondScenes:['shared_secret'],
+      activeCalling:'pathfinder',
+    });
+    expect(finalGate).not.toContain('starlight_road');
+  });
 });
