@@ -19,18 +19,30 @@ describe('regional renown', () => {
     expect(renownGainForExpedition('B', false)).toBe(1);
     expect(renownGainForExpedition('A', false)).toBe(2);
     expect(renownGainForExpedition('S', false)).toBe(3);
+    expect(renownGainForExpedition('B', true)).toBe(3);
+    expect(renownGainForExpedition('A', true)).toBe(4);
     expect(renownGainForExpedition('S', true)).toBe(5);
     expect(renownGainForExpedition('C', true)).toBe(0);
   });
 
-  it('maps persistent renown to five reputation levels', () => {
+  it('maps exact threshold boundaries to five reputation levels', () => {
+    expect(regionalRenownLevel(-1)).toBe(1);
+    expect(regionalRenownLevel(Number.NaN)).toBe(1);
     expect(regionalRenownLevel(0)).toBe(1);
     expect(regionalRenownLevel(4)).toBe(1);
     expect(regionalRenownLevel(5)).toBe(2);
+    expect(regionalRenownLevel(11)).toBe(2);
     expect(regionalRenownLevel(12)).toBe(3);
+    expect(regionalRenownLevel(21)).toBe(3);
     expect(regionalRenownLevel(22)).toBe(4);
+    expect(regionalRenownLevel(34)).toBe(4);
     expect(regionalRenownLevel(35)).toBe(5);
     expect(regionalRenownLevel(999)).toBe(5);
+  });
+
+  it('fails high on positive overflow instead of regressing max renown to level one', () => {
+    expect(regionalRenownLevel(Number.POSITIVE_INFINITY)).toBe(5);
+    expect(regionalRenownLevel(Number.NEGATIVE_INFINITY)).toBe(1);
   });
 
   it('defines one-time rewards for levels two through five', () => {

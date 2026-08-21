@@ -103,6 +103,24 @@ describe('expedition finish reward pipeline', () => {
     expect(worldReplay.state.ownedExpeditionRelics).toContain('explorer_compass');
   });
 
+  it('does not replay world-completion gems when a rewarded legacy save repairs its final record', () => {
+    const worldState = base();
+    const stageIds = Object.keys(worldState.expeditionRecords) as Array<keyof typeof worldState.expeditionRecords>;
+    for (const id of stageIds) {
+      if (id !== 'lake_tempest') worldState.expeditionRecords[id] = { bestScore:9999, bestGrade:'A', cleared:true };
+    }
+    worldState.rewardedExpeditionStages = [...stageIds];
+    worldState.rewardedExpeditionRegions = ['starlight_forest', 'ancient_city', 'wind_lakes'];
+
+    const repaired = resolveExpeditionFinish(worldState, 'lake_tempest', 1750);
+
+    expect(repaired.summary.cleared).toBe(true);
+    expect(repaired.summary.firstClear).toBe(false);
+    expect(repaired.summary.fullCompleted).toBe(false);
+    expect(repaired.state.gems).toBe(worldState.gems);
+    expect(repaired.state.ownedExpeditionRelics).toContain('explorer_compass');
+  });
+
   it('does not repair the world-completion relic on a failed replay', () => {
     const worldState = base();
     for (const id of Object.keys(worldState.expeditionRecords) as Array<keyof typeof worldState.expeditionRecords>) {
