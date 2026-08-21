@@ -218,6 +218,7 @@ export default function Root() {
         onSetPreferences={setTacticalPreferences}
         onComplete={completeTacticalBattle}
         onExpeditionFinish={finishExpedition}
+        onExitToHome={() => setExpeditionOpen(false)}
       />}
     </>}
   </>;
