@@ -19,6 +19,18 @@ const base = {
   relics: { attack: 0, charge: 0, dodge: 0, all: 0 },
 };
 
+function runActions(
+  stageId: Parameters<typeof startExpeditionBattle>[0],
+  kind: 'attack' | 'charge',
+  input: Parameters<typeof applyExpeditionAction>[3],
+) {
+  let battle = startExpeditionBattle(stageId);
+  for (let index = 0; index < EXPEDITION_ACTION_LIMIT; index += 1) {
+    battle = applyExpeditionAction(battle, kind, 1, input);
+  }
+  return finishExpeditionBattle(battle);
+}
+
 describe('expedition combat', () => {
   it('makes attack respond strongly to strength and hunt mastery', () => {
     const low = applyExpeditionAction(startExpeditionBattle('forest_path'), 'attack', 0.8, base);
@@ -78,6 +90,45 @@ describe('expedition combat', () => {
 
     expect(capped.actionCount).toBe(EXPEDITION_ACTION_LIMIT);
     expect(overflow).toEqual(capped);
+  });
+
+  it('keeps the final boss gated from a low-growth build', () => {
+    const result = runActions('lake_tempest', 'attack', {
+      ...base,
+      strength: 40,
+      huntMastery: 2,
+    });
+    expect(result.grade).toBe('C');
+  });
+
+  it('lets a developed expedition specialist reach A on the final boss', () => {
+    const result = runActions('lake_tempest', 'attack', {
+      ...base,
+      strength: 80,
+      huntMastery: 5,
+      condition: 'energetic',
+      talents: ['hunter_instinct', 'guardian_strike'],
+      relics: { attack: 0.10, charge: 0, dodge: 0, all: 0.05 },
+      identity: { attack: 0.10, dodge: 0, charge: 0 },
+      signatures: ['rally_strike', 'guardian_breaker'],
+      boss: true,
+    });
+    expect(result.grade).toMatch(/^[SA]$/);
+  });
+
+  it('lets a fully developed expedition specialist reach S on the final boss', () => {
+    const result = runActions('lake_tempest', 'attack', {
+      ...base,
+      strength: 100,
+      huntMastery: 5,
+      condition: 'energetic',
+      talents: ['hunter_instinct', 'guardian_strike'],
+      relics: { attack: 0.10, charge: 0, dodge: 0, all: 0.05 },
+      identity: { attack: 0.10, dodge: 0, charge: 0 },
+      signatures: ['rally_strike', 'guardian_breaker'],
+      boss: true,
+    });
+    expect(result.grade).toBe('S');
   });
 
   it('finishes with stage pressure converted to fatigue and stress deltas', () => {
