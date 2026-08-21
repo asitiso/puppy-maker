@@ -4,7 +4,10 @@ import { activeCallingTraits, type GrowthTraitId } from './growth-traits';
 import type { GuardianCallingId } from './guardian-callings';
 import { personalityArchetype, runaPreferences } from './runa-personality';
 
-const clamp = (value:number) => Math.max(0, Math.min(100, value));
+const clamp = (value:number) => {
+  const safe = Number.isFinite(value) ? value : 0;
+  return Math.max(0, Math.min(100, safe));
+};
 
 const personalityKeyByActivity: Record<ActivityId, keyof Personality> = {
   hunt:'courage',
@@ -37,15 +40,15 @@ export function applyTrainingIdentityEffects(input:TrainingIdentityInput) {
 
   if (input.schedule.includes(preferences.favoriteActivity)) {
     const key = personalityKeyByActivity[preferences.favoriteActivity];
-    personality[key] = clamp(personality[key] + 1);
+    personality[key] = clamp(clamp(personality[key]) + 1);
     incrementMasteryXp(mastery, preferences.favoriteActivity);
   }
 
-  if (activeTraits.has('vanguard_power') && input.schedule.includes('hunt')) stats.strength = clamp(stats.strength + 1);
-  if (activeTraits.has('arcanist_mana') && input.schedule.includes('magic')) stats.magic = clamp(stats.magic + 1);
-  if (activeTraits.has('arcanist_insight') && input.schedule.includes('magic')) stats.intelligence = clamp(stats.intelligence + 1);
-  if (activeTraits.has('caretaker_rest') && input.schedule.includes('rest')) stats.fatigue = clamp(stats.fatigue - 2);
-  if (activeTraits.has('pathfinder_herb') && input.schedule.includes('herb')) stats.intelligence = clamp(stats.intelligence + 1);
+  if (activeTraits.has('vanguard_power') && input.schedule.includes('hunt')) stats.strength = clamp(clamp(stats.strength) + 1);
+  if (activeTraits.has('arcanist_mana') && input.schedule.includes('magic')) stats.magic = clamp(clamp(stats.magic) + 1);
+  if (activeTraits.has('arcanist_insight') && input.schedule.includes('magic')) stats.intelligence = clamp(clamp(stats.intelligence) + 1);
+  if (activeTraits.has('caretaker_rest') && input.schedule.includes('rest')) stats.fatigue = clamp(clamp(stats.fatigue) - 2);
+  if (activeTraits.has('pathfinder_herb') && input.schedule.includes('herb')) stats.intelligence = clamp(clamp(stats.intelligence) + 1);
   const trainingScore = Number.isFinite(input.trainingScore) ? Math.max(0, input.trainingScore) : 0;
   if (activeTraits.has('vanguard_focus') && input.schedule.includes('hunt') && trainingScore >= 650) {
     incrementMasteryXp(mastery, 'hunt');
@@ -66,7 +69,7 @@ export function applyGiftIdentityEffects(input:GiftIdentityInput) {
   const stats = { ...input.stats };
   const preferences = runaPreferences(personalityArchetype(input.personality), input.activeCalling);
   const activeTraits = new Set(activeCallingTraits(input.activeCalling, input.purchasedTraits));
-  if (input.item === preferences.favoriteGift) stats.affection = clamp(stats.affection + 2);
-  if (activeTraits.has('caretaker_bond')) stats.affection = clamp(stats.affection + 1);
+  if (input.item === preferences.favoriteGift) stats.affection = clamp(clamp(stats.affection) + 2);
+  if (activeTraits.has('caretaker_bond')) stats.affection = clamp(clamp(stats.affection) + 1);
   return { stats, preferences };
 }
