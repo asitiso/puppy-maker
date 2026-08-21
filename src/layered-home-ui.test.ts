@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import home from './LayeredHome.tsx?raw';
+import globalCss from './styles.css?raw';
 import homeCss from './layered-home.css?raw';
 import mobileCss from './layered-home-mobile.css?raw';
 import flowCss from './hub-flow-mobile.css?raw';
@@ -26,6 +27,16 @@ describe('Layered Home mobile UI contract', () => {
   it('suppresses unsupported weather copy instead of presenting it as game state', () => {
     expect(home).toContain('☀ 맑음');
     expect(homeCss).toContain('.lh-weather span{display:none}');
+  });
+
+  it('uses the dynamic visual viewport so mobile browser chrome does not strand the game shell', () => {
+    expect(globalCss).toContain('min-height:100dvh');
+    expect(globalCss).toContain('width:min(100vw,56.25dvh)');
+    expect(globalCss).toContain('height:min(100dvh,177.78vw)');
+  });
+
+  it('keeps long goal copy clipped inside the card at 430px-class widths', () => {
+    expect(homeCss).toContain('.lh-goal p{font-size:clamp(8px,1.98vw,12px);margin:4.5% 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}');
   });
 
   it('keeps four compact shortcuts at usable touch size without overflowing their lane', () => {
