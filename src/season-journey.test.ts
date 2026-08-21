@@ -52,4 +52,10 @@ describe('season journey', () => {
       '1-spring',
     )).toEqual([]);
   });
+
+  it('does not unlock every reward tier from non-finite journey scores', () => {
+    expect(newlyEarnedJourneyTiers(Number.NaN,Number.NaN,[],'1-spring')).toEqual([]);
+    expect(newlyEarnedJourneyTiers(40,Number.POSITIVE_INFINITY,[],'1-spring')).toEqual([]);
+    expect(newlyEarnedJourneyTiers(Number.NEGATIVE_INFINITY,60,[],'1-spring').map(tier => tier.tier)).toEqual([1]);
+  });
 });
