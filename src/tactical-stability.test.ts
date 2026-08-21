@@ -106,6 +106,33 @@ const basicUnit = (id:string,side:'ally'|'enemy',agility:number,hp=100,ap=3,mp=0
 });
 
 describe('tactical vertical slice stability', () => {
+  it('sanitizes non-finite battle inputs so a fresh session cannot start corrupted', () => {
+    const corrupted = {
+      ...basicUnit('runa','ally',20),
+      maxHp:Number.NaN,
+      hp:Number.POSITIVE_INFINITY,
+      agility:Number.NEGATIVE_INFINITY,
+      ap:Number.NaN,
+      maxAp:Number.POSITIVE_INFINITY,
+      mp:Number.NEGATIVE_INFINITY,
+      maxMp:Number.NaN,
+      shield:Number.POSITIVE_INFINITY,
+    };
+    const session = createBattleSession(
+      [corrupted,basicUnit('ally-2','ally',10),basicUnit('ally-3','ally',8)],
+      [basicUnit('enemy-1','enemy',15),basicUnit('enemy-2','enemy',9),basicUnit('enemy-3','enemy',7)],
+      Number.NaN,
+    );
+
+    expect(Number.isFinite(session.seed)).toBe(true);
+    for (const unit of session.units) {
+      for (const value of [unit.maxHp,unit.hp,unit.agility,unit.ap,unit.maxAp,unit.mp,unit.maxMp,unit.shield]) {
+        expect(Number.isFinite(value), `${unit.id} contains non-finite battle state`).toBe(true);
+      }
+    }
+    assertResourceBounds(session);
+  });
+
   it('repeats complete manual and AUTO battles without stalls or resource corruption', () => {
     let sawUltimate = false;
     for (const mode of ['manual','auto'] as const) {
