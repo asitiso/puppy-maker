@@ -35,6 +35,11 @@ describe('tactical expedition launcher', () => {
     expect(first).not.toBe(second);
   });
 
+  it('falls back when a corrupted save loses the party array entirely', () => {
+    const missing={selectedTacticalCompanions:null} as unknown as {selectedTacticalCompanions:readonly CompanionId[]};
+    expect(tacticalPartyForGame(missing)).toEqual(['bear','owl']);
+  });
+
   it('falls back safely when a corrupted save contains an unknown companion id', () => {
     const corrupted = ['dragon','owl'] as unknown as readonly CompanionId[];
     expect(tacticalPartyForGame({selectedTacticalCompanions:corrupted})).toEqual(['bear','owl']);
