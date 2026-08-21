@@ -24,6 +24,11 @@ describe('weekly directives', () => {
     expect(weeklyDirectives(1,4,5)).toEqual(weeklyDirectives(1,4,4));
   });
 
+  it('uses the same canonical year and month for keys and directive selection', () => {
+    expect(weeklyDirectiveKey(0,13,4)).toBe(weeklyDirectiveKey(1,12,4));
+    expect(weeklyDirectives(0,13,4)).toEqual(weeklyDirectives(1,12,4));
+  });
+
   it('never assigns two directives that reward the same action counter in one week', () => {
     for (let year = 1; year <= 3; year += 1) {
       for (let month = 1; month <= 12; month += 1) {
