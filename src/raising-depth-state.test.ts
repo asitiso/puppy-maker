@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { reconcileBondSceneRewards } from './raising-depth-rewards';
 import { hydrateRaisingDepthState } from './raising-depth-state';
 
 describe('raising depth state hydration', () => {
@@ -10,5 +11,33 @@ describe('raising depth state hydration', () => {
 
     expect(hydrated.unlockedBondScenes).toEqual([]);
     expect(hydrated.rewardedBondScenes).toEqual(['shared_secret']);
+  });
+
+  it('restores a reward-only bond scene without paying it twice after hydration', () => {
+    const hydrated = hydrateRaisingDepthState({
+      unlockedBondScenes: [],
+      rewardedBondScenes: ['first_trust'],
+    });
+    const progress = {
+      affection:0,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee' as const,
+      bossClears:0,
+      annualRecords:0,
+      unlocked:hydrated.unlockedBondScenes,
+      rewarded:hydrated.rewardedBondScenes,
+      gold:500,
+      gems:2,
+    };
+
+    const reconciled = reconcileBondSceneRewards(progress, progress);
+
+    expect(reconciled.unlocked).toEqual(['first_trust']);
+    expect(reconciled.rewarded).toEqual(['first_trust']);
+    expect(reconciled.gold).toBe(500);
+    expect(reconciled.gems).toBe(2);
+    expect(reconciled.newlyUnlocked).toEqual([]);
   });
 });
