@@ -42,8 +42,10 @@ function directiveActionGroup(counter:WeeklyDirectiveCounter) {
 }
 
 export function weeklyDirectives(year:number, month:number, week:number): WeeklyDirective[] {
+  const canonicalYear = Math.max(1,Math.floor(year));
+  const canonicalMonth = Math.max(1,Math.min(12,Math.floor(month)));
   const canonicalWeek = Math.max(1,Math.min(4,Math.floor(week)));
-  const seed = Math.max(0,Math.floor(year * 37 + month * 11 + canonicalWeek * 5));
+  const seed = Math.max(0,Math.floor(canonicalYear * 37 + canonicalMonth * 11 + canonicalWeek * 5));
   const result: WeeklyDirective[] = [];
   let cursor = seed % directivePool.length;
   while (result.length < 3) {
