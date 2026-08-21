@@ -75,7 +75,7 @@ function Battle({ state, stageId, onFinish, onCancel }: {
   };
   const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
   return <section className="expedition-battle">
-    <header><button onClick={onCancel}>‹ 원정 지도</button><div><small>{stage.boss ? 'REGION BOSS' : 'EXPEDITION TRIAL'}</small><h2>{stage.name}</h2></div><span>목표 {stage.target}</span></header>
+    <header><button autoFocus onClick={onCancel}>‹ 원정 지도</button><div><small>{stage.boss ? 'REGION BOSS' : 'EXPEDITION TRIAL'}</small><h2>{stage.name}</h2></div><span>목표 {stage.target}</span></header>
     {calling && <div className="expedition-calling-strip"><b>{calling.label}</b><span>전문 행동 · {calling.activity === 'hunt' ? '공격' : calling.activity === 'magic' ? '기 모으기' : calling.activity === 'rest' ? '회피' : '발견/재료 수집'}</span></div>}
     <div className="expedition-battle-stage">
       <div className="expedition-pressure"><small>PRESSURE</small><b>{stage.pressure}</b><span>회피로 원정 부담을 줄이세요.</span></div>
@@ -164,12 +164,12 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
         {worldResult.seasonRewardLabel && <div><b>시즌 보상</b><span>{worldResult.seasonRewardLabel}</span></div>}
         {worldResult.contractLabel && <div><b>월간 의뢰</b><span>{worldResult.contractLabel}</span></div>}
       </div>}
-      <button onClick={() => setView('map')}>원정 지도로 돌아가기</button>
+      <button autoFocus onClick={() => setView('map')}>원정 지도로 돌아가기</button>
     </section></div>;
   }
 
   return <div className="expedition-overlay"><section className="expedition-map">
-    <header><button onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
+    <header><button autoFocus onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
     <div className="expedition-world-event"><b>{world.expeditionMap.eventStrip}</b><span>{world.event.bonusLabel}</span></div>
     <div className="expedition-materials">{Object.entries(state.expeditionMaterials).map(([id, value]) => <span key={id}><b>{materialLabels[id as keyof typeof materialLabels]}</b>{value}</span>)}</div>
     <div className="expedition-regions">{expeditionRegionDefinitions.map(region => <article key={region.id} className={region.id === world.expeditionMap.featuredRegionId ? 'event-featured' : ''}>
