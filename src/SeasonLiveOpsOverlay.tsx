@@ -48,6 +48,16 @@ export default function SeasonLiveOpsOverlay({
     wasOpen.current = open;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return <button ref={launcherRef} className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
       <small>SEASON JOURNEY</small>
