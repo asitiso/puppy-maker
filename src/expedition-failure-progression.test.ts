@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, reducer } from './game';
 import { resolveExpeditionFinish } from './expedition-rewards';
+import { emptyExpeditionPersistentState } from './expedition-state';
+
+const rewardState = () => ({
+  ...emptyExpeditionPersistentState(),
+  gold: 1000,
+  gems: 10,
+  affection: 50,
+  inventory: { star_cookie: 0, herb_tea: 0, fox_charm: 0 },
+});
 
 describe('failed expedition progression semantics', () => {
   it('keeps accepted separate from cleared and does not emit success rewards for a C attempt', () => {
-    const resolved = resolveExpeditionFinish(initialState, 'forest_path', 100);
+    const before = rewardState();
+    const resolved = resolveExpeditionFinish(before, 'forest_path', 100);
 
     expect(resolved.summary.accepted).toBe(true);
     expect(resolved.summary.cleared).toBe(false);
@@ -17,12 +27,12 @@ describe('failed expedition progression semantics', () => {
     expect(resolved.summary.relicsUnlocked).toEqual([]);
     expect(resolved.summary.fullCompleted).toBe(false);
     expect(resolved.state.expeditionRecords.forest_path?.cleared).toBe(false);
-    expect(resolved.state.rewardedExpeditionStages).toEqual(initialState.rewardedExpeditionStages);
-    expect(resolved.state.expeditionStoryEntries).toEqual(initialState.expeditionStoryEntries);
-    expect(resolved.state.expeditionDiscoveries).toEqual(initialState.expeditionDiscoveries);
-    expect(resolved.state.expeditionMaterials).toEqual(initialState.expeditionMaterials);
-    expect(resolved.state.gold).toBe(initialState.gold);
-    expect(resolved.state.gems).toBe(initialState.gems);
+    expect(resolved.state.rewardedExpeditionStages).toEqual(before.rewardedExpeditionStages);
+    expect(resolved.state.expeditionStoryEntries).toEqual(before.expeditionStoryEntries);
+    expect(resolved.state.expeditionDiscoveries).toEqual(before.expeditionDiscoveries);
+    expect(resolved.state.expeditionMaterials).toEqual(before.expeditionMaterials);
+    expect(resolved.state.gold).toBe(before.gold);
+    expect(resolved.state.gems).toBe(before.gems);
   });
 
   it('does not record an accepted C attempt as successful world progression', () => {
