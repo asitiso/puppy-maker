@@ -28,6 +28,17 @@ describe('celestial records', () => {
     expect(progress.uniqueSClears).toBe(1);
   });
 
+  it('ignores stale or removed trial ids when computing celestial lifetime progress', () => {
+    const stale = [
+      record('1-1:retired_alpha','S'),
+      record('1-2:retired_beta','S'),
+      record('1-3:retired_gamma','S'),
+      record('1-4:retired_delta','S'),
+    ];
+    expect(celestialRecordProgress(stale)).toEqual({ totalClears:0, uniqueTrials:0, uniqueSClears:0 });
+    expect(newlyEarnedCelestialHonors(stale,[])).toEqual([]);
+  });
+
   it('defines long-term astral honor milestones', () => {
     expect(celestialHonors.map(item => item.id)).toEqual(['first_light','full_cycle','perfect_cycle','twelve_trials']);
   });
