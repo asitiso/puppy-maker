@@ -99,4 +99,43 @@ describe('expedition long-run stress invariants', () => {
     expect(state.expeditionStoryEntries.filter(id => id === 'forest_path')).toHaveLength(1);
     expect(state.expeditionDiscoveries.filter(id => id === 'forest_path_discovery')).toHaveLength(1);
   });
+
+  it('keeps one-time economy flat across one hundred full nine-stage replay cycles with hydration', () => {
+    let state = clearWorld();
+    const baselineGold = state.gold;
+    const baselineGems = state.gems;
+    const baselineMaterials = { ...state.expeditionMaterials };
+    const baselineStages = [...state.rewardedExpeditionStages];
+    const baselineRegions = [...state.rewardedExpeditionRegions];
+    const baselineStory = [...state.expeditionStoryEntries];
+    const baselineRelics = [...state.ownedExpeditionRelics];
+
+    for (let cycle = 0; cycle < 100; cycle += 1) {
+      for (const stage of expeditionStageDefinitions) {
+        const replay = resolveExpeditionFinish(state, stage.id, stage.target);
+        expect(replay.summary.accepted, `${cycle}:${stage.id}`).toBe(true);
+        expect(replay.summary.cleared, `${cycle}:${stage.id}`).toBe(true);
+        expect(replay.summary.firstClear, `${cycle}:${stage.id}`).toBe(false);
+        state = replay.state;
+      }
+      const hydrated = hydrateExpeditionPersistentState(JSON.parse(JSON.stringify(state)));
+      state = { ...state, ...hydrated };
+    }
+
+    expect(state.gold).toBe(baselineGold);
+    expect(state.gems).toBe(baselineGems);
+    expect(state.expeditionMaterials).toEqual({
+      star_bark: baselineMaterials.star_bark + 200,
+      arcane_shard: baselineMaterials.arcane_shard + 200,
+      wind_pearl: baselineMaterials.wind_pearl + 200,
+    });
+    expect(state.rewardedExpeditionStages).toEqual(baselineStages);
+    expect(state.rewardedExpeditionRegions).toEqual(baselineRegions);
+    expect(state.expeditionStoryEntries).toEqual(baselineStory);
+    expect(state.ownedExpeditionRelics).toEqual(baselineRelics);
+    expectUnique(state.rewardedExpeditionStages);
+    expectUnique(state.rewardedExpeditionRegions);
+    expectUnique(state.expeditionStoryEntries);
+    expectUnique(state.ownedExpeditionRelics);
+  });
 });
