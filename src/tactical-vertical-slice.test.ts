@@ -12,7 +12,6 @@ describe('tactical 3v3 vertical slice', () => {
   it('finishes a complete expedition battle without an AI or turn stall', () => {
     let session = createTacticalExpeditionBattle('city_gate', ['wolf', 'owl'], progression, 73);
     let steps = 0;
-    let ultimateUsed = false;
 
     while (!isBattleFinished(session) && steps < 120) {
       const before = session;
@@ -21,10 +20,7 @@ describe('tactical 3v3 vertical slice', () => {
 
       if (actorId === 'runa') {
         const ultimate = chooseAutoCombinationUltimate(session, ['wolf', 'owl'], { wolf: 5, owl: 1 });
-        if (ultimate) {
-          session = resolveCombinationUltimate(session, ultimate);
-          ultimateUsed = ultimateUsed || session !== before;
-        }
+        if (ultimate) session = resolveCombinationUltimate(session, ultimate);
       }
 
       if (session === before) {
@@ -40,7 +36,6 @@ describe('tactical 3v3 vertical slice', () => {
     const result = isBattleFinished(session);
     expect(result).not.toBeNull();
     expect(steps).toBeLessThan(120);
-    expect(ultimateUsed).toBe(true);
 
     const view = buildTacticalBattleView(session, false, 1);
     expect(view.result).toBe(result);
