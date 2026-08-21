@@ -13,6 +13,12 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { hydrateTacticalPersistentState } from './tactical-state';
+import {
+  emptyV3PersistentState,
+  hydrateV3PersistentState,
+  pickV3PersistentState,
+  type V3PersistentState,
+} from './v3-persistent-state';
 
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
@@ -28,7 +34,7 @@ export type GrowthReport = Base.GrowthReport & {
   goldReward?:number;
 };
 
-export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & {
+export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & V3PersistentState & {
   memories:any[];
   lastGrowthReport:GrowthReport|null;
   monthsCompleted?:number;
@@ -69,6 +75,7 @@ export type Action = Base.Action | {
 };
 
 const tacticalDefaults = hydrateTacticalPersistentState(undefined);
+const v3Defaults = emptyV3PersistentState();
 
 export const initialState:GameState = {
   ...Base.initialState,
@@ -78,6 +85,7 @@ export const initialState:GameState = {
   tacticalCompanionBonds:tacticalDefaults.companionBonds,
   tacticalAutoBattle:tacticalDefaults.autoBattle,
   tacticalBattleSpeed:tacticalDefaults.battleSpeed,
+  ...v3Defaults,
 };
 
 const encounterIds = tacticalEncounterDefinitions.map(item => item.id);
@@ -127,6 +135,7 @@ export function hydrateGameState(raw:unknown):GameState {
     autoBattle:source.tacticalAutoBattle,
     battleSpeed:source.tacticalBattleSpeed,
   });
+  const v3 = hydrateV3PersistentState(source);
   return {
     ...base,
     ...(typeof source.monthsCompleted==='number'?{monthsCompleted:Math.max(0,Math.floor(source.monthsCompleted))}:{}),
@@ -141,6 +150,7 @@ export function hydrateGameState(raw:unknown):GameState {
     tacticalCompanionBonds:tactical.companionBonds,
     tacticalAutoBattle:tactical.autoBattle,
     tacticalBattleSpeed:tactical.battleSpeed,
+    ...v3,
   } as GameState;
 }
 
@@ -201,5 +211,6 @@ export function reducer(state:GameState,action:Action):GameState {
     tacticalCompanionBonds:state.tacticalCompanionBonds,
     tacticalAutoBattle:state.tacticalAutoBattle,
     tacticalBattleSpeed:state.tacticalBattleSpeed,
+    ...pickV3PersistentState(state),
   } as GameState;
 }
