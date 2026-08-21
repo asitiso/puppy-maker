@@ -80,13 +80,13 @@ export function advanceWeeklyDirectives(
   rewardedKeys:string[] = [],
   key?:string,
 ) {
-  const next = { ...progress };
+  const next:Record<string,number> = {};
   const completed: WeeklyDirective[] = [];
   let journeyPoints = 0;
   let tokens = 0;
 
   for (const directive of directives) {
-    const before = Math.max(0,Math.floor(next[directive.id] ?? 0));
+    const before = Math.max(0,Math.floor(progress[directive.id] ?? 0));
     const after = matches(directive,event) ? Math.min(directive.target,before + 1) : before;
     next[directive.id] = after;
     const reached = after >= directive.target;
