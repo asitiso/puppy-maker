@@ -32,6 +32,10 @@ export type BattleSession = {
   acted:string[];
 };
 
+function finiteInteger(value:number,fallback:number) {
+  return Number.isFinite(value) ? Math.floor(value) : fallback;
+}
+
 function normalizeOptionalPower(value:number|undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : undefined;
 }
@@ -46,25 +50,30 @@ export function orderedTimeline(units:TacticalUnit[]) {
 
 export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[], seed:number):BattleSession {
   if (allies.length !== 3 || enemies.length !== 3) throw new Error('Tactical battle requires exactly 3 allies and 3 enemies.');
-  const units = [...allies,...enemies].map(unit => ({
-    ...unit,
-    maxHp:Math.max(1,Math.floor(unit.maxHp)),
-    hp:Math.max(0,Math.min(Math.floor(unit.hp),Math.max(1,Math.floor(unit.maxHp)))),
-    agility:Math.max(0,Math.floor(unit.agility)),
-    maxAp:Math.max(0,Math.floor(unit.maxAp)),
-    ap:Math.max(0,Math.min(Math.floor(unit.ap),Math.max(0,Math.floor(unit.maxAp)))),
-    maxMp:Math.max(0,Math.floor(unit.maxMp)),
-    mp:Math.max(0,Math.min(Math.floor(unit.mp),Math.max(0,Math.floor(unit.maxMp)))),
-    shield:Math.max(0,Math.floor(unit.shield)),
-    attackPower:normalizeOptionalPower(unit.attackPower),
-    skillPower:normalizeOptionalPower(unit.skillPower),
-    supportPower:normalizeOptionalPower(unit.supportPower),
-    aiArchetype:unit.side === 'enemy' ? unit.aiArchetype : undefined,
-    statuses:(unit.statuses ?? [])
-      .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
-      .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
-  }));
-  return { units, timeline:orderedTimeline(units), round:1, seed:Math.floor(seed), acted:[] };
+  const units = [...allies,...enemies].map(unit => {
+    const maxHp=Math.max(1,finiteInteger(unit.maxHp,1));
+    const maxAp=Math.max(0,finiteInteger(unit.maxAp,0));
+    const maxMp=Math.max(0,finiteInteger(unit.maxMp,0));
+    return {
+      ...unit,
+      maxHp,
+      hp:Math.max(0,Math.min(finiteInteger(unit.hp,0),maxHp)),
+      agility:Math.max(0,finiteInteger(unit.agility,0)),
+      maxAp,
+      ap:Math.max(0,Math.min(finiteInteger(unit.ap,0),maxAp)),
+      maxMp,
+      mp:Math.max(0,Math.min(finiteInteger(unit.mp,0),maxMp)),
+      shield:Math.max(0,finiteInteger(unit.shield,0)),
+      attackPower:normalizeOptionalPower(unit.attackPower),
+      skillPower:normalizeOptionalPower(unit.skillPower),
+      supportPower:normalizeOptionalPower(unit.supportPower),
+      aiArchetype:unit.side === 'enemy' ? unit.aiArchetype : undefined,
+      statuses:(unit.statuses ?? [])
+        .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
+        .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
+    };
+  });
+  return { units, timeline:orderedTimeline(units), round:1, seed:finiteInteger(seed,0), acted:[] };
 }
 
 export function isBattleFinished(session:BattleSession):BattleResult|null {
