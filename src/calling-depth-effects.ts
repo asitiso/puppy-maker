@@ -6,7 +6,9 @@ import type { GuardianCallingId } from './guardian-callings';
 import type { GrowthTraitId } from './growth-traits';
 
 export function legendRewardKey(year:number, month:number, effectId:string): string {
-  return `${Math.max(1, Math.floor(year))}-${Math.max(1, Math.min(12, Math.floor(month)))}:${effectId}`;
+  const safeYear = Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
+  const safeMonth = Math.max(1, Math.min(12, Math.floor(Number.isFinite(month) ? month : 1)));
+  return `${safeYear}-${safeMonth}:${effectId}`;
 }
 
 export function effectivePathfinderExplorationXp(
