@@ -14,9 +14,19 @@ describe('tactical ai',()=>{
  it('medic heals the most injured living enemy',()=>expect(chooseEnemyAction('medic',u('m','enemy'),[u('a','ally')],[u('m','enemy'),u('e2','enemy',25)])?.targetId).toBe('e2'));
  it('legacy medic attacks a living foe when no ally needs healing',()=>expect(chooseEnemyAction('medic',u('m','enemy'),[u('a','ally')],[u('m','enemy'),u('e2','enemy')])).toEqual({kind:'attack',targetId:'a'}));
  it('auto action chooses a legal living enemy',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy')])?.targetId).toBe('e2'));
+ it('returns no legacy action for a dead actor',()=>{
+   expect(chooseEnemyAction('brute',u('e','enemy',0),[u('a','ally')],[u('e','enemy',0)])).toBeNull();
+   expect(chooseAutoAction(u('runa','ally',0),[u('e1','enemy')])).toBeNull();
+ });
  it('returns no legacy enemy action when every opposing target is dead',()=>expect(chooseEnemyAction('brute',u('e','enemy'),[u('a','ally',0),u('b','ally',0)],[u('e','enemy')])).toBeNull());
  it('returns no auto action when every enemy target is dead',()=>expect(chooseAutoAction(u('runa','ally'),[u('e1','enemy',0),u('e2','enemy',0)])).toBeNull());
  it('engine AI uses SPECIAL at full MP',()=>{const actor={...u('bat','enemy'),agility:20,mp:10};const s=createBattleSession([u('runa','ally',40),u('owl','ally'),u('bear','ally')],[actor,u('e2','enemy'),u('e3','enemy')],3);expect(chooseTacticalEngineAction(s,'bat',3)?.actionId).toBe('special')});
+ it('engine AI sanitizes non-finite tie-break seeds instead of crashing',()=>{
+   const actor={...u('bat','enemy'),agility:20};
+   const session=sessionWithHand(actor,['attack']);
+   expect(chooseTacticalEngineAction(session,'bat',Number.NaN)?.targetId).toBe('bear');
+   expect(chooseTacticalEngineAction(session,'bat',Number.POSITIVE_INFINITY)?.targetId).toBe('bear');
+ });
  it('engine AI heals a critical teammate before normal attacking',()=>{const actor={...u('bat','enemy'),agility:20};const s=createBattleSession([u('runa','ally'),u('owl','ally'),u('bear','ally')],[actor,u('e2','enemy',20),u('e3','enemy')],3);expect(chooseTacticalEngineAction(s,'bat',3)).toEqual({actorId:'bat',actionId:'support',targetId:'e2'})});
  it('live medic AI heals a wounded ally before attacking',()=>{const actor={...u('medic','enemy'),agility:20,aiArchetype:'medic' as const};const s=sessionWithHand(actor,['attack','support'],undefined,[actor,u('e2','enemy',70),u('e3','enemy')]);expect(chooseTacticalEngineAction(s,'medic',1)).toEqual({actorId:'medic',actionId:'support',targetId:'e2'})});
  it('live medic AI attacks instead of wasting support when everyone is full',()=>{const actor={...u('medic','enemy'),agility:20,aiArchetype:'medic' as const};const s=sessionWithHand(actor,['attack','support']);expect(chooseTacticalEngineAction(s,'medic',1)?.actionId).toBe('attack')});
