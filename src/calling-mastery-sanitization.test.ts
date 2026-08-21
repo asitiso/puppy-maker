@@ -1,0 +1,29 @@
+import { describe, expect, it } from 'vitest';
+import { specialistMasteryCalling } from './calling-depth-effects';
+
+describe('Calling mastery action sanitation', () => {
+  it('does not treat non-finite or negative raw action counts as valid specialist actions', () => {
+    const summary = { stageId:'forest_path' as const, grade:'A' as const, discovery:null, materialReward:1 };
+
+    expect(specialistMasteryCalling('vanguard', {
+      attack:Number.POSITIVE_INFINITY,
+      dodge:0,
+      charge:0,
+    }, summary)).toBeNull();
+    expect(specialistMasteryCalling('arcanist', {
+      attack:0,
+      dodge:0,
+      charge:Number.NaN,
+    }, summary)).toBeNull();
+    expect(specialistMasteryCalling('caretaker', {
+      attack:0,
+      dodge:-1,
+      charge:0,
+    }, summary)).toBeNull();
+    expect(specialistMasteryCalling('pathfinder', {
+      attack:Number.POSITIVE_INFINITY,
+      dodge:Number.NaN,
+      charge:-1,
+    }, { ...summary, discovery:'forest_echo' })).toBeNull();
+  });
+});
