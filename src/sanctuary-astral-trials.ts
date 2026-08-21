@@ -16,6 +16,7 @@ export const astralTrialDefinitions:AstralTrialDefinition[] = [
   { id:'guardian_trial', label:'수호자의 서약 시련', description:'수호자로서의 종합 역량을 시험해요.', requiredConstellation:'guardian_star' },
   { id:'crown_trial', label:'천상의 왕관 시련', description:'모든 성장의 결실을 하나로 모아요.', requiredConstellation:'celestial_crown' },
 ];
+const astralTrialIds = new Set<AstralTrialId>(astralTrialDefinitions.map(item => item.id));
 
 export function astralTrialFor(year:number,month:number):AstralTrialDefinition {
   const safeYear = Number.isFinite(year) ? Math.max(1,Math.floor(year)) : 1;
@@ -89,7 +90,11 @@ export function resolveAstralTrial(input:{
     return { accepted:false as const, reason:'constellation_locked' as const, trial, key, grade:null, starShards:0, gold:0 };
   }
   const monthPrefix = `${safeYear}-${safeMonth}:`;
-  if (input.claimedKeys.some(claimedKey => claimedKey.startsWith(monthPrefix))) {
+  if (input.claimedKeys.some(claimedKey => {
+    if (!claimedKey.startsWith(monthPrefix)) return false;
+    const claimedTrial = claimedKey.slice(monthPrefix.length) as AstralTrialId;
+    return astralTrialIds.has(claimedTrial);
+  })) {
     return { accepted:false as const, reason:'already_claimed' as const, trial, key, grade:null, starShards:0, gold:0 };
   }
   const power = Number.isFinite(input.power) ? Math.max(0,Math.floor(input.power)) : 0;
