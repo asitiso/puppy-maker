@@ -20,6 +20,7 @@ export function renownGainForExpedition(grade: ExpeditionGrade, firstBossClear: 
 }
 
 export function regionalRenownLevel(renown: number): RegionalRenownLevel {
+  if (renown === Number.POSITIVE_INFINITY) return 5;
   const safe = Math.max(0, Math.floor(Number.isFinite(renown) ? renown : 0));
   if (safe >= regionalRenownThresholds[4]) return 5;
   if (safe >= regionalRenownThresholds[3]) return 4;
