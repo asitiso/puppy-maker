@@ -31,7 +31,7 @@ export function combinationUltimateFor(companionId:CompanionId):CombinationUltim
 }
 
 function livingPartner(session:BattleSession,companionId:CompanionId) {
-  return session.units.find(unit => unit.id === `companion-${companionId}` && unit.side === 'ally' && unit.hp > 0) ?? null;
+  return session.units.find(unit => unit.id === `companion-${companionId}` && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) ?? null;
 }
 
 export function validCombinationUltimateTargets(
@@ -47,23 +47,27 @@ export function validCombinationUltimateTargets(
     actorId !== 'runa' ||
     !actor ||
     actor.side !== 'ally' ||
+    !Number.isFinite(actor.hp) ||
     actor.hp <= 0 ||
+    !Number.isFinite(actor.mp) ||
     nextTacticalActor(session) !== actorId ||
+    !Number.isFinite(bondLevel) ||
     bondLevel < 5 ||
     actor.mp < ultimate.mpCost ||
     !livingPartner(session,companionId)
   ) return [];
 
   return session.units
-    .filter(unit => unit.hp > 0 && (ultimate.target === 'ally' ? unit.side === actor.side : unit.side !== actor.side))
+    .filter(unit => Number.isFinite(unit.hp) && unit.hp > 0 && (ultimate.target === 'ally' ? unit.side === actor.side : unit.side !== actor.side))
     .map(unit => unit.id)
     .sort();
 }
 
 function damage(target:TacticalUnit,power:number):TacticalUnit {
   const raw = Math.max(0,Math.floor(power));
-  const blocked = Math.min(target.shield,raw);
-  return { ...target,shield:target.shield-blocked,hp:Math.max(0,target.hp-(raw-blocked)) };
+  const shield = Number.isFinite(target.shield) ? Math.max(0,Math.floor(target.shield)) : 0;
+  const blocked = Math.min(shield,raw);
+  return { ...target,shield:shield-blocked,hp:Math.max(0,target.hp-(raw-blocked)) };
 }
 
 export function resolveCombinationUltimate(session:BattleSession,input:CombinationUltimateInput):BattleSession {
@@ -73,9 +77,9 @@ export function resolveCombinationUltimate(session:BattleSession,input:Combinati
 
   const units = session.units.map(unit => {
     let next:TacticalUnit = unit;
-    if (input.companionId === 'bear' && unit.side === 'ally' && unit.hp > 0) {
+    if (input.companionId === 'bear' && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) {
       next = { ...next,shield:next.shield+ultimate.power };
-    } else if (input.companionId === 'owl' && unit.side === 'ally' && unit.hp > 0) {
+    } else if (input.companionId === 'owl' && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) {
       next = addTacticalStatus({ ...next,hp:Math.min(next.maxHp,next.hp+ultimate.power) },'regen',2);
     } else if (input.companionId === 'wolf' && unit.id === input.targetId) {
       next = damage(next,ultimate.power);
