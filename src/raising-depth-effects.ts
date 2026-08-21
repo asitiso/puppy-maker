@@ -9,6 +9,7 @@ const clamp = (value:number) => {
   return Math.max(0, Math.min(100, safe));
 };
 const safeXp = (value:number) => Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+const activityIds:ActivityId[] = ['hunt','magic','rest','herb'];
 
 const personalityKeyByActivity: Record<ActivityId, keyof Personality> = {
   hunt:'courage',
@@ -40,7 +41,7 @@ function canonicalPersonality(personality:Personality): Personality {
 
 function canonicalMastery(mastery:MasteryState): MasteryState {
   return Object.fromEntries(
-    Object.entries(mastery).map(([id, entry]) => [id, { xp:safeXp(entry?.xp) }]),
+    activityIds.map(id => [id, { xp:safeXp(mastery[id]?.xp) }]),
   ) as MasteryState;
 }
 
