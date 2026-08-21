@@ -75,4 +75,17 @@ describe('tactical expedition launcher', () => {
     expect(metrics.damageTaken).toBe(140);
     expect(metrics.rounds).toBe(1);
   });
+
+  it('caps corrupted completion metrics before handing them to shared progression', () => {
+    const huge=(id:string,side:'ally'|'enemy',hp:number):TacticalUnit=>({id,side,position:'front',maxHp:Number.MAX_VALUE,hp,agility:10,ap:3,maxAp:3,mp:0,maxMp:10,shield:0});
+    const battle=createBattleSession(
+      [huge('runa','ally',0),huge('bear','ally',0),huge('owl','ally',0)],
+      [huge('e1','enemy',0),huge('e2','enemy',0),huge('e3','enemy',0)],
+      3,
+    );
+    const metrics=tacticalCompletionMetrics({...battle,round:Number.NaN});
+    expect(metrics.rounds).toBe(1);
+    expect(Number.isSafeInteger(metrics.damageTaken)).toBe(true);
+    expect(metrics.damageTaken).toBe(Number.MAX_SAFE_INTEGER);
+  });
 });
