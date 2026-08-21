@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { currentGuardianStatus, unlockedSkills, type GameState } from './game';
+import { trapModalTab } from './modal-focus';
 import { ambitionDisplay } from './yearly-ambition-display';
 import { currentYearAmbitionRecord } from './yearly-ambition-progress';
 import { ambitionRecommendation } from './yearly-ambition-recommendation';
@@ -7,6 +8,8 @@ import { ambitionDefinitions, ambitionProgress, type YearlyAmbitionId } from './
 
 export default function YearlyAmbitionOverlay({ state, onSelect }: { state: GameState; onSelect: (ambition: YearlyAmbitionId) => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasDetailsOpen = useRef(detailsOpen);
   const selected = state.yearlyAmbitions[state.year] ?? null;
   const definition = selected ? ambitionDefinitions.find(item => item.id === selected) ?? null : null;
   const liveRecord = useMemo(() => currentYearAmbitionRecord({
@@ -30,13 +33,29 @@ export default function YearlyAmbitionOverlay({ state, onSelect }: { state: Game
   const display = ambitionDisplay(definition, progress);
   const chooserOpen = !selected;
 
+  useEffect(() => {
+    if (wasDetailsOpen.current && !detailsOpen) launcherRef.current?.focus();
+    wasDetailsOpen.current = detailsOpen;
+  }, [detailsOpen]);
+
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setDetailsOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [detailsOpen]);
+
   const choose = (ambition: YearlyAmbitionId) => {
     onSelect(ambition);
     setDetailsOpen(false);
   };
 
   return <>
-    <button className={`yearly-ambition-card yearly-ambition-${display.mode}`} onClick={() => selected && setDetailsOpen(true)} aria-label={`${state.year}년차 올해의 야망 ${display.label}`}>
+    <button ref={launcherRef} className={`yearly-ambition-card yearly-ambition-${display.mode}`} onClick={() => selected && setDetailsOpen(true)} aria-label={`${state.year}년차 올해의 야망 ${display.label}`}>
       <img src="/ui/info_card_frame.png" alt="" draggable={false} />
       <div>
         <small>YEARLY AMBITION</small>
@@ -48,10 +67,10 @@ export default function YearlyAmbitionOverlay({ state, onSelect }: { state: Game
     </button>
 
     {(chooserOpen || detailsOpen) && <div className="yearly-ambition-backdrop" onClick={() => selected && setDetailsOpen(false)}>
-      <section className="yearly-ambition-panel" role="dialog" aria-modal="true" aria-label={`${state.year}년차 올해의 야망`} onClick={event => event.stopPropagation()}>
+      <section className="yearly-ambition-panel" role="dialog" aria-modal="true" aria-label={`${state.year}년차 올해의 야망`} onClick={event => event.stopPropagation()} onKeyDown={trapModalTab}>
         <img className="yearly-ambition-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
         <div className="yearly-ambition-content">
-          {selected && <button className="yearly-ambition-close" onClick={() => setDetailsOpen(false)} aria-label="닫기">×</button>}
+          {selected && <button autoFocus className="yearly-ambition-close" onClick={() => setDetailsOpen(false)} aria-label="닫기">×</button>}
           <small>YEAR {state.year} · GUARDIAN AMBITION</small>
           <h2>{selected ? '올해의 야망' : '올해 어떤 루나를 키울까요?'}</h2>
           <p>{selected ? '선택한 야망은 이 해가 끝날 때까지 유지됩니다.' : '한 해 동안 집중할 성장 방향을 하나 선택하세요.'}</p>
@@ -61,10 +80,10 @@ export default function YearlyAmbitionOverlay({ state, onSelect }: { state: Game
             <span>{recommendation.reason}</span>
           </div>}
           <div className="yearly-ambition-options">
-            {ambitionDefinitions.map(item => {
+            {ambitionDefinitions.map((item, index) => {
               const itemProgress = selected === item.id ? progress : null;
               const active = selected === item.id;
-              return <button key={item.id} className={active ? 'active' : ''} disabled={Boolean(selected && !active)} onClick={() => !selected && choose(item.id)}>
+              return <button autoFocus={!selected && index === 0} key={item.id} className={active ? 'active' : ''} disabled={Boolean(selected && !active)} onClick={() => !selected && choose(item.id)}>
                 <b>{item.label}</b>
                 <span>{item.description}</span>
                 {itemProgress && <><i><em style={{ width: `${itemProgress.percent}%` }} /></i><small>{itemProgress.current} / {itemProgress.target} · {itemProgress.complete ? '달성 완료' : `${itemProgress.percent}%`}</small></>}
