@@ -52,8 +52,18 @@ function hydrateSwitchKey(raw: unknown): string | null {
 
 function hydrateLegendRewardKeys(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  const valid = raw.filter((value): value is string => typeof value === 'string' && /^\d+-\d+:[a-z0-9_:-]+$/.test(value));
-  return [...new Set(valid)];
+  const canonical: string[] = [];
+  for (const value of raw) {
+    if (typeof value !== 'string') continue;
+    const match = /^(\d+)-(\d+):([a-z0-9_:-]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (year < 1 || month < 1 || month > 12) continue;
+    const key = `${year}-${month}:${match[3]}`;
+    if (!canonical.includes(key)) canonical.push(key);
+  }
+  return canonical;
 }
 
 export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentState {
