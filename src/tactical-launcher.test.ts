@@ -54,6 +54,14 @@ describe('tactical expedition launcher', () => {
     expect(progression.maxHp).toBeGreaterThanOrEqual(100);
   });
 
+  it('caps finite-but-huge raising stats before arithmetic can overflow', () => {
+    const progression = tacticalLeaderProgression({
+      stats:{...initialState.stats,strength:Number.MAX_VALUE,magic:Number.MAX_VALUE,intelligence:Number.MAX_VALUE},
+      personality:{...initialState.personality,calmness:Number.MAX_VALUE},
+    });
+    expect(Object.values(progression).every(Number.isSafeInteger)).toBe(true);
+  });
+
   it('derives completion metrics from the final battle state', () => {
     const unit=(id:string,side:'ally'|'enemy',hp:number,maxHp=100):TacticalUnit=>({id,side,position:'front',maxHp,hp,agility:10,ap:3,maxAp:3,mp:0,maxMp:10,shield:0});
     const battle=createBattleSession([unit('runa','ally',70),unit('bear','ally',0),unit('owl','ally',90)],[unit('e1','enemy',0),unit('e2','enemy',0),unit('e3','enemy',0)],3);
