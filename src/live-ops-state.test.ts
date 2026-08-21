@@ -43,6 +43,32 @@ describe('live ops persistent state', () => {
     });
   });
 
+  it('is idempotent across repeated hydration of malformed live ops state', () => {
+    const raw = {
+      seasonJourneyScores:{ '1-spring':88.9, '01-spring':999, bad:Number.NaN },
+      claimedSeasonJourneyTiers:['1-spring:1','1-spring:1','01-spring:2','bad'],
+      seasonTokenBalances:{ '1-spring':20.9, '0-spring':999, bad:Number.POSITIVE_INFINITY },
+      weeklyDirectiveKey:'1-4-2',
+      weeklyDirectiveProgress:{ guardian_sortie:2.9, steady_training:9, retired_directive:99 },
+      rewardedWeeklyDirectives:['1-4-2:guardian_sortie','1-4-2:guardian_sortie','1-4-2:retired_directive'],
+      seasonJourneyHistory:[
+        { key:'1-spring', score:500.8, tiersCompleted:5.7, tokensEarned:44.9 },
+        { key:'1-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+        { key:'0-spring', score:999, tiersCompleted:10, tokensEarned:999 },
+      ],
+      seasonShopPurchases:[
+        '1-spring:gold_pouch:1',
+        '1-spring:gold_pouch:1',
+        '01-spring:gold_pouch:1',
+        '1-spring:seasonal_keepsake:hack',
+      ],
+      claimedSeasonKeepsakeMilestones:['first_keepsake','first_keepsake','bad'],
+    };
+    const once = hydrateLiveOpsState(raw);
+    const twice = hydrateLiveOpsState(once);
+    expect(twice).toEqual(once);
+  });
+
   it('drops valid but stale directive progress that is not assigned to the hydrated week', () => {
     const hydrated = hydrateLiveOpsState({
       weeklyDirectiveKey:'1-4-2',
