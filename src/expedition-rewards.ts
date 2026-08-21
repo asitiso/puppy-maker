@@ -73,6 +73,10 @@ function allStageRewardsPaid(state: ExpeditionPersistentState): boolean {
   return expeditionStageDefinitions.every(stage => state.rewardedExpeditionStages.includes(stage.id));
 }
 
+function safeMaterialBalance(value: number): number {
+  return Math.max(0, Math.floor(Number.isFinite(value) ? value : 0));
+}
+
 export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: ExpeditionStageId, score: number): { state: ExpeditionRewardState; summary: ExpeditionFinishSummary } {
   const stage = stageDefinition(stageId);
   const grade = expeditionGrade(score, stage.target);
@@ -113,7 +117,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
       ...next,
       expeditionMaterials: {
         ...next.expeditionMaterials,
-        [material]: next.expeditionMaterials[material] + materialReward,
+        [material]: safeMaterialBalance(next.expeditionMaterials[material]) + materialReward,
       },
     };
   }
