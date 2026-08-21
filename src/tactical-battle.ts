@@ -32,6 +32,9 @@ export type BattleSession = {
   acted:string[];
 };
 
+const TACTICAL_AP_CAP=3;
+const TACTICAL_MP_CAP=10;
+
 function finiteInteger(value:number,fallback:number) {
   return Number.isFinite(value) ? Math.floor(value) : fallback;
 }
@@ -52,8 +55,8 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
   if (allies.length !== 3 || enemies.length !== 3) throw new Error('Tactical battle requires exactly 3 allies and 3 enemies.');
   const units = [...allies,...enemies].map(unit => {
     const maxHp=Math.max(1,finiteInteger(unit.maxHp,1));
-    const maxAp=Math.max(0,finiteInteger(unit.maxAp,0));
-    const maxMp=Math.max(0,finiteInteger(unit.maxMp,0));
+    const maxAp=Math.max(0,Math.min(TACTICAL_AP_CAP,finiteInteger(unit.maxAp,0)));
+    const maxMp=Math.max(0,Math.min(TACTICAL_MP_CAP,finiteInteger(unit.maxMp,0)));
     return {
       ...unit,
       maxHp,
