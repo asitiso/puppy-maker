@@ -26,7 +26,8 @@ export const seasonJourneyTiers: SeasonJourneyTier[] = [
 ];
 
 export function seasonJourneyKey(year:number, month:number): SeasonJourneyKey {
-  return `${Math.max(1, Math.floor(year))}-${seasonalProfile(month).season}` as SeasonJourneyKey;
+  const safeYear = Number.isFinite(year) ? Math.max(1, Math.floor(year)) : 1;
+  return `${safeYear}-${seasonalProfile(month).season}` as SeasonJourneyKey;
 }
 
 export function seasonJourneyPoints(action:SeasonJourneyAction): number {
