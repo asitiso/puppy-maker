@@ -15,6 +15,12 @@ describe('tactical battle domain', () => {
     expect(session.round).toBe(1);
   });
 
+  it('rejects duplicate unit ids before timeline or acted state can become ambiguous', () => {
+    const allies = [unit('runa','ally',12), unit('bear','ally',6), unit('owl','ally',8)];
+    const enemies = [unit('runa','enemy',10), unit('tree_e','enemy',4), unit('bat_e','enemy',14)];
+    expect(() => createBattleSession(allies,enemies,17)).toThrow('unique unit ids');
+  });
+
   it('breaks equal-agility ties by stable unit id', () => {
     expect(orderedTimeline([unit('z','ally',10),unit('a','enemy',10),unit('m','ally',11)])).toEqual(['m','a','z']);
   });
