@@ -30,6 +30,7 @@ import {
   type GuardianRankId,
 } from './guardian-rank';
 import {
+  coreStoryChapterIds,
   eligibleStoryChapters,
   storyChapterDefinitions,
   storyChapterIds,
@@ -385,6 +386,9 @@ export function currentStoryChapters(state: GameState): StoryChapterId[] {
     affection: state.stats.affection,
     guardianRank: currentGuardianStatus(state).rank,
     discoveries: state.discoveries.length,
+    expeditionStoryEntries: state.expeditionStoryEntries,
+    unlockedBondScenes: state.unlockedBondScenes,
+    activeCalling: state.activeCalling,
   });
 }
 
@@ -398,10 +402,13 @@ export function currentAdvancedTalents(state: GameState): AdvancedTalentId[] {
 }
 
 export function currentCareerTitles(state: GameState): CareerTitleId[] {
+  const stories = currentStoryChapters(state);
+  const openedRaisingStories = stories.filter(id => coreStoryChapterIds.includes(id as (typeof coreStoryChapterIds)[number])).length;
   return careerTitles({
     records: state.careerRecords,
     guardianRank: currentGuardianStatus(state).rank,
-    openedStories: currentStoryChapters(state).length,
+    openedStories: stories.length,
+    openedRaisingStories,
   });
 }
 
@@ -470,8 +477,9 @@ function reconcileBondRewards(previous: GameState, state: GameState): GameState 
 }
 
 function reconcileProgressRewards(previous: GameState, state: GameState): GameState {
-  const progressed = reconcileStoryRewards(reconcileGuardianRewards(state));
-  return reconcileBondRewards(previous, progressed);
+  const guarded = reconcileGuardianRewards(state);
+  const bonded = reconcileBondRewards(previous, guarded);
+  return reconcileStoryRewards(bonded);
 }
 
 function applyExplorationEventReward(state: GameState, event: ExplorationEventId | null): GameState {

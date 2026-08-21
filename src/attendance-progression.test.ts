@@ -14,17 +14,18 @@ describe('attendance progression', () => {
   });
 
   it('claims the current month reward exactly once', () => {
-    const claimed = reducer(initialState, { type:'CLAIM_ATTENDANCE' });
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const claimed = reducer(ready, { type:'CLAIM_ATTENDANCE' });
     expect(claimed.claimedAttendanceMonths).toEqual([attendanceKey(1, 4)]);
-    expect(claimed.gold).toBe(initialState.gold + 150);
-    expect(claimed.gems).toBe(initialState.gems);
+    expect(claimed.gold).toBe(ready.gold + 150);
+    expect(claimed.gems).toBe(ready.gems);
 
     const again = reducer(claimed, { type:'CLAIM_ATTENDANCE' });
     expect(again).toBe(claimed);
   });
 
   it('adds the quarterly gem bonus on eligible months', () => {
-    const june = { ...initialState, month:6 };
+    const june = reducer({ ...initialState, month:6 }, { type:'GO', screen:'hub' });
     const claimed = reducer(june, { type:'CLAIM_ATTENDANCE' });
     expect(claimed.gold).toBe(june.gold + 150);
     expect(claimed.gems).toBe(june.gems + 1);

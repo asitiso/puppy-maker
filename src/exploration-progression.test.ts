@@ -31,9 +31,10 @@ describe('persistent exploration progression', () => {
   });
 
   it('applies a location event reward and first-outing bond reward without removing the standard outing reward', () => {
-    const result = reducer(initialState, { type: 'GO_OUTING', location: 'forest', eventRoll: 0 });
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const result = reducer(ready, { type: 'GO_OUTING', location: 'forest', eventRoll: 0 });
     expect(result.explorationXp.forest).toBe(1);
-    expect(result.gold).toBe(initialState.gold + 150);
+    expect(result.gold).toBe(ready.gold + 150);
     expect(result.inventory.star_cookie).toBe(initialState.inventory.star_cookie + 1);
     expect(result.unlockedBondScenes).toContain('favorite_place');
   });

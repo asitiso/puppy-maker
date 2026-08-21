@@ -9,8 +9,9 @@ describe('milestone mail progression', () => {
   });
 
   it('claims an available letter exactly once', () => {
-    const claimed = reducer(initialState, { type:'CLAIM_MAIL', mail:'welcome' });
-    expect(claimed.gold).toBe(initialState.gold + 300);
+    const ready = reducer(initialState, { type:'GO', screen:'hub' });
+    const claimed = reducer(ready, { type:'CLAIM_MAIL', mail:'welcome' });
+    expect(claimed.gold).toBe(ready.gold + 300);
     expect(claimed.claimedMailRewards).toEqual(['welcome']);
     expect(reducer(claimed, { type:'CLAIM_MAIL', mail:'welcome' })).toBe(claimed);
   });
