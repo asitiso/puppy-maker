@@ -1,0 +1,83 @@
+name: Verify World on core-compatible baseline
+
+on:
+  push:
+    branches:
+      - verify/world-db25-preflight
+  pull_request:
+
+jobs:
+  verify-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Targeted World/core/save tests
+        id: targeted
+        continue-on-error: true
+        run: >-
+          npx vitest run
+          src/core-compat-recovery.test.ts
+          src/game.test.ts
+          src/save-schema.test.ts
+          src/save-resilience.test.ts
+          src/expedition-progression.test.ts
+          src/adventure-expedition-loop.test.ts
+          src/expedition-world-loop.test.ts
+          src/expedition-state.test.ts
+          src/expedition-crafting.test.ts
+          src/expedition-rewards.test.ts
+          src/world-contracts.test.ts
+          src/world-ui.test.ts
+
+      - name: World suite
+        id: world
+        continue-on-error: true
+        shell: bash
+        run: |
+          mapfile -t tests < <(find src -maxdepth 1 -type f \( \
+            -name '*expedition*.test.ts' -o \
+            -name 'world*.test.ts' -o \
+            -name 'calling-depth-effects.test.ts' \
+          \) | sort)
+          printf 'World suite files (%s):\n' "${#tests[@]}"
+          printf '  %s\n' "${tests[@]}"
+          test "${#tests[@]}" -gt 0
+          npx vitest run "${tests[@]}"
+
+      - name: Full test suite
+        id: full
+        continue-on-error: true
+        run: npm run test
+
+      - name: TypeScript project check
+        id: typecheck
+        continue-on-error: true
+        run: npx tsc -b --pretty false
+
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Enforce all gates
+        if: always()
+        shell: bash
+        run: |
+          echo "targeted=${{ steps.targeted.outcome }}"
+          echo "world=${{ steps.world.outcome }}"
+          echo "full=${{ steps.full.outcome }}"
+          echo "typecheck=${{ steps.typecheck.outcome }}"
+          echo "build=${{ steps.build.outcome }}"
+          test "${{ steps.targeted.outcome }}" = success
+          test "${{ steps.world.outcome }}" = success
+          test "${{ steps.full.outcome }}" = success
+          test "${{ steps.typecheck.outcome }}" = success
+          test "${{ steps.build.outcome }}" = success
