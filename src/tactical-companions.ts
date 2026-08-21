@@ -16,7 +16,9 @@ export function bondLevelForXp(xp: number): 1 | 2 | 3 | 4 | 5 {
   if (safe >= 300) return 5; if (safe >= 150) return 4; if (safe >= 75) return 3; if (safe >= 25) return 2; return 1
 }
 export function grantBattleBond(current: { xp: number }, amount: number): CompanionBondState {
-  const xp = Math.min(300, Math.max(0, Math.floor(current.xp + Math.max(0, amount))))
+  const baseXp = Math.max(0, Math.min(300, Math.floor(Number.isFinite(current.xp) ? current.xp : 0)))
+  const gain = Math.max(0, Math.floor(Number.isFinite(amount) ? amount : 0))
+  const xp = Math.min(300, baseXp + gain)
   return { xp, level: bondLevelForXp(xp) }
 }
 export function deriveCompanionUnit(id: CompanionId, leader: LeaderCombatProgression): DerivedCompanionUnit {
