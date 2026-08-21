@@ -1,0 +1,51 @@
+name: Verify Season e282 final integration gate
+
+on:
+  push:
+    branches:
+      - verify/season-e282-final
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-season-e282:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Targeted Season
+        run: >-
+          npx vitest run
+          src/season-journey.test.ts
+          src/weekly-directives.test.ts
+          src/season-shop.test.ts
+          src/season-meta-economy.test.ts
+          src/sanctuary-astral-trials.test.ts
+          src/celestial-records.test.ts
+          src/celestial-ascension.test.ts
+          src/astral-rift.test.ts
+      - name: Season suite
+        run: >-
+          npx vitest run
+          src/season-journey.test.ts
+          src/weekly-directives.test.ts
+          src/season-shop.test.ts
+          src/season-meta-economy.test.ts
+          src/sanctuary-astral-trials.test.ts
+          src/sanctuary-astral-ui.test.ts
+          src/celestial-records.test.ts
+          src/celestial-ascension.test.ts
+          src/astral-rift.test.ts
+          src/astral-rift-ui.test.ts
+      - name: Full test
+        run: npm run test
+      - name: TypeScript
+        if: always()
+        run: npx tsc -b --pretty false
+      - name: Production build
+        if: always()
+        run: npm run build
