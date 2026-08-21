@@ -11,6 +11,8 @@ export const COMPANIONS: Record<CompanionId, { name: string; role: CompanionRole
   wolf: { name: 'Wolf', role: 'striker', preferredPosition: 'front' }, cat: { name: 'Cat', role: 'trickster', preferredPosition: 'back' },
 }
 
+const finiteNonNegative=(value:number)=>Number.isFinite(value)?Math.max(0,value):0
+
 export function bondLevelForXp(xp: number): 1 | 2 | 3 | 4 | 5 {
   const safe = Math.max(0, Math.min(300, Math.floor(Number.isFinite(xp) ? xp : 0)))
   if (safe >= 300) return 5; if (safe >= 150) return 4; if (safe >= 75) return 3; if (safe >= 25) return 2; return 1
@@ -23,13 +25,14 @@ export function grantBattleBond(current: { xp: number }, amount: number): Compan
 }
 export function deriveCompanionUnit(id: CompanionId, leader: LeaderCombatProgression): DerivedCompanionUnit {
   const d = COMPANIONS[id], roleScale = d.role === 'tank' ? 1 : d.role === 'striker' ? 1.2 : 0.96
-  const maxHp = Math.max(1, Math.round(leader.maxHp * 0.72 * (d.role === 'tank' ? 1.25 : d.role === 'support' ? 0.95 : 1)))
-  const power = Math.max(1,Math.round(leader.power*0.68*roleScale))
-  const magic = Math.max(1,Math.round(leader.magic*(d.role==='support'?0.82:0.62)))
+  const leaderMaxHp=finiteNonNegative(leader.maxHp), leaderPower=finiteNonNegative(leader.power), leaderMagic=finiteNonNegative(leader.magic), leaderAgility=finiteNonNegative(leader.agility)
+  const maxHp = Math.max(1, Math.round(leaderMaxHp * 0.72 * (d.role === 'tank' ? 1.25 : d.role === 'support' ? 0.95 : 1)))
+  const power = Math.max(1,Math.round(leaderPower*0.68*roleScale))
+  const magic = Math.max(1,Math.round(leaderMagic*(d.role==='support'?0.82:0.62)))
   const skillPower = d.role==='support' ? magic : d.role==='striker' ? Math.max(power,magic) : Math.max(1,Math.round((power+magic)/2))
   const supportPower = d.role==='support' ? magic : Math.max(1,Math.round(magic*.65))
   return { id:`companion-${id}`, name:d.name, role:d.role, side:'ally', position:d.preferredPosition, maxHp, hp:maxHp,
-    agility:Math.max(1,Math.round(leader.agility*(d.role==='trickster'?1.05:0.82))), ap:3,maxAp:3,mp:0,maxMp:10,shield:0,
+    agility:Math.max(1,Math.round(leaderAgility*(d.role==='trickster'?1.05:0.82))), ap:3,maxAp:3,mp:0,maxMp:10,shield:0,
     power,magic,attackPower:power,skillPower,supportPower }
 }
 export function recommendedFormation(selected: readonly CompanionId[]) {
