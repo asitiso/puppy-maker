@@ -36,7 +36,9 @@ A run covers one in-game year.
 
 Spring begins as a shared free-play period. Training, dialogue, Bond, exploration, Tactical, Calling, Personality, and other normal actions contribute hidden campaign affinities.
 
-Mid-spring, Path Convergence evaluates the run and exposes the top two campaign candidates. A third candidate may appear when its score is sufficiently close and all eligibility requirements are satisfied. The player makes the final choice from the unlocked candidates.
+At a deterministic mid-Spring Path Convergence checkpoint, the run evaluates those affinities and exposes campaign candidates before any Summer campaign content begins. The exact mapping onto the existing calendar is an implementation-plan detail, but the ordering is fixed: shared Spring play -> Path Convergence -> Commitment -> Summer.
+
+The player makes the final choice from the unlocked candidates.
 
 The UI never exposes raw affinity numbers. It describes tendencies in world language such as:
 
@@ -200,6 +202,8 @@ The design rewards breadth of lived experience, including failure, instead of pe
 
 Lyra is the central relationship axis.
 
+When Legacy eligibility is satisfied, The Fifth Path appears as a special Spring Path Convergence candidate in an NG+ run. Selecting it sets `activeCampaign = true_path` for that run instead of selecting one of the four normal campaigns. It is never silently forced and never replaces the minimum normal campaign choices unless the player explicitly selects it.
+
 ### 6.2 Hollow Path — Secret Bad Route
 
 Hollow is not a low-performance ending. It emerges from repeated deliberate use of efficient but dangerous solutions.
@@ -359,7 +363,9 @@ Affinity comes from multiple sources rather than repetitive action count alone.
 
 Each campaign caps contribution by source so one repeatable activity cannot dominate the whole score. Exact tuning belongs to implementation planning and balancing, but the design requirement is that no single farmable source can determine a path by itself.
 
-Path Convergence selects two leading eligible campaigns, with a possible third when close enough to the leaders.
+Normal Path Convergence must always present at least two selectable main-campaign candidates. The top two main-campaign affinities therefore remain selectable even in a low-engagement or unusual Spring; eligibility rules may influence the optional third candidate and special hidden candidates, but they may not reduce normal player choice below two main campaigns.
+
+A third normal campaign candidate may appear when its affinity is sufficiently close to the leaders and its additional eligibility conditions are satisfied. A valid Fifth Path candidate may appear in addition to the normal candidates on eligible NG+ runs.
 
 The player is shown concrete behavioral evidence for why each path opened, for example exploration, difficult battles, important dialogue choices, or relationship decisions.
 
@@ -681,6 +687,8 @@ Feature workstreams:
 
 01-05 may work in parallel only after shared foundation contracts are established. Only 06 integrates into `integration/v3`.
 
+This Master Design is intentionally larger than one implementation plan. Implementation planning must be decomposed into separate plans for Foundation, Spring, Summer, Autumn, Winter, NG+, The Fifth Path, and Hollow. Each plan starts from the previous GREEN `integration/v3` checkpoint and must not silently include later-wave scope.
+
 ## 22. Vertical Slice Waves
 
 ### Wave 1 — Foundation
@@ -705,7 +713,7 @@ Implement:
 - candidate selection
 - campaign final choice
 
-Gate: player can complete Spring and select an eligible campaign from two or three evidence-backed candidates.
+Gate: player can complete Spring and select at least two evidence-backed main campaign candidates, with an optional third normal candidate and any separately eligible hidden candidate.
 
 ### Wave 3 — Summer Vertical Slice
 
@@ -857,7 +865,7 @@ Existing game behavior unchanged, save v3 compatible.
 
 ### Spring Gate
 
-Four affinities, candidate evidence, and campaign selection stable.
+Four affinities, candidate evidence, minimum two main-campaign choices, and campaign selection stable.
 
 ### Summer Gate
 
@@ -877,7 +885,7 @@ Ending -> Legacy -> new possibility -> second Spring works without current-run l
 
 ### True Gate
 
-The Fifth Path opens only from valid historical conditions.
+The Fifth Path appears only from valid historical conditions and is entered only by explicit player selection.
 
 ### Hollow Gate
 
@@ -940,7 +948,7 @@ The new player loop is:
 `Raising choices`
 `-> Personality / Calling / Character Bond tendencies`
 `-> Spring Path Convergence`
-`-> one of four main campaigns`
+`-> one of four main campaigns or an explicitly selected eligible Fifth Path`
 `-> campaign-specific World + Tactical + Season objectives`
 `-> Character Bond interventions and Major Choices`
 `-> fail-forward World History`
