@@ -24,6 +24,30 @@ describe('advanced training talents', () => {
     expect(result.stats.intelligence).toBe(20);
   });
 
+  it('does not apply the same talent twice when the input list is duplicated', () => {
+    const result = applyAdvancedTalentBonuses(
+      { strength: 20, intelligence: 20, magic: 20, morality: 20, affection: 50, stress: 30, fatigue: 30 },
+      { courage: 20, kindness: 20, curiosity: 20, calmness: 20 },
+      ['hunter_instinct', 'hunter_instinct', 'guardian_strike', 'guardian_strike'],
+      ['hunt'],
+    );
+    expect(result.stats.strength).toBe(22);
+    expect(result.personality.courage).toBe(21);
+  });
+
+  it('repairs malformed touched values instead of propagating NaN or Infinity', () => {
+    const result = applyAdvancedTalentBonuses(
+      { strength:Number.NaN, intelligence:20, magic:20, morality:20, affection:50, stress:Number.POSITIVE_INFINITY, fatigue:Number.NaN },
+      { courage:Number.POSITIVE_INFINITY, kindness:20, curiosity:20, calmness:20 },
+      ['hunter_instinct','guardian_strike','steady_recovery','deep_rest'],
+      ['hunt','rest'],
+    );
+    expect(result.stats.strength).toBe(2);
+    expect(result.personality.courage).toBe(1);
+    expect(result.stats.fatigue).toBe(0);
+    expect(result.stats.stress).toBe(0);
+  });
+
   it('stacks late talents in small bounded increments', () => {
     const result = applyAdvancedTalentBonuses(
       { strength: 99, intelligence: 99, magic: 99, morality: 99, affection: 99, stress: 2, fatigue: 2 },
