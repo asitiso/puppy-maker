@@ -42,4 +42,19 @@ describe('live ops persistent state', () => {
       claimedSeasonKeepsakeMilestones:['first_keepsake','eight_seasons'],
     });
   });
+
+  it('rejects impossible weekly years and retired directive ids during hydration', () => {
+    const hydrated = hydrateLiveOpsState({
+      weeklyDirectiveKey:'0-4-2',
+      weeklyDirectiveProgress:{ steady_training:2, retired_directive:99 },
+      rewardedWeeklyDirectives:[
+        '0-4-2:steady_training',
+        '1-4-2:retired_directive',
+        '1-4-2:steady_training',
+      ],
+    });
+    expect(hydrated.weeklyDirectiveKey).toBeNull();
+    expect(hydrated.weeklyDirectiveProgress).toEqual({ steady_training:2 });
+    expect(hydrated.rewardedWeeklyDirectives).toEqual(['1-4-2:steady_training']);
+  });
 });
