@@ -48,6 +48,17 @@ describe('bond level five combination ultimates', () => {
     }
   });
 
+  it('contains a non-finite target shield instead of propagating NaN through Ultimate damage', () => {
+    const session = battle('wolf');
+    session.units = session.units.map(entry => entry.id === 'enemy-front' ? { ...entry,shield:Number.NaN } : entry);
+    const next = resolveCombinationUltimate(session,{ actorId:'runa', companionId:'wolf', bondLevel:5, targetId:'enemy-front' });
+    const enemy = next.units.find(entry => entry.id === 'enemy-front')!;
+    expect(enemy.hp).toBe(36);
+    expect(enemy.shield).toBe(0);
+    expect(Number.isFinite(enemy.hp)).toBe(true);
+    expect(Number.isFinite(enemy.shield)).toBe(true);
+  });
+
   it('stays locked one MP below the charge boundary without spending a turn', () => {
     const session = battle('wolf',9);
     expect(validCombinationUltimateTargets(session,'runa','wolf',5)).toEqual([]);
