@@ -45,4 +45,23 @@ describe('multi-run Raising path diversity', () => {
     expect(caretaker.callingMastery.caretaker).toBe(6);
     expect(pathfinder.callingMastery.pathfinder).toBe(6);
   });
+
+  it('does not leak Raising identity state into a fresh run after RESET', () => {
+    const completed = simulateRoute(routes[0]);
+    const withBond:GameState = {
+      ...completed,
+      growthPoints:9,
+      unlockedBondScenes:['first_trust','shared_secret'],
+      rewardedBondScenes:['first_trust','shared_secret'],
+    };
+    const fresh = reducer(withBond, { type:'RESET' });
+
+    expect(fresh.activeCalling).toBeNull();
+    expect(fresh.callingHistory).toEqual([]);
+    expect(fresh.callingMastery).toEqual({ vanguard:0, arcanist:0, caretaker:0, pathfinder:0 });
+    expect(fresh.purchasedTraits).toEqual([]);
+    expect(fresh.unlockedBondScenes).toEqual([]);
+    expect(fresh.rewardedBondScenes).toEqual([]);
+    expect(fresh.growthPoints).toBe(0);
+  });
 });
