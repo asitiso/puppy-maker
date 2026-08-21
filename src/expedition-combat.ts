@@ -59,6 +59,20 @@ function nonNegativeCount(value: number) {
   return Math.max(0, Math.floor(finite(value)));
 }
 
+function sanitizeResultActionKinds(actionKinds: ExpeditionActionCounts): ExpeditionActionCounts {
+  let remaining = EXPEDITION_ACTION_LIMIT;
+  const take = (value:number) => {
+    const count = Math.min(remaining, Math.max(0, Math.floor(Number.isFinite(value) ? value : 0)));
+    remaining -= count;
+    return count;
+  };
+  return {
+    attack:take(actionKinds.attack),
+    dodge:take(actionKinds.dodge),
+    charge:take(actionKinds.charge),
+  };
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, finite(value, min)));
 }
@@ -174,6 +188,6 @@ export function finishExpeditionBattle(battle: ExpeditionBattleState): Expeditio
     grade: expeditionGrade(score, stage.target),
     fatigueDelta: Math.max(0, Math.round(mitigatedPressure * 0.72)),
     stressDelta: Math.max(0, Math.round(mitigatedPressure * 0.48)),
-    actionKinds: { ...battle.actionKinds },
+    actionKinds:sanitizeResultActionKinds(battle.actionKinds),
   };
 }
