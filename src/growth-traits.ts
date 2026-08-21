@@ -37,17 +37,23 @@ export const growthTraitDefinitions: GrowthTraitDefinition[] = [
 
 export const growthTraitIds = growthTraitDefinitions.map(item => item.id);
 
+function normalizeGrowthPoints(points: number): number {
+  return Number.isFinite(points) ? Math.max(0, Math.floor(points)) : 0;
+}
+
 export function canPurchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number): boolean {
   if (purchased.includes(id)) return false;
   const definition = growthTraitDefinitions.find(item => item.id === id);
-  if (!definition || points < definition.cost) return false;
+  const availablePoints = normalizeGrowthPoints(points);
+  if (!definition || availablePoints < definition.cost) return false;
   return definition.prerequisite === null || purchased.includes(definition.prerequisite);
 }
 
 export function purchaseGrowthTrait(id: GrowthTraitId, purchased: GrowthTraitId[], points: number) {
-  if (!canPurchaseGrowthTrait(id, purchased, points)) return { purchased:false, traits:purchased, points };
+  const availablePoints = normalizeGrowthPoints(points);
+  if (!canPurchaseGrowthTrait(id, purchased, availablePoints)) return { purchased:false, traits:purchased, points:availablePoints };
   const definition = growthTraitDefinitions.find(item => item.id === id)!;
-  return { purchased:true, traits:[...purchased, id], points:points - definition.cost };
+  return { purchased:true, traits:[...purchased, id], points:availablePoints - definition.cost };
 }
 
 export function activeCallingTraits(calling: GuardianCallingId | null, purchased: GrowthTraitId[]): GrowthTraitId[] {
