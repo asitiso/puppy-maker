@@ -15,6 +15,19 @@ describe('celestial ascension', () => {
     })).toBe(40);
   });
 
+  it('counts only one Astral clear per calendar month toward ascension', () => {
+    expect(celestialAscensionProgress({
+      trialRecords:[
+        { key:'1-1:scholar_trial', grade:'B', power:80 },
+        { key:'1-1:scholar_trial', grade:'S', power:110 },
+        { key:'1-1:wayfarer_trial', grade:'S', power:115 },
+      ],
+      blessingCount:0,
+      constellationCount:0,
+      sanctuaryGrandProgress:0,
+    })).toBe(6);
+  });
+
   it('clamps noisy inputs and caps repeat-clear contribution', () => {
     const records = Array.from({ length:30 },(_,index) => ({
       key:`${index + 1}-1:scholar_trial`,
