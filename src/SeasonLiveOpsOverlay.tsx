@@ -73,7 +73,7 @@ export default function SeasonLiveOpsOverlay({
       <div className="season-live-content">
         <header>
           <div><small>SEASON JOURNEY</small><h2>{summary.season.label}</h2></div>
-          <button onClick={onClose} aria-label="닫기">×</button>
+          <button autoFocus onClick={onClose} aria-label="닫기">×</button>
         </header>
 
         <div className="season-mastery-card">
