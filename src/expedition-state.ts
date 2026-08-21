@@ -66,8 +66,11 @@ function hydrateMaterials(raw: unknown): ExpeditionMaterials {
 
 export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersistentState {
   const source = isRecord(raw) ? raw : {};
-  const milestones = uniqueAllowed(source.craftingMilestones, craftingMilestoneIds);
+  let milestones = uniqueAllowed(source.craftingMilestones, craftingMilestoneIds);
   const storedOwned = uniqueAllowed(source.ownedExpeditionRelics, expeditionRelicIds);
+  if (storedOwned.includes('guardian_thread') && !milestones.includes('crafted_guardian_thread')) {
+    milestones = [...milestones, 'crafted_guardian_thread'];
+  }
   const owned: ExpeditionRelicId[] = milestones.includes('crafted_guardian_thread') && !storedOwned.includes('guardian_thread')
     ? [...storedOwned, 'guardian_thread']
     : storedOwned;
