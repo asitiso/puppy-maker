@@ -51,12 +51,16 @@ export const storyChapterIds = storyChapterDefinitions.map(chapter => chapter.id
 const guardianRankOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
 const requiredOutings: OutingLocationId[] = ['forest', 'village', 'lakeside'];
 
+function finiteProgress(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 function rankAtLeast(rank: GuardianRankId, target: GuardianRankId): boolean {
   return guardianRankOrder.indexOf(rank) >= guardianRankOrder.indexOf(target);
 }
 
 function trustedBondReady(progress: StoryProgress): boolean {
-  if (progress.unlockedBondScenes === undefined) return progress.affection >= 75;
+  if (progress.unlockedBondScenes === undefined) return finiteProgress(progress.affection) >= 75;
   return progress.unlockedBondScenes.includes('shared_secret');
 }
 
@@ -82,7 +86,7 @@ export function eligibleStoryChapters(progress: StoryProgress): StoryChapterId[]
         const oathReady = rankAtLeast(progress.guardianRank, 'guardian') && callingChosen(progress);
         if (oathReady) {
           unlocked.add('guardian_oath');
-          if (rankAtLeast(progress.guardianRank, 'veteran') && progress.discoveries >= 4) unlocked.add('starlight_road');
+          if (rankAtLeast(progress.guardianRank, 'veteran') && finiteProgress(progress.discoveries) >= 4) unlocked.add('starlight_road');
         }
       }
     }
