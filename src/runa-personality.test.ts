@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { personalityArchetype, runaPreferences } from './runa-personality';
 
 describe('Runa personality identity', () => {
-  it('requires a five-point lead over the second tendency', () => {
-    expect(personalityArchetype({ courage: 70, kindness: 64, curiosity: 30, calmness: 20 })).toBe('brave');
+  it('requires an exact five-point lead over the second tendency', () => {
     expect(personalityArchetype({ courage: 70, kindness: 66, curiosity: 30, calmness: 20 })).toBe('balanced');
+    expect(personalityArchetype({ courage: 70, kindness: 65, curiosity: 30, calmness: 20 })).toBe('brave');
+    expect(personalityArchetype({ courage: 70, kindness: 64, curiosity: 30, calmness: 20 })).toBe('brave');
   });
 
   it('maps each dominant tendency to its archetype and ties to balanced', () => {
@@ -12,6 +13,13 @@ describe('Runa personality identity', () => {
     expect(personalityArchetype({ courage: 20, kindness: 20, curiosity: 60, calmness: 20 })).toBe('curious');
     expect(personalityArchetype({ courage: 20, kindness: 20, curiosity: 20, calmness: 60 })).toBe('serene');
     expect(personalityArchetype({ courage: 50, kindness: 50, curiosity: 20, calmness: 10 })).toBe('balanced');
+  });
+
+  it('normalizes malformed and out-of-range personality values before classification', () => {
+    expect(personalityArchetype({ courage:Number.NaN, kindness:Number.POSITIVE_INFINITY, curiosity:Number.NEGATIVE_INFINITY, calmness:-10 })).toBe('balanced');
+    expect(personalityArchetype({ courage:200, kindness:95, curiosity:20, calmness:20 })).toBe('brave');
+    expect(personalityArchetype({ courage:-20, kindness:4, curiosity:0, calmness:0 })).toBe('balanced');
+    expect(personalityArchetype({ courage:-20, kindness:5, curiosity:0, calmness:0 })).toBe('gentle');
   });
 
   it('derives favorite activity and gift from personality and calling', () => {
