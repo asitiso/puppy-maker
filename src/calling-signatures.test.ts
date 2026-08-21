@@ -15,10 +15,10 @@ describe('calling signature abilities', () => {
     }
   });
 
-  it('keeps legacy trait-only lookup compatible when mastery is omitted', () => {
+  it('fails closed when Calling mastery XP is omitted instead of bypassing the mastery gate', () => {
     expect(callingSignatures('vanguard', ['vanguard_power'])).toEqual([]);
-    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus'])).toEqual(['rally_strike']);
-    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend'])).toEqual(['rally_strike','guardian_breaker']);
+    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus'])).toEqual([]);
+    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend'])).toEqual([]);
     expect(callingSignatures('arcanist', ['vanguard_power','vanguard_focus'])).toEqual([]);
     expect(callingSignatures(null, ['vanguard_power','vanguard_focus'])).toEqual([]);
   });
