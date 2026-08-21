@@ -8,6 +8,7 @@ import { expeditionRelicDefinitions, relicModifiers } from './expedition-relics'
 import { callingSignatures } from './calling-signatures';
 import { guardianCallingDefinitions } from './guardian-callings';
 import { callingMasteryLevel } from './calling-mastery';
+import { trapModalTab } from './modal-focus';
 import { expeditionIdentityModifiers } from './raising-expedition-effects';
 import { worldResultSummary, worldUiSummary } from './world-ui';
 
@@ -74,7 +75,7 @@ function Battle({ state, stageId, onFinish, onCancel }: {
     window.setTimeout(() => setFlash(''), 450);
   };
   const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
-  return <section className="expedition-battle">
+  return <section className="expedition-battle" onKeyDown={trapModalTab}>
     <header><button autoFocus onClick={onCancel}>‹ 원정 지도</button><div><small>{stage.boss ? 'REGION BOSS' : 'EXPEDITION TRIAL'}</small><h2>{stage.name}</h2></div><span>목표 {stage.target}</span></header>
     {calling && <div className="expedition-calling-strip"><b>{calling.label}</b><span>전문 행동 · {calling.activity === 'hunt' ? '공격' : calling.activity === 'magic' ? '기 모으기' : calling.activity === 'rest' ? '회피' : '발견/재료 수집'}</span></div>}
     <div className="expedition-battle-stage">
@@ -142,7 +143,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
     const mastery = state.activeCalling ? callingMasteryLevel(state.callingMastery[state.activeCalling]) : null;
     const worldResult = worldResultSummary(state);
-    return <div className="expedition-overlay"><section className="expedition-result">
+    return <div className="expedition-overlay"><section className="expedition-result" onKeyDown={trapModalTab}>
       <img className="expedition-result-burst" src="/assets/effects/success_burst.png" alt=""/>
       <small>EXPEDITION RECORD</small><h2>{stage.name}</h2>
       <strong className={`expedition-grade grade-${result?.grade ?? 'C'}`}>{result?.grade ?? '...'}</strong>
@@ -168,7 +169,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     </section></div>;
   }
 
-  return <div className="expedition-overlay"><section className="expedition-map">
+  return <div className="expedition-overlay"><section className="expedition-map" onKeyDown={trapModalTab}>
     <header><button autoFocus onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
     <div className="expedition-world-event"><b>{world.expeditionMap.eventStrip}</b><span>{world.event.bonusLabel}</span></div>
     <div className="expedition-materials">{Object.entries(state.expeditionMaterials).map(([id, value]) => <span key={id}><b>{materialLabels[id as keyof typeof materialLabels]}</b>{value}</span>)}</div>
