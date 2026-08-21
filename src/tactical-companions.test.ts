@@ -14,6 +14,19 @@ describe('tactical companions', () => {
     expect(high.maxHp).toBeGreaterThan(low.maxHp)
   })
 
+  it('sanitizes non-finite leader progression before deriving companion state', () => {
+    const companion = deriveCompanionUnit('owl', {
+      power:Number.NaN,
+      magic:Number.POSITIVE_INFINITY,
+      agility:Number.NEGATIVE_INFINITY,
+      maxHp:Number.NaN,
+    })
+    for (const value of [companion.maxHp,companion.hp,companion.agility,companion.power,companion.magic,companion.attackPower,companion.skillPower,companion.supportPower]) {
+      expect(Number.isFinite(value)).toBe(true)
+      expect(value).toBeGreaterThanOrEqual(1)
+    }
+  })
+
   it('keeps tank, support, striker and trickster identities distinct in derived combat stats', () => {
     const leader = { power: 60, magic: 50, agility: 30, maxHp: 140 }
     const bear = deriveCompanionUnit('bear', leader)
