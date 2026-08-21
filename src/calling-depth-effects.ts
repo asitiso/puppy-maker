@@ -2,7 +2,7 @@ import type { CallingSignatureId } from './calling-signatures';
 import type { ExpeditionActionCounts } from './expedition-combat';
 import type { ExpeditionGrade, ExpeditionRegionId, ExpeditionStageId } from './expedition-regions';
 import type { GuardianCallingId } from './guardian-callings';
-import type { GrowthTraitId } from './growth-traits';
+import { activeCallingTraits, type GrowthTraitId } from './growth-traits';
 
 function nonNegativeInt(value:number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
@@ -23,7 +23,8 @@ export function effectivePathfinderExplorationXp(
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
-  return nonNegativeInt(xp) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  const activeTraits = new Set(activeCallingTraits(calling, [...traits]));
+  return nonNegativeInt(xp) + (activeTraits.has('pathfinder_eye') ? 3 : 0);
 }
 
 export function specialistMasteryCalling(
@@ -75,7 +76,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   let legendRewardKeys = [...new Set(input.legendRewardKeys)];
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
-  const traits = new Set(input.traits);
+  const traits = new Set(activeCallingTraits(input.calling, [...input.traits]));
   const materialReward = nonNegativeInt(input.materialReward);
 
   if (input.calling === 'pathfinder') {
@@ -123,7 +124,8 @@ export function applyPathfinderOutingLegend(
   discovered:boolean,
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
-  if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || !discovered) {
+  const activeTraits = new Set(activeCallingTraits(calling, [...traits]));
+  if (!activeTraits.has('pathfinder_legend') || !discovered) {
     return { goldBonus:0, legendRewardKeys:existingKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
