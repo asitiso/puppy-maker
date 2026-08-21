@@ -30,6 +30,28 @@ describe('weekly directives', () => {
     }
   });
 
+  it('never lets one player action advance more than one assigned directive', () => {
+    const events = [
+      { kind:'training' as const, grade:'B' as const },
+      { kind:'outing' as const, grade:'B' as const },
+      { kind:'gift' as const, grade:'B' as const },
+      { kind:'expedition' as const, grade:'S' as const },
+    ];
+    for (let year = 1; year <= 3; year += 1) {
+      for (let month = 1; month <= 12; month += 1) {
+        for (let week = 1; week <= 4; week += 1) {
+          const directives = weeklyDirectives(year,month,week);
+          const progress = Object.fromEntries(directives.map(item => [item.id, 0]));
+          for (const event of events) {
+            const result = advanceWeeklyDirectives(directives,progress,event);
+            const advanced = directives.filter(item => (result.progress[item.id] ?? 0) > 0);
+            expect(advanced.length).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    }
+  });
+
   it('advances only matching directives and caps progress at targets', () => {
     const directives = weeklyDirectives(1,4,1);
     const expedition = directives.find(item => item.counter === 'expedition');
