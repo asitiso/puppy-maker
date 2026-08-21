@@ -38,6 +38,16 @@ const coreStoryChapterDefinitions: StoryChapterDefinition[] = [
 
 export const coreStoryChapterIds = coreStoryChapterDefinitions.map(chapter => chapter.id as CoreStoryChapterId);
 
+export function canonicalCoreStoryClaims(raw: readonly string[]): CoreStoryChapterId[] {
+  const claimed = new Set(raw.filter(id => coreStoryChapterIds.includes(id as CoreStoryChapterId)));
+  const canonical: CoreStoryChapterId[] = [];
+  for (const id of coreStoryChapterIds) {
+    if (!claimed.has(id)) break;
+    canonical.push(id);
+  }
+  return canonical;
+}
+
 const expeditionChapters: StoryChapterDefinition[] = expeditionStoryDefinitions.map(entry => ({
   id: entry.stageId,
   title: entry.title,
