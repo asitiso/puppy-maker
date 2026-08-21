@@ -52,14 +52,15 @@ export const expeditionRegionDefinitions: ExpeditionRegionDefinition[] = [
 
 const stageOrder = expeditionStageDefinitions.map(stage => stage.id);
 const gradeRank: Record<ExpeditionGrade, number> = { C: 0, B: 1, A: 2, S: 3 };
+const safeScore = (score: number) => Number.isFinite(score) ? Math.max(0, score) : 0;
 
 export function emptyExpeditionRecords(): Record<ExpeditionStageId, ExpeditionStageRecord> {
   return Object.fromEntries(stageOrder.map(id => [id, { bestScore: 0, bestGrade: 'C', cleared: false }])) as Record<ExpeditionStageId, ExpeditionStageRecord>;
 }
 
 export function expeditionGrade(score: number, target: number): ExpeditionGrade {
-  const safeTarget = Math.max(1, target);
-  const ratio = Math.max(0, score) / safeTarget;
+  const safeTarget = Math.max(1, Number.isFinite(target) ? target : 1);
+  const ratio = safeScore(score) / safeTarget;
   if (ratio >= 1.2) return 'S';
   if (ratio >= 1) return 'A';
   if (ratio >= 0.8) return 'B';
@@ -83,8 +84,9 @@ export function updateExpeditionRecord(
   target: number,
 ): Record<ExpeditionStageId, ExpeditionStageRecord> {
   const current = records[stageId];
-  const grade = expeditionGrade(score, target);
-  const betterScore = Math.max(current.bestScore, Math.max(0, Math.floor(score)));
+  const normalizedScore = safeScore(score);
+  const grade = expeditionGrade(normalizedScore, target);
+  const betterScore = Math.max(current.bestScore, Math.floor(normalizedScore));
   const betterGrade = gradeRank[grade] > gradeRank[current.bestGrade] ? grade : current.bestGrade;
   return {
     ...records,
