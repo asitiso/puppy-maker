@@ -23,6 +23,15 @@ describe('Astral Rift UI summary', () => {
     expect(nebula.intensities[1]).toEqual(expect.objectContaining({ intensity:2, available:true }));
   });
 
+  it('exposes the next Celestial score target that unlocks new Rifts', () => {
+    const summary = astralRiftUiSummary(initialState);
+    expect(summary.nextUnlock).toEqual({
+      threshold:12,
+      remaining:12,
+      riftIds:['nebula_garden','lunar_ruins'],
+    });
+  });
+
   it('summarizes weekly directives, relic purchase states and honors', () => {
     const summary = astralRiftUiSummary({
       ...initialState,
