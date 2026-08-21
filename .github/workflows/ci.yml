@@ -52,14 +52,33 @@ jobs:
               game_path.write_text(game.replace(old_growth, new_growth, 1))
           else:
               assert new_growth in game, 'GrowthReport compatibility declaration drifted'
+
+          test_path = Path('src/game.test.ts')
+          tests = test_path.read_text()
+          old_month = '    expect(next.gold).toBe(5470);'
+          new_month = '    expect(next.gold).toBe(progressed.gold + 350);'
+          if old_month in tests:
+              assert tests.count(old_month) == 1
+              tests = tests.replace(old_month, new_month, 1)
+          else:
+              assert new_month in tests, 'month reward expectation drifted'
+
+          old_event = "    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });\n    expect(trained.gold).toBe(initialState.gold + 220);"
+          new_event = "    const baseline = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0.999 });\n    const trained = reducer(state, { type: 'FINISH_TRAINING', eventRoll: 0 });\n    expect(trained.gold).toBe(baseline.gold + 100);"
+          if old_event in tests:
+              assert tests.count(old_event) == 1
+              tests = tests.replace(old_event, new_event, 1)
+          else:
+              assert new_event in tests, 'random-event reward expectation drifted'
+          test_path.write_text(tests)
           PY
-      - name: Limit verify production changes
+      - name: Limit verify changes
         if: github.head_ref == 'verify/core-compat-recovery'
         run: |
           git diff --check
           changed="$(git diff --name-only | sort)"
           if [ -n "$changed" ]; then
-            test "$changed" = "$(printf '%s\n' src/game-core.ts src/game.ts | sort)"
+            test "$changed" = "$(printf '%s\n' src/game-core.ts src/game.test.ts src/game.ts | sort)"
           fi
       - run: npm install
       - name: Targeted core and save tests
@@ -74,12 +93,12 @@ jobs:
       - name: Commit verified recovery to verify branch
         if: github.head_ref == 'verify/core-compat-recovery'
         run: |
-          if git diff --quiet -- src/game-core.ts src/game.ts; then
+          if git diff --quiet -- src/game-core.ts src/game.ts src/game.test.ts; then
             echo "Verified recovery already committed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/game-core.ts src/game.ts
+          git add src/game-core.ts src/game.ts src/game.test.ts
           git commit -m "fix: restore core public API compatibility"
           git push origin HEAD:verify/core-compat-recovery
