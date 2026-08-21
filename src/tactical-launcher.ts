@@ -32,7 +32,7 @@ export function tacticalEncounterForExpeditionStage(stageId:ExpeditionStageId):T
 }
 
 export function tacticalPartyForGame(state:{selectedTacticalCompanions:readonly CompanionId[]}):[CompanionId,CompanionId] {
-  const selected = state.selectedTacticalCompanions;
+  const selected = Array.isArray(state.selectedTacticalCompanions) ? state.selectedTacticalCompanions : [];
   if (selected.length === 2 && isCompanionId(selected[0]) && isCompanionId(selected[1]) && selected[0] !== selected[1]) return [selected[0],selected[1]];
   return [...fallbackParty];
 }
