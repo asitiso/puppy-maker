@@ -21,6 +21,20 @@ describe('guardian calling corruption boundaries', () => {
     expect(result).toMatchObject({ changed:false, reason:'insufficient_gold', current:'vanguard', gold:0 });
   });
 
+  it('does not let a stale switch key block the first free Calling selection', () => {
+    const result = applyCallingSelection({
+      current:null,
+      next:'arcanist',
+      guardianRank:'guardian',
+      gold:0,
+      year:2,
+      month:7,
+      lastSwitchKey:'2-7',
+      history:[],
+    });
+    expect(result).toMatchObject({ changed:true, reason:null, current:'arcanist', gold:0 });
+  });
+
   it('canonicalizes duplicate history without destroying first-seen chronology', () => {
     const result = applyCallingSelection({
       current:'vanguard',
