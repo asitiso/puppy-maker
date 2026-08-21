@@ -38,6 +38,12 @@ function sanitizedRewardedKeys(raw: unknown): string[] {
   return keys;
 }
 
+function progressSource(raw: unknown): Partial<WorldContractProgress> {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+    ? raw as Partial<WorldContractProgress>
+    : {};
+}
+
 export function emptyWorldContractProgress(): WorldContractProgress {
   return { expedition_clear:0, high_grade:0, featured_region:0 };
 }
@@ -75,9 +81,10 @@ export function advanceWorldContracts(input:AdvanceInput): {
 } {
   const contracts = monthlyWorldContracts(input.year, input.month, input.event);
   const targetFor = (id:WorldContractId) => contracts.find(contract => contract.id === id)?.target ?? Number.MAX_SAFE_INTEGER;
+  const stored = progressSource(input.progress);
   const storedProgress = (id:WorldContractId) => {
-    const value = input.progress[id];
-    return Math.min(targetFor(id), Math.max(0, Math.floor(Number.isFinite(value) ? value : 0)));
+    const value = stored[id];
+    return Math.min(targetFor(id), Math.max(0, Math.floor(Number.isFinite(value) ? value as number : 0)));
   };
   const current:WorldContractProgress = {
     expedition_clear:storedProgress('expedition_clear'),
