@@ -14,9 +14,10 @@ export function addTacticalStatus(unit:TacticalUnit,id:TacticalStatusId,turns:nu
     ? Math.min(Number.MAX_SAFE_INTEGER,Math.max(1,Math.floor(turns)))
     : 1;
   const statuses = [...safeStatuses(unit).filter(status => status.id !== id),{ id,turns:duration }];
+  const shield = Number.isFinite(unit.shield) ? Math.max(0,Math.floor(unit.shield)) : 0;
   return {
     ...unit,
-    shield:id === 'guard' ? Math.max(unit.shield,15) : unit.shield,
+    shield:id === 'guard' ? Math.max(shield,15) : unit.shield,
     statuses,
   };
 }
