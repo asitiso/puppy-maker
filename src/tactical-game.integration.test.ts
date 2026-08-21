@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { hydrateGameState, initialState, reducer } from './game';
+import { closeTacticalFlow } from './TacticalExpeditionFlow';
 
 describe('tactical game persistence integration', () => {
   it('hydrates old saves with safe tactical defaults and sanitizes party/bonds', () => {
@@ -48,5 +49,17 @@ describe('tactical game persistence integration', () => {
     expect(lost.claimedTacticalFirstClears).toEqual([]);
     expect(lost.tacticalCompanionBonds.wolf.xp).toBeGreaterThan(0);
     expect(lost.tacticalCompanionBonds.cat.xp).toBeGreaterThan(0);
+  });
+
+  it('closes the tactical battle state and outer expedition before returning home', () => {
+    const order:string[] = [];
+    const clearSession = vi.fn(() => order.push('session'));
+    const closeBattle = vi.fn(() => order.push('battle'));
+    const returnHome = vi.fn(() => order.push('home'));
+    closeTacticalFlow(clearSession,closeBattle,returnHome);
+    expect(order).toEqual(['session','battle','home']);
+    expect(clearSession).toHaveBeenCalledOnce();
+    expect(closeBattle).toHaveBeenCalledOnce();
+    expect(returnHome).toHaveBeenCalledOnce();
   });
 });
