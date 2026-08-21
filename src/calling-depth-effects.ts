@@ -34,8 +34,9 @@ export function specialistMasteryCalling(
   if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
   if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
   const acted = hasValidAction(actions.attack) || hasValidAction(actions.dodge) || hasValidAction(actions.charge);
+  const hasDiscovery = typeof summary.discovery === 'string' && summary.discovery.length > 0;
   const hasMaterialReward = Number.isFinite(summary.materialReward) && summary.materialReward > 0;
-  const explored = summary.discovery !== null || hasMaterialReward || isBossStage(summary.stageId);
+  const explored = hasDiscovery || hasMaterialReward || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
 }
 
