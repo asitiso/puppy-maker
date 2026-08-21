@@ -54,4 +54,12 @@ describe('Calling mastery action sanitation', () => {
       expect(specialistMasteryCalling('pathfinder', actions, summary)).toBeNull();
     }
   });
+
+  it('does not throw when malformed summary values reach the exported mastery authority', () => {
+    const actions = { attack:1, dodge:1, charge:1 };
+    for (const summary of [null, undefined, 42, 'bad'] as any[]) {
+      expect(() => specialistMasteryCalling('pathfinder', actions, summary)).not.toThrow();
+      expect(specialistMasteryCalling('pathfinder', actions, summary)).toBeNull();
+    }
+  });
 });
