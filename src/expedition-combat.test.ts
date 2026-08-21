@@ -125,6 +125,28 @@ describe('expedition combat', () => {
     expect(overflow).toEqual(finalLegalAction);
   });
 
+  it('does not leak non-finite combat inputs into transient battle or result state', () => {
+    const malformed = applyExpeditionAction(startExpeditionBattle('forest_path'), 'attack', Number.NaN, {
+      ...base,
+      strength: Number.POSITIVE_INFINITY,
+      fatigue: Number.NaN,
+      huntMastery: Number.NaN,
+      relics: { attack: Number.NaN, charge: 0, dodge: 0, all: Number.POSITIVE_INFINITY },
+    });
+    const result = finishExpeditionBattle({
+      ...malformed,
+      pressureGuard: Number.POSITIVE_INFINITY,
+    });
+
+    expect(Number.isFinite(malformed.score)).toBe(true);
+    expect(Number.isFinite(malformed.pressureGuard)).toBe(true);
+    expect(malformed.actionCount).toBe(1);
+    expect(Number.isFinite(result.score)).toBe(true);
+    expect(Number.isFinite(result.fatigueDelta)).toBe(true);
+    expect(Number.isFinite(result.stressDelta)).toBe(true);
+    expect(result.grade).toBe('C');
+  });
+
   it('keeps the final boss gated from a low-growth build', () => {
     const result = runActions('lake_tempest', 'attack', {
       ...base,
