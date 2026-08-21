@@ -35,6 +35,24 @@ describe('world contracts', () => {
     expect(result.reward).toEqual({ gold:0, gems:0 });
   });
 
+  it('does not count B as high grade and does not count a non-featured region', () => {
+    const event = worldEvent(1, 1);
+    const result = advanceWorldContracts({
+      year:1,
+      month:1,
+      event,
+      progress:emptyWorldContractProgress(),
+      rewardedKeys:[],
+      region:'ancient_city',
+      grade:'B',
+    });
+
+    expect(event.region).toBe('starlight_forest');
+    expect(result.progress).toEqual({ expedition_clear:1, high_grade:0, featured_region:0 });
+    expect(result.reward).toEqual({ gold:0, gems:0 });
+    expect(result.newlyCompleted).toEqual([]);
+  });
+
   it('does not advance failed C-grade attempts', () => {
     const result = advanceWorldContracts({
       year:1,
@@ -79,7 +97,42 @@ describe('world contracts', () => {
     expect(repeat.progress).toEqual({ expedition_clear:3, high_grade:2, featured_region:2 });
   });
 
+  it('keeps completed counters capped and rewards fixed through long successful replay', () => {
+    const event = worldEvent(1, 1);
+    let progress = emptyWorldContractProgress();
+    let rewardedKeys:string[] = [];
+    let totalGold = 0;
+    let totalGems = 0;
+
+    for (let index = 0; index < 500; index += 1) {
+      const result = advanceWorldContracts({
+        year:1,
+        month:1,
+        event,
+        progress,
+        rewardedKeys,
+        region:'starlight_forest',
+        grade:'S',
+      });
+      progress = result.progress;
+      rewardedKeys = result.rewardedKeys;
+      totalGold += result.reward.gold;
+      totalGems += result.reward.gems;
+    }
+
+    expect(progress).toEqual({ expedition_clear:3, high_grade:2, featured_region:2 });
+    expect(rewardedKeys).toEqual([
+      '1-1:high_grade',
+      '1-1:featured_region',
+      '1-1:expedition_clear',
+    ]);
+    expect(totalGold).toBe(250);
+    expect(totalGems).toBe(1);
+  });
+
   it('creates stable monthly reward keys', () => {
     expect(worldContractRewardKey(2, 8, 'high_grade')).toBe('2-8:high_grade');
+    expect(worldContractRewardKey(0, 99, 'high_grade')).toBe('1-12:high_grade');
+    expect(worldContractRewardKey(Number.NaN, Number.NaN, 'high_grade')).toBe('1-1:high_grade');
   });
 });
