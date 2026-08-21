@@ -12,9 +12,13 @@ const archetypeByKey: Record<keyof Personality, Exclude<RunaPersonalityArchetype
   calmness: 'serene',
 };
 
+function normalizedPersonalityValue(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+}
+
 export function personalityArchetype(personality: Personality): RunaPersonalityArchetype {
   const ranked = personalityKeys
-    .map(key => ({ key, value: Number.isFinite(personality[key]) ? personality[key] : 0 }))
+    .map(key => ({ key, value: normalizedPersonalityValue(personality[key]) }))
     .sort((a, b) => b.value - a.value);
   if (ranked.length < 2 || ranked[0].value - ranked[1].value < 5) return 'balanced';
   return archetypeByKey[ranked[0].key];

@@ -41,19 +41,35 @@ export type CareerAction =
   | { type: 'gift' }
   | { type: 'month' };
 
+function normalizeCount(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function normalizeCareerRecords(records: CareerRecords): CareerRecords {
+  return {
+    trainings:normalizeCount(records.trainings),
+    bestScore:normalizeCount(records.bestScore),
+    sGrades:normalizeCount(records.sGrades),
+    outings:normalizeCount(records.outings),
+    gifts:normalizeCount(records.gifts),
+    monthsCompleted:normalizeCount(records.monthsCompleted),
+  };
+}
+
 export function recordCareerAction(records: CareerRecords, action: CareerAction): CareerRecords {
+  const safe = normalizeCareerRecords(records);
   if (action.type === 'training') {
-    const score = Number.isFinite(action.score) ? Math.max(0, Math.floor(action.score)) : 0;
+    const score = normalizeCount(action.score);
     return {
-      ...records,
-      trainings: records.trainings + 1,
-      bestScore: Math.max(records.bestScore, score),
-      sGrades: records.sGrades + (action.grade === 'S' ? 1 : 0),
+      ...safe,
+      trainings: safe.trainings + 1,
+      bestScore: Math.max(safe.bestScore, score),
+      sGrades: safe.sGrades + (action.grade === 'S' ? 1 : 0),
     };
   }
-  if (action.type === 'outing') return { ...records, outings: records.outings + 1 };
-  if (action.type === 'gift') return { ...records, gifts: records.gifts + 1 };
-  return { ...records, monthsCompleted: records.monthsCompleted + 1 };
+  if (action.type === 'outing') return { ...safe, outings: safe.outings + 1 };
+  if (action.type === 'gift') return { ...safe, gifts: safe.gifts + 1 };
+  return { ...safe, monthsCompleted: safe.monthsCompleted + 1 };
 }
 
 const guardianOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
@@ -67,11 +83,12 @@ export type CareerTitleProgress = {
 
 export function careerTitles(input: CareerTitleProgress): CareerTitleId[] {
   const unlocked = new Set<CareerTitleId>();
-  const relevantStories = input.openedRaisingStories ?? input.openedStories;
-  if (input.records.trainings >= 10) unlocked.add('steady_trainer');
-  if (input.records.bestScore >= 900) unlocked.add('perfect_chaser');
-  if (input.records.outings >= 10) unlocked.add('seasoned_explorer');
-  if (input.records.gifts >= 5) unlocked.add('warm_giver');
+  const records = normalizeCareerRecords(input.records);
+  const relevantStories = normalizeCount(input.openedRaisingStories ?? input.openedStories);
+  if (records.trainings >= 10) unlocked.add('steady_trainer');
+  if (records.bestScore >= 900) unlocked.add('perfect_chaser');
+  if (records.outings >= 10) unlocked.add('seasoned_explorer');
+  if (records.gifts >= 5) unlocked.add('warm_giver');
   if (relevantStories >= 4) unlocked.add('story_witness');
   if (guardianOrder.indexOf(input.guardianRank) >= guardianOrder.indexOf('veteran')) unlocked.add('veteran_guardian');
   return careerTitleDefinitions.map(item => item.id).filter(id => unlocked.has(id));

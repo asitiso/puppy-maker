@@ -31,9 +31,13 @@ export const talentDefinitions: AdvancedTalentDefinition[] = [
 
 export type MasteryLevels = Record<ActivityId, number>;
 
+function normalizeMasteryLevel(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 export function advancedTalents(levels: MasteryLevels): AdvancedTalentId[] {
   return talentDefinitions
-    .filter(talent => levels[talent.activity] >= talent.requiredLevel)
+    .filter(talent => normalizeMasteryLevel(levels[talent.activity]) >= talent.requiredLevel)
     .map(talent => talent.id);
 }
 

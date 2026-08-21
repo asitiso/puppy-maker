@@ -36,13 +36,17 @@ function sameIds(left: BondSceneId[], right: BondSceneId[]): boolean {
   return left.length === right.length && left.every((id, index) => id === right[index]);
 }
 
+function normalizeProgressValue(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 export function reconcileBondSceneRewards(_previous: BondRewardProgress, current: BondRewardProgress) {
   const claimedUnlocks = bondSceneIds.filter(id => current.unlocked.includes(id));
   const claimedRewards = bondSceneIds.filter(id => current.rewarded.includes(id));
   const provenUnlocks = bondSceneIds.filter(id => claimedUnlocks.includes(id) || claimedRewards.includes(id));
   const afterEligible = eligible({ ...current, unlocked:provenUnlocks });
   const unlocked = bondSceneIds.filter(id => provenUnlocks.includes(id) || afterEligible.includes(id));
-  const newlyUnlocked = unlocked.filter(id => !claimedUnlocks.includes(id));
+  const newlyUnlocked = unlocked.filter(id => !provenUnlocks.includes(id));
   const newlyRewarded = unlocked.filter(id => !claimedRewards.includes(id));
   const rewarded = bondSceneIds.filter(id => claimedRewards.includes(id) || newlyRewarded.includes(id));
   const canonicalized = !sameIds(current.unlocked, unlocked) || !sameIds(current.rewarded, rewarded);
@@ -74,15 +78,18 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
 }
 
 export function monthGrowthPointReward(trainingScore:number): number {
-  return 1 + (trainingScore >= 900 ? 1 : 0);
+  const score = Number.isFinite(trainingScore) ? Math.max(0, trainingScore) : 0;
+  return 1 + (score >= 900 ? 1 : 0);
 }
 
 export function incrementCallingMonthMastery(mastery: CallingMasteryState, calling: GuardianCallingId | null): CallingMasteryState {
   if (!calling) return mastery;
-  return { ...mastery, [calling]:mastery[calling] + 1 };
+  const currentMastery = normalizeProgressValue(mastery[calling]);
+  return { ...mastery, [calling]:currentMastery + 1 };
 }
 
 export function applyBossGrowthPointReward(stageId: ExpeditionStageId, firstClear:boolean, rewarded:ExpeditionStageId[], points:number) {
-  if (!firstClear || !isBossStage(stageId) || rewarded.includes(stageId)) return { points, rewarded };
-  return { points:points + 1, rewarded:[...rewarded, stageId] };
+  const safePoints = normalizeProgressValue(points);
+  if (!firstClear || !isBossStage(stageId) || rewarded.includes(stageId)) return { points:safePoints, rewarded };
+  return { points:safePoints + 1, rewarded:[...rewarded, stageId] };
 }

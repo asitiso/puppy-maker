@@ -26,6 +26,7 @@ export const bondSceneDefinitions: BondSceneDefinition[] = [
 
 export const bondSceneIds = bondSceneDefinitions.map(item => item.id);
 const rankOrder: GuardianRankId[] = ['trainee','junior','guardian','veteran','starlight'];
+const preciousPartnerPriorIds = bondSceneIds.filter(id => id !== 'precious_partner');
 
 export type BondSceneProgress = {
   affection: number;
@@ -38,18 +39,29 @@ export type BondSceneProgress = {
   alreadyUnlocked: BondSceneId[];
 };
 
+function progressCount(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 export function eligibleBondScenes(progress: BondSceneProgress): BondSceneId[] {
+  const affection = progressCount(progress.affection);
+  const outings = progressCount(progress.outings);
+  const trainings = progressCount(progress.trainings);
+  const gifts = progressCount(progress.gifts);
+  const bossClears = progressCount(progress.bossClears);
+  const annualRecords = progressCount(progress.annualRecords);
   const eligible = new Set<BondSceneId>();
-  if (progress.affection >= 55) eligible.add('first_trust');
-  if (progress.affection >= 65 && progress.outings >= 1) eligible.add('favorite_place');
-  if (progress.affection >= 75) eligible.add('shared_secret');
-  if (progress.affection >= 75 && progress.trainings >= 10) eligible.add('training_promise');
-  if (progress.affection >= 80 && progress.gifts >= 5) eligible.add('gift_memory');
-  if (progress.affection >= 85 && rankOrder.indexOf(progress.guardianRank) >= rankOrder.indexOf('guardian')) eligible.add('guardian_confession');
-  if (progress.bossClears >= 1) eligible.add('first_boss_together');
-  if (progress.bossClears >= 3) eligible.add('three_regions_together');
-  if (progress.annualRecords >= 1) eligible.add('year_together');
+  if (affection >= 55) eligible.add('first_trust');
+  if (affection >= 65 && outings >= 1) eligible.add('favorite_place');
+  if (affection >= 75) eligible.add('shared_secret');
+  if (affection >= 75 && trainings >= 10) eligible.add('training_promise');
+  if (affection >= 80 && gifts >= 5) eligible.add('gift_memory');
+  if (affection >= 85 && rankOrder.indexOf(progress.guardianRank) >= rankOrder.indexOf('guardian')) eligible.add('guardian_confession');
+  if (bossClears >= 1) eligible.add('first_boss_together');
+  if (bossClears >= 3) eligible.add('three_regions_together');
+  if (annualRecords >= 1) eligible.add('year_together');
   const prior = new Set([...progress.alreadyUnlocked, ...eligible]);
-  if (progress.affection >= 95 && prior.size >= 8) eligible.add('precious_partner');
+  const validPriorCount = preciousPartnerPriorIds.filter(id => prior.has(id)).length;
+  if (affection >= 95 && validPriorCount >= 8) eligible.add('precious_partner');
   return bondSceneIds.filter(id => eligible.has(id));
 }

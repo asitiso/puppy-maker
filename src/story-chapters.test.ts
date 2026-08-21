@@ -69,6 +69,28 @@ describe('story chapter rules', () => {
     expect(eligibleStoryChapters({ ...base, affection:75 })).toContain('trusted_bond');
   });
 
+  it('does not let malformed legacy progress bypass story gates', () => {
+    const legacy = {
+      memories: ['first_training'],
+      visitedOutings: ['forest', 'village', 'lakeside'],
+      guardianRank: 'guardian' as const,
+      discoveries: 0,
+      expeditionStoryEntries: [],
+    };
+    expect(eligibleStoryChapters({ ...legacy, affection:Number.NaN })).toEqual(['first_step','wide_world']);
+    expect(eligibleStoryChapters({ ...legacy, affection:Number.POSITIVE_INFINITY })).toEqual(['first_step','wide_world']);
+
+    const finalReady = {
+      ...legacy,
+      affection:95,
+      guardianRank:'veteran' as const,
+      unlockedBondScenes:['shared_secret'] as const,
+      activeCalling:'pathfinder' as const,
+    };
+    expect(eligibleStoryChapters({ ...finalReady, discoveries:Number.NaN })).not.toContain('starlight_road');
+    expect(eligibleStoryChapters({ ...finalReady, discoveries:Number.POSITIVE_INFINITY })).not.toContain('starlight_road');
+  });
+
   it('requires an actual Calling choice for guardian oath when Calling progress is supplied', () => {
     const base = {
       memories: ['first_training'],

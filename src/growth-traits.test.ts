@@ -25,6 +25,19 @@ describe('growth trait board', () => {
     expect(duplicate).toEqual({ purchased:false, traits:['vanguard_power'], points:2 });
   });
 
+  it('normalizes malformed growth point balances before checking or spending them', () => {
+    expect(canPurchaseGrowthTrait('vanguard_power', [], Number.NaN)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_power', [], Number.POSITIVE_INFINITY)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_power', [], -3)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_assault', ['vanguard_focus'], 1.9)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_power', [], 1.9)).toBe(true);
+
+    expect(purchaseGrowthTrait('vanguard_power', [], Number.NaN)).toEqual({ purchased:false, traits:[], points:0 });
+    expect(purchaseGrowthTrait('vanguard_power', [], Number.POSITIVE_INFINITY)).toEqual({ purchased:false, traits:[], points:0 });
+    expect(purchaseGrowthTrait('vanguard_power', [], -3)).toEqual({ purchased:false, traits:[], points:0 });
+    expect(purchaseGrowthTrait('vanguard_power', [], 1.9)).toEqual({ purchased:true, traits:['vanguard_power'], points:0 });
+  });
+
   it('keeps all purchased traits while only activating the current calling path', () => {
     const owned = ['vanguard_power','arcanist_mana','arcanist_insight'] as const;
     expect(activeCallingTraits('arcanist', [...owned])).toEqual(['arcanist_mana','arcanist_insight']);

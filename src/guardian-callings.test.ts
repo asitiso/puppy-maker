@@ -25,7 +25,20 @@ describe('guardian calling rules', () => {
     expect(applyCallingSelection({ current:'vanguard', next:'vanguard', guardianRank:'guardian', gold:999, year:1, month:5, lastSwitchKey:null, history:['vanguard'] })).toMatchObject({ changed:false, reason:'same_calling', gold:999 });
   });
 
-  it('uses stable year-month switch keys', () => {
+  it('normalizes malformed gold before paid Calling changes', () => {
+    for (const gold of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1]) {
+      expect(applyCallingSelection({ current:'vanguard', next:'arcanist', guardianRank:'guardian', gold, year:2, month:7, lastSwitchKey:null, history:['vanguard'] }))
+        .toMatchObject({ changed:false, reason:'insufficient_gold', gold:0, current:'vanguard' });
+    }
+
+    expect(applyCallingSelection({ current:'vanguard', next:'arcanist', guardianRank:'guardian', gold:300.9, year:2, month:7, lastSwitchKey:null, history:['vanguard'] }))
+      .toMatchObject({ changed:true, reason:null, gold:0, current:'arcanist' });
+  });
+
+  it('uses stable and finite year-month switch keys', () => {
     expect(callingSwitchKey(3, 12)).toBe('3-12');
+    expect(callingSwitchKey(3.9, 12.9)).toBe('3-12');
+    expect(callingSwitchKey(Number.NaN, Number.NaN)).toBe('1-1');
+    expect(callingSwitchKey(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)).toBe('1-1');
   });
 });
