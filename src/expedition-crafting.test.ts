@@ -87,4 +87,18 @@ describe('expedition crafting', () => {
     const materials = { star_bark: 4, arcane_shard: 0, wind_pearl: 0 };
     expect(canCraft('star_cookie_recipe', materials, { craftingMilestones:['crafted_star_cookie'] })).toBe(true);
   });
+
+  it('rejects non-finite material balances instead of enabling infinite crafting', () => {
+    const materials = { star_bark: Number.POSITIVE_INFINITY, arcane_shard: 3, wind_pearl: 3 };
+
+    expect(canCraft('star_cookie_recipe', materials)).toBe(false);
+    expect(applyCrafting('star_cookie_recipe', materials)).toEqual({
+      crafted: false,
+      materials,
+      gift: null,
+      relic: null,
+      milestone: null,
+    });
+    expect(canCraft('guardian_thread_recipe', materials)).toBe(false);
+  });
 });
