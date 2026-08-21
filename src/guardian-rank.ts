@@ -17,20 +17,25 @@ export const guardianRankDefinitions: Array<{ id: GuardianRankId; label: string;
 
 export const rewardableGuardianRanks: GuardianRankId[] = ['junior', 'guardian', 'veteran', 'starlight'];
 
+const safeCount = (value: number): number => Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+const safeMasteryLevel = (value: number): number => Number.isFinite(value) ? Math.max(1, Math.min(5, Math.floor(value))) : 1;
+
 export function guardianGrowthPoints(progress: GuardianProgress): number {
-  const masteryPoints = progress.masteryLevels.reduce((sum, level) => sum + Math.max(0, level - 1), 0);
-  return progress.memories + progress.skills * 2 + progress.discoveries + masteryPoints;
+  const masteryPoints = progress.masteryLevels.reduce((sum, rawLevel) => sum + safeMasteryLevel(rawLevel) - 1, 0);
+  return safeCount(progress.memories) + safeCount(progress.skills) * 2 + safeCount(progress.discoveries) + masteryPoints;
 }
 
 export function guardianRank(points: number): GuardianRankId {
+  const safePoints = safeCount(points);
   let result: GuardianRankId = 'trainee';
   for (const definition of guardianRankDefinitions) {
-    if (points >= definition.threshold) result = definition.id;
+    if (safePoints >= definition.threshold) result = definition.id;
   }
   return result;
 }
 
 export function nextGuardianRank(points: number): { rank: GuardianRankId; threshold: number } | null {
-  const next = guardianRankDefinitions.find(definition => definition.threshold > points);
+  const safePoints = safeCount(points);
+  const next = guardianRankDefinitions.find(definition => definition.threshold > safePoints);
   return next ? { rank: next.id, threshold: next.threshold } : null;
 }

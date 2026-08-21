@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyExpeditionCallingRewards,
+  applyPathfinderOutingLegend,
   effectivePathfinderExplorationXp,
   legendRewardKey,
   specialistMasteryCalling,
@@ -9,11 +10,13 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
   it('accelerates discovery eligibility only with Pathfinder eye', () => {
     expect(effectivePathfinderExplorationXp(3, 'pathfinder', ['pathfinder_eye'])).toBe(6);
     expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.NaN, 'pathfinder', ['pathfinder_eye'])).toBe(3);
   });
 
   it('detects specialist Calling mastery from expedition actions', () => {
@@ -71,6 +74,24 @@ describe('Calling depth effects', () => {
     expect(arcanist.legendRewardKeys).toContain('1-4:arcanist_legend');
   });
 
+  it('treats zero-padded legend claims as the same month for once-only rewards', () => {
+    const vanguard = applyExpeditionCallingRewards({
+      year:2, month:6, calling:'vanguard', traits:['vanguard_legend'], signatures:[],
+      legendRewardKeys:['2-06:vanguard_legend'],
+      stageId:'forest_path', grade:'A', firstClear:true, discovery:null, regionCompleted:null,
+      materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(vanguard.fatigueDelta).toBe(8);
+    expect(vanguard.legendRewardKeys).toEqual(['2-6:vanguard_legend']);
+
+    const pathfinder = applyPathfinderOutingLegend(
+      2, 6, 'pathfinder', ['pathfinder_herb','pathfinder_eye','pathfinder_supply','pathfinder_legend'], true,
+      ['2-06:pathfinder_legend'],
+    );
+    expect(pathfinder.goldBonus).toBe(0);
+    expect(pathfinder.legendRewardKeys).toEqual(['2-6:pathfinder_legend']);
+  });
+
   it('applies heart anchor stress protection whenever its signature is active', () => {
     const result = applyExpeditionCallingRewards({
       year:1, month:4, calling:'caretaker', traits:['caretaker_legend'], signatures:['heart_anchor'], legendRewardKeys:[],
@@ -78,5 +99,17 @@ describe('Calling depth effects', () => {
     });
     expect(result.stressDelta).toBe(4);
     expect(result.applied).toContain('heart_anchor');
+  });
+
+  it('sanitizes non-finite expedition burden deltas instead of returning NaN', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'caretaker', traits:[], signatures:['heart_anchor'], legendRewardKeys:[],
+      stageId:'lake_channel', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+      fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
+    });
+    expect(result.fatigueDelta).toBe(0);
+    expect(result.stressDelta).toBe(0);
+    expect(Number.isFinite(result.fatigueDelta)).toBe(true);
+    expect(Number.isFinite(result.stressDelta)).toBe(true);
   });
 });

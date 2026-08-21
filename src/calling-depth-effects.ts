@@ -5,8 +5,35 @@ import type { ExpeditionGrade, ExpeditionRegionId, ExpeditionStageId } from './e
 import type { GuardianCallingId } from './guardian-callings';
 import type { GrowthTraitId } from './growth-traits';
 
+const legendEffects = ['vanguard_legend','arcanist_legend','pathfinder_legend'] as const;
+
+function safeNonNegativeInt(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function safePositiveInt(value:number): number {
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1;
+}
+
+function canonicalLegendRewardKeys(raw:readonly string[]): string[] {
+  const result:string[] = [];
+  for (const value of raw) {
+    const match = /^(\d+)-(\d+):([a-z0-9_]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const effect = match[3];
+    if (year < 1 || month < 1 || month > 12 || !legendEffects.includes(effect as typeof legendEffects[number])) continue;
+    const key = `${year}-${month}:${effect}`;
+    if (!result.includes(key)) result.push(key);
+  }
+  return result;
+}
+
 export function legendRewardKey(year:number, month:number, effectId:string): string {
-  return `${Math.max(1, Math.floor(year))}-${Math.max(1, Math.min(12, Math.floor(month)))}:${effectId}`;
+  const safeYear = safePositiveInt(year);
+  const safeMonth = Number.isFinite(month) ? Math.max(1, Math.min(12, Math.floor(month))) : 1;
+  return `${safeYear}-${safeMonth}:${effectId}`;
 }
 
 export function effectivePathfinderExplorationXp(
@@ -14,7 +41,7 @@ export function effectivePathfinderExplorationXp(
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
-  return Math.max(0, Math.floor(xp)) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  return safeNonNegativeInt(xp) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
 }
 
 export function specialistMasteryCalling(
@@ -23,11 +50,11 @@ export function specialistMasteryCalling(
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
   if (!calling || summary.grade === 'C') return null;
-  if (calling === 'vanguard') return actions.attack > 0 ? calling : null;
-  if (calling === 'arcanist') return actions.charge > 0 ? calling : null;
-  if (calling === 'caretaker') return actions.dodge > 0 ? calling : null;
-  const acted = actions.attack + actions.dodge + actions.charge > 0;
-  const explored = summary.discovery !== null || summary.materialReward > 0 || isBossStage(summary.stageId);
+  if (calling === 'vanguard') return safeNonNegativeInt(actions.attack) > 0 ? calling : null;
+  if (calling === 'arcanist') return safeNonNegativeInt(actions.charge) > 0 ? calling : null;
+  if (calling === 'caretaker') return safeNonNegativeInt(actions.dodge) > 0 ? calling : null;
+  const acted = safeNonNegativeInt(actions.attack) + safeNonNegativeInt(actions.dodge) + safeNonNegativeInt(actions.charge) > 0;
+  const explored = summary.discovery !== null || safeNonNegativeInt(summary.materialReward) > 0 || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
 }
 
@@ -59,15 +86,15 @@ export type ExpeditionCallingRewardResult = {
 
 export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput): ExpeditionCallingRewardResult {
   let extraMaterial = 0;
-  let fatigueDelta = Math.max(0, input.fatigueDelta);
-  let stressDelta = Math.max(0, input.stressDelta);
-  let legendRewardKeys = [...input.legendRewardKeys];
+  let fatigueDelta = safeNonNegativeInt(input.fatigueDelta);
+  let stressDelta = safeNonNegativeInt(input.stressDelta);
+  let legendRewardKeys = canonicalLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
   const traits = new Set(input.traits);
 
   if (input.calling === 'pathfinder') {
-    if (signatures.has('trail_reading') && input.firstClear && input.materialReward > 0) {
+    if (signatures.has('trail_reading') && input.firstClear && safeNonNegativeInt(input.materialReward) > 0) {
       extraMaterial += 1;
       applied.push('trail_reading');
     }
@@ -111,10 +138,11 @@ export function applyPathfinderOutingLegend(
   discovered:boolean,
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
+  const canonicalKeys = canonicalLegendRewardKeys(existingKeys);
   if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || !discovered) {
-    return { goldBonus:0, legendRewardKeys:existingKeys, applied:false };
+    return { goldBonus:0, legendRewardKeys:canonicalKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
-  if (existingKeys.includes(key)) return { goldBonus:0, legendRewardKeys:existingKeys, applied:false };
-  return { goldBonus:100, legendRewardKeys:[...existingKeys, key], applied:true };
+  if (canonicalKeys.includes(key)) return { goldBonus:0, legendRewardKeys:canonicalKeys, applied:false };
+  return { goldBonus:100, legendRewardKeys:[...canonicalKeys, key], applied:true };
 }

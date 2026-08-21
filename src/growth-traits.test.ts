@@ -25,6 +25,12 @@ describe('growth trait board', () => {
     expect(duplicate).toEqual({ purchased:false, traits:['vanguard_power'], points:2 });
   });
 
+  it('rejects non-finite growth points and repairs them to zero', () => {
+    expect(canPurchaseGrowthTrait('vanguard_power', [], Number.POSITIVE_INFINITY)).toBe(false);
+    expect(canPurchaseGrowthTrait('vanguard_power', [], Number.NaN)).toBe(false);
+    expect(purchaseGrowthTrait('vanguard_power', [], Number.POSITIVE_INFINITY)).toEqual({ purchased:false, traits:[], points:0 });
+  });
+
   it('keeps all purchased traits while only activating the current calling path', () => {
     const owned = ['vanguard_power','arcanist_mana','arcanist_insight'] as const;
     expect(activeCallingTraits('arcanist', [...owned])).toEqual(['arcanist_mana','arcanist_insight']);

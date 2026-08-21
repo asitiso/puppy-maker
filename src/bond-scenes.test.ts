@@ -27,4 +27,31 @@ describe('Runa bond scenes', () => {
     expect(eligibleBondScenes({ affection:94, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).not.toContain('precious_partner');
     expect(eligibleBondScenes({ affection:95, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).toContain('precious_partner');
   });
+
+  it('does not unlock scenes from non-finite progress counters', () => {
+    expect(eligibleBondScenes({
+      affection:Number.POSITIVE_INFINITY,
+      outings:Number.POSITIVE_INFINITY,
+      trainings:Number.POSITIVE_INFINITY,
+      gifts:Number.POSITIVE_INFINITY,
+      guardianRank:'trainee',
+      bossClears:Number.POSITIVE_INFINITY,
+      annualRecords:Number.POSITIVE_INFINITY,
+      alreadyUnlocked:[],
+    })).toEqual([]);
+  });
+
+  it('does not count unknown saved scene ids toward precious partner', () => {
+    const malformed = ['bad_1','bad_2','bad_3','bad_4','bad_5','bad_6','bad_7','bad_8'] as never[];
+    expect(eligibleBondScenes({
+      affection:95,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee',
+      bossClears:0,
+      annualRecords:0,
+      alreadyUnlocked:malformed,
+    })).not.toContain('precious_partner');
+  });
 });

@@ -35,6 +35,21 @@ export const emptyCareerRecords = (): CareerRecords => ({
   monthsCompleted: 0,
 });
 
+function safeNonNegativeInt(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function canonicalCareerRecords(records:CareerRecords): CareerRecords {
+  return {
+    trainings:safeNonNegativeInt(records.trainings),
+    bestScore:safeNonNegativeInt(records.bestScore),
+    sGrades:safeNonNegativeInt(records.sGrades),
+    outings:safeNonNegativeInt(records.outings),
+    gifts:safeNonNegativeInt(records.gifts),
+    monthsCompleted:safeNonNegativeInt(records.monthsCompleted),
+  };
+}
+
 export type CareerAction =
   | { type: 'training'; score: number; grade: 'S' | 'A' | 'B' | 'C' }
   | { type: 'outing' }
@@ -42,18 +57,19 @@ export type CareerAction =
   | { type: 'month' };
 
 export function recordCareerAction(records: CareerRecords, action: CareerAction): CareerRecords {
+  const current = canonicalCareerRecords(records);
   if (action.type === 'training') {
-    const score = Number.isFinite(action.score) ? Math.max(0, Math.floor(action.score)) : 0;
+    const score = safeNonNegativeInt(action.score);
     return {
-      ...records,
-      trainings: records.trainings + 1,
-      bestScore: Math.max(records.bestScore, score),
-      sGrades: records.sGrades + (action.grade === 'S' ? 1 : 0),
+      ...current,
+      trainings: current.trainings + 1,
+      bestScore: Math.max(current.bestScore, score),
+      sGrades: current.sGrades + (action.grade === 'S' ? 1 : 0),
     };
   }
-  if (action.type === 'outing') return { ...records, outings: records.outings + 1 };
-  if (action.type === 'gift') return { ...records, gifts: records.gifts + 1 };
-  return { ...records, monthsCompleted: records.monthsCompleted + 1 };
+  if (action.type === 'outing') return { ...current, outings: current.outings + 1 };
+  if (action.type === 'gift') return { ...current, gifts: current.gifts + 1 };
+  return { ...current, monthsCompleted: current.monthsCompleted + 1 };
 }
 
 const guardianOrder: GuardianRankId[] = ['trainee', 'junior', 'guardian', 'veteran', 'starlight'];
@@ -67,11 +83,12 @@ export type CareerTitleProgress = {
 
 export function careerTitles(input: CareerTitleProgress): CareerTitleId[] {
   const unlocked = new Set<CareerTitleId>();
-  const relevantStories = input.openedRaisingStories ?? input.openedStories;
-  if (input.records.trainings >= 10) unlocked.add('steady_trainer');
-  if (input.records.bestScore >= 900) unlocked.add('perfect_chaser');
-  if (input.records.outings >= 10) unlocked.add('seasoned_explorer');
-  if (input.records.gifts >= 5) unlocked.add('warm_giver');
+  const records = canonicalCareerRecords(input.records);
+  const relevantStories = safeNonNegativeInt(input.openedRaisingStories ?? input.openedStories);
+  if (records.trainings >= 10) unlocked.add('steady_trainer');
+  if (records.bestScore >= 900) unlocked.add('perfect_chaser');
+  if (records.outings >= 10) unlocked.add('seasoned_explorer');
+  if (records.gifts >= 5) unlocked.add('warm_giver');
   if (relevantStories >= 4) unlocked.add('story_witness');
   if (guardianOrder.indexOf(input.guardianRank) >= guardianOrder.indexOf('veteran')) unlocked.add('veteran_guardian');
   return careerTitleDefinitions.map(item => item.id).filter(id => unlocked.has(id));

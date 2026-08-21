@@ -1,7 +1,7 @@
 import { bondSceneIds, type BondSceneId } from './bond-scenes';
 import { emptyCallingMastery, type CallingMasteryState } from './calling-mastery';
 import { guardianCallingIds, type GuardianCallingId } from './guardian-callings';
-import { growthTraitIds, type GrowthTraitId } from './growth-traits';
+import { canonicalGrowthTraits, growthTraitIds, type GrowthTraitId } from './growth-traits';
 import { expeditionStageDefinitions, type ExpeditionStageId } from './expedition-regions';
 
 export type RaisingDepthPersistentState = {
@@ -18,6 +18,7 @@ export type RaisingDepthPersistentState = {
 };
 
 const bossStageIds = expeditionStageDefinitions.filter(item => item.boss).map(item => item.id);
+const legendRewardEffects = ['vanguard_legend','arcanist_legend','pathfinder_legend'] as const;
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const int = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 
@@ -41,6 +42,19 @@ function uniqueAllowed<T extends string>(raw: unknown, allowed: readonly T[]): T
   return allowed.filter(id => raw.includes(id));
 }
 
+function hydrateCallingHistory(raw:unknown, activeCalling:GuardianCallingId | null): GuardianCallingId[] {
+  const history:GuardianCallingId[] = [];
+  if (Array.isArray(raw)) {
+    for (const value of raw) {
+      if (typeof value !== 'string' || !guardianCallingIds.includes(value as GuardianCallingId)) continue;
+      const id = value as GuardianCallingId;
+      if (!history.includes(id)) history.push(id);
+    }
+  }
+  if (activeCalling && !history.includes(activeCalling)) history.push(activeCalling);
+  return history;
+}
+
 function hydrateSwitchKey(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const match = /^(\d+)-(\d+)$/.exec(raw);
@@ -52,8 +66,19 @@ function hydrateSwitchKey(raw: unknown): string | null {
 
 function hydrateLegendRewardKeys(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  const valid = raw.filter((value): value is string => typeof value === 'string' && /^\d+-\d+:[a-z0-9_:-]+$/.test(value));
-  return [...new Set(valid)];
+  const valid:string[] = [];
+  for (const value of raw) {
+    if (typeof value !== 'string') continue;
+    const match = /^(\d+)-(\d+):([a-z0-9_]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const effect = match[3];
+    if (year < 1 || month < 1 || month > 12 || !legendRewardEffects.includes(effect as typeof legendRewardEffects[number])) continue;
+    const key = `${year}-${month}:${effect}`;
+    if (!valid.includes(key)) valid.push(key);
+  }
+  return valid;
 }
 
 export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentState {
@@ -62,15 +87,17 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
     ? source.activeCalling as GuardianCallingId
     : null;
   const masterySource = isRecord(source.callingMastery) ? source.callingMastery : {};
-  const unlockedBondScenes = uniqueAllowed(source.unlockedBondScenes, bondSceneIds);
-  const rewardedBondScenes = uniqueAllowed(source.rewardedBondScenes, bondSceneIds).filter(id => unlockedBondScenes.includes(id));
+  const claimedUnlocks = uniqueAllowed(source.unlockedBondScenes, bondSceneIds);
+  const rewardedBondScenes = uniqueAllowed(source.rewardedBondScenes, bondSceneIds);
+  const unlockedBondScenes = bondSceneIds.filter(id => claimedUnlocks.includes(id) || rewardedBondScenes.includes(id));
+  const purchasedTraits = canonicalGrowthTraits(uniqueAllowed(source.purchasedTraits, growthTraitIds));
   return {
     activeCalling,
-    callingHistory:uniqueAllowed(source.callingHistory, guardianCallingIds),
+    callingHistory:hydrateCallingHistory(source.callingHistory, activeCalling),
     callingMastery:Object.fromEntries(guardianCallingIds.map(id => [id, int(masterySource[id])])) as CallingMasteryState,
-    callingLastSwitchKey:hydrateSwitchKey(source.callingLastSwitchKey),
+    callingLastSwitchKey:activeCalling ? hydrateSwitchKey(source.callingLastSwitchKey) : null,
     growthPoints:int(source.growthPoints),
-    purchasedTraits:uniqueAllowed(source.purchasedTraits, growthTraitIds),
+    purchasedTraits,
     unlockedBondScenes,
     rewardedBondScenes,
     growthPointBossRewards:uniqueAllowed(source.growthPointBossRewards, bossStageIds),

@@ -8,7 +8,7 @@ describe('raising depth training and gift effects', () => {
     expect(next.stats.affection).toBe(42);
   });
 
-  it('adds one personality point only when the scheduled activity matches Runa preference', () => {
+  it('adds one personality trace for each scheduled activity matching Runa preference', () => {
     const brave = {
       ...initialState,
       schedule:['hunt','hunt','hunt','hunt'] as typeof initialState.schedule,
@@ -20,7 +20,7 @@ describe('raising depth training and gift effects', () => {
     };
     const favored = reducer(brave, { type:'FINISH_TRAINING', eventRoll:0.999 });
     const control = reducer(sereneControl, { type:'FINISH_TRAINING', eventRoll:0.999 });
-    expect(favored.personality.courage).toBe(control.personality.courage + 1);
+    expect(favored.personality.courage).toBe(control.personality.courage + 4);
   });
 
   it('applies active vanguard power trait on hunt training', () => {

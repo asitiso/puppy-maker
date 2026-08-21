@@ -33,11 +33,12 @@ export type MasteryLevels = Record<ActivityId, number>;
 
 export function advancedTalents(levels: MasteryLevels): AdvancedTalentId[] {
   return talentDefinitions
-    .filter(talent => levels[talent.activity] >= talent.requiredLevel)
+    .filter(talent => Number.isFinite(levels[talent.activity]) && levels[talent.activity] >= talent.requiredLevel)
     .map(talent => talent.id);
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value));
+const safe = (value: number) => Number.isFinite(value) ? clamp(value) : 0;
 
 export function applyAdvancedTalentBonuses(
   stats: Stats,
@@ -45,11 +46,16 @@ export function applyAdvancedTalentBonuses(
   talents: AdvancedTalentId[],
   schedule: ActivityId[],
 ) {
-  const nextStats = { ...stats };
-  const nextPersonality = { ...personality };
+  const nextStats: Stats = {
+    strength:safe(stats.strength), intelligence:safe(stats.intelligence), magic:safe(stats.magic), morality:safe(stats.morality),
+    affection:safe(stats.affection), stress:safe(stats.stress), fatigue:safe(stats.fatigue),
+  };
+  const nextPersonality: Personality = {
+    courage:safe(personality.courage), kindness:safe(personality.kindness), curiosity:safe(personality.curiosity), calmness:safe(personality.calmness),
+  };
   const active = new Set(schedule);
 
-  for (const id of talents) {
+  for (const id of new Set(talents)) {
     const definition = talentDefinitions.find(item => item.id === id);
     if (!definition || !active.has(definition.activity)) continue;
     if (id === 'hunter_instinct') nextStats.strength = clamp(nextStats.strength + 2);

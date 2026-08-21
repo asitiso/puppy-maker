@@ -1,6 +1,6 @@
 import { bondSceneDefinitions, bondSceneIds, eligibleBondScenes, type BondSceneId } from './bond-scenes';
 import type { CallingMasteryState } from './calling-mastery';
-import type { GuardianCallingId } from './guardian-callings';
+import { guardianCallingIds, type GuardianCallingId } from './guardian-callings';
 import type { GuardianRankId } from './guardian-rank';
 import { isBossStage } from './expedition-bosses';
 import type { ExpeditionStageId } from './expedition-regions';
@@ -19,15 +19,23 @@ export type BondRewardProgress = {
   gems:number;
 };
 
+function safeNonNegativeInt(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function safeAffection(value:number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+}
+
 function eligible(progress: BondRewardProgress): BondSceneId[] {
   return eligibleBondScenes({
-    affection:progress.affection,
-    outings:progress.outings,
-    trainings:progress.trainings,
-    gifts:progress.gifts,
+    affection:safeAffection(progress.affection),
+    outings:safeNonNegativeInt(progress.outings),
+    trainings:safeNonNegativeInt(progress.trainings),
+    gifts:safeNonNegativeInt(progress.gifts),
     guardianRank:progress.guardianRank,
-    bossClears:progress.bossClears,
-    annualRecords:progress.annualRecords,
+    bossClears:safeNonNegativeInt(progress.bossClears),
+    annualRecords:safeNonNegativeInt(progress.annualRecords),
     alreadyUnlocked:progress.unlocked,
   });
 }
@@ -42,10 +50,15 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
   const provenUnlocks = bondSceneIds.filter(id => claimedUnlocks.includes(id) || claimedRewards.includes(id));
   const afterEligible = eligible({ ...current, unlocked:provenUnlocks });
   const unlocked = bondSceneIds.filter(id => provenUnlocks.includes(id) || afterEligible.includes(id));
-  const newlyUnlocked = unlocked.filter(id => !claimedUnlocks.includes(id));
+  const newlyUnlocked = unlocked.filter(id => !claimedUnlocks.includes(id) && !claimedRewards.includes(id));
   const newlyRewarded = unlocked.filter(id => !claimedRewards.includes(id));
   const rewarded = bondSceneIds.filter(id => claimedRewards.includes(id) || newlyRewarded.includes(id));
-  const canonicalized = !sameIds(current.unlocked, unlocked) || !sameIds(current.rewarded, rewarded);
+  const safeGold = safeNonNegativeInt(current.gold);
+  const safeGems = safeNonNegativeInt(current.gems);
+  const canonicalized = !sameIds(current.unlocked, unlocked)
+    || !sameIds(current.rewarded, rewarded)
+    || safeGold !== current.gold
+    || safeGems !== current.gems;
 
   if (!newlyUnlocked.length && !newlyRewarded.length && !canonicalized) return {
     changed:false,
@@ -56,8 +69,8 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
     newlyUnlocked:[] as BondSceneId[],
   };
 
-  let gold = current.gold;
-  let gems = current.gems;
+  let gold = safeGold;
+  let gems = safeGems;
   for (const id of newlyRewarded) {
     const reward = bondSceneDefinitions.find(item => item.id === id)?.reward;
     gold += reward?.gold ?? 0;
@@ -74,15 +87,18 @@ export function reconcileBondSceneRewards(_previous: BondRewardProgress, current
 }
 
 export function monthGrowthPointReward(trainingScore:number): number {
-  return 1 + (trainingScore >= 900 ? 1 : 0);
+  return 1 + (Number.isFinite(trainingScore) && trainingScore >= 900 ? 1 : 0);
 }
 
 export function incrementCallingMonthMastery(mastery: CallingMasteryState, calling: GuardianCallingId | null): CallingMasteryState {
-  if (!calling) return mastery;
-  return { ...mastery, [calling]:mastery[calling] + 1 };
+  const sanitized = Object.fromEntries(guardianCallingIds.map(id => [id, safeNonNegativeInt(mastery[id])])) as CallingMasteryState;
+  if (!calling) return sanitized;
+  return { ...sanitized, [calling]:sanitized[calling] + 1 };
 }
 
 export function applyBossGrowthPointReward(stageId: ExpeditionStageId, firstClear:boolean, rewarded:ExpeditionStageId[], points:number) {
-  if (!firstClear || !isBossStage(stageId) || rewarded.includes(stageId)) return { points, rewarded };
-  return { points:points + 1, rewarded:[...rewarded, stageId] };
+  const safePoints = safeNonNegativeInt(points);
+  const canonicalRewards = rewarded.filter((id, index) => isBossStage(id) && rewarded.indexOf(id) === index);
+  if (!firstClear || !isBossStage(stageId) || canonicalRewards.includes(stageId)) return { points:safePoints, rewarded:canonicalRewards };
+  return { points:safePoints + 1, rewarded:[...canonicalRewards, stageId] };
 }
