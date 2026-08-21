@@ -62,6 +62,13 @@ describe('Astral Rift domain', () => {
     expect(canEnterAstralRift({ riftId:'nebula_garden', intensity:2, ascensionScore:12, records:withA })).toBe(true);
   });
 
+  it('rejects non-finite ascension scores instead of bypassing Rift gates', () => {
+    const records:AstralRiftRecordMap = {};
+    expect(canEnterAstralRift({ riftId:'nebula_garden', intensity:1, ascensionScore:Number.NaN, records })).toBe(false);
+    expect(canEnterAstralRift({ riftId:'nebula_garden', intensity:1, ascensionScore:Number.POSITIVE_INFINITY, records })).toBe(false);
+    expect(canEnterAstralRift({ riftId:'nebula_garden', intensity:1, ascensionScore:Number.NEGATIVE_INFINITY, records })).toBe(false);
+  });
+
   it('grades deterministically and rewards echoes only for successful clears', () => {
     expect(resolveAstralRift('nebula_garden',1,59,false)).toEqual({ grade:'C', success:false, echoes:0 });
     expect(resolveAstralRift('nebula_garden',1,60,false)).toEqual({ grade:'B', success:true, echoes:4 });
