@@ -126,6 +126,15 @@ describe('Layered Home mobile UI contract', () => {
     }
   });
 
+  it('moves keyboard focus into each opened major overlay', () => {
+    expect(raisingOverlay).toContain('<button autoFocus onClick={onClose}>‹ 홈</button>');
+    expect(worldOverlay).toContain('<button autoFocus className="world-progress-close"');
+    expect(seasonOverlay).toContain('<button autoFocus onClick={onClose} aria-label="닫기">×</button>');
+    expect(expeditionOverlay).toContain('<header><button autoFocus onClick={onClose}>‹ 홈</button>');
+    expect(expeditionOverlay).toContain('<header><button autoFocus onClick={onCancel}>‹ 원정 지도</button>');
+    expect(expeditionOverlay).toContain('<button autoFocus onClick={() => setView(\'map\')}>원정 지도로 돌아가기</button>');
+  });
+
   it('keeps major overlay chrome inside safe areas with usable close targets', () => {
     for (const rawCss of [raisingCss, worldCss, seasonCss, expeditionCss]) {
       expect(rawCss).toContain('safe-area-inset-top');
