@@ -18,8 +18,8 @@ export const tacticalActions:TacticalActionDefinition[] = [
   { id:'special', label:'SPECIAL', apCost:0, mpCost:10, target:'enemy_any', power:50 },
 ];
 
-export function tacticalAction(id:TacticalActionId) {
-  return tacticalActions.find(action => action.id === id)!;
+export function tacticalAction(id:TacticalActionId):TacticalActionDefinition|null {
+  return tacticalActions.find(action => action.id === id) ?? null;
 }
 
 export function availableTacticalActions(unit:TacticalUnit) {
@@ -31,7 +31,7 @@ export function validTacticalTargets(session:BattleSession,actorId:string,action
   const actor = session.units.find(unit => unit.id === actorId);
   if (!actor || actor.hp <= 0) return [];
   const action = tacticalAction(actionId);
-  if (actor.ap < action.apCost || actor.mp < action.mpCost) return [];
+  if (!action || actor.ap < action.apCost || actor.mp < action.mpCost) return [];
   const living = session.units.filter(unit => unit.hp > 0);
   if (action.target === 'ally') {
     return living.filter(unit => unit.side === actor.side).map(unit => unit.id).sort();
