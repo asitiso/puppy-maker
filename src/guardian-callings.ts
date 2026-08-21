@@ -67,8 +67,8 @@ export function applyCallingSelection(input: CallingSelectionInput): CallingSele
   }
   if (input.current === input.next) return { ...input, gold, history, changed:false, reason:'same_calling' };
   const key = callingSwitchKey(input.year, input.month);
-  if (input.lastSwitchKey === key) return { ...input, gold, history, changed:false, reason:'monthly_lock' };
   const switching = input.current !== null;
+  if (switching && input.lastSwitchKey === key) return { ...input, gold, history, changed:false, reason:'monthly_lock' };
   if (switching && gold < 300) return { ...input, gold, history, changed:false, reason:'insufficient_gold' };
   return {
     ...input,
