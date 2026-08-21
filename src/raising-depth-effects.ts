@@ -38,10 +38,13 @@ export function applyTrainingIdentityEffects(input:TrainingIdentityInput) {
   const preferences = runaPreferences(personalityArchetype(input.personality), input.activeCalling);
   const activeTraits = new Set(activeCallingTraits(input.activeCalling, input.purchasedTraits));
 
-  if (input.schedule.includes(preferences.favoriteActivity)) {
+  const preferredActivityCount = input.schedule.filter(activity => activity === preferences.favoriteActivity).length;
+  if (preferredActivityCount > 0) {
     const key = personalityKeyByActivity[preferences.favoriteActivity];
-    personality[key] = clamp(clamp(personality[key]) + 1);
-    incrementMasteryXp(mastery, preferences.favoriteActivity);
+    personality[key] = clamp(clamp(personality[key]) + preferredActivityCount);
+    for (let count = 0; count < preferredActivityCount; count += 1) {
+      incrementMasteryXp(mastery, preferences.favoriteActivity);
+    }
   }
 
   if (activeTraits.has('vanguard_power') && input.schedule.includes('hunt')) stats.strength = clamp(clamp(stats.strength) + 1);
