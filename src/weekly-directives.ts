@@ -86,7 +86,8 @@ export function advanceWeeklyDirectives(
   let tokens = 0;
 
   for (const directive of directives) {
-    const before = Math.max(0,Math.floor(progress[directive.id] ?? 0));
+    const stored = progress[directive.id];
+    const before = Number.isFinite(stored) ? Math.max(0,Math.floor(stored)) : 0;
     const after = matches(directive,event) ? Math.min(directive.target,before + 1) : before;
     next[directive.id] = after;
     const reached = after >= directive.target;
