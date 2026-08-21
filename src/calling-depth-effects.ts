@@ -11,6 +11,11 @@ export function legendRewardKey(year:number, month:number, effectId:string): str
   return `${safeYear}-${safeMonth}:${effectId}`;
 }
 
+function sanitizeLegendRewardKeys(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((value): value is string => typeof value === 'string' && value.length > 0))];
+}
+
 export function effectivePathfinderExplorationXp(
   xp:number,
   calling:GuardianCallingId | null,
@@ -74,7 +79,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   let extraMaterial = 0;
   let fatigueDelta = safeNonNegativeDelta(input.fatigueDelta);
   let stressDelta = safeNonNegativeDelta(input.stressDelta);
-  let legendRewardKeys = [...input.legendRewardKeys];
+  const legendRewardKeys = sanitizeLegendRewardKeys(input.legendRewardKeys);
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
   const traits = new Set(input.traits);
@@ -125,10 +130,11 @@ export function applyPathfinderOutingLegend(
   discovered:boolean,
   existingKeys:string[],
 ): { goldBonus:number; legendRewardKeys:string[]; applied:boolean } {
+  const legendRewardKeys = sanitizeLegendRewardKeys(existingKeys);
   if (calling !== 'pathfinder' || !traits.includes('pathfinder_legend') || !discovered) {
-    return { goldBonus:0, legendRewardKeys:existingKeys, applied:false };
+    return { goldBonus:0, legendRewardKeys, applied:false };
   }
   const key = legendRewardKey(year, month, 'pathfinder_legend');
-  if (existingKeys.includes(key)) return { goldBonus:0, legendRewardKeys:existingKeys, applied:false };
-  return { goldBonus:100, legendRewardKeys:[...existingKeys, key], applied:true };
+  if (legendRewardKeys.includes(key)) return { goldBonus:0, legendRewardKeys, applied:false };
+  return { goldBonus:100, legendRewardKeys:[...legendRewardKeys, key], applied:true };
 }
