@@ -34,6 +34,7 @@ export type BattleSession = {
 
 const TACTICAL_AP_CAP=3;
 const TACTICAL_MP_CAP=10;
+const tacticalStatusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 
 function finiteInteger(value:number,fallback:number) {
   return Number.isFinite(value) ? Math.floor(value) : fallback;
@@ -41,6 +42,13 @@ function finiteInteger(value:number,fallback:number) {
 
 function normalizeOptionalPower(value:number|undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0,Math.floor(value)) : undefined;
+}
+
+function normalizeStatuses(statuses:TacticalStatus[]|undefined):TacticalStatus[] {
+  const source=Array.isArray(statuses)?statuses:[];
+  return source
+    .filter(status=>Boolean(status)&&typeof status.id==='string'&&tacticalStatusIds.includes(status.id as TacticalStatusId)&&Number.isFinite(status.turns)&&status.turns>0)
+    .map(status=>({id:status.id as TacticalStatusId,turns:Math.max(1,Math.floor(status.turns))}));
 }
 
 export function orderedTimeline(units:TacticalUnit[]) {
@@ -75,9 +83,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
       skillPower:normalizeOptionalPower(unit.skillPower),
       supportPower:normalizeOptionalPower(unit.supportPower),
       aiArchetype:unit.side === 'enemy' ? unit.aiArchetype : undefined,
-      statuses:(unit.statuses ?? [])
-        .filter(status => ['guard','focus','break','regen'].includes(status.id) && Number.isFinite(status.turns) && status.turns > 0)
-        .map(status => ({ id:status.id,turns:Math.max(1,Math.floor(status.turns)) })),
+      statuses:normalizeStatuses(unit.statuses),
     };
   });
   return { units, timeline:orderedTimeline(units), round:1, seed:finiteInteger(seed,0), acted:[] };
