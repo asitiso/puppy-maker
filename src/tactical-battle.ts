@@ -52,11 +52,15 @@ function normalizeStatuses(statuses:TacticalStatus[]|undefined):TacticalStatus[]
     .map(status=>({id:status.id as TacticalStatusId,turns:Math.max(1,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(status.turns)))}));
 }
 
+function isLivingUnit(unit:TacticalUnit) {
+  return Number.isFinite(unit.hp) && unit.hp > 0;
+}
+
 export function orderedTimeline(units:TacticalUnit[]) {
   return units
-    .filter(unit => unit.hp > 0)
+    .filter(isLivingUnit)
     .slice()
-    .sort((a,b) => b.agility - a.agility || a.id.localeCompare(b.id))
+    .sort((a,b) => (Number.isFinite(b.agility)?b.agility:0) - (Number.isFinite(a.agility)?a.agility:0) || a.id.localeCompare(b.id))
     .map(unit => unit.id);
 }
 
@@ -91,8 +95,8 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
 }
 
 export function isBattleFinished(session:BattleSession):BattleResult|null {
-  const alliesAlive = session.units.some(unit => unit.side === 'ally' && unit.hp > 0);
-  const enemiesAlive = session.units.some(unit => unit.side === 'enemy' && unit.hp > 0);
+  const alliesAlive = session.units.some(unit => unit.side === 'ally' && isLivingUnit(unit));
+  const enemiesAlive = session.units.some(unit => unit.side === 'enemy' && isLivingUnit(unit));
   if (!alliesAlive) return 'defeat';
   if (!enemiesAlive) return 'victory';
   return null;
