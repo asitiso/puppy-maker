@@ -62,8 +62,9 @@ export function hydrateRaisingDepthState(raw: unknown): RaisingDepthPersistentSt
     ? source.activeCalling as GuardianCallingId
     : null;
   const masterySource = isRecord(source.callingMastery) ? source.callingMastery : {};
-  const unlockedBondScenes = uniqueAllowed(source.unlockedBondScenes, bondSceneIds);
-  const rewardedBondScenes = uniqueAllowed(source.rewardedBondScenes, bondSceneIds).filter(id => unlockedBondScenes.includes(id));
+  const claimedUnlocks = uniqueAllowed(source.unlockedBondScenes, bondSceneIds);
+  const rewardedBondScenes = uniqueAllowed(source.rewardedBondScenes, bondSceneIds);
+  const unlockedBondScenes = bondSceneIds.filter(id => claimedUnlocks.includes(id) || rewardedBondScenes.includes(id));
   const purchasedTraits = canonicalGrowthTraits(uniqueAllowed(source.purchasedTraits, growthTraitIds));
   return {
     activeCalling,
