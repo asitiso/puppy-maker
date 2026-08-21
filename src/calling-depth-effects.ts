@@ -20,16 +20,20 @@ export function effectivePathfinderExplorationXp(
   return safeXp + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
 }
 
+function hasValidAction(value:number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
 export function specialistMasteryCalling(
   calling:GuardianCallingId | null,
   actions:ExpeditionActionCounts,
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
   if (!calling || summary.grade === 'C') return null;
-  if (calling === 'vanguard') return actions.attack > 0 ? calling : null;
-  if (calling === 'arcanist') return actions.charge > 0 ? calling : null;
-  if (calling === 'caretaker') return actions.dodge > 0 ? calling : null;
-  const acted = actions.attack + actions.dodge + actions.charge > 0;
+  if (calling === 'vanguard') return hasValidAction(actions.attack) ? calling : null;
+  if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
+  if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
+  const acted = hasValidAction(actions.attack) || hasValidAction(actions.dodge) || hasValidAction(actions.charge);
   const explored = summary.discovery !== null || summary.materialReward > 0 || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
 }
