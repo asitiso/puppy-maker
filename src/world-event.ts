@@ -36,6 +36,7 @@ export function worldEventExpeditionBonus(
   region:ExpeditionRegionId,
   grade:ExpeditionGrade,
 ): { seasonPoints:number; materialBonus:number } {
-  if (grade === 'C' || region !== event.region) return { seasonPoints:0, materialBonus:0 };
+  const successfulGrade = grade === 'B' || grade === 'A' || grade === 'S';
+  if (!successfulGrade || region !== event.region) return { seasonPoints:0, materialBonus:0 };
   return { seasonPoints:5, materialBonus:grade === 'S' ? 1 : 0 };
 }

@@ -15,6 +15,34 @@ export type WorldContractDefinition = {
 
 const safeYear = (year:number) => Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
 const safeMonth = (month:number) => Math.max(1, Math.min(12, Math.floor(Number.isFinite(month) ? month : 1)));
+const worldContractIds: readonly WorldContractId[] = ['expedition_clear', 'high_grade', 'featured_region'];
+
+function sanitizedRewardedKeys(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const valid = new Set<WorldContractId>(worldContractIds);
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  for (const value of raw) {
+    if (typeof value !== 'string' || !value) continue;
+    const match = /^(\d+)-(\d+):([a-z_]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const id = match[3] as WorldContractId;
+    if (!Number.isSafeInteger(year) || year < 1 || !Number.isInteger(month) || month < 1 || month > 12 || !valid.has(id)) continue;
+    const canonical = worldContractRewardKey(year, month, id);
+    if (canonical !== value || seen.has(canonical)) continue;
+    seen.add(canonical);
+    keys.push(canonical);
+  }
+  return keys;
+}
+
+function progressSource(raw: unknown): Partial<WorldContractProgress> {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+    ? raw as Partial<WorldContractProgress>
+    : {};
+}
 
 export function emptyWorldContractProgress(): WorldContractProgress {
   return { expedition_clear:0, high_grade:0, featured_region:0 };
@@ -53,18 +81,21 @@ export function advanceWorldContracts(input:AdvanceInput): {
 } {
   const contracts = monthlyWorldContracts(input.year, input.month, input.event);
   const targetFor = (id:WorldContractId) => contracts.find(contract => contract.id === id)?.target ?? Number.MAX_SAFE_INTEGER;
+  const stored = progressSource(input.progress);
   const storedProgress = (id:WorldContractId) => {
-    const value = input.progress[id];
-    return Math.min(targetFor(id), Math.max(0, Math.floor(Number.isFinite(value) ? value : 0)));
+    const value = stored[id];
+    return Math.min(targetFor(id), Math.max(0, Math.floor(Number.isFinite(value) ? value as number : 0)));
   };
   const current:WorldContractProgress = {
     expedition_clear:storedProgress('expedition_clear'),
     high_grade:storedProgress('high_grade'),
     featured_region:storedProgress('featured_region'),
   };
+  const rewardedKeys = sanitizedRewardedKeys(input.rewardedKeys);
+  const successful = input.grade === 'B' || input.grade === 'A' || input.grade === 'S';
 
-  if (input.grade === 'C') {
-    return { progress:current, rewardedKeys:[...input.rewardedKeys], reward:{ gold:0, gems:0 }, newlyCompleted:[] };
+  if (!successful) {
+    return { progress:current, rewardedKeys, reward:{ gold:0, gems:0 }, newlyCompleted:[] };
   }
 
   const progress:WorldContractProgress = {
@@ -72,7 +103,6 @@ export function advanceWorldContracts(input:AdvanceInput): {
     high_grade:Math.min(targetFor('high_grade'),current.high_grade + (input.grade === 'A' || input.grade === 'S' ? 1 : 0)),
     featured_region:Math.min(targetFor('featured_region'),current.featured_region + (input.region === input.event.region ? 1 : 0)),
   };
-  const rewardedKeys = [...input.rewardedKeys];
   const newlyCompleted:WorldContractId[] = [];
   let gold = 0;
   let gems = 0;

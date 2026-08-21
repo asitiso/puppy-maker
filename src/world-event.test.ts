@@ -34,6 +34,13 @@ describe('monthly world events', () => {
     expect(worldEventExpeditionBonus(event, 'starlight_forest', 'C')).toEqual({ seasonPoints:0, materialBonus:0 });
   });
 
+  it('fails closed for malformed expedition grades', () => {
+    const event = worldEvent(1, 1);
+    for (const grade of ['Z', '', null, undefined, 42] as any[]) {
+      expect(worldEventExpeditionBonus(event, 'starlight_forest', grade)).toEqual({ seasonPoints:0, materialBonus:0 });
+    }
+  });
+
   it('sanitizes invalid calendar inputs to a deterministic event', () => {
     expect(worldEvent(0, 0)).toEqual(worldEvent(1, 1));
     expect(worldEvent(Number.NaN, Number.NaN)).toEqual(worldEvent(1, 1));
