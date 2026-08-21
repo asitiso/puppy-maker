@@ -59,7 +59,7 @@ export function createBattleSession(allies:TacticalUnit[], enemies:TacticalUnit[
   if (allies.some(unit=>unit.side!=='ally') || enemies.some(unit=>unit.side!=='enemy')) throw new Error('Tactical battle requires matching party sides.');
   const units = [...allies,...enemies].map(unit => {
     const maxHp=Math.max(1,finiteInteger(unit.maxHp,1));
-    const maxAp=Math.max(0,Math.min(TACTICAL_AP_CAP,finiteInteger(unit.maxAp,0)));
+    const maxAp=Math.max(1,Math.min(TACTICAL_AP_CAP,finiteInteger(unit.maxAp,1)));
     const maxMp=Math.max(0,Math.min(TACTICAL_MP_CAP,finiteInteger(unit.maxMp,0)));
     return {
       ...unit,
