@@ -27,4 +27,17 @@ describe('Runa bond scenes', () => {
     expect(eligibleBondScenes({ affection:94, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).not.toContain('precious_partner');
     expect(eligibleBondScenes({ affection:95, outings:3, trainings:20, gifts:5, guardianRank:'guardian', bossClears:3, annualRecords:1, alreadyUnlocked:[...prior] })).toContain('precious_partner');
   });
+
+  it('does not unlock scenes from non-finite progress counters', () => {
+    expect(eligibleBondScenes({
+      affection:Number.POSITIVE_INFINITY,
+      outings:Number.POSITIVE_INFINITY,
+      trainings:Number.POSITIVE_INFINITY,
+      gifts:Number.POSITIVE_INFINITY,
+      guardianRank:'trainee',
+      bossClears:Number.POSITIVE_INFINITY,
+      annualRecords:Number.POSITIVE_INFINITY,
+      alreadyUnlocked:[],
+    })).toEqual([]);
+  });
 });
