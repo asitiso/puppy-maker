@@ -49,6 +49,7 @@ export function validCombinationUltimateTargets(
     actor.side !== 'ally' ||
     actor.hp <= 0 ||
     nextTacticalActor(session) !== actorId ||
+    !Number.isFinite(bondLevel) ||
     bondLevel < 5 ||
     actor.mp < ultimate.mpCost ||
     !livingPartner(session,companionId)
