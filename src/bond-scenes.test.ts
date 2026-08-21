@@ -40,4 +40,18 @@ describe('Runa bond scenes', () => {
       alreadyUnlocked:[],
     })).toEqual([]);
   });
+
+  it('does not count unknown saved scene ids toward precious partner', () => {
+    const malformed = ['bad_1','bad_2','bad_3','bad_4','bad_5','bad_6','bad_7','bad_8'] as never[];
+    expect(eligibleBondScenes({
+      affection:95,
+      outings:0,
+      trainings:0,
+      gifts:0,
+      guardianRank:'trainee',
+      bossClears:0,
+      annualRecords:0,
+      alreadyUnlocked:malformed,
+    })).not.toContain('precious_partner');
+  });
 });
