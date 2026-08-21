@@ -30,8 +30,26 @@ describe('season journey', () => {
     expect(seasonJourneyTiers[9].reward.tokens).toBeGreaterThan(seasonJourneyTiers[0].reward.tokens);
   });
 
-  it('returns only newly crossed tiers in ascending order', () => {
+  it('returns only newly crossed tiers in ascending order without a season claim key', () => {
     expect(newlyEarnedJourneyTiers(40,180,[]).map(tier => tier.tier)).toEqual([1,2,3]);
     expect(newlyEarnedJourneyTiers(180,300,['1-spring:1','1-spring:2','1-spring:3']).map(tier => tier.tier)).toEqual([4]);
+  });
+
+  it('recovers reached but unclaimed tiers when a season claim key is supplied', () => {
+    expect(newlyEarnedJourneyTiers(
+      180,
+      200,
+      ['1-spring:1'],
+      '1-spring',
+    ).map(tier => tier.tier)).toEqual([2,3]);
+  });
+
+  it('never returns already claimed season tiers during recovery', () => {
+    expect(newlyEarnedJourneyTiers(
+      180,
+      200,
+      ['1-spring:1','1-spring:2','1-spring:3'],
+      '1-spring',
+    )).toEqual([]);
   });
 });

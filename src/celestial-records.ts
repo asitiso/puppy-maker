@@ -18,18 +18,41 @@ export const celestialHonors:CelestialHonor[] = [
   { id:'twelve_trials', label:'천체 연대기', description:'누적 12회의 Astral Trial을 완료했어요.', metric:'totalClears', threshold:12, reward:{ gold:800, gems:4, starShards:4 } },
 ];
 
+const gradeRank:Record<AstralTrialGrade,number> = { B:1, A:2, S:3 };
 const trialFromKey = (key:string) => key.split(':')[1] ?? '';
+const monthFromKey = (key:string) => key.split(':')[0] ?? '';
+
+export function canonicalCelestialRecords(records:ReadonlyArray<CelestialRecord>):CelestialRecord[] {
+  const byMonth = new Map<string,CelestialRecord>();
+  for (const record of records) {
+    const month = monthFromKey(record.key);
+    const trial = trialFromKey(record.key);
+    if (!month || !trial) continue;
+    const existing = byMonth.get(month);
+    if (!existing) {
+      byMonth.set(month,record);
+      continue;
+    }
+    if (existing.key !== record.key) continue;
+    if (gradeRank[record.grade] > gradeRank[existing.grade]
+      || (record.grade === existing.grade && record.power > existing.power)) {
+      byMonth.set(month,record);
+    }
+  }
+  return [...byMonth.values()];
+}
 
 export function celestialRecordProgress(records:ReadonlyArray<CelestialRecord>) {
+  const canonical = canonicalCelestialRecords(records);
   const unique = new Set<string>();
   const uniqueS = new Set<string>();
-  for (const record of records) {
+  for (const record of canonical) {
     const trial = trialFromKey(record.key);
     if (!trial) continue;
     unique.add(trial);
     if (record.grade === 'S') uniqueS.add(trial);
   }
-  return { totalClears:records.length, uniqueTrials:unique.size, uniqueSClears:uniqueS.size };
+  return { totalClears:canonical.length, uniqueTrials:unique.size, uniqueSClears:uniqueS.size };
 }
 
 export function newlyEarnedCelestialHonors(records:ReadonlyArray<CelestialRecord>,claimed:ReadonlyArray<CelestialHonorId>) {
