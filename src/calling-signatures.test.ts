@@ -32,6 +32,14 @@ describe('calling signature abilities', () => {
     expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus'], 999)).toEqual(['rally_strike']);
   });
 
+  it('does not unlock signatures from orphaned upper-tier traits', () => {
+    expect(callingSignatures('vanguard', ['vanguard_focus'], 3)).toEqual([]);
+    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_legend'], 12)).toEqual([]);
+    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus','vanguard_legend'], 12)).toEqual(['rally_strike']);
+    expect(callingSignatures('vanguard', ['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend'], 12))
+      .toEqual(['rally_strike','guardian_breaker']);
+  });
+
   it('treats malformed mastery XP as level one when mastery is supplied', () => {
     const traits = ['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend'] as const;
     expect(callingSignatures('vanguard', [...traits], Number.NaN)).toEqual([]);
