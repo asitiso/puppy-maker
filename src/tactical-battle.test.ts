@@ -86,4 +86,21 @@ describe('tactical battle domain', () => {
     expect(isBattleFinished({ ...base, units:base.units.map(entry => entry.side === 'enemy' ? { ...entry, hp:0 } : entry) })).toBe('victory');
     expect(isBattleFinished({ ...base, units:base.units.map(entry => entry.side === 'ally' ? { ...entry, hp:0 } : entry) })).toBe('defeat');
   });
+
+  it('treats non-finite runtime HP as non-living so an untargetable unit cannot deadlock the battle', () => {
+    const base = createBattleSession([unit('runa','ally',10),unit('bear','ally',5),unit('cat','ally',15)],[unit('e1','enemy',1),unit('e2','enemy',2),unit('e3','enemy',3)],1);
+    const lastEnemyCorrupted = {
+      ...base,
+      units:base.units.map(entry => entry.side === 'enemy' ? { ...entry,hp:entry.id === 'e1' ? Number.POSITIVE_INFINITY : 0 } : entry),
+    };
+    expect(isBattleFinished(lastEnemyCorrupted)).toBe('victory');
+    expect(orderedTimeline(lastEnemyCorrupted.units)).not.toContain('e1');
+
+    const lastAllyCorrupted = {
+      ...base,
+      units:base.units.map(entry => entry.side === 'ally' ? { ...entry,hp:entry.id === 'runa' ? Number.NaN : 0 } : entry),
+    };
+    expect(isBattleFinished(lastAllyCorrupted)).toBe('defeat');
+    expect(orderedTimeline(lastAllyCorrupted.units)).not.toContain('runa');
+  });
 });
