@@ -1,4 +1,5 @@
 import type { AstralTrialGrade } from './sanctuary-astral-trials';
+import { celestialRecordProgress } from './celestial-records';
 
 export type CelestialAscensionRankId = 'earthbound'|'awakened'|'stellar'|'empyrean'|'transcendent';
 export type CelestialAscensionRewardRank = Exclude<CelestialAscensionRankId,'earthbound'>;
@@ -20,7 +21,6 @@ export const celestialAscensionRewards = [
 ];
 
 const clampInt = (value:number,min:number,max:number) => Math.min(max,Math.max(min,Number.isFinite(value) ? Math.floor(value) : min));
-const trialFromKey = (key:string) => key.split(':')[1] ?? '';
 
 export function celestialAscensionProgress(input:{
   trialRecords:ReadonlyArray<CelestialAscensionRecord>;
@@ -28,14 +28,9 @@ export function celestialAscensionProgress(input:{
   constellationCount:number;
   sanctuaryGrandProgress:number;
 }):number {
-  const clears = Math.min(12,input.trialRecords.length) * 2;
-  const uniqueS = new Set<string>();
-  for (const record of input.trialRecords) {
-    if (record.grade !== 'S') continue;
-    const trial = trialFromKey(record.key);
-    if (trial) uniqueS.add(trial);
-  }
-  const sScore = Math.min(4,uniqueS.size) * 4;
+  const recordProgress = celestialRecordProgress(input.trialRecords);
+  const clears = Math.min(12,recordProgress.totalClears) * 2;
+  const sScore = Math.min(4,recordProgress.uniqueSClears) * 4;
   const blessingScore = clampInt(input.blessingCount,0,4) * 5;
   const constellationScore = clampInt(input.constellationCount,0,5) * 2;
   const sanctuaryScore = Math.floor(clampInt(input.sanctuaryGrandProgress,0,65) / 5);

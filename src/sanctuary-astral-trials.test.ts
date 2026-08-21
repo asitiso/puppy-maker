@@ -24,7 +24,7 @@ describe('sanctuary astral trials', () => {
     expect(power).toBe(78);
   });
 
-  it('requires the matching constellation and grades accepted clears', () => {
+  it('requires at least one matching constellation and grades accepted clears', () => {
     const locked = resolveAstralTrial({
       year:1,
       month:1,
@@ -49,6 +49,36 @@ describe('sanctuary astral trials', () => {
       gold:150,
       key:'1-1:scholar_trial',
     }));
+  });
+
+  it('falls back to an unlocked trial when the featured monthly trial is still locked', () => {
+    const result = resolveAstralTrial({
+      year:1,
+      month:2,
+      power:90,
+      constellations:['dawn_compass','scholar_star'],
+      claimedKeys:[],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted:true,
+      trial:expect.objectContaining({ id:'scholar_trial' }),
+      grade:'A',
+      key:'1-2:scholar_trial',
+    }));
+  });
+
+  it('allows only one reward claim per calendar month even if the eligible trial changes', () => {
+    const result = resolveAstralTrial({
+      year:1,
+      month:2,
+      power:120,
+      constellations:['dawn_compass','scholar_star','wayfarer_star'],
+      claimedKeys:['1-2:scholar_trial'],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.reason).toBe('already_claimed');
   });
 
   it('allows only one reward claim per monthly trial', () => {

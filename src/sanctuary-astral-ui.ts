@@ -4,9 +4,9 @@ import {
   celestialAscensionRank,
   celestialAscensionRewards,
 } from './celestial-ascension';
-import { celestialRecordProgress } from './celestial-records';
+import { canonicalCelestialRecords, celestialRecordProgress } from './celestial-records';
 import { astralBlessings, resolveAstralBlessingPurchase } from './sanctuary-astral-blessings';
-import { astralTrialFor, astralTrialPower } from './sanctuary-astral-trials';
+import { eligibleAstralTrialFor, astralTrialPower } from './sanctuary-astral-trials';
 import { constellationProgress } from './sanctuary-constellations';
 
 function previewGrade(power:number) {
@@ -14,7 +14,8 @@ function previewGrade(power:number) {
 }
 
 export function sanctuaryAstralUiSummary(state:GameState) {
-  const trial = astralTrialFor(state.year,state.month);
+  const constellations = state.sanctuaryConstellations ?? [];
+  const trial = eligibleAstralTrialFor(state.year,state.month,constellations);
   const progress = constellationProgress({
     levels:state.sanctuaryLevels,
     specializationCount:Object.keys(state.sanctuarySpecializations ?? {}).length,
@@ -30,11 +31,12 @@ export function sanctuaryAstralUiSummary(state:GameState) {
       morality:state.stats.morality,
     },
     sanctuaryProgress:progress,
-    constellationCount:(state.sanctuaryConstellations ?? []).length,
+    constellationCount:constellations.length,
   });
   const key = `${state.year}-${state.month}:${trial.id}`;
-  const unlocked = (state.sanctuaryConstellations ?? []).includes(trial.requiredConstellation);
-  const claimed = (state.claimedAstralTrials ?? []).includes(key);
+  const monthPrefix = `${state.year}-${state.month}:`;
+  const unlocked = constellations.includes(trial.requiredConstellation);
+  const claimed = (state.claimedAstralTrials ?? []).some(claimKey => claimKey.startsWith(monthPrefix));
   const starShards = Math.max(0,Math.floor(state.astralStarShards ?? 0));
   const purchased = state.purchasedAstralBlessings ?? [];
   const trialKeys = state.claimedAstralTrials ?? [];
@@ -50,12 +52,13 @@ export function sanctuaryAstralUiSummary(state:GameState) {
     };
   });
   const records = state.astralTrialRecords ?? [];
-  const recentRecords = [...records].slice(-6).reverse();
+  const canonicalRecords = canonicalCelestialRecords(records);
+  const recentRecords = [...canonicalRecords].slice(-6).reverse();
   const recordProgress = celestialRecordProgress(records);
   const ascensionScore = celestialAscensionProgress({
     trialRecords:records,
     blessingCount:purchased.length,
-    constellationCount:(state.sanctuaryConstellations ?? []).length,
+    constellationCount:constellations.length,
     sanctuaryGrandProgress:progress,
   });
   const ascensionRank = celestialAscensionRank(ascensionScore);
@@ -84,10 +87,10 @@ export function sanctuaryAstralUiSummary(state:GameState) {
       score:ascensionScore,
       rank:ascensionRank,
       components:{
-        trialClears:Math.min(12,records.length),
+        trialClears:Math.min(12,recordProgress.totalClears),
         uniqueSClears:Math.min(4,recordProgress.uniqueSClears),
         blessings:Math.min(4,purchased.length),
-        constellations:Math.min(5,(state.sanctuaryConstellations ?? []).length),
+        constellations:Math.min(5,constellations.length),
         sanctuaryProgress:progress,
       },
       rewards:ascensionRewards,

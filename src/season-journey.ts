@@ -45,8 +45,8 @@ export function newlyEarnedJourneyTiers(previousScore:number, nextScore:number, 
   const floorPrevious = Math.max(0, Math.floor(previousScore));
   const floorNext = Math.max(floorPrevious, Math.floor(nextScore));
   return seasonJourneyTiers.filter(tier => {
-    if (floorNext < tier.threshold || floorPrevious >= tier.threshold) return false;
-    if (!key) return true;
+    if (floorNext < tier.threshold) return false;
+    if (!key) return floorPrevious < tier.threshold;
     return !claimedKeys.includes(journeyTierClaimKey(key, tier.tier));
   });
 }
