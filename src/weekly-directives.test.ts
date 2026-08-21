@@ -19,6 +19,11 @@ describe('weekly directives', () => {
     expect(weeklyDirectives(1,4,1).map(item => item.id)).not.toEqual(weeklyDirectives(1,4,2).map(item => item.id));
   });
 
+  it('uses the same canonical week for keys and directive selection', () => {
+    expect(weeklyDirectiveKey(1,4,5)).toBe(weeklyDirectiveKey(1,4,4));
+    expect(weeklyDirectives(1,4,5)).toEqual(weeklyDirectives(1,4,4));
+  });
+
   it('never assigns two directives that reward the same action counter in one week', () => {
     for (let year = 1; year <= 3; year += 1) {
       for (let month = 1; month <= 12; month += 1) {
