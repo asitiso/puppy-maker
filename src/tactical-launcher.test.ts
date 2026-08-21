@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './game';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
-import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage, tacticalLeaderProgression } from './tactical-launcher';
+import type { CompanionId } from './tactical-companions';
+import { createTacticalBattleFromGame, tacticalCompletionMetrics, tacticalEncounterForExpeditionStage, tacticalLeaderProgression, tacticalPartyForGame } from './tactical-launcher';
 
 describe('tactical expedition launcher', () => {
   it('maps expedition regions onto reusable tactical encounters', () => {
@@ -24,6 +25,13 @@ describe('tactical expedition launcher', () => {
     const state = { ...initialState, selectedTacticalCompanions:[] };
     const battle = createTacticalBattleFromGame(state,'forest_path',17);
     expect(battle.units.map(unit=>unit.id)).toEqual(expect.arrayContaining(['companion-bear','companion-owl']));
+  });
+
+  it('falls back safely when a corrupted save contains an unknown companion id', () => {
+    const corrupted = ['dragon','owl'] as unknown as readonly CompanionId[];
+    expect(tacticalPartyForGame({selectedTacticalCompanions:corrupted})).toEqual(['bear','owl']);
+    const state = { ...initialState, selectedTacticalCompanions:corrupted };
+    expect(() => createTacticalBattleFromGame(state,'forest_path',17)).not.toThrow();
   });
 
   it('sanitizes non-finite raising stats before deriving tactical combat progression', () => {
