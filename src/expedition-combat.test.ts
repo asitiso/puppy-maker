@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applyExpeditionAction, finishExpeditionBattle, startExpeditionBattle } from './expedition-combat';
+import {
+  applyExpeditionAction,
+  EXPEDITION_ACTION_LIMIT,
+  finishExpeditionBattle,
+  startExpeditionBattle,
+} from './expedition-combat';
 
 const base = {
   strength: 40,
@@ -56,6 +61,23 @@ describe('expedition combat', () => {
     expect(attackTalented.score).toBeGreaterThan(attackPlain.score);
     expect(chargeTalented.score).toBeGreaterThan(chargePlain.score);
     expect(dodgeTalented.pressureGuard).toBeGreaterThan(dodgePlain.pressureGuard);
+  });
+
+  it('stops accepting actions after the fixed expedition action limit', () => {
+    let battle = startExpeditionBattle('forest_path');
+    for (let index = 0; index < EXPEDITION_ACTION_LIMIT; index += 1) {
+      battle = applyExpeditionAction(battle, 'attack', 1, base);
+    }
+
+    const capped = battle;
+    const overflow = applyExpeditionAction(capped, 'charge', 1, {
+      ...base,
+      magic: 999,
+      magicMastery: 99,
+    });
+
+    expect(capped.actionCount).toBe(EXPEDITION_ACTION_LIMIT);
+    expect(overflow).toEqual(capped);
   });
 
   it('finishes with stage pressure converted to fatigue and stress deltas', () => {
