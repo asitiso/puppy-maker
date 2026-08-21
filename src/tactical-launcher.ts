@@ -13,7 +13,12 @@ type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
 };
 
 function finiteNonNegative(value:number) {
-  return Number.isFinite(value) ? Math.max(0,value) : 0;
+  return Number.isFinite(value) ? Math.min(Number.MAX_SAFE_INTEGER,Math.max(0,value)) : 0;
+}
+
+function safeRounded(value:number,min:number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min,Math.min(Number.MAX_SAFE_INTEGER,Math.round(value)));
 }
 
 function isCompanionId(value:unknown):value is CompanionId {
@@ -38,10 +43,10 @@ export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personal
   const intelligence = finiteNonNegative(state.stats.intelligence);
   const calmness = finiteNonNegative(state.personality.calmness);
   return {
-    power:Math.max(20,Math.round(strength * .75 + magic * .45 + 20)),
-    magic:Math.max(10,Math.round(magic + intelligence * .2)),
-    agility:Math.max(8,Math.round(8 + intelligence * .08 + calmness * .08)),
-    maxHp:Math.max(100,Math.round(100 + strength * 1.6)),
+    power:safeRounded(strength * .75 + magic * .45 + 20,20),
+    magic:safeRounded(magic + intelligence * .2,10),
+    agility:safeRounded(8 + intelligence * .08 + calmness * .08,8),
+    maxHp:safeRounded(100 + strength * 1.6,100),
   };
 }
 
