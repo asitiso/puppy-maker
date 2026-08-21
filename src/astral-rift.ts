@@ -80,7 +80,8 @@ export function canEnterAstralRift(input:{
   records:AstralRiftRecordMap;
 }):boolean {
   const challenge = astralRiftChallenge(input.riftId,input.intensity);
-  if (input.ascensionScore < challenge.ascensionThreshold) return false;
+  const ascensionScore = clampInt(input.ascensionScore,0,83);
+  if (ascensionScore < challenge.ascensionThreshold) return false;
   if (input.intensity === 1) return true;
   const previous = input.records[recordKey(input.riftId,(input.intensity - 1) as AstralRiftIntensity)];
   return Boolean(previous && gradeRank[previous.grade] >= gradeRank.A);
