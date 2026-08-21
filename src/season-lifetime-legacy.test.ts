@@ -36,4 +36,11 @@ describe('season lifetime legacy', () => {
     expect(summary.points).toBe(5);
     expect(summary.completedSeasons).toBe(1);
   });
+
+  it('does not award keepsake lifetime inflation from malformed purchase ledger keys', () => {
+    const spring = { key:'1-spring' as const, score:1300, tiersCompleted:10, tokensEarned:120 };
+    expect(seasonLifetimeSummary([spring],['1-spring:seasonal_keepsake:hack']).points).toBe(4);
+    expect(seasonLifetimeSummary([spring],['01-spring:seasonal_keepsake:1']).points).toBe(4);
+    expect(seasonLifetimeSummary([spring],['1-spring:seasonal_keepsake:1']).points).toBe(5);
+  });
 });
