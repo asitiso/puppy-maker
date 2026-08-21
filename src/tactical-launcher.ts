@@ -56,9 +56,14 @@ export function createTacticalBattleFromGame(state:TacticalLaunchState,stageId:E
 
 export function tacticalCompletionMetrics(session:BattleSession) {
   const allies = session.units.filter(unit => unit.side === 'ally');
+  const damageTaken = allies.reduce((sum,unit) => {
+    const maxHp = finiteNonNegative(unit.maxHp);
+    const hp = Math.min(maxHp,finiteNonNegative(unit.hp));
+    return Math.min(Number.MAX_SAFE_INTEGER,sum + Math.max(0,maxHp-hp));
+  },0);
   return {
-    rounds:Math.max(1,session.round),
-    survivingAllies:allies.filter(unit => unit.hp > 0).length,
-    damageTaken:allies.reduce((sum,unit) => sum + Math.max(0,unit.maxHp-unit.hp),0),
+    rounds:safeRounded(session.round,1),
+    survivingAllies:allies.filter(unit => finiteNonNegative(unit.hp) > 0).length,
+    damageTaken,
   };
 }
