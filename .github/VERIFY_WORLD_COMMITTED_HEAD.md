@@ -1,0 +1,3 @@
+Verification marker for committed World shared-wiring source state.
+Source patch commit: 4a638905061ed8513da8d729d7a9130848a5bebb
+Integration baseline remains db25f0e18471550cda2242021887051eb7c830e9.
