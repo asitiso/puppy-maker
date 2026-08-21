@@ -102,10 +102,11 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
   const traits = new Set(input.traits);
-  const successful = input.grade !== 'C';
+  const successful = input.grade === 'B' || input.grade === 'A' || input.grade === 'S';
+  const hasMaterialReward = Number.isFinite(input.materialReward) && input.materialReward > 0;
 
   if (successful && input.calling === 'pathfinder') {
-    if (signatures.has('trail_reading') && input.firstClear && input.materialReward > 0) {
+    if (signatures.has('trail_reading') && input.firstClear && hasMaterialReward) {
       extraMaterial += 1;
       applied.push('trail_reading');
     }
