@@ -16,6 +16,15 @@ describe('tactical status effects', () => {
     expect(addTacticalStatus(unit('runa'),'regen',Number.POSITIVE_INFINITY).statuses).toEqual([{ id:'regen',turns:1 }]);
   });
 
+  it('caps finite-but-huge status duration and power to safe integers', () => {
+    const focused=addTacticalStatus(unit('runa'),'focus',Number.MAX_VALUE);
+    expect(Number.isSafeInteger(focused.statuses?.[0].turns)).toBe(true);
+    expect(focused.statuses?.[0].turns).toBe(Number.MAX_SAFE_INTEGER);
+    const power=tacticalStatusPower(focused,Number.MAX_VALUE);
+    expect(Number.isSafeInteger(power)).toBe(true);
+    expect(power).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
   it('focus raises outgoing power while break reduces it', () => {
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'focus',1),40)).toBe(48);
     expect(tacticalStatusPower(addTacticalStatus(unit('runa'),'break',1),40)).toBe(32);
@@ -37,6 +46,13 @@ describe('tactical status effects', () => {
   it('guard contributes temporary shield protection', () => {
     const guarded = addTacticalStatus(unit('runa'),'guard',2);
     expect(guarded.shield).toBeGreaterThanOrEqual(15);
+  });
+
+  it('status helpers tolerate malformed runtime status containers', () => {
+    const malformed={...unit('runa'),statuses:'focus' as unknown as TacticalUnit['statuses']};
+    expect(addTacticalStatus(malformed,'regen',2).statuses).toEqual([{id:'regen',turns:2}]);
+    expect(tacticalStatusPower(malformed,40)).toBe(40);
+    expect(advanceTacticalStatuses(malformed).statuses).toEqual([]);
   });
 
   it('battle sessions preserve sanitized status arrays', () => {
