@@ -63,6 +63,28 @@ describe('Calling depth effects', () => {
     expect(first.legendRewardKeys).toEqual([]);
   });
 
+  it('does not apply clear-dependent Calling rewards on a C-grade failure', () => {
+    const pathfinder = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'pathfinder',
+      traits:['pathfinder_herb','pathfinder_eye','pathfinder_supply','pathfinder_legend'],
+      signatures:['trail_reading','star_compass'], legendRewardKeys:[],
+      stageId:'forest_glade', grade:'C', firstClear:true, discovery:'forest_echo',
+      regionCompleted:'starlight_forest', materialReward:2, fatigueDelta:8, stressDelta:6,
+    });
+    expect(pathfinder.extraMaterial).toBe(0);
+    expect(pathfinder.applied).toEqual([]);
+
+    const vanguard = applyExpeditionCallingRewards({
+      year:1, month:4, calling:'vanguard',
+      traits:['vanguard_power','vanguard_focus','vanguard_assault','vanguard_legend'], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'C', firstClear:true, discovery:null, regionCompleted:null,
+      materialReward:1, fatigueDelta:8, stressDelta:6,
+    });
+    expect(vanguard.fatigueDelta).toBe(8);
+    expect(vanguard.legendRewardKeys).toEqual([]);
+    expect(vanguard.applied).toEqual([]);
+  });
+
   it('ignores forged signatures that are not backed by their required Trait chain', () => {
     const pathfinder = applyExpeditionCallingRewards({
       year:1, month:4, calling:'pathfinder', traits:[], signatures:['trail_reading','star_compass'], legendRewardKeys:[],
