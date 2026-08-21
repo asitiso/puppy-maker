@@ -5,6 +5,9 @@ import type { ExpeditionGrade, ExpeditionRegionId, ExpeditionStageId } from './e
 import type { GuardianCallingId } from './guardian-callings';
 import type { GrowthTraitId } from './growth-traits';
 
+const legendEffectIds = ['vanguard_legend', 'arcanist_legend', 'pathfinder_legend'] as const;
+type LegendEffectId = typeof legendEffectIds[number];
+
 export function legendRewardKey(year:number, month:number, effectId:string): string {
   const safeYear = Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
   const safeMonth = Math.max(1, Math.min(12, Math.floor(Number.isFinite(month) ? month : 1)));
@@ -13,7 +16,23 @@ export function legendRewardKey(year:number, month:number, effectId:string): str
 
 function sanitizeLegendRewardKeys(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  return [...new Set(raw.filter((value): value is string => typeof value === 'string' && value.length > 0))];
+  const validEffects = new Set<string>(legendEffectIds);
+  const keys:string[] = [];
+  const seen = new Set<string>();
+  for (const value of raw) {
+    if (typeof value !== 'string' || !value) continue;
+    const match = /^(\d+)-(\d+):([a-z_]+)$/.exec(value);
+    if (!match) continue;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const effectId = match[3] as LegendEffectId;
+    if (!Number.isSafeInteger(year) || year < 1 || !Number.isInteger(month) || month < 1 || month > 12 || !validEffects.has(effectId)) continue;
+    const canonical = legendRewardKey(year, month, effectId);
+    if (canonical !== value || seen.has(canonical)) continue;
+    seen.add(canonical);
+    keys.push(canonical);
+  }
+  return keys;
 }
 
 export function effectivePathfinderExplorationXp(
