@@ -48,6 +48,21 @@ describe('tactical turn engine', () => {
     expect(before.mp).toBeGreaterThanOrEqual(0);
   });
 
+  it('repairs non-finite runtime resources and advances instead of deadlocking on PASS', () => {
+    for (const corrupt of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY]) {
+      const session = battle();
+      session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:corrupt, mp:corrupt } : entry);
+      const next = skipTacticalTurnIfNoPlayableAction(session,'bat',['attack','skill','support','special']);
+      expect(next).not.toBe(session);
+      expect(next.acted).toEqual(['bat']);
+      const bat = next.units.find(entry => entry.id === 'bat')!;
+      expect(bat.ap).toBe(0);
+      expect(bat.mp).toBe(0);
+      expect(Number.isFinite(bat.ap)).toBe(true);
+      expect(Number.isFinite(bat.mp)).toBe(true);
+    }
+  });
+
   it('clamps inflated finite max resources to the tactical AP and MP caps', () => {
     const inflated = { ...unit('bat','enemy',14),ap:999,maxAp:999,mp:999,maxMp:999 };
     const session = createBattleSession(
