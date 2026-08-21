@@ -40,6 +40,20 @@ describe('tactical turn engine', () => {
     expect(before.mp).toBeGreaterThanOrEqual(0);
   });
 
+  it('clamps inflated finite max resources to the tactical AP and MP caps', () => {
+    const inflated = { ...unit('bat','enemy',14),ap:999,maxAp:999,mp:999,maxMp:999 };
+    const session = createBattleSession(
+      [unit('runa','ally',12),unit('owl','ally',8),unit('bear','ally',6)],
+      [inflated,unit('wolf','enemy',10),unit('tree','enemy',4)],
+      3,
+    );
+    const bat = session.units.find(entry => entry.id === 'bat')!;
+    expect(bat.maxAp).toBe(3);
+    expect(bat.ap).toBe(3);
+    expect(bat.maxMp).toBe(10);
+    expect(bat.mp).toBe(10);
+  });
+
   it('spends an exact cost once and blocks a same-turn double spend', () => {
     const session = battle();
     session.units = session.units.map(entry => entry.id === 'bat' ? { ...entry, ap:2, mp:0 } : entry);
