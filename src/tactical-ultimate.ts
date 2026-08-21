@@ -1,5 +1,5 @@
 import type { BattleSession, TacticalUnit } from './tactical-battle';
-import { isBattleFinished } from './tactical-battle';
+import { isBattleFinished, repairTacticalHealth } from './tactical-battle';
 import type { CompanionId } from './tactical-companions';
 import { completeTacticalTurn, nextTacticalActor } from './tactical-engine';
 import { addTacticalStatus } from './tactical-status';
@@ -64,10 +64,11 @@ export function validCombinationUltimateTargets(
 }
 
 function damage(target:TacticalUnit,power:number):TacticalUnit {
+  const safe = repairTacticalHealth(target);
   const raw = Math.max(0,Math.floor(power));
-  const shield = Number.isFinite(target.shield) ? Math.max(0,Math.floor(target.shield)) : 0;
+  const shield = Number.isFinite(safe.shield) ? Math.max(0,Math.floor(safe.shield)) : 0;
   const blocked = Math.min(shield,raw);
-  return { ...target,shield:shield-blocked,hp:Math.max(0,target.hp-(raw-blocked)) };
+  return { ...safe,shield:shield-blocked,hp:Math.max(0,safe.hp-(raw-blocked)) };
 }
 
 export function resolveCombinationUltimate(session:BattleSession,input:CombinationUltimateInput):BattleSession {
@@ -81,7 +82,8 @@ export function resolveCombinationUltimate(session:BattleSession,input:Combinati
       const shield = Number.isFinite(next.shield) ? Math.max(0,Math.floor(next.shield)) : 0;
       next = { ...next,shield:shield+ultimate.power };
     } else if (input.companionId === 'owl' && unit.side === 'ally' && Number.isFinite(unit.hp) && unit.hp > 0) {
-      next = addTacticalStatus({ ...next,hp:Math.min(next.maxHp,next.hp+ultimate.power) },'regen',2);
+      const safe=repairTacticalHealth(next);
+      next = addTacticalStatus({ ...safe,hp:Math.min(safe.maxHp,safe.hp+ultimate.power) },'regen',2);
     } else if (input.companionId === 'wolf' && unit.id === input.targetId) {
       next = damage(next,ultimate.power);
     } else if (input.companionId === 'cat' && unit.id === input.targetId) {
