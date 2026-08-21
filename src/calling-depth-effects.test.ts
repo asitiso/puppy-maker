@@ -58,7 +58,7 @@ describe('Calling depth effects', () => {
       stageId:'forest_glade', grade:'S', firstClear:true, discovery:'forest_echo',
       regionCompleted:'starlight_forest', materialReward:2, fatigueDelta:8, stressDelta:6,
     });
-    expect(first.extraMaterial).toBe(2); // supply +1 remains owned by raising-expedition-effects
+    expect(first.extraMaterial).toBe(2);
     expect(first.goldBonus).toBe(0);
     expect(first.legendRewardKeys).toEqual([]);
   });
@@ -169,15 +169,21 @@ describe('Calling depth effects', () => {
     expect(result.applied).toContain('heart_anchor');
   });
 
-  it('sanitizes non-finite expedition burden deltas instead of returning NaN', () => {
-    const result = applyExpeditionCallingRewards({
-      year:1, month:4, calling:'caretaker', traits:[], signatures:['heart_anchor'], legendRewardKeys:[],
-      stageId:'lake_channel', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+  it('sanitizes non-finite burden deltas without rounding valid fractional deltas', () => {
+    const finite = applyExpeditionCallingRewards({
+      year:1, month:4, calling:null, traits:[], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+      fatigueDelta:2.5, stressDelta:3.75,
+    });
+    expect(finite.fatigueDelta).toBe(2.5);
+    expect(finite.stressDelta).toBe(3.75);
+
+    const malformed = applyExpeditionCallingRewards({
+      year:1, month:4, calling:null, traits:[], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
       fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
     });
-    expect(result.fatigueDelta).toBe(0);
-    expect(result.stressDelta).toBe(0);
-    expect(Number.isFinite(result.fatigueDelta)).toBe(true);
-    expect(Number.isFinite(result.stressDelta)).toBe(true);
+    expect(malformed.fatigueDelta).toBe(0);
+    expect(malformed.stressDelta).toBe(0);
   });
 });
