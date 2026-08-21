@@ -39,7 +39,7 @@ export default function WorldProgressOverlay({ state }: { state: GameState }) {
     <section className="world-progress-panel">
       <img className="world-progress-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="world-progress-content">
-        <button className="world-progress-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
+        <button autoFocus className="world-progress-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
         <small>WORLD PROGRESS</small>
         <h2>월드 진행</h2>
 
