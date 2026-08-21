@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { currentAdvancedTalents, masteryLevel, type ExpeditionActionCounts, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
 import { applyExpeditionAction, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
 import { canCraft, craftingRecipes } from './expedition-crafting';
@@ -94,13 +94,20 @@ function Battle({ state, stageId, onFinish, onCancel }: {
 export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose, onFinish, onEquip, onUnequip, onCraft }: GuardianExpeditionOverlayProps) {
   const [view, setView] = useState<View>('map');
   const [activeStage, setActiveStage] = useState<ExpeditionStageId>(() => nextExpeditionStage(state.expeditionRecords) ?? 'forest_path');
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
   const cleared = expeditionStageDefinitions.filter(stage => isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const bosses = expeditionStageDefinitions.filter(stage => stage.boss && isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const recommended = nextExpeditionStage(state.expeditionRecords);
   const world = worldUiSummary(state);
 
+  useEffect(() => {
+    if (wasOpen.current && !open) launcherRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
   if (!open) {
-    return <button className="expedition-home-card" onClick={onOpen} aria-label={`수호자 원정 ${cleared} / 9 클리어`}>
+    return <button ref={launcherRef} className="expedition-home-card" onClick={onOpen} aria-label={`수호자 원정 ${cleared} / 9 클리어`}>
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
       <span><small>GUARDIAN EXPEDITION</small><strong>수호자 원정</strong><b>{cleared} / 9 · 보스 {bosses} / 3</b><em>{recommended ? `다음 · ${stageDefinition(recommended).name}` : '세 지역 정복 완료'}</em></span>
     </button>;

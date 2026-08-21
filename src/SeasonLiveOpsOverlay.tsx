@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
@@ -32,6 +33,8 @@ export default function SeasonLiveOpsOverlay({
   onPurchase:(offer:SeasonShopOfferId)=>void;
   onLegacyUnlock:(nodeId:SeasonLegacyNodeId)=>void;
 }) {
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
   const summary = liveOpsUiSummary(state);
   const masteryProgress = summary.mastery.nextThreshold
     ? `${summary.mastery.score}/${summary.mastery.nextThreshold}`
@@ -40,8 +43,13 @@ export default function SeasonLiveOpsOverlay({
     ? `${summary.lifetimeLegacy.points}/${summary.lifetimeLegacy.milestone.nextThreshold}`
     : `${summary.lifetimeLegacy.points} MAX`;
 
+  useEffect(() => {
+    if (wasOpen.current && !open) launcherRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
   if (!open) {
-    return <button className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
+    return <button ref={launcherRef} className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
       <small>SEASON JOURNEY</small>
       <strong>{summary.season.label}</strong>
       <span>{summary.season.score} P · ✦ {summary.season.tokens}</span>

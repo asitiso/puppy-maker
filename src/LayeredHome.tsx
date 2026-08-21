@@ -110,7 +110,7 @@ type LayeredHomeProps = {
 
 export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onMenuReady }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
-  const [activeNav, setActiveNav] = useState(2);
+  const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const staticPanel = activePanel ? getHomePanel(activePanel) : null;
@@ -118,6 +118,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const rank = relationshipRank(state.stats.affection);
   const collection = collectionProgress(state);
   const eligible = new Set(eligibleAchievements(state));
+  const unclaimedAchievementCount = [...eligible].filter(id => !state.claimedAchievements.includes(id)).length;
   const guardian = currentGuardianStatus(state);
   const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
   const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
@@ -151,10 +152,24 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
   const openMenu = useCallback((id: HomeMenuId, index?: number) => {
     if (typeof index === 'number') setActiveNav(index);
+    else setActiveNav(-1);
     if (id === 'schedule') return onSchedule();
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
   }, [onSchedule]);
+
+  const closePanel = () => {
+    setActivePanel(null);
+    setActiveNav(-1);
+  };
+
+  const primaryTask = unclaimedMail.length > 0
+    ? { label: `우편 보상 ${unclaimedMail.length}개 확인`, detail: '받을 보상이 있어요.', action: () => openMenu('mail') }
+    : !attendanceClaimed
+      ? { label: '이번 달 출석 보상 확인', detail: '이번 달 보상을 바로 확인해요.', action: () => openMenu('attendance') }
+      : unclaimedAchievementCount > 0
+        ? { label: `업적 보상 ${unclaimedAchievementCount}개 확인`, detail: '완료한 성장 보상이 있어요.', action: () => openMenu('quest', 2) }
+        : { label: '이번 주 스케줄 정하기', detail: `${conditionLabels[state.condition]} · 체력 ${stamina}/100`, action: onSchedule };
 
   useEffect(() => onMenuReady?.((id: HomeMenuId) => openMenu(id)), [openMenu, onMenuReady]);
 
@@ -181,16 +196,22 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}{id === 'mail' && unclaimedMail.length > 0 ? ` ${unclaimedMail.length}` : ''}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
-    <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{eligibleAchievements(state).filter(id => !state.claimedAchievements.includes(id)).length}개 수령 가능</small></button></div>
+    <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{unclaimedAchievementCount}개 수령 가능</small></button></div>
+
+    <button className="lh-primary-action" onClick={primaryTask.action} aria-label={`지금 할 일: ${primaryTask.label}`}>
+      <small>지금 할 일</small><b>{primaryTask.label}</b><span>{primaryTask.detail}</span>
+    </button>
 
     <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · ${guardianDefinition.label}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
 
-    <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
+    <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index} aria-current={activeNav === index ? 'page' : undefined}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
-    {activePanel && hasPanel && <div className="lh-panel-backdrop" onClick={() => setActivePanel(null)}>
+    {activePanel && hasPanel && <div className="lh-panel-backdrop" onClick={closePanel}>
       <section className="lh-panel" role="dialog" aria-modal="true" aria-label={panelTitle} onClick={event => event.stopPropagation()}>
-        <button className="lh-panel-close" onClick={() => setActivePanel(null)} aria-label="닫기">×</button>
-        <small>{panelEyebrow}</small><h2>{panelTitle}</h2>
+        <header className="lh-panel-header">
+          <div><small>{panelEyebrow}</small><h2>{panelTitle}</h2></div>
+          <button className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">×</button>
+        </header>
         {isQuestPanel ? <div className="lh-panel-list">{achievementDefinitions.map((item, index) => {
           const claimed = state.claimedAchievements.includes(item.id);
           const canClaim = eligible.has(item.id) && !claimed;
