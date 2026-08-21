@@ -39,6 +39,15 @@ describe('bond level five combination ultimates', () => {
     }
   });
 
+  it('rejects non-finite runtime MP instead of bypassing the Ultimate charge gate', () => {
+    for (const mp of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY]) {
+      const session = battle('wolf');
+      session.units = session.units.map(entry => entry.id === 'runa' ? { ...entry,mp } : entry);
+      expect(validCombinationUltimateTargets(session,'runa','wolf',5)).toEqual([]);
+      expect(resolveCombinationUltimate(session,{ actorId:'runa', companionId:'wolf', bondLevel:5, targetId:'enemy-front' })).toBe(session);
+    }
+  });
+
   it('stays locked one MP below the charge boundary without spending a turn', () => {
     const session = battle('wolf',9);
     expect(validCombinationUltimateTargets(session,'runa','wolf',5)).toEqual([]);
