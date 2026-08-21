@@ -1,0 +1,2 @@
+Verification rerun marker after the GitHub Actions bot committed the validated core compatibility patch.
+This file is verification-only and must not be copied to integration/v2.
