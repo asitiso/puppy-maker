@@ -35,6 +35,20 @@ describe('guardian calling corruption boundaries', () => {
     expect(result).toMatchObject({ changed:true, reason:null, current:'arcanist', gold:0 });
   });
 
+  it('treats zero-padded switch keys as the same month for the monthly lock', () => {
+    const result = applyCallingSelection({
+      current:'vanguard',
+      next:'arcanist',
+      guardianRank:'guardian',
+      gold:500,
+      year:2,
+      month:7,
+      lastSwitchKey:'2-07',
+      history:['vanguard'],
+    });
+    expect(result).toMatchObject({ changed:false, reason:'monthly_lock', current:'vanguard', gold:500 });
+  });
+
   it('canonicalizes duplicate history without destroying first-seen chronology', () => {
     const result = applyCallingSelection({
       current:'vanguard',
