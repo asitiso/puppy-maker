@@ -1,6 +1,6 @@
 import { hydrateGameState, type GameState } from './game';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 2 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 3 as const;
 
 export type GameSaveEnvelope = {
   schemaVersion: typeof CURRENT_SAVE_SCHEMA_VERSION;
@@ -15,6 +15,7 @@ export type SaveInspectionStatus =
   | 'integrity-failed'
   | 'legacy'
   | 'migrated-v1'
+  | 'migrated-v2'
   | 'future-version'
   | 'valid';
 
@@ -41,6 +42,10 @@ function integrityForState(state:unknown): string {
   return hash.toString(16).padStart(8, '0');
 }
 
+function validIntegrity(raw:UnknownRecord):boolean {
+  return typeof raw.integrity === 'string' && raw.integrity === integrityForState(raw.state);
+}
+
 export function createSaveEnvelope(state:GameState): GameSaveEnvelope {
   return {
     schemaVersion:CURRENT_SAVE_SCHEMA_VERSION,
@@ -55,10 +60,12 @@ function inspectRawSavedGame(raw:unknown): SaveInspection {
   if (version === null) return { status:'legacy', state:hydrateGameState(raw), schemaVersion:null };
   if (!('state' in raw)) return { status:'malformed-envelope', state:hydrateGameState(null), schemaVersion:version };
   if (version === CURRENT_SAVE_SCHEMA_VERSION) {
-    if (typeof raw.integrity !== 'string' || raw.integrity !== integrityForState(raw.state)) {
-      return { status:'integrity-failed', state:hydrateGameState(null), schemaVersion:version };
-    }
+    if (!validIntegrity(raw)) return { status:'integrity-failed', state:hydrateGameState(null), schemaVersion:version };
     return { status:'valid', state:hydrateGameState(raw.state), schemaVersion:version };
+  }
+  if (version === 2) {
+    if (!validIntegrity(raw)) return { status:'integrity-failed', state:hydrateGameState(null), schemaVersion:version };
+    return { status:'migrated-v2', state:hydrateGameState(raw.state), schemaVersion:version };
   }
   if (version === 1) return { status:'migrated-v1', state:hydrateGameState(raw.state), schemaVersion:version };
   if (version > CURRENT_SAVE_SCHEMA_VERSION) return { status:'future-version', state:hydrateGameState(raw.state), schemaVersion:version };
