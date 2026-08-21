@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattleSession, type TacticalUnit } from './tactical-battle';
 import type { TacticalActionId } from './tactical-actions';
-import { nextTacticalActor, resolveTacticalAction, skipTacticalTurnIfNoPlayableAction } from './tactical-engine';
+import { completeTacticalTurn, nextTacticalActor, resolveTacticalAction, skipTacticalTurnIfNoPlayableAction } from './tactical-engine';
 
 const unit = (id:string, side:'ally'|'enemy', agility:number, ap=3, mp=0, shield=0):TacticalUnit => ({
   id, side, position:'front', maxHp:100, hp:100, agility, ap, maxAp:3, mp, maxMp:10, shield,
@@ -124,6 +124,13 @@ describe('tactical turn engine', () => {
     const next = resolveTacticalAction(session,{ actorId:'bat', actionId:'attack', targetId:'runa' });
     expect(next.units.find(entry => entry.id === 'runa')?.hp).toBe(0);
     expect(nextTacticalActor(next)).toBeNull();
+  });
+
+  it('keeps an already terminal session immutable when completing a turn directly', () => {
+    const session = battle();
+    session.units = session.units.map(entry => entry.side === 'enemy' ? { ...entry, hp:0 } : entry);
+    expect(completeTacticalTurn(session,'runa',session.units)).toBe(session);
+    expect(session.acted).toEqual([]);
   });
 
   it('starts the next round after every living unit acts and refreshes AP', () => {
