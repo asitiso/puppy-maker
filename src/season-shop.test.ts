@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSeasonPurchase, seasonPurchaseKey, seasonShopOffers } from './season-shop';
+import { isValidSeasonPurchaseKey, resolveSeasonPurchase, seasonPurchaseKey, seasonShopOffers } from './season-shop';
 
 describe('season shop', () => {
   it('exposes four core offers plus one season-exclusive offer', () => {
@@ -66,6 +66,12 @@ describe('season shop', () => {
       accepted:true,
       purchaseKey:seasonPurchaseKey('1-spring','gold_pouch',2),
     }));
+  });
+
+  it('rejects noncanonical purchase ledger keys that can bypass the canonical season prefix', () => {
+    expect(isValidSeasonPurchaseKey('1-spring:gold_pouch:1')).toBe(true);
+    expect(isValidSeasonPurchaseKey('01-spring:gold_pouch:1')).toBe(false);
+    expect(isValidSeasonPurchaseKey('1-spring:gold_pouch:01')).toBe(false);
   });
 
   it('rejects a purchase when tokens are insufficient', () => {
