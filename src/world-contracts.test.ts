@@ -83,6 +83,31 @@ describe('world contracts', () => {
     expect(result.newlyCompleted).toEqual([]);
   });
 
+  it('treats missing or malformed progress objects as empty progress instead of crashing', () => {
+    for (const progress of [null, undefined, 42, 'bad', []] as any[]) {
+      expect(() => advanceWorldContracts({
+        year:1,
+        month:1,
+        event:worldEvent(1, 1),
+        progress,
+        rewardedKeys:[],
+        region:'starlight_forest',
+        grade:'A',
+      } as any)).not.toThrow();
+
+      const result = advanceWorldContracts({
+        year:1,
+        month:1,
+        event:worldEvent(1, 1),
+        progress,
+        rewardedKeys:[],
+        region:'starlight_forest',
+        grade:'A',
+      } as any);
+      expect(result.progress).toEqual({ expedition_clear:1, high_grade:1, featured_region:1 });
+    }
+  });
+
   it('auto-pays newly completed contracts once and caps completed counters', () => {
     const result = advanceWorldContracts({
       year:1,
