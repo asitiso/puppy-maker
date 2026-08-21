@@ -23,8 +23,8 @@ export type LiveOpsPersistentState = {
 
 const seasonKeyPattern = /^\d+-(spring|summer|autumn|winter)$/;
 const seasonTierPattern = /^\d+-(spring|summer|autumn|winter):(10|[1-9])$/;
-const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
-const weeklyRewardPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
+const weekKeyPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]$/;
+const weeklyRewardPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]:(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
 const directiveIdPattern = /^(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
 const keepsakeMilestonePattern = /^(first_keepsake|four_seasons|eight_seasons)$/;
 const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
