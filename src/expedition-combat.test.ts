@@ -109,6 +109,22 @@ describe('expedition combat', () => {
     expect(overflow).toEqual(staleReloadedBattle);
   });
 
+  it('repairs a stale low actionCount when one legal action remains', () => {
+    const staleReloadedBattle = {
+      ...startExpeditionBattle('forest_path'),
+      score: 300,
+      actionCount: 0,
+      actionKinds: { attack: 1, dodge: 1, charge: 0 },
+    };
+
+    const finalLegalAction = applyExpeditionAction(staleReloadedBattle, 'charge', 1, base);
+    const overflow = applyExpeditionAction(finalLegalAction, 'attack', 1, base);
+
+    expect(finalLegalAction.actionCount).toBe(EXPEDITION_ACTION_LIMIT);
+    expect(finalLegalAction.actionKinds).toEqual({ attack: 1, dodge: 1, charge: 1 });
+    expect(overflow).toEqual(finalLegalAction);
+  });
+
   it('keeps the final boss gated from a low-growth build', () => {
     const result = runActions('lake_tempest', 'attack', {
       ...base,
