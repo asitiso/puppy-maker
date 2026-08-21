@@ -73,6 +73,15 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).toContain('setActiveNav(-1);');
   });
 
+  it('supports a keyboard round trip for home panels', () => {
+    expect(home).toContain('panelLauncherRef');
+    expect(home).toContain('panelCloseRef');
+    expect(home).toContain("event.key !== 'Escape'");
+    expect(home).toContain('panelCloseRef.current?.focus()');
+    expect(home).toContain('panelLauncherRef.current?.focus()');
+    expect(home).toContain('ref={panelCloseRef}');
+  });
+
   it('keeps panel navigation visible while long content scrolls independently', () => {
     expect(home).toContain('className="lh-panel-header"');
     expect(panelCss).toMatch(/\.lh-panel-list\{[^}]*overflow-y:auto/);
