@@ -103,4 +103,26 @@ describe('expedition persistent state repair', () => {
     expect(state.expeditionRecords.forest_path.cleared).toBe(true);
     expect(isExpeditionStageUnlocked('forest_glade', state.expeditionRecords)).toBe(true);
   });
+
+  it('uses unlocked expedition story entries as clear evidence when reward markers are missing', () => {
+    const state = hydrateExpeditionPersistentState({
+      expeditionRecords: {},
+      expeditionStoryEntries: ['forest_path'],
+    });
+
+    expect(state.expeditionRecords.forest_path.cleared).toBe(true);
+    expect(isExpeditionStageUnlocked('forest_glade', state.expeditionRecords)).toBe(true);
+  });
+
+  it('uses a paid region reward as evidence that its whole stage chain was cleared', () => {
+    const state = hydrateExpeditionPersistentState({
+      expeditionRecords: {},
+      rewardedExpeditionRegions: ['starlight_forest'],
+    });
+
+    expect(state.expeditionRecords.forest_path.cleared).toBe(true);
+    expect(state.expeditionRecords.forest_glade.cleared).toBe(true);
+    expect(state.expeditionRecords.forest_guardian.cleared).toBe(true);
+    expect(isExpeditionStageUnlocked('city_square', state.expeditionRecords)).toBe(true);
+  });
 });
