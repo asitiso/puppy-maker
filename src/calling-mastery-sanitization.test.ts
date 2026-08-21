@@ -60,4 +60,20 @@ describe('Calling mastery action sanitation', () => {
       discovery:'forest_echo',
     })).toBe('pathfinder');
   });
+
+  it('fails closed for malformed grades across all specialist callings', () => {
+    const actions = { attack:1, dodge:1, charge:1 };
+    for (const grade of ['Z', '', null, undefined, 42] as any[]) {
+      const summary = {
+        stageId:'forest_path' as const,
+        grade,
+        discovery:'forest_echo',
+        materialReward:1,
+      } as any;
+      expect(specialistMasteryCalling('vanguard', actions, summary)).toBeNull();
+      expect(specialistMasteryCalling('arcanist', actions, summary)).toBeNull();
+      expect(specialistMasteryCalling('caretaker', actions, summary)).toBeNull();
+      expect(specialistMasteryCalling('pathfinder', actions, summary)).toBeNull();
+    }
+  });
 });
