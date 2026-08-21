@@ -25,4 +25,9 @@ describe('Calling -> Mastery -> Signature', () => {
     expect(callingSignaturesForMastery('vanguard', 11, [...traits])).toEqual(['rally_strike']);
     expect(callingSignaturesForMastery('vanguard', 12, [...traits])).toEqual(['rally_strike','guardian_breaker']);
   });
+
+  it('does not unlock a signature from an orphan required trait', () => {
+    expect(callingSignaturesForMastery('vanguard', 18, ['vanguard_focus'])).toEqual([]);
+    expect(callingSignaturesForMastery('vanguard', 18, ['vanguard_power','vanguard_legend'])).toEqual([]);
+  });
 });
