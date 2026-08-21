@@ -14,6 +14,19 @@ describe('tactical companions', () => {
     expect(high.maxHp).toBeGreaterThan(low.maxHp)
   })
 
+  it('keeps tank, support, striker and trickster identities distinct in derived combat stats', () => {
+    const leader = { power: 60, magic: 50, agility: 30, maxHp: 140 }
+    const bear = deriveCompanionUnit('bear', leader)
+    const owl = deriveCompanionUnit('owl', leader)
+    const wolf = deriveCompanionUnit('wolf', leader)
+    const cat = deriveCompanionUnit('cat', leader)
+
+    expect(bear.maxHp).toBeGreaterThan(Math.max(owl.maxHp,wolf.maxHp,cat.maxHp))
+    expect(owl.supportPower).toBeGreaterThan(Math.max(bear.supportPower,wolf.supportPower,cat.supportPower))
+    expect(wolf.attackPower).toBeGreaterThan(Math.max(bear.attackPower,owl.attackPower,cat.attackPower))
+    expect(cat.agility).toBeGreaterThan(Math.max(bear.agility,owl.agility,wolf.agility))
+  })
+
   it('recommends a legal front/back formation for any selected pair', () => {
     const formation = recommendedFormation(['bear', 'owl'])
     expect(formation.runa).toBe('front')
@@ -25,5 +38,12 @@ describe('tactical companions', () => {
     expect([0, 25, 75, 150, 300].map(bondLevelForXp)).toEqual([1, 2, 3, 4, 5])
     expect(bondLevelForXp(9999)).toBe(5)
     expect(grantBattleBond({ xp: 295 }, 20)).toEqual({ xp: 300, level: 5 })
+  })
+
+  it('sanitizes corrupted or non-finite bond inputs instead of persisting NaN', () => {
+    expect(grantBattleBond({ xp: Number.NaN }, 10)).toEqual({ xp: 10, level: 1 })
+    expect(grantBattleBond({ xp: Number.POSITIVE_INFINITY }, 20)).toEqual({ xp: 20, level: 1 })
+    expect(grantBattleBond({ xp: 150 }, Number.NaN)).toEqual({ xp: 150, level: 4 })
+    expect(grantBattleBond({ xp: -100 }, 5)).toEqual({ xp: 5, level: 1 })
   })
 })
