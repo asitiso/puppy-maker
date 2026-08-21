@@ -22,7 +22,7 @@ export function grantBattleBond(current: { xp: number }, amount: number): Compan
   return { xp, level: bondLevelForXp(xp) }
 }
 export function deriveCompanionUnit(id: CompanionId, leader: LeaderCombatProgression): DerivedCompanionUnit {
-  const d = COMPANIONS[id], roleScale = d.role === 'tank' ? 1.2 : d.role === 'striker' ? 1.08 : 0.96
+  const d = COMPANIONS[id], roleScale = d.role === 'tank' ? 1 : d.role === 'striker' ? 1.2 : 0.96
   const maxHp = Math.max(1, Math.round(leader.maxHp * 0.72 * (d.role === 'tank' ? 1.25 : d.role === 'support' ? 0.95 : 1)))
   const power = Math.max(1,Math.round(leader.power*0.68*roleScale))
   const magic = Math.max(1,Math.round(leader.magic*(d.role==='support'?0.82:0.62)))
