@@ -128,12 +128,12 @@ export function applyExpeditionAction(
 
   if (kind === 'attack') {
     const bonus = clamp(input.relics.attack, 0, 0.15);
-    const value = (70 + input.strength * 2.15 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+    const value = (70 + input.strength * 3.1 + input.huntMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
     return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
   }
 
   const bonus = clamp(input.relics.charge, 0, 0.15);
-  const value = (68 + input.magic * 2.2 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
+  const value = (68 + input.magic * 3.15 + input.magicMastery * 18) * quality * readiness * (1 + allBonus + bonus + advancedBonus + identityBonus + callingBonus);
   return { ...battle, score: battle.score + Math.max(0, Math.round(value)), ...counts };
 }
 
