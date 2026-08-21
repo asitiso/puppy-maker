@@ -80,6 +80,23 @@ describe('weekly directives', () => {
     expect(Object.keys(result.progress).sort()).toEqual([...assignedIds].sort());
   });
 
+  it('sanitizes non-finite assigned progress before advancing', () => {
+    const directives = weeklyDirectives(1,4,1);
+    const target = directives[0];
+    const other = directives[1];
+    const result = advanceWeeklyDirectives(
+      directives,
+      {
+        [target.id]:Number.NaN,
+        [other.id]:Number.POSITIVE_INFINITY,
+      },
+      { kind:target.counter === 'high_grade' ? 'expedition' : target.counter, grade:'S' },
+    );
+    expect(result.progress[target.id]).toBe(1);
+    expect(result.progress[other.id]).toBe(0);
+    expect(Object.values(result.progress).every(Number.isFinite)).toBe(true);
+  });
+
   it('advances only matching directives and caps progress at targets', () => {
     const directives = weeklyDirectives(1,4,1);
     const expedition = directives.find(item => item.counter === 'expedition');
