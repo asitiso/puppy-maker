@@ -1,5 +1,9 @@
 import {mainCampaignIds,type MainCampaignId} from './campaign-model';
 import type {CampaignRunState} from './campaign-state';
+import {
+  resolveCampaignSeasonalObjective,
+  type CampaignSeasonalSignalKind,
+} from './campaign-seasonal-objectives';
 import type {CharacterBondsState} from './character-bonds';
 import {
   applyFirstCommitmentCharacterBond,
@@ -12,6 +16,7 @@ import {
 } from './spring-raising';
 
 type SpringIntegrationState={
+  year:number;
   month:number;
   week:number;
   mastery:{
@@ -136,5 +141,26 @@ export function commitSpringPath(
     characterBonds:commitment.event
       ? applyFirstCommitmentCharacterBond(state.characterBonds,commitment.event)
       : state.characterBonds,
+  };
+}
+
+export function applySpringSeasonalSignals(
+  state:SpringIntegrationState,
+  signals:readonly CampaignSeasonalSignalKind[],
+):CampaignRunState{
+  if(state.month<3||state.month>5)return state.campaignRun;
+  if(!state.campaignRun.activeCampaign)return state.campaignRun;
+  const result=resolveCampaignSeasonalObjective({
+    year:state.year,
+    week:state.week,
+    season:'spring',
+    campaign:state.campaignRun.activeCampaign,
+    signals,
+    claimedKeys:state.campaignRun.claimedSeasonalObjectives,
+  });
+  if(!result.accepted)return state.campaignRun;
+  return {
+    ...state.campaignRun,
+    claimedSeasonalObjectives:[...state.campaignRun.claimedSeasonalObjectives,result.claimKey],
   };
 }
