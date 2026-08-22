@@ -74,10 +74,10 @@ describe('V3 Guardian Festival world outcome', () => {
     expect(replay.failForwardOutcomes).toEqual(['guardian_festival']);
   });
 
-  it('repairs cross-field fail-forward evidence from the authoritative stored outcome', () => {
+  it('repairs cross-field Festival evidence from the authoritative stored outcome', () => {
     const costly = resolveGuardianFestivalWorldOutcome({
       outcome: 'victory',
-      worldHistory: { currentFacts: [], inheritedFacts: [] },
+      worldHistory: { currentFacts: ['festival_saved'], inheritedFacts: [] },
       majorOutcomes: { guardian_festival: 'costly_victory' },
       failForwardOutcomes: [],
     });
@@ -94,7 +94,7 @@ describe('V3 Guardian Festival world outcome', () => {
     });
     expect(clean.applied).toBe(false);
     expect(clean.outcome).toBe('victory');
-    expect(clean.worldHistory.currentFacts).toEqual(['festival_heavy_losses', 'festival_saved']);
+    expect(clean.worldHistory.currentFacts).toEqual(['festival_saved']);
     expect(clean.failForwardOutcomes).toEqual([]);
   });
 
