@@ -10,8 +10,12 @@ import {worldFactIds,type WorldFactId} from './world-history';
 
 export const trueClueIds=['caretaker_life_anomaly','pathfinder_world_route','vanguard_hidden_conflict_record','arcanist_rift_cycle'] as const;
 export const ngPlusUnlockIds=['past_life_dialogue','relationship_reunion','world_echo','fifth_path_candidate'] as const;
+export const truePathEvidenceIds=[
+  'significant_fail_forward','sanctuary_history','astral_history','celestial_history','rift_history',
+] as const;
 export type TrueClueId=typeof trueClueIds[number];
 export type NgPlusUnlockId=typeof ngPlusUnlockIds[number];
+export type TruePathEvidenceId=typeof truePathEvidenceIds[number];
 export type CharacterMemoryRef={characterId:CharacterId;memoryId:string};
 
 export type RunSummary={
@@ -23,6 +27,7 @@ export type RunSummary={
   majorWorldOutcomes:WorldFactId[];
   keyBondMemories:CharacterMemoryRef[];
   trueClues:TrueClueId[];
+  truePathEvidence:TruePathEvidenceId[];
 };
 
 export type LegacyState={
@@ -92,6 +97,7 @@ function hydrateRunSummaries(raw:unknown):RunSummary[]{
       majorWorldOutcomes:uniqueRegistered(value.majorWorldOutcomes,worldFactIds),
       keyBondMemories:hydrateMemoryRefs(value.keyBondMemories),
       trueClues:uniqueRegistered(value.trueClues,trueClueIds),
+      truePathEvidence:uniqueRegistered(value.truePathEvidence,truePathEvidenceIds),
     });
   }
   return out.sort((a,b)=>a.runNumber-b.runNumber);
