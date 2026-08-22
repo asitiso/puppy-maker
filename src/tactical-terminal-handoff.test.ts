@@ -81,4 +81,16 @@ describe('V3 Tactical once-only terminal handoff',()=>{
     const malformed={...result('attempt-1'),terminalKey:'   '};
     expect(()=>handoffTacticalTerminalResult(createTacticalTerminalHandoffState(),malformed)).toThrow('terminal key');
   });
+
+  it('derives once-only identity from scenario and attempt so a tampered terminal key cannot bypass dedupe',()=>{
+    const firstInput={...result('attempt-1'),terminalKey:'tampered-key-a'};
+    const first=handoffTacticalTerminalResult(createTacticalTerminalHandoffState(),firstInput);
+    expect(first.result?.terminalKey).toBe('spring-vanguard-terminal:attempt-1');
+    expect(first.state.handedOffKeys).toEqual(['spring-vanguard-terminal:attempt-1']);
+
+    const secondInput={...result('attempt-1'),terminalKey:'tampered-key-b'};
+    const duplicate=handoffTacticalTerminalResult(first.state,secondInput);
+    expect(duplicate.result).toBeNull();
+    expect(duplicate.state).toBe(first.state);
+  });
 });
