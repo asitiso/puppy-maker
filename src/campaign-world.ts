@@ -15,7 +15,7 @@ import {
   type WorldHistoryState,
 } from './world-history';
 
-export type CampaignWorldSeason = 'spring' | 'summer';
+export type CampaignWorldSeason = 'spring' | 'summer' | 'autumn';
 export type CampaignWorldObjectiveKind =
   | 'protect_residents'
   | 'discover_route'
@@ -30,7 +30,11 @@ export type CampaignWorldObjectiveId =
   | 'summer_caretaker_festival_rescue'
   | 'summer_pathfinder_festival_routes'
   | 'summer_vanguard_festival_threat'
-  | 'summer_arcanist_festival_relic';
+  | 'summer_arcanist_festival_relic'
+  | 'autumn_caretaker_great_expedition_rescue'
+  | 'autumn_pathfinder_great_expedition_route'
+  | 'autumn_vanguard_great_expedition_command'
+  | 'autumn_arcanist_great_expedition_relic';
 
 export type CampaignWorldObjectiveDefinition = {
   id: CampaignWorldObjectiveId;
@@ -101,6 +105,38 @@ export const campaignWorldObjectives: readonly CampaignWorldObjectiveDefinition[
   {
     id: 'summer_arcanist_festival_relic',
     season: 'summer',
+    campaign: 'arcanist',
+    kind: 'investigate_relic_rift',
+    regionId: 'wind_lakes',
+    stageIds: ['lake_cliff', 'lake_tempest'],
+  },
+  {
+    id: 'autumn_caretaker_great_expedition_rescue',
+    season: 'autumn',
+    campaign: 'caretaker',
+    kind: 'protect_residents',
+    regionId: 'starlight_forest',
+    stageIds: ['forest_glade', 'forest_guardian'],
+  },
+  {
+    id: 'autumn_pathfinder_great_expedition_route',
+    season: 'autumn',
+    campaign: 'pathfinder',
+    kind: 'discover_route',
+    regionId: 'ancient_city',
+    stageIds: ['city_gallery', 'city_core'],
+  },
+  {
+    id: 'autumn_vanguard_great_expedition_command',
+    season: 'autumn',
+    campaign: 'vanguard',
+    kind: 'remove_threat',
+    regionId: 'ancient_city',
+    stageIds: ['city_square', 'city_core'],
+  },
+  {
+    id: 'autumn_arcanist_great_expedition_relic',
+    season: 'autumn',
     campaign: 'arcanist',
     kind: 'investigate_relic_rift',
     regionId: 'wind_lakes',
