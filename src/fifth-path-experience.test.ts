@@ -3,6 +3,7 @@ import {
   buildFifthPathAutumnPresentation,
   buildFifthPathSpringPresentation,
   buildFifthPathSummerPresentation,
+  buildFifthPathWinterPresentation,
 } from './fifth-path-experience';
 
 const normalCandidates = [
@@ -35,27 +36,35 @@ describe('Fifth Path Summer presentation contract', () => {
 
 describe('Fifth Path Autumn presentation contract', () => {
   it('turns the discovered cause into a qualitative convergence choice with world and bond consequences', () => {
-    const autumn = buildFifthPathAutumnPresentation({
+    const autumn = buildFifthPathAutumnPresentation({ activeCampaign: 'true_path', season: 'autumn', worldSignals: ['각 진영의 해결 방식이 같은 밤에 서로 충돌해요.'], bondSignals: ['리라는 모두를 살리려면 기존의 정답 하나를 포기해야 한다고 말해요.'] });
+    expect(autumn).toEqual({ campaign: 'true_path', season: 'autumn', title: '다섯 번째 길 · Autumn', objective: '갈라진 해법을 하나의 공동 선택으로 모은다', crisis: '서로 옳았던 네 길의 해법이 같은 위기에서 동시에 충돌해요.', choice: { id: 'rewrite_the_pattern', label: '정답을 반복하지 않고 새로운 합의를 만든다', consequence: '누구의 과거도 지우지 않은 채 세계가 다음 선택을 할 여지를 남겨요.' }, bond: '리라는 모두를 살리려면 기존의 정답 하나를 포기해야 한다고 말해요.', world: ['각 진영의 해결 방식이 같은 밤에 서로 충돌해요.'], nextSeason: 'winter' });
+  });
+});
+
+describe('Fifth Path Winter presentation contract', () => {
+  it.each([
+    ['victory', '긴 밤의 반복을 끊고 모두가 다음 선택을 할 수 있는 새벽을 열었어요.'],
+    ['costly_victory', '긴 밤은 끝났지만 그 선택의 흔적과 약속은 다음 삶에도 남아요.'],
+    ['defeat', '이번 밤을 완전히 이기지는 못했지만, 반복을 알아본 기억이 다음 새벽의 길이 돼요.'],
+  ] as const)('fail-forwards %s into a qualitative true-ending handoff', (outcome, resolution) => {
+    const winter = buildFifthPathWinterPresentation({
       activeCampaign: 'true_path',
-      season: 'autumn',
-      worldSignals: ['각 진영의 해결 방식이 같은 밤에 서로 충돌해요.'],
-      bondSignals: ['리라는 모두를 살리려면 기존의 정답 하나를 포기해야 한다고 말해요.'],
+      season: 'winter',
+      outcome,
+      worldSignals: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'],
+      bondSignals: ['리라는 이번에는 기억을 잃지 않겠다고 약속해요.'],
     });
 
-    expect(autumn).toEqual({
+    expect(winter).toEqual({
       campaign: 'true_path',
-      season: 'autumn',
-      title: '다섯 번째 길 · Autumn',
-      objective: '갈라진 해법을 하나의 공동 선택으로 모은다',
-      crisis: '서로 옳았던 네 길의 해법이 같은 위기에서 동시에 충돌해요.',
-      choice: {
-        id: 'rewrite_the_pattern',
-        label: '정답을 반복하지 않고 새로운 합의를 만든다',
-        consequence: '누구의 과거도 지우지 않은 채 세계가 다음 선택을 할 여지를 남겨요.',
-      },
-      bond: '리라는 모두를 살리려면 기존의 정답 하나를 포기해야 한다고 말해요.',
-      world: ['각 진영의 해결 방식이 같은 밤에 서로 충돌해요.'],
-      nextSeason: 'winter',
+      season: 'winter',
+      title: '다섯 번째 길 · Long Night',
+      objective: '긴 밤의 원인을 끝내는 대신, 세계가 스스로 다음 선택을 할 구조를 남긴다',
+      outcome,
+      resolution,
+      bond: '리라는 이번에는 기억을 잃지 않겠다고 약속해요.',
+      world: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'],
+      next: 'true_ending',
     });
   });
 });
