@@ -1,4 +1,4 @@
-import type { MainCampaignId } from './campaign-model';
+import type { CharacterId, MainCampaignId } from './campaign-model';
 import { isBattleFinished, type BattleResult, type BattleSession, type TacticalStatusId } from './tactical-battle';
 import type { CompanionId, LeaderCombatProgression } from './tactical-companions';
 import { createTacticalExpeditionBattle, tacticalBattleNodeForStage, type TacticalBattleNode } from './tactical-expedition';
@@ -57,7 +57,25 @@ export type TacticalScenarioResult = {
   damageTaken:number;
 };
 
+export type TacticalBondInterventionCharacterId = Extract<CharacterId,'mira'|'kael'|'rex'|'selene'>;
+export type TacticalBondInterventionTiming = 'before-battle'|'objective-check'|'terminal';
+export type TacticalBondInterventionRequest = Readonly<{
+  scenarioId:string;
+  campaign:MainCampaignId;
+  characterId:TacticalBondInterventionCharacterId;
+  timing:TacticalBondInterventionTiming;
+}>;
+export type TacticalBondInterventionResponse = Readonly<{
+  accepted:boolean;
+  interventionId:string;
+}>;
+export type TacticalBondInterventionHook = (
+  request:TacticalBondInterventionRequest,
+)=>TacticalBondInterventionResponse|null;
+
 const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
+const interventionCharacterIds:readonly TacticalBondInterventionCharacterId[]=['mira','kael','rex','selene'];
+const interventionTimings:readonly TacticalBondInterventionTiming[]=['before-battle','objective-check','terminal'];
 const nonEmpty=(value:string)=>typeof value==='string'&&value.trim().length>0;
 const positiveInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=1;
 const nonNegativeInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=0;
@@ -111,6 +129,32 @@ export function createTacticalScenarioBattle(
   seed:number,
 ):BattleSession {
   return createTacticalExpeditionBattle(scenario.stageId,selected,progression,seed);
+}
+
+export function invokeTacticalBondIntervention(
+  scenario:TacticalScenario,
+  characterId:TacticalBondInterventionCharacterId,
+  timing:TacticalBondInterventionTiming,
+  hook:TacticalBondInterventionHook,
+):TacticalBondInterventionResponse|null {
+  if(!interventionCharacterIds.includes(characterId)) {
+    throw new Error('Unsupported Tactical Bond Intervention character');
+  }
+  if(!interventionTimings.includes(timing)) {
+    throw new Error('Invalid Tactical Bond Intervention timing');
+  }
+  const request:TacticalBondInterventionRequest={
+    scenarioId:scenario.id,
+    campaign:scenario.campaign,
+    characterId,
+    timing,
+  };
+  const response=hook(request);
+  if(response===null) return null;
+  if(!response||typeof response.accepted!=='boolean'||!nonEmpty(response.interventionId)) {
+    throw new Error('Invalid Tactical Bond Intervention response');
+  }
+  return {accepted:response.accepted,interventionId:response.interventionId.trim()};
 }
 
 function living(session:BattleSession,id:string) {
