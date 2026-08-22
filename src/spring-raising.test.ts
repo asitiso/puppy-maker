@@ -1,6 +1,12 @@
 import {describe,expect,it} from 'vitest';
+import {emptyCampaignRunState} from './campaign-state';
+import {emptyCharacterBondsState,hydrateCharacterBondsState} from './character-bonds';
 import {
+  applyFirstCommitmentCharacterBond,
+  commitSpringCampaign,
+  openPathConvergence,
   pathConvergence,
+  resolveFirstCommitment,
   scoreCappedSpringAffinities,
   scoreSpringAffinityEvidence,
 } from './spring-raising';
@@ -43,5 +49,45 @@ describe('V3 Spring Raising',()=>{
     expect(candidates.every(candidate=>!('score' in candidate)&&!('affinity' in candidate))).toBe(true);
     expect(pathConvergence([])).toHaveLength(2);
     expect(pathConvergence(evidence,{eligibleThird:[]})).toHaveLength(2);
+  });
+
+  it('opens convergence, commits one candidate once, then locks the campaign',()=>{
+    const evidence=[
+      {campaign:'caretaker' as const,source:'bond' as const,amount:6,reason:'stood beside Mira'},
+      {campaign:'caretaker' as const,source:'dialogue' as const,amount:5,reason:'shared the burden'},
+      {campaign:'pathfinder' as const,source:'exploration' as const,amount:6,reason:'found a hidden route'},
+    ];
+    const opened=openPathConvergence(emptyCampaignRunState(),evidence);
+    expect(opened.state.phase).toBe('path_selection');
+    expect(opened.state.seasonMilestones).toContain('path_convergence');
+    expect(opened.candidates).toHaveLength(2);
+    const first=commitSpringCampaign(opened.state,opened.candidates,'caretaker');
+    expect(first.committed).toBe(true);
+    expect(first.state.activeCampaign).toBe('caretaker');
+    expect(first.state.campaignAffinities.caretaker).toBe(11);
+    const replay=commitSpringCampaign(first.state,opened.candidates,'pathfinder');
+    expect(replay.committed).toBe(false);
+    expect(replay.reason).toBe('locked');
+    expect(replay.state.activeCampaign).toBe('caretaker');
+  });
+
+  it('emits First Commitment once before Summer and applies an idempotent representative Character Bond',()=>{
+    const opened=openPathConvergence(emptyCampaignRunState(),[
+      {campaign:'caretaker',source:'bond',amount:6,reason:'stood beside Mira'},
+      {campaign:'pathfinder',source:'exploration',amount:5,reason:'found a hidden route'},
+    ]);
+    const committed=commitSpringCampaign(opened.state,opened.candidates,'caretaker');
+    const commitment=resolveFirstCommitment(committed.state);
+    expect(commitment.event).toMatchObject({type:'first_commitment',campaign:'caretaker',character:'mira'});
+    expect(commitment.state.phase).toBe('summer');
+    expect(resolveFirstCommitment(commitment.state).event).toBeNull();
+
+    const bonds=applyFirstCommitmentCharacterBond(emptyCharacterBondsState(),commitment.event!);
+    expect(bonds.mira.trust).toBe(3);
+    expect(bonds.mira.memories).toContain('mira_first_commitment');
+    const replay=applyFirstCommitmentCharacterBond(bonds,commitment.event!);
+    expect(replay.mira.trust).toBe(3);
+    expect(replay.mira.memories).toEqual(['mira_first_commitment']);
+    expect(hydrateCharacterBondsState(replay).mira.memories).toContain('mira_first_commitment');
   });
 });
