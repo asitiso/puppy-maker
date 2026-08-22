@@ -162,7 +162,7 @@ export default function SummerHubOverlay({ open, model, onOpen, onClose }: Summe
             <h3 id="summer-vn-heading">이야기 장면</h3>
           </div>
           <div className="summer-vn-stage">
-            <img src={model.vn.portrait} alt="" className="summer-vn-portrait" />
+            {model.vn.portrait ? <img src={model.vn.portrait} alt="" className="summer-vn-portrait" /> : null}
             <div className="summer-vn-dialogue">
               <strong>{model.vn.name}</strong>
               <p>{model.vn.dialogue}</p>
