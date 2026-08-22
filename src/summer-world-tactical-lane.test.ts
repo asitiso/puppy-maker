@@ -7,6 +7,7 @@ import {
   createTacticalTerminalHandoffState,
   handoffTacticalTerminalResult,
   resolveTacticalScenarioResult,
+  type TacticalScenario,
 } from './tactical-scenario';
 import {
   mapSummerTacticalResultToGuardianFestivalOutcome,
@@ -29,7 +30,7 @@ function battleFor(campaign: 'caretaker' | 'pathfinder' | 'vanguard' | 'arcanist
 }
 
 function commitWorld(
-  climax: ReturnType<typeof getSummerGuardianFestivalTacticalClimax> extends infer T ? Exclude<T, null> : never,
+  climax: TacticalScenario,
   session: ReturnType<typeof createTacticalScenarioBattle>,
   attemptKey: string,
 ) {
