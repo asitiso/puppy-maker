@@ -14,6 +14,11 @@ function highVanguardTrainingState():GameState{
   };
 }
 
+function committedVanguardState():GameState{
+  const opened=reducer(highVanguardTrainingState(),{type:'OPEN_SPRING_PATH_CONVERGENCE'} as never);
+  return reducer(opened,{type:'COMMIT_SPRING_CAMPAIGN',campaign:'vanguard'} as never);
+}
+
 describe('V3 Spring shared integration',()=>{
   it('derives capped affinity from persisted play and opens deterministic mid-Spring Path Convergence',()=>{
     const played=highVanguardTrainingState();
@@ -69,5 +74,26 @@ describe('V3 Spring shared integration',()=>{
       'training','dialogue','bond','exploration','tactical','calling','personality',
     ]));
     expect(springPathCandidates(played).map(item=>item.campaign)).toEqual(['caretaker','pathfinder','vanguard']);
+  });
+
+  it('claims the matching Spring seasonal objective once from an existing Tactical victory and never activates Summer objectives',()=>{
+    const committed=committedVanguardState();
+    const action={
+      type:'COMPLETE_TACTICAL_BATTLE' as const,
+      encounterId:'training_ground' as const,
+      result:'victory' as const,
+      rounds:3,
+      survivingAllies:3,
+      damageTaken:20,
+    };
+    const claimed=reducer(committed,action);
+    expect(claimed.campaignRun.claimedSeasonalObjectives).toEqual([
+      '1-spring:vanguard:spring_vanguard_challenge',
+    ]);
+    const duplicate=reducer(claimed,action);
+    expect(duplicate.campaignRun.claimedSeasonalObjectives).toEqual(claimed.campaignRun.claimedSeasonalObjectives);
+
+    const summer={...committed,month:6,week:1};
+    expect(reducer(summer,action).campaignRun.claimedSeasonalObjectives).toEqual([]);
   });
 });
