@@ -15,6 +15,26 @@ class MemoryStorage implements SaveStorage {
   removeItem(key:string) { this.data.delete(key); }
 }
 
+function integrityForTest(state:unknown):string{
+  const serialized=JSON.stringify(state);
+  let hash=0x811c9dc5;
+  for(let index=0;index<serialized.length;index+=1){
+    hash^=serialized.charCodeAt(index);
+    hash=Math.imul(hash,0x01000193)>>>0;
+  }
+  return hash.toString(16).padStart(8,'0');
+}
+
+function v2State(gold=444){
+  const {campaignRun,worldHistory,characterBonds,legacy,...state}=initialState;
+  void campaignRun;void worldHistory;void characterBonds;void legacy;
+  return {...state,gold,endingCollection:['guardian']};
+}
+
+function serializeV2(state:ReturnType<typeof v2State>):string{
+  return JSON.stringify({schemaVersion:2,integrity:integrityForTest(state),state});
+}
+
 describe('save resilience', () => {
   it('loads the primary save when it is valid', () => {
     const storage = new MemoryStorage();
@@ -23,6 +43,27 @@ describe('save resilience', () => {
     expect(result.source).toBe('primary');
     expect(result.recovered).toBe(false);
     expect(result.state.gold).toBe(777);
+  });
+
+  it('accepts a valid v2 backup when the primary is corrupt',()=>{
+    const storage=new MemoryStorage();
+    const state=v2State();
+    storage.setItem(saveStorageKeys.primary,'{broken');
+    storage.setItem(saveStorageKeys.backups[0],serializeV2(state));
+    const result=loadResilientSave(storage);
+    expect(result.source).toBe('backup-1');
+    expect(result.recovered).toBe(true);
+    expect(result.state.gold).toBe(444);
+    expect(result.state.campaignRun.phase).toBe('spring_exploration');
+  });
+
+  it('skips a tampered v2 backup',()=>{
+    const storage=new MemoryStorage();
+    const state=v2State();
+    const envelope={schemaVersion:2,integrity:integrityForTest(state),state};
+    envelope.state.gold=999999;
+    storage.setItem(saveStorageKeys.backups[0],JSON.stringify(envelope));
+    expect(loadResilientSave(storage).source).toBe('fresh');
   });
 
   it('recovers from the newest valid backup when the primary save is corrupt', () => {
@@ -57,6 +98,14 @@ describe('save resilience', () => {
     expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[0])).gold).toBe(100);
     expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[1])).gold).toBe(90);
     expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[2])).gold).toBe(80);
+  });
+
+  it('rotates a valid v2 primary and writes a schema 3 primary',()=>{
+    const storage=new MemoryStorage();
+    storage.setItem(saveStorageKeys.primary,serializeV2(v2State(100)));
+    writeResilientSave(storage,{...initialState,gold:120});
+    expect(JSON.parse(storage.getItem(saveStorageKeys.primary)!).schemaVersion).toBe(3);
+    expect(parseSavedGame(storage.getItem(saveStorageKeys.backups[0])).gold).toBe(100);
   });
 
   it('does not promote a corrupt primary into backup history', () => {
