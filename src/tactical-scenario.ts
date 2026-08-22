@@ -1,5 +1,5 @@
 import type { MainCampaignId } from './campaign-model';
-import { isBattleFinished, type BattleSession } from './tactical-battle';
+import { isBattleFinished, type BattleSession, type TacticalStatusId } from './tactical-battle';
 import { tacticalBattleNodeForStage, type TacticalBattleNode } from './tactical-expedition';
 
 export type TacticalScenarioObjective =
@@ -11,12 +11,25 @@ export type TacticalScenarioObjective =
 
 export type TacticalScenarioObjectiveResult = 'success'|'failure'|null;
 
+export type TacticalScenarioModifier =
+  | { campaign:'caretaker'; kind:'protect'; unitId:string }
+  | { campaign:'caretaker'; kind:'survive'; rounds:number }
+  | { campaign:'caretaker'; kind:'rescue'; unitId:string }
+  | { campaign:'pathfinder'; kind:'scout'; revealCount:number }
+  | { campaign:'pathfinder'; kind:'turn-limit'; maxRounds:number }
+  | { campaign:'pathfinder'; kind:'escape'; afterRounds:number }
+  | { campaign:'vanguard'; kind:'elite'; levelBonus:number }
+  | { campaign:'vanguard'; kind:'chained-battle'; chainId:string; index:number; total:number }
+  | { campaign:'arcanist'; kind:'status-amplify'; statusId:TacticalStatusId; multiplier:number }
+  | { campaign:'arcanist'; kind:'relic-resonance'; relicId:string }
+  | { campaign:'arcanist'; kind:'rule-shift'; ruleId:string };
+
 export type CampaignEncounterDefinition = {
   id:string;
   campaign:MainCampaignId;
   stageId:string;
   objective:TacticalScenarioObjective;
-  modifiers:readonly [];
+  modifiers:readonly TacticalScenarioModifier[];
   failForward:boolean;
 };
 
@@ -26,18 +39,52 @@ export type TacticalScenario = {
   stageId:string;
   battleNode:TacticalBattleNode;
   objective:TacticalScenarioObjective;
-  modifiers:readonly [];
+  modifiers:readonly TacticalScenarioModifier[];
   failForward:boolean;
 };
 
+const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
+const nonEmpty=(value:string)=>typeof value==='string'&&value.trim().length>0;
+const positiveInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=1;
+const nonNegativeInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=0;
+
+function validModifier(modifier:TacticalScenarioModifier):boolean {
+  if(!modifier||typeof modifier!=='object') return false;
+  if(modifier.campaign==='caretaker') {
+    if(modifier.kind==='protect'||modifier.kind==='rescue') return nonEmpty(modifier.unitId);
+    return modifier.kind==='survive'&&positiveInteger(modifier.rounds);
+  }
+  if(modifier.campaign==='pathfinder') {
+    if(modifier.kind==='scout') return positiveInteger(modifier.revealCount);
+    if(modifier.kind==='turn-limit') return positiveInteger(modifier.maxRounds);
+    return modifier.kind==='escape'&&nonNegativeInteger(modifier.afterRounds);
+  }
+  if(modifier.campaign==='vanguard') {
+    if(modifier.kind==='elite') return nonNegativeInteger(modifier.levelBonus);
+    return modifier.kind==='chained-battle'&&nonEmpty(modifier.chainId)&&positiveInteger(modifier.index)&&positiveInteger(modifier.total)&&modifier.index<=modifier.total;
+  }
+  if(modifier.campaign==='arcanist') {
+    if(modifier.kind==='status-amplify') return statusIds.includes(modifier.statusId)&&Number.isFinite(modifier.multiplier)&&modifier.multiplier>0;
+    if(modifier.kind==='relic-resonance') return nonEmpty(modifier.relicId);
+    return modifier.kind==='rule-shift'&&nonEmpty(modifier.ruleId);
+  }
+  return false;
+}
+
 export function campaignEncounterToTacticalScenario(encounter:CampaignEncounterDefinition):TacticalScenario {
+  if(!Array.isArray(encounter.modifiers)||encounter.modifiers.some(modifier=>!validModifier(modifier))) {
+    throw new Error('invalid Tactical scenario modifier');
+  }
+  if(encounter.modifiers.some(modifier=>modifier.campaign!==encounter.campaign)) {
+    throw new Error('campaign modifier mismatch');
+  }
   return {
     id:encounter.id,
     campaign:encounter.campaign,
     stageId:encounter.stageId,
     battleNode:tacticalBattleNodeForStage(encounter.stageId),
     objective:encounter.objective,
-    modifiers:encounter.modifiers,
+    modifiers:encounter.modifiers.map(modifier=>({...modifier})),
     failForward:encounter.failForward,
   };
 }
