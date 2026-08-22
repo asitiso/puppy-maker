@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {emptyCharacterBondsState} from './character-bonds';
+import {emptyCharacterBondsState,hydrateCharacterBondsState} from './character-bonds';
 import {
   applyAutumnChoiceBondConsequence,
   autumnChoiceDefinition,
@@ -41,6 +41,12 @@ describe('V3 Autumn Major Choice domain',()=>{
     expect(earnedResult.earned).toMatchObject({available:true,optionId:earned});
   });
 
+  it('does not open the earned option for malformed truthy eligibility input',()=>{
+    const malformed=context({thirdEligible:'yes' as never});
+    expect(resolveAutumnChoiceOptions('caretaker',malformed).earned.available).toBe(false);
+    expect(commitAutumnMajorChoice('caretaker','team_solution',malformed,null).status).toBe('not_available');
+  });
+
   it('rejects unavailable earned options and malformed choices without inventing progression',()=>{
     expect(commitAutumnMajorChoice('caretaker','team_solution',context(),null).status).toBe('not_available');
     expect(commitAutumnMajorChoice('caretaker','stale_option' as never,context(),null).status).toBe('invalid_option');
@@ -74,6 +80,25 @@ describe('V3 Autumn Major Choice domain',()=>{
     expect(first.bonds.rex.memories).toContain('rex_autumn_preserve_independence');
     expect(second.applied).toBe(false);
     expect(second.bonds).toEqual(first.bonds);
+  });
+
+  it('keeps registered Autumn Bond consequences through hydration and strips stale ids',()=>{
+    const committed=commitAutumnMajorChoice('arcanist','controlled_use',context({thirdEligible:true}),null,'victory');
+    const applied=applyAutumnChoiceBondConsequence(emptyCharacterBondsState(),committed.aftermath).bonds;
+    const hydrated=hydrateCharacterBondsState({
+      ...applied,
+      selene:{
+        ...applied.selene,
+        memories:[...applied.selene.memories,'stale_memory'],
+        promises:[...applied.selene.promises,'stale_promise'],
+        conflicts:[...applied.selene.conflicts,'stale_conflict'],
+      },
+    });
+    expect(hydrated.selene.memories).toContain('selene_autumn_controlled_use');
+    expect(hydrated.selene.promises).toContain('selene_autumn_controlled_use');
+    expect(hydrated.selene.memories).not.toContain('stale_memory');
+    expect(hydrated.selene.promises).not.toContain('stale_promise');
+    expect(hydrated.selene.conflicts).not.toContain('stale_conflict');
   });
 
   it('keeps every earned choice commit-able when the upstream gate is open',()=>{
