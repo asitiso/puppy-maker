@@ -52,8 +52,10 @@ function promoteLegacyEchoes(legacy:LegacyState):LegacyState{
     relationshipEchoes,
     trueClues,
   });
-  const ngPlusUnlocks=[...promoted.ngPlusUnlocks,...selectNgPlusUnlocks(promoted)];
-  return hydrateLegacyState({...promoted,ngPlusUnlocks});
+  return hydrateLegacyState({
+    ...promoted,
+    ngPlusUnlocks:selectNgPlusUnlocks(promoted),
+  });
 }
 
 export function prepareNewPossibilityV3State(current:V3PersistentState):
