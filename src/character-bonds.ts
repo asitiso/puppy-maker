@@ -14,24 +14,24 @@ const festivalMemories=(character:'mira'|'kael'|'rex'|'selene')=>[
 
 export const characterBondIdRegistry:Record<CharacterId,Registry>={
   mira:{
-    conflicts:['mira_self_sacrifice','mira_summer_overextended_rescue'],
-    promises:['mira_share_the_burden','mira_summer_share_responsibility'],
-    memories:['mira_first_commitment','mira_festival_rescue',...festivalMemories('mira'),'mira_long_night'],
+    conflicts:['mira_self_sacrifice','mira_summer_overextended_rescue','mira_autumn_single_rescue_burden'],
+    promises:['mira_share_the_burden','mira_summer_share_responsibility','mira_autumn_shared_risk','mira_autumn_team_solution'],
+    memories:['mira_first_commitment','mira_festival_rescue',...festivalMemories('mira'),'mira_autumn_save_one','mira_autumn_spread_risk','mira_autumn_team_solution','mira_long_night'],
   },
   kael:{
-    conflicts:['kael_summer_crossed_boundary'],
-    promises:['kael_summer_respect_boundaries'],
-    memories:['kael_first_commitment',...festivalMemories('kael')],
+    conflicts:['kael_summer_crossed_boundary','kael_autumn_route_overreach'],
+    promises:['kael_summer_respect_boundaries','kael_autumn_guarded_boundary','kael_autumn_limited_access'],
+    memories:['kael_first_commitment',...festivalMemories('kael'),'kael_autumn_open_route','kael_autumn_seal_route','kael_autumn_limited_access'],
   },
   rex:{
-    conflicts:['rex_obsession_with_victory','rex_summer_victory_at_cost'],
-    promises:['rex_fair_rivalry','rex_summer_lead_together'],
-    memories:['rex_first_commitment','rex_first_defeat',...festivalMemories('rex'),'rex_tournament_final'],
+    conflicts:['rex_obsession_with_victory','rex_summer_victory_at_cost','rex_autumn_command_pressure'],
+    promises:['rex_fair_rivalry','rex_summer_lead_together','rex_autumn_shared_command','rex_autumn_coalition_command'],
+    memories:['rex_first_commitment','rex_first_defeat',...festivalMemories('rex'),'rex_autumn_centralize','rex_autumn_preserve_independence','rex_autumn_coalition_command','rex_tournament_final'],
   },
   selene:{
-    conflicts:['selene_summer_forbidden_overreach'],
-    promises:['selene_summer_restrain_power'],
-    memories:['selene_first_commitment',...festivalMemories('selene')],
+    conflicts:['selene_summer_forbidden_overreach','selene_autumn_forbidden_relic_cost'],
+    promises:['selene_summer_restrain_power','selene_autumn_refuse_relic','selene_autumn_controlled_use'],
+    memories:['selene_first_commitment',...festivalMemories('selene'),'selene_autumn_use_relic','selene_autumn_destroy_relic','selene_autumn_controlled_use'],
   },
   noa:{conflicts:[],promises:[],memories:[]},eiden:{conflicts:[],promises:[],memories:[]},
   lyra:{conflicts:[],promises:[],memories:[]},veyr:{conflicts:[],promises:[],memories:[]},
