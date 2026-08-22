@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCareerRecords,type CareerRecords} from './career-records';
-import {emptyCharacterBondsState,type CharacterBondsState} from './character-bonds';
+import {emptyCharacterBondsState,hydrateCharacterBondsState,type CharacterBondsState} from './character-bonds';
 import type {MainCampaignId,MajorChoiceOptionId,MajorOutcomeResult} from './campaign-model';
 import {
   applyWinterBondResolution,
@@ -101,6 +101,32 @@ describe('V3 Winter story + modular ending semantics',()=>{
     expect(first.bonds.kael.memories).toContain(result.bondAftermath?.memoryId);
     expect(second.applied).toBe(false);
     expect(second.bonds).toEqual(first.bonds);
+  });
+
+  it.each([
+    ['caretaker','mira'],['pathfinder','kael'],['vanguard','rex'],['arcanist','selene'],
+  ] as const)('preserves registered Winter Bond aftermath through hydration for %s',(campaign,character)=>{
+    const fulfilled=bonds();
+    fulfilled[character].memories=[`${character}_autumn_${autumnChoice[campaign]}`];
+    const result=resolveWinterEndingStory(input(campaign,{characterBonds:fulfilled,longNightOutcome:'costly_victory'}));
+    const applied=applyWinterBondResolution(fulfilled,result.bondAftermath).bonds;
+    const hydrated=hydrateCharacterBondsState(applied);
+    expect(hydrated[character].memories).toContain(`${character}_winter_costly_victory`);
+    expect(hydrated[character].promises).toContain(`${character}_winter_shared_future`);
+  });
+
+  it('preserves Winter unresolved-tension conflict but strips stale Winter-like ids',()=>{
+    const strained=bonds();
+    strained.rex.conflicts=['rex_autumn_command_pressure'];
+    const result=resolveWinterEndingStory(input('vanguard',{characterBonds:strained,longNightOutcome:'defeat'}));
+    const applied=applyWinterBondResolution(strained,result.bondAftermath).bonds;
+    applied.rex.memories.push('rex_winter_stale');
+    applied.rex.promises.push('rex_winter_fake_future');
+    const hydrated=hydrateCharacterBondsState(applied);
+    expect(hydrated.rex.memories).toContain('rex_winter_defeat');
+    expect(hydrated.rex.conflicts).toContain('rex_winter_unresolved_tension');
+    expect(hydrated.rex.memories).not.toContain('rex_winter_stale');
+    expect(hydrated.rex.promises).not.toContain('rex_winter_fake_future');
   });
 
   it('rejects campaign/autumn-choice mismatches instead of inventing an ending',()=>{
