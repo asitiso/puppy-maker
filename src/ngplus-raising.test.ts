@@ -1,4 +1,5 @@
 import {describe,expect,it} from 'vitest';
+import {mainCampaignIds} from './campaign-model';
 import {emptyLegacyState,type LegacyState} from './legacy-state';
 import {pathConvergence,type SpringAffinityEvidence} from './spring-raising';
 import {resolveNgPlusRaisingReplay} from './ngplus-raising';
@@ -83,7 +84,7 @@ describe('V3 NG+ Raising replay semantics',()=>{
     }),evidence);
     expect(result.normalCandidates.length).toBeGreaterThanOrEqual(2);
     expect(result.specialCandidate).toMatchObject({id:'fifth_path_candidate',kind:'special_candidate'});
-    expect(result.normalCandidates.every(candidate=>candidate.campaign!=='true_path')).toBe(true);
+    expect(result.normalCandidates.every(candidate=>mainCampaignIds.includes(candidate.campaign))).toBe(true);
   });
 
   it('does not expose Fifth Path content when only ordinary NG+ replay unlocks exist',()=>{
