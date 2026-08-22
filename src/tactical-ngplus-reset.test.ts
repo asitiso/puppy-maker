@@ -4,14 +4,15 @@ import { handoffTacticalTerminalResult } from './tactical-scenario';
 import {
   createTacticalNgPlusRuntimeState,
   resetTacticalForNgPlus,
+  type TacticalNgPlusResetState,
 } from './tactical-ngplus-reset';
 
-const dirtyState = () => ({
+const dirtyState = (): TacticalNgPlusResetState => ({
   tacticalBattleRecords: {
-    training_ground: { grade: 'S' as const, bestRounds: 2, clearCount: 9 },
+    training_ground: { grade: 'S', bestRounds: 2, clearCount: 9 },
   },
-  claimedTacticalFirstClears: ['training_ground' as const],
-  selectedTacticalCompanions: ['wolf', 'cat'] as const,
+  claimedTacticalFirstClears: ['training_ground'],
+  selectedTacticalCompanions: ['wolf', 'cat'],
   tacticalCompanionBonds: {
     bear: { xp: 120, level: 3 },
     owl: { xp: 80, level: 2 },
@@ -19,7 +20,7 @@ const dirtyState = () => ({
     cat: { xp: 220, level: 4 },
   },
   tacticalAutoBattle: true,
-  tacticalBattleSpeed: 2 as const,
+  tacticalBattleSpeed: 2,
 });
 
 const progression = { maxHp: 140, agility: 18, power: 28, magic: 24 };
