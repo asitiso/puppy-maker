@@ -74,6 +74,30 @@ describe('V3 Guardian Festival world outcome', () => {
     expect(replay.failForwardOutcomes).toEqual(['guardian_festival']);
   });
 
+  it('repairs cross-field fail-forward evidence from the authoritative stored outcome', () => {
+    const costly = resolveGuardianFestivalWorldOutcome({
+      outcome: 'victory',
+      worldHistory: { currentFacts: [], inheritedFacts: [] },
+      majorOutcomes: { guardian_festival: 'costly_victory' },
+      failForwardOutcomes: [],
+    });
+    expect(costly.applied).toBe(false);
+    expect(costly.outcome).toBe('costly_victory');
+    expect(costly.worldHistory.currentFacts).toEqual(['festival_heavy_losses']);
+    expect(costly.failForwardOutcomes).toEqual(['guardian_festival']);
+
+    const clean = resolveGuardianFestivalWorldOutcome({
+      outcome: 'defeat',
+      worldHistory: { currentFacts: ['festival_heavy_losses'], inheritedFacts: [] },
+      majorOutcomes: { guardian_festival: 'victory' },
+      failForwardOutcomes: ['guardian_festival'],
+    });
+    expect(clean.applied).toBe(false);
+    expect(clean.outcome).toBe('victory');
+    expect(clean.worldHistory.currentFacts).toEqual(['festival_heavy_losses', 'festival_saved']);
+    expect(clean.failForwardOutcomes).toEqual([]);
+  });
+
   it('sanitizes malformed state and fails closed for unknown outcomes', () => {
     const result = resolveGuardianFestivalWorldOutcome({
       outcome: 'unknown_result',
