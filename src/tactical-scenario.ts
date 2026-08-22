@@ -209,14 +209,17 @@ export function handoffTacticalTerminalResult(
 ):TacticalTerminalHandoff {
   const normalizedState=normalizeHandoffState(state);
   if(result===null) return {state:normalizedState,result:null};
-  const terminalKey=typeof result.terminalKey==='string'?result.terminalKey.trim():'';
-  if(!terminalKey) throw new Error('Tactical terminal key is required');
+  const suppliedTerminalKey=typeof result.terminalKey==='string'?result.terminalKey.trim():'';
+  const scenarioId=typeof result.scenarioId==='string'?result.scenarioId.trim():'';
+  const attemptKey=typeof result.attemptKey==='string'?result.attemptKey.trim():'';
+  if(!suppliedTerminalKey||!scenarioId||!attemptKey) throw new Error('Tactical terminal key is required');
+  const terminalKey=`${scenarioId}:${attemptKey}`;
   if(normalizedState.handedOffKeys.includes(terminalKey)) {
     return {state:normalizedState,result:null};
   }
   return {
     state:{handedOffKeys:[...normalizedState.handedOffKeys,terminalKey]},
-    result:{...result,terminalKey},
+    result:{...result,scenarioId,attemptKey,terminalKey},
   };
 }
 
