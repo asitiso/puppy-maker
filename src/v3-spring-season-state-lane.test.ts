@@ -1,6 +1,10 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCampaignRunState,hydrateCampaignRunState} from './campaign-state';
-import {resolveCampaignSeasonalObjective} from './campaign-seasonal-objectives';
+import {
+  resolveCampaignSeasonalObjective,
+  sanitizeCampaignSeasonalObjectiveClaimKeys as sanitizeObjectiveClaimKeysFromAdapter,
+} from './campaign-seasonal-objectives';
+import {sanitizeCampaignSeasonalObjectiveClaimKeys as sanitizeObjectiveClaimKeysFromState} from './campaign-seasonal-claim-keys';
 import {emptyV3PersistentState,hydrateV3PersistentState,prepareNewRunState} from './v3-persistent-state';
 
 const claimKey='1-spring:caretaker:spring_caretaker_bond';
@@ -11,6 +15,22 @@ describe('V3 Spring Lane C season/state vertical slice',()=>{
     expect(hydrateCampaignRunState({
       claimedSeasonalObjectives:[claimKey,claimKey,'bad','01-spring:caretaker:spring_caretaker_bond'],
     }).claimedSeasonalObjectives).toEqual([claimKey]);
+  });
+
+  it('keeps adapter and persistent claim sanitizers in lockstep',()=>{
+    const raw=[
+      claimKey,
+      claimKey,
+      '2-summer:arcanist:summer_arcanist_rift',
+      '0-spring:caretaker:spring_caretaker_bond',
+      '01-spring:caretaker:spring_caretaker_bond',
+      '1-winter:caretaker:spring_caretaker_bond',
+      '1-spring:vanguard:spring_caretaker_bond',
+      '1-spring:caretaker:stale_objective',
+      7,
+      null,
+    ];
+    expect(sanitizeObjectiveClaimKeysFromState(raw)).toEqual(sanitizeObjectiveClaimKeysFromAdapter(raw));
   });
 
   it('keeps one-action/one-objective reward-once across save, load, reload and week rollover',()=>{
