@@ -51,9 +51,15 @@ describe('Summer Lane A story + UI vertical slice', () => {
       expect(model.bond?.promises.length).toBeGreaterThan(0);
     }
 
+    const warnings: string[] = [];
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      warnings.push(args.map(String).join(' '));
+    });
     const home = renderToStaticMarkup(<SummerHubOverlay open={false} model={model} onOpen={() => undefined} onClose={() => undefined} />);
     const journey = renderToStaticMarkup(<SummerHubOverlay open model={model} onOpen={() => undefined} onClose={() => undefined} />);
+    errorSpy.mockRestore();
 
+    expect(warnings.join('\n')).not.toMatch(/empty string.*src attribute/i);
     expect(home).toContain(label);
     expect(home).toContain(model.relationshipChange);
     expect(home).toContain(model.festivalResult);
@@ -69,21 +75,5 @@ describe('Summer Lane A story + UI vertical slice', () => {
     expect(serialized).not.toMatch(/campaignAffinities|rawScore|affinity/i);
     expect(serialized).not.toMatch(/"trust"\s*:/i);
     expect(journey).not.toContain('/ 100');
-  });
-
-  it('does not emit a React warning when a Summer character portrait is unavailable', () => {
-    const result = resolveSummerCampaignStory('caretaker', 'defeat');
-    const applied = applySummerStoryBondConsequence(emptyCharacterBondsState(), result);
-    const presentation = summerCampaignStoryPresentation('caretaker', 'defeat', applied.bonds);
-    const model = buildSummerStoryUiModel(presentation, '여름 · 1월');
-    const warnings: string[] = [];
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-      warnings.push(args.map(String).join(' '));
-    });
-
-    renderToStaticMarkup(<SummerHubOverlay open model={model} onOpen={() => undefined} onClose={() => undefined} />);
-    errorSpy.mockRestore();
-
-    expect(warnings.join('\n')).not.toMatch(/empty string.*src attribute/i);
   });
 });
