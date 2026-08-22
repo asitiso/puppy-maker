@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildFifthPathSpringPresentation } from './fifth-path-experience';
+import {
+  buildFifthPathSpringPresentation,
+  buildFifthPathSummerPresentation,
+} from './fifth-path-experience';
 
 const normalCandidates = [
   { id: 'caretaker', title: 'Caretaker', tendency: '떠오르는 가능성', reasons: ['이번 봄의 행동이 이 길을 열었어요.'] },
@@ -34,5 +37,34 @@ describe('Fifth Path Spring presentation contract', () => {
     expect(ineligible.normalCandidates).toHaveLength(2);
     expect(ineligible.fifthCandidate).toBeNull();
     expect(ineligible.autoSelectedCampaign).toBeNull();
+  });
+});
+
+describe('Fifth Path Summer presentation contract', () => {
+  it('reveals the deeper phenomenon only for an explicitly active true_path run', () => {
+    const summer = buildFifthPathSummerPresentation({
+      activeCampaign: 'true_path',
+      season: 'summer',
+      worldSignals: ['서로 다른 캠페인의 흔적이 같은 균열을 가리켜요.'],
+      bondSignals: ['리라가 반복되는 장면을 먼저 알아차렸어요.'],
+    });
+
+    expect(summer).toEqual({
+      campaign: 'true_path',
+      season: 'summer',
+      title: '다섯 번째 길 · Summer',
+      objective: '갈라진 길들의 뒤에 있는 하나의 원인을 추적한다',
+      reveal: '서로 달라 보였던 선택들이 더 깊은 하나의 현상으로 이어지기 시작해요.',
+      lyra: '리라가 반복되는 장면을 먼저 알아차렸어요.',
+      world: ['서로 다른 캠페인의 흔적이 같은 균열을 가리켜요.'],
+      nextSeason: 'autumn',
+    });
+
+    expect(buildFifthPathSummerPresentation({
+      activeCampaign: 'caretaker',
+      season: 'summer',
+      worldSignals: [],
+      bondSignals: [],
+    })).toBeNull();
   });
 });
