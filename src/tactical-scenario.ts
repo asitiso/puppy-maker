@@ -1,6 +1,7 @@
 import type { MainCampaignId } from './campaign-model';
 import { isBattleFinished, type BattleSession, type TacticalStatusId } from './tactical-battle';
-import { tacticalBattleNodeForStage, type TacticalBattleNode } from './tactical-expedition';
+import type { CompanionId, LeaderCombatProgression } from './tactical-companions';
+import { createTacticalExpeditionBattle, tacticalBattleNodeForStage, type TacticalBattleNode } from './tactical-expedition';
 
 export type TacticalScenarioObjective =
   | { type:'standard' }
@@ -87,6 +88,15 @@ export function campaignEncounterToTacticalScenario(encounter:CampaignEncounterD
     modifiers:encounter.modifiers.map(modifier=>({...modifier})),
     failForward:encounter.failForward,
   };
+}
+
+export function createTacticalScenarioBattle(
+  scenario:TacticalScenario,
+  selected:readonly CompanionId[],
+  progression:LeaderCombatProgression,
+  seed:number,
+):BattleSession {
+  return createTacticalExpeditionBattle(scenario.stageId,selected,progression,seed);
 }
 
 function living(session:BattleSession,id:string) {
