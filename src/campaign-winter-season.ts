@@ -6,7 +6,7 @@ import {
 } from './campaign-model';
 import type {CampaignRunState} from './campaign-state';
 import {sanitizeCampaignSeasonalObjectiveClaimKeys} from './campaign-seasonal-claim-keys';
-import {hydrateLegacyState} from './legacy-state';
+import {hydrateLegacyState,type TruePathEvidenceId} from './legacy-state';
 import type {V3PersistentState} from './v3-persistent-state';
 
 export type WinterCampaignActionFact=
@@ -188,6 +188,7 @@ export type WinterEndingSummaryInput={
   majorWorldOutcomes?:unknown;
   keyBondMemories?:unknown;
   trueClues?:unknown;
+  truePathEvidence?:TruePathEvidenceId[];
 };
 
 export function commitWinterEnding(state:V3PersistentState,ending:ModularEnding,summary:WinterEndingSummaryInput={}):
@@ -213,6 +214,7 @@ export function commitWinterEnding(state:V3PersistentState,ending:ModularEnding,
     majorWorldOutcomes:summary.majorWorldOutcomes??[],
     keyBondMemories:summary.keyBondMemories??[],
     trueClues:summary.trueClues??[],
+    ...(summary.truePathEvidence?.length?{truePathEvidence:summary.truePathEvidence}:{}),
   };
   const legacy=hydrateLegacyState({
     ...state.legacy,
