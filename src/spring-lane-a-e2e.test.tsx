@@ -36,12 +36,16 @@ describe('V3 Spring Lane A Raising → Story/UI',()=>{
       vn:{portrait:'/assets/runa/runa_talk.png',name:'미라',dialogue:'이제 네가 고른 길을 같이 걸어 보자.',choices:['함께 간다'],log:['Caretaker를 선택했다.'],seen:false},
     };
 
-    const html=renderToStaticMarkup(<SpringHubOverlay open model={model} onOpen={()=>undefined} onClose={()=>undefined}/>);
-    expect(html).toContain('강하게 열리는 길');
-    expect(html).toContain('미라와 첫 약속을 기억합니다.');
-    expect(html).toContain('이제 네가 고른 길을 같이 걸어 보자.');
-    expect(html).toContain('신뢰가 자라는 중');
-    expect(html).not.toMatch(/affinity/i);
-    expect(html).not.toContain('11');
+    const journeyHtml=renderToStaticMarkup(<SpringHubOverlay open model={model} onOpen={()=>undefined} onClose={()=>undefined}/>);
+    expect(journeyHtml).toContain('강하게 열리는 길');
+    expect(journeyHtml).toContain('mira_first_commitment');
+    expect(journeyHtml).toContain('이제 네가 고른 길을 같이 걸어 보자.');
+    expect(journeyHtml).toContain('신뢰가 자라는 중');
+    expect(journeyHtml).not.toMatch(/affinity/i);
+    expect(journeyHtml).not.toContain('11');
+
+    const homeHtml=renderToStaticMarkup(<SpringHubOverlay open={false} model={model} onOpen={()=>undefined} onClose={()=>undefined}/>);
+    expect(homeHtml).toContain('미라와 첫 약속을 기억합니다.');
+    expect(homeHtml).toContain('caretaker');
   });
 });
