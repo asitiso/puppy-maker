@@ -36,7 +36,7 @@ export function resolveFifthPathEligibility(raw:LegacyState){
   const summaryCampaigns=new Set(legacy.runSummaries.map(summary=>summary.campaign));
   const completedCampaigns=new Set(legacy.completedCampaigns);
   const clues=new Set(legacy.trueClues);
-  const evidenceIds=new Set(legacy.runSummaries.flatMap(summary=>summary.truePathEvidence));
+  const evidenceIds=new Set(legacy.runSummaries.flatMap(summary=>summary.truePathEvidence??[]));
 
   const evidence:FifthPathEligibilityEvidence={
     campaignBreadth:mainCampaignIds.every(id=>completedCampaigns.has(id)&&summaryCampaigns.has(id)),
