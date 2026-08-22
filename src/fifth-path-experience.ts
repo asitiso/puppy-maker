@@ -75,6 +75,22 @@ export type FifthPathWinterPresentation = {
   next: 'true_ending';
 };
 
+export type FifthPathTrueEndingInput = {
+  reachedTrueEnding: boolean;
+  outcome: FifthPathWinterOutcome;
+  worldLegacy: readonly string[];
+  bondLegacy: readonly string[];
+};
+
+export type FifthPathTrueEndingPresentation = {
+  id: 'true_ending';
+  title: string;
+  summary: string;
+  worldLegacy: readonly string[];
+  bondLegacy: readonly string[];
+  future: string;
+};
+
 export function buildFifthPathSpringPresentation(
   input: FifthPathSpringPresentationInput,
 ): FifthPathSpringPresentation {
@@ -153,5 +169,26 @@ export function buildFifthPathWinterPresentation(
     bond: input.bondSignals[0] ?? '리라는 이번에는 기억을 잃지 않겠다고 약속해요.',
     world: [...input.worldSignals],
     next: 'true_ending',
+  };
+}
+
+const trueEndingSummaries: Record<FifthPathWinterOutcome, string> = {
+  victory: '반복이 끝난 자리에서, 모두가 자기 선택을 이어갈 새벽이 시작돼요.',
+  costly_victory: '대가의 흔적은 남았지만, 그 흔적까지 기억한 채 다른 봄을 선택할 수 있어요.',
+  defeat: '완전한 승리는 아니었지만, 반복을 알아본 기억이 다음 삶의 자유를 남겼어요.',
+};
+
+export function buildFifthPathTrueEndingPresentation(
+  input: FifthPathTrueEndingInput,
+): FifthPathTrueEndingPresentation | null {
+  if (!input.reachedTrueEnding) return null;
+
+  return {
+    id: 'true_ending',
+    title: 'True Ending · 반복 너머의 봄',
+    summary: trueEndingSummaries[input.outcome],
+    worldLegacy: [...input.worldLegacy],
+    bondLegacy: [...input.bondLegacy],
+    future: '다음 삶은 정답을 반복하는 회차가 아니라, 스스로 선택할 수 있는 세계로 이어져요.',
   };
 }
