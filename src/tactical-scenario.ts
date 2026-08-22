@@ -82,6 +82,7 @@ export type TacticalTerminalHandoff = Readonly<{
   result:TacticalScenarioResult|null;
 }>;
 
+const campaignIds:readonly MainCampaignId[]=['caretaker','pathfinder','vanguard','arcanist'];
 const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 const interventionCharacterIds:readonly TacticalBondInterventionCharacterId[]=['mira','kael','rex','selene'];
 const interventionTimings:readonly TacticalBondInterventionTiming[]=['before-battle','objective-check','terminal'];
@@ -89,6 +90,16 @@ const nonEmpty=(value:string)=>typeof value==='string'&&value.trim().length>0;
 const positiveInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=1;
 const nonNegativeInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=0;
 const safeInteger=(value:number)=>Number.isFinite(value)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value))):0;
+
+function validObjective(objective:TacticalScenarioObjective):boolean {
+  if(!objective||typeof objective!=='object') return false;
+  if(objective.type==='standard') return true;
+  if(objective.type==='protect') return nonEmpty(objective.unitId);
+  if(objective.type==='survive') return positiveInteger(objective.rounds);
+  if(objective.type==='escape') return nonNegativeInteger(objective.afterRounds);
+  if(objective.type==='target-elimination') return nonEmpty(objective.targetId);
+  return false;
+}
 
 function validModifier(modifier:TacticalScenarioModifier):boolean {
   if(!modifier||typeof modifier!=='object') return false;
@@ -114,18 +125,26 @@ function validModifier(modifier:TacticalScenarioModifier):boolean {
 }
 
 export function campaignEncounterToTacticalScenario(encounter:CampaignEncounterDefinition):TacticalScenario {
+  if(!encounter||typeof encounter!=='object'||!nonEmpty(encounter.id)||!nonEmpty(encounter.stageId)||!campaignIds.includes(encounter.campaign)||typeof encounter.failForward!=='boolean') {
+    throw new Error('invalid Tactical scenario definition');
+  }
+  if(!validObjective(encounter.objective)) {
+    throw new Error('invalid Tactical scenario objective');
+  }
   if(!Array.isArray(encounter.modifiers)||encounter.modifiers.some(modifier=>!validModifier(modifier))) {
     throw new Error('invalid Tactical scenario modifier');
   }
   if(encounter.modifiers.some(modifier=>modifier.campaign!==encounter.campaign)) {
     throw new Error('campaign modifier mismatch');
   }
+  const id=encounter.id.trim();
+  const stageId=encounter.stageId.trim();
   return {
-    id:encounter.id,
+    id,
     campaign:encounter.campaign,
-    stageId:encounter.stageId,
-    battleNode:tacticalBattleNodeForStage(encounter.stageId),
-    objective:encounter.objective,
+    stageId,
+    battleNode:tacticalBattleNodeForStage(stageId),
+    objective:{...encounter.objective},
     modifiers:encounter.modifiers.map(modifier=>({...modifier})),
     failForward:encounter.failForward,
   };
