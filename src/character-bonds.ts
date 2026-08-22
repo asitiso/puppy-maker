@@ -6,12 +6,11 @@ export type CharacterBondsState=Record<CharacterId,CharacterBondState>;
 type Registry={conflicts:readonly string[];promises:readonly string[];memories:readonly string[]};
 
 export const characterBondIdRegistry:Record<CharacterId,Registry>={
-  mira:{conflicts:['mira_self_sacrifice'],promises:['mira_share_the_burden'],memories:['mira_first_commitment','mira_festival_rescue','mira_long_night']},
-  kael:{conflicts:[],promises:[],memories:['kael_first_commitment']},
-  rex:{conflicts:['rex_obsession_with_victory'],promises:['rex_fair_rivalry'],memories:['rex_first_commitment','rex_first_defeat','rex_tournament_final']},
-  selene:{conflicts:[],promises:[],memories:['selene_first_commitment']},
-  noa:{conflicts:[],promises:[],memories:[]},eiden:{conflicts:[],promises:[],memories:[]},
-  lyra:{conflicts:[],promises:[],memories:[]},veyr:{conflicts:[],promises:[],memories:[]},
+  mira:{conflicts:['mira_self_sacrifice'],promises:['mira_share_the_burden'],memories:['mira_festival_rescue','mira_long_night']},
+  kael:{conflicts:[],promises:[],memories:[]},
+  rex:{conflicts:['rex_obsession_with_victory'],promises:['rex_fair_rivalry'],memories:['rex_first_defeat','rex_tournament_final']},
+  selene:{conflicts:[],promises:[],memories:[]},noa:{conflicts:[],promises:[],memories:[]},
+  eiden:{conflicts:[],promises:[],memories:[]},lyra:{conflicts:[],promises:[],memories:[]},veyr:{conflicts:[],promises:[],memories:[]},
 };
 
 const emptyBond=():CharacterBondState=>({trust:0,conflicts:[],promises:[],memories:[]});

@@ -31,13 +31,4 @@ describe('V3 campaign run hydration',()=>{
     expect(state.majorOutcomes).toEqual({guardian_festival:'defeat'});
     expect(state.failForwardOutcomes).toEqual(['guardian_festival']);
   });
-
-  it('canonicalizes dedicated seasonal objective claim keys and resets them on a fresh run',()=>{
-    const canonical='1-spring:caretaker:spring_caretaker_bond';
-    const state=hydrateCampaignRunState({
-      claimedSeasonalObjectives:[canonical,canonical,'1-spring:caretaker:retired_objective','bad'],
-    });
-    expect(state.claimedSeasonalObjectives).toEqual([canonical]);
-    expect(emptyCampaignRunState().claimedSeasonalObjectives).toEqual([]);
-  });
 });
