@@ -140,6 +140,20 @@ function guardianFestivalFact(outcome: MajorOutcomeResult): WorldFactId {
     : 'festival_heavy_losses';
 }
 
+function isFailForwardOutcome(outcome: MajorOutcomeResult): boolean {
+  return outcome === 'costly_victory' || outcome === 'defeat';
+}
+
+function reconcileGuardianFestivalFailForward(
+  failForwardOutcomes: MajorEventId[],
+  outcome: MajorOutcomeResult,
+): MajorEventId[] {
+  if (isFailForwardOutcome(outcome)) {
+    return uniqueRegistered([...failForwardOutcomes, 'guardian_festival'], majorEventIds);
+  }
+  return failForwardOutcomes.filter(eventId => eventId !== 'guardian_festival');
+}
+
 export type GuardianFestivalWorldOutcomeInput = {
   outcome: unknown;
   worldHistory: unknown;
@@ -171,6 +185,7 @@ export function resolveGuardianFestivalWorldOutcome(
       ...worldHistory,
       currentFacts: sanitizeWorldFactIds([...worldHistory.currentFacts, fact]),
     };
+    failForwardOutcomes = reconcileGuardianFestivalFailForward(failForwardOutcomes, existing);
     return {
       applied: false,
       eventId: 'guardian_festival',
@@ -201,12 +216,7 @@ export function resolveGuardianFestivalWorldOutcome(
     currentFacts: sanitizeWorldFactIds([...worldHistory.currentFacts, fact]),
   };
   majorOutcomes.guardian_festival = outcome;
-  if (outcome === 'costly_victory' || outcome === 'defeat') {
-    failForwardOutcomes = uniqueRegistered(
-      [...failForwardOutcomes, 'guardian_festival'],
-      majorEventIds,
-    );
-  }
+  failForwardOutcomes = reconcileGuardianFestivalFailForward(failForwardOutcomes, outcome);
 
   return {
     applied: true,
