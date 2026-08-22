@@ -19,6 +19,7 @@ import {
   type MajorEventId,
   type MajorOutcomeResult,
 } from './campaign-model';
+import {sanitizeCampaignSeasonalObjectiveClaimKeys} from './campaign-seasonal-claim-keys';
 import {isV3Record,safeNonNegativeInt,safePositiveInt,uniqueRegistered} from './v3-state-sanitize';
 
 export type CampaignRunState={
@@ -33,6 +34,7 @@ export type CampaignRunState={
   majorOutcomes:Partial<Record<MajorEventId,MajorOutcomeResult>>;
   failForwardOutcomes:MajorEventId[];
   claimedCampaignRewards:CampaignMilestoneId[];
+  claimedSeasonalObjectives:string[];
 };
 
 export function emptyCampaignRunState():CampaignRunState{
@@ -48,6 +50,7 @@ export function emptyCampaignRunState():CampaignRunState{
     majorOutcomes:{},
     failForwardOutcomes:[],
     claimedCampaignRewards:[],
+    claimedSeasonalObjectives:[],
   };
 }
 
@@ -103,5 +106,6 @@ export function hydrateCampaignRunState(raw:unknown):CampaignRunState{
     majorOutcomes,
     failForwardOutcomes:uniqueRegistered(source.failForwardOutcomes,majorEventIds),
     claimedCampaignRewards:uniqueRegistered(source.claimedCampaignRewards,campaignMilestoneIds),
+    claimedSeasonalObjectives:sanitizeCampaignSeasonalObjectiveClaimKeys(source.claimedSeasonalObjectives),
   };
 }
