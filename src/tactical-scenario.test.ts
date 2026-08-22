@@ -5,6 +5,7 @@ import {
   campaignEncounterToTacticalScenario,
   evaluateTacticalScenarioObjective,
   type CampaignEncounterDefinition,
+  type TacticalScenarioModifier,
   type TacticalScenarioObjective,
 } from './tactical-scenario';
 
@@ -30,6 +31,28 @@ function scenarioFor(objective:TacticalScenarioObjective) {
     failForward:false,
   });
 }
+
+const modifierSamples:Record<'caretaker'|'pathfinder'|'vanguard'|'arcanist',TacticalScenarioModifier[]> = {
+  caretaker:[
+    {campaign:'caretaker',kind:'protect',unitId:'escort'},
+    {campaign:'caretaker',kind:'survive',rounds:3},
+    {campaign:'caretaker',kind:'rescue',unitId:'civilian'},
+  ],
+  pathfinder:[
+    {campaign:'pathfinder',kind:'scout',revealCount:2},
+    {campaign:'pathfinder',kind:'turn-limit',maxRounds:6},
+    {campaign:'pathfinder',kind:'escape',afterRounds:2},
+  ],
+  vanguard:[
+    {campaign:'vanguard',kind:'elite',levelBonus:2},
+    {campaign:'vanguard',kind:'chained-battle',chainId:'spring-chain',index:1,total:3},
+  ],
+  arcanist:[
+    {campaign:'arcanist',kind:'status-amplify',statusId:'break',multiplier:1.5},
+    {campaign:'arcanist',kind:'relic-resonance',relicId:'spring-relic'},
+    {campaign:'arcanist',kind:'rule-shift',ruleId:'unstable-mana'},
+  ],
+};
 
 describe('V3 Tactical scenario adapter', () => {
   it('compiles a campaign encounter onto the existing Tactical battle node contract', () => {
@@ -96,5 +119,33 @@ describe('V3 Tactical scenario adapter', () => {
     const eliminated={...active,units:active.units.map(entry=>entry.id==='target'?{...entry,hp:0}:entry)};
     expect(evaluateTacticalScenarioObjective(targetScenario,eliminated)).toBe('success');
     expect(eliminated.units.some(entry=>entry.side==='enemy'&&entry.hp>0)).toBe(true);
+  });
+
+  it('carries the Spring modifier vocabulary for all four campaigns without sharing the source array', () => {
+    for(const campaign of ['caretaker','pathfinder','vanguard','arcanist'] as const) {
+      const modifiers=modifierSamples[campaign];
+      const scenario=campaignEncounterToTacticalScenario({
+        id:`spring-${campaign}-contract`,campaign,stageId:'forest-1',objective:{type:'standard'},modifiers,failForward:false,
+      });
+      expect(scenario.modifiers).toEqual(modifiers);
+      expect(scenario.modifiers).not.toBe(modifiers);
+      expect(scenario.modifiers.every(modifier=>modifier.campaign===campaign)).toBe(true);
+    }
+  });
+
+  it('rejects a modifier from a different campaign at the adapter boundary', () => {
+    const corrupted={
+      id:'spring-caretaker-mismatch',campaign:'caretaker',stageId:'forest-1',objective:{type:'standard'},
+      modifiers:[{campaign:'pathfinder',kind:'turn-limit',maxRounds:4}],failForward:false,
+    } as unknown as CampaignEncounterDefinition;
+    expect(()=>campaignEncounterToTacticalScenario(corrupted)).toThrow('campaign modifier mismatch');
+  });
+
+  it('rejects non-finite numeric modifier configuration before it reaches the Tactical engine', () => {
+    const corrupted={
+      id:'spring-pathfinder-invalid',campaign:'pathfinder',stageId:'forest-1',objective:{type:'standard'},
+      modifiers:[{campaign:'pathfinder',kind:'turn-limit',maxRounds:Number.POSITIVE_INFINITY}],failForward:false,
+    } as unknown as CampaignEncounterDefinition;
+    expect(()=>campaignEncounterToTacticalScenario(corrupted)).toThrow('invalid Tactical scenario modifier');
   });
 });
