@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mainCampaignIds } from './campaign-model';
-import { expeditionRegions } from './expedition-regions';
+import { expeditionRegionDefinitions } from './expedition-regions';
 import { campaignWorldObjectives } from './campaign-world';
 
 describe('V3 campaign world objective overlays', () => {
@@ -14,11 +14,11 @@ describe('V3 campaign world objective overlays', () => {
 
   it('reuses only existing Expedition regions and stages instead of adding campaign maps', () => {
     const stageToRegion = new Map(
-      expeditionRegions.flatMap(region => region.stages.map(stage => [stage.id, region.id] as const)),
+      expeditionRegionDefinitions.flatMap(region => region.stages.map(stageId => [stageId, region.id] as const)),
     );
 
     for (const objective of campaignWorldObjectives) {
-      expect(expeditionRegions.some(region => region.id === objective.regionId)).toBe(true);
+      expect(expeditionRegionDefinitions.some(region => region.id === objective.regionId)).toBe(true);
       expect(objective.stageIds.length).toBeGreaterThan(0);
       for (const stageId of objective.stageIds) {
         expect(stageToRegion.get(stageId)).toBe(objective.regionId);
