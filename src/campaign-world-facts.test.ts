@@ -1,23 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import { worldFactIds } from './world-history';
 import {
   sanitizeCampaignWorldFacts,
   sanitizeWorldFactIds,
-  worldFactDefinitions,
 } from './campaign-world';
 
 describe('V3 campaign world facts', () => {
-  it('exposes only the canonical Spring WorldFact registry', () => {
-    expect(worldFactDefinitions.map(item => item.id)).toEqual([
-      'festival_saved',
-      'festival_heavy_losses',
-      'ancient_route_opened',
-      'ancient_route_sealed',
-      'regional_alliance',
-      'rift_unstable',
-    ]);
+  it('reuses the authoritative V3 WorldFact registry including the Spring contract ids', () => {
+    expect(worldFactIds).toContain('festival_saved');
+    expect(worldFactIds).toContain('festival_heavy_losses');
+    expect(worldFactIds).toContain('ancient_route_opened');
+    expect(worldFactIds).toContain('ancient_route_sealed');
+    expect(worldFactIds).toContain('regional_alliance');
+    expect(worldFactIds).toContain('rift_unstable');
+    expect(new Set(worldFactIds).size).toBe(worldFactIds.length);
   });
 
-  it('drops stale, malformed and duplicate fact ids while preserving first canonical order', () => {
+  it('drops stale, malformed and duplicate fact ids using canonical registry order', () => {
     expect(sanitizeWorldFactIds([
       'festival_saved',
       'festival_saved',
@@ -31,19 +30,19 @@ describe('V3 campaign world facts', () => {
 
   it('keeps current-run facts and inherited echoes strictly separated', () => {
     expect(sanitizeCampaignWorldFacts({
-      currentRunFacts: ['festival_saved', 'festival_saved', 'stale'],
-      inheritedEchoFacts: ['ancient_route_opened', 'festival_saved', 'unknown'],
+      currentFacts: ['festival_saved', 'festival_saved', 'stale'],
+      inheritedFacts: ['ancient_route_opened', 'festival_saved', 'unknown'],
     })).toEqual({
-      currentRunFacts: ['festival_saved'],
-      inheritedEchoFacts: ['ancient_route_opened', 'festival_saved'],
+      currentFacts: ['festival_saved'],
+      inheritedFacts: ['festival_saved', 'ancient_route_opened'],
     });
   });
 
   it('fails malformed containers to empty collections instead of mixing history into the run', () => {
     for (const raw of [null, undefined, 42, 'bad', []]) {
       expect(sanitizeCampaignWorldFacts(raw)).toEqual({
-        currentRunFacts: [],
-        inheritedEchoFacts: [],
+        currentFacts: [],
+        inheritedFacts: [],
       });
     }
   });
