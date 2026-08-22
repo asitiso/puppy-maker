@@ -3,6 +3,7 @@ import {isV3Record,uniqueRegistered} from './v3-state-sanitize';
 export const worldFactIds=[
   'festival_saved','festival_heavy_losses','ancient_route_opened','ancient_route_sealed','ancient_route_limited',
   'eiden_central_command','regional_alliance','forbidden_relic_used','forbidden_relic_destroyed','rift_stabilized','rift_unstable',
+  'caretaker_critical_person_saved','caretaker_risk_shared','caretaker_team_solution','coalition_command','forbidden_relic_controlled',
 ] as const;
 
 export type WorldFactId=typeof worldFactIds[number];
