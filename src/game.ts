@@ -14,7 +14,7 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { hydrateTacticalPersistentState } from './tactical-state';
-import {commitSpringPath,openSpringPathConvergence} from './v3-spring-integration';
+import {applySpringSeasonalSignals,commitSpringPath,openSpringPathConvergence} from './v3-spring-integration';
 import {
   emptyV3PersistentState,
   hydrateV3PersistentState,
@@ -208,7 +208,7 @@ export function reducer(state:GameState,action:Action):GameState {
     });
     const firstClear = !state.claimedTacticalFirstClears.includes(action.encounterId);
     const reward = tacticalEncounterReward(action.encounterId,grade,firstClear);
-    return {
+    const next:GameState = {
       ...state,
       tacticalCompanionBonds,
       tacticalBattleRecords:{
@@ -219,6 +219,8 @@ export function reducer(state:GameState,action:Action):GameState {
       gold:state.gold + reward.gold,
       gems:state.gems + reward.gems,
     };
+    const campaignRun=applySpringSeasonalSignals(next,['tactical_challenge','strong_opponent']);
+    return campaignRun===next.campaignRun?next:{...next,campaignRun};
   }
 
   const next = Base.reducer(state as Base.GameState,action as Base.Action);
