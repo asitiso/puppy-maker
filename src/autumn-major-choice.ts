@@ -8,15 +8,6 @@ import {
   type MajorOutcomeResult,
 } from './campaign-model';
 import type {CharacterBondsState} from './character-bonds';
-import {worldFactIds,type WorldFactId} from './world-history';
-
-export const autumnChoiceEvidenceKeys=[
-  'caretaker_team_solution_ready',
-  'pathfinder_limited_access_ready',
-  'vanguard_coalition_command_ready',
-  'arcanist_controlled_use_ready',
-] as const;
-export type AutumnChoiceEvidenceKey=typeof autumnChoiceEvidenceKeys[number];
 
 type AutumnCharacter='mira'|'kael'|'rex'|'selene';
 type AutumnDefinition={
@@ -25,15 +16,11 @@ type AutumnDefinition={
   baseOptions:readonly [MajorChoiceOptionId,MajorChoiceOptionId];
   earnedOption:MajorChoiceOptionId;
   character:AutumnCharacter;
-  evidenceKey:AutumnChoiceEvidenceKey;
-  bondPromise:string;
   earnedHint:string;
 };
 
 export type AutumnChoiceContext={
-  currentWorldFacts:readonly WorldFactId[];
-  inheritedWorldFacts:readonly WorldFactId[];
-  evidenceKeys:readonly AutumnChoiceEvidenceKey[];
+  thirdEligible:boolean;
   characterBonds:CharacterBondsState;
 };
 
@@ -68,23 +55,19 @@ export type AutumnChoiceResolution={
 const definitions:Record<MainCampaignId,AutumnDefinition>={
   caretaker:{
     campaign:'caretaker',choiceId:'caretaker_autumn',baseOptions:['save_one','spread_risk'],earnedOption:'team_solution',
-    character:'mira',evidenceKey:'caretaker_team_solution_ready',bondPromise:'mira_summer_share_responsibility',
-    earnedHint:'함께 짐을 나눠 온 선택들이 새로운 길을 암시합니다.',
+    character:'mira',earnedHint:'함께 짐을 나눠 온 선택들이 새로운 길을 암시합니다.',
   },
   pathfinder:{
     campaign:'pathfinder',choiceId:'pathfinder_autumn',baseOptions:['open_route','seal_route'],earnedOption:'limited_access',
-    character:'kael',evidenceKey:'pathfinder_limited_access_ready',bondPromise:'kael_summer_respect_boundaries',
-    earnedHint:'경계를 존중해 온 기록이 제3의 접근법을 암시합니다.',
+    character:'kael',earnedHint:'경계를 존중해 온 기록이 제3의 접근법을 암시합니다.',
   },
   vanguard:{
     campaign:'vanguard',choiceId:'vanguard_autumn',baseOptions:['centralize','preserve_independence'],earnedOption:'coalition_command',
-    character:'rex',evidenceKey:'vanguard_coalition_command_ready',bondPromise:'rex_summer_lead_together',
-    earnedHint:'함께 지휘해 온 경험이 다른 명령 체계를 떠올리게 합니다.',
+    character:'rex',earnedHint:'함께 지휘해 온 경험이 다른 명령 체계를 떠올리게 합니다.',
   },
   arcanist:{
     campaign:'arcanist',choiceId:'arcanist_autumn',baseOptions:['use_relic','destroy_relic'],earnedOption:'controlled_use',
-    character:'selene',evidenceKey:'arcanist_controlled_use_ready',bondPromise:'selene_summer_restrain_power',
-    earnedHint:'힘을 억제해 온 선택들이 통제된 방법의 가능성을 남깁니다.',
+    character:'selene',earnedHint:'힘을 억제해 온 선택들이 통제된 방법의 가능성을 남깁니다.',
   },
 };
 
@@ -105,24 +88,19 @@ const consequenceByOption:Record<MajorChoiceOptionId,{promiseId:string|null;conf
 
 const isMainCampaign=(value:unknown):value is MainCampaignId=>typeof value==='string'&&(mainCampaignIds as readonly string[]).includes(value);
 const isOutcome=(value:unknown):value is MajorOutcomeResult=>typeof value==='string'&&(majorOutcomeResults as readonly string[]).includes(value);
-const sanitizeWorldFacts=(values:readonly unknown[])=>values.filter((value):value is WorldFactId=>typeof value==='string'&&(worldFactIds as readonly string[]).includes(value));
-const sanitizeEvidence=(values:readonly unknown[])=>values.filter((value):value is AutumnChoiceEvidenceKey=>typeof value==='string'&&(autumnChoiceEvidenceKeys as readonly string[]).includes(value));
 
 export function autumnChoiceDefinition(campaign:unknown):AutumnDefinition|null{
   return isMainCampaign(campaign)?definitions[campaign]:null;
 }
 
-function earnedAvailable(definition:AutumnDefinition,context:AutumnChoiceContext):boolean{
-  const currentFacts=sanitizeWorldFacts(context.currentWorldFacts as readonly unknown[]);
-  const currentEvidence=sanitizeEvidence(context.evidenceKeys as readonly unknown[]);
-  const promises=context.characterBonds?.[definition.character]?.promises ?? [];
-  return currentFacts.length>0&&currentEvidence.includes(definition.evidenceKey)&&promises.includes(definition.bondPromise);
+function earnedAvailable(context:AutumnChoiceContext):boolean{
+  return context?.thirdEligible===true;
 }
 
 export function resolveAutumnChoiceOptions(campaign:unknown,context:AutumnChoiceContext):AutumnChoiceResolution{
   const definition=autumnChoiceDefinition(campaign);
   if(!definition) throw new Error('invalid_campaign');
-  const available=earnedAvailable(definition,context);
+  const available=earnedAvailable(context);
   return {
     campaign:definition.campaign,
     choiceId:definition.choiceId,
