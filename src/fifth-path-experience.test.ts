@@ -3,6 +3,7 @@ import {
   buildFifthPathAutumnPresentation,
   buildFifthPathSpringPresentation,
   buildFifthPathSummerPresentation,
+  buildFifthPathTrueEndingPresentation,
   buildFifthPathWinterPresentation,
 } from './fifth-path-experience';
 
@@ -47,24 +48,29 @@ describe('Fifth Path Winter presentation contract', () => {
     ['costly_victory', '긴 밤은 끝났지만 그 선택의 흔적과 약속은 다음 삶에도 남아요.'],
     ['defeat', '이번 밤을 완전히 이기지는 못했지만, 반복을 알아본 기억이 다음 새벽의 길이 돼요.'],
   ] as const)('fail-forwards %s into a qualitative true-ending handoff', (outcome, resolution) => {
-    const winter = buildFifthPathWinterPresentation({
-      activeCampaign: 'true_path',
-      season: 'winter',
+    const winter = buildFifthPathWinterPresentation({ activeCampaign: 'true_path', season: 'winter', outcome, worldSignals: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'], bondSignals: ['리라는 이번에는 기억을 잃지 않겠다고 약속해요.'] });
+    expect(winter).toEqual({ campaign: 'true_path', season: 'winter', title: '다섯 번째 길 · Long Night', objective: '긴 밤의 원인을 끝내는 대신, 세계가 스스로 다음 선택을 할 구조를 남긴다', outcome, resolution, bond: '리라는 이번에는 기억을 잃지 않겠다고 약속해요.', world: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'], next: 'true_ending' });
+  });
+});
+
+describe('Fifth Path True Ending presentation contract', () => {
+  it.each(['victory', 'costly_victory', 'defeat'] as const)('renders %s as a qualitative epilogue rather than a ranked score ending', outcome => {
+    const ending = buildFifthPathTrueEndingPresentation({
+      reachedTrueEnding: true,
       outcome,
-      worldSignals: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'],
-      bondSignals: ['리라는 이번에는 기억을 잃지 않겠다고 약속해요.'],
+      worldLegacy: ['세계는 여러 답을 함께 품을 수 있게 되었어요.'],
+      bondLegacy: ['리라는 다음 만남에서도 이번 선택을 기억하겠다고 약속했어요.'],
     });
 
-    expect(winter).toEqual({
-      campaign: 'true_path',
-      season: 'winter',
-      title: '다섯 번째 길 · Long Night',
-      objective: '긴 밤의 원인을 끝내는 대신, 세계가 스스로 다음 선택을 할 구조를 남긴다',
-      outcome,
-      resolution,
-      bond: '리라는 이번에는 기억을 잃지 않겠다고 약속해요.',
-      world: ['세계는 하나의 정답 대신 서로 다른 선택을 품은 채 버텼어요.'],
-      next: 'true_ending',
-    });
+    expect(ending?.id).toBe('true_ending');
+    expect(ending?.title).toBe('True Ending · 반복 너머의 봄');
+    expect(ending?.worldLegacy).toEqual(['세계는 여러 답을 함께 품을 수 있게 되었어요.']);
+    expect(ending?.bondLegacy).toEqual(['리라는 다음 만남에서도 이번 선택을 기억하겠다고 약속했어요.']);
+    expect(ending?.future).toBe('다음 삶은 정답을 반복하는 회차가 아니라, 스스로 선택할 수 있는 세계로 이어져요.');
+    expect(JSON.stringify(ending)).not.toMatch(/\b[ABS]\b|score|affinity|trust\s*[:=]|threshold|\d+\s*\/\s*100/i);
+  });
+
+  it('does not manufacture a True Ending when the authoritative runtime has not reached it', () => {
+    expect(buildFifthPathTrueEndingPresentation({ reachedTrueEnding: false, outcome: 'victory', worldLegacy: [], bondLegacy: [] })).toBeNull();
   });
 });
