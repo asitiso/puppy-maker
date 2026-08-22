@@ -73,6 +73,15 @@ export type TacticalBondInterventionHook = (
   request:TacticalBondInterventionRequest,
 )=>TacticalBondInterventionResponse|null;
 
+export type TacticalTerminalHandoffState = Readonly<{
+  handedOffKeys:readonly string[];
+}>;
+
+export type TacticalTerminalHandoff = Readonly<{
+  state:TacticalTerminalHandoffState;
+  result:TacticalScenarioResult|null;
+}>;
+
 const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 const interventionCharacterIds:readonly TacticalBondInterventionCharacterId[]=['mira','kael','rex','selene'];
 const interventionTimings:readonly TacticalBondInterventionTiming[]=['before-battle','objective-check','terminal'];
@@ -155,6 +164,41 @@ export function invokeTacticalBondIntervention(
     throw new Error('Invalid Tactical Bond Intervention response');
   }
   return {accepted:response.accepted,interventionId:response.interventionId.trim()};
+}
+
+export function createTacticalTerminalHandoffState():TacticalTerminalHandoffState {
+  return {handedOffKeys:[]};
+}
+
+function normalizeHandoffState(state:TacticalTerminalHandoffState):TacticalTerminalHandoffState {
+  const source=Array.isArray(state?.handedOffKeys)?state.handedOffKeys:[];
+  const keys:string[]=[];
+  for(const value of source) {
+    if(typeof value!=='string') continue;
+    const key=value.trim();
+    if(key&&!keys.includes(key)) keys.push(key);
+  }
+  const canonical=Array.isArray(state?.handedOffKeys)
+    && state.handedOffKeys.length===keys.length
+    && state.handedOffKeys.every((value,index)=>value===keys[index]);
+  return canonical?state:{handedOffKeys:keys};
+}
+
+export function handoffTacticalTerminalResult(
+  state:TacticalTerminalHandoffState,
+  result:TacticalScenarioResult|null,
+):TacticalTerminalHandoff {
+  const normalizedState=normalizeHandoffState(state);
+  if(result===null) return {state:normalizedState,result:null};
+  const terminalKey=typeof result.terminalKey==='string'?result.terminalKey.trim():'';
+  if(!terminalKey) throw new Error('Tactical terminal key is required');
+  if(normalizedState.handedOffKeys.includes(terminalKey)) {
+    return {state:normalizedState,result:null};
+  }
+  return {
+    state:{handedOffKeys:[...normalizedState.handedOffKeys,terminalKey]},
+    result:{...result,terminalKey},
+  };
 }
 
 function living(session:BattleSession,id:string) {
