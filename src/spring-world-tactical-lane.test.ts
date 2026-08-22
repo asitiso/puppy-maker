@@ -99,6 +99,31 @@ describe('V3 Spring Lane B World + Tactical vertical slice',()=>{
     expect(replay.result).toBeNull();
   });
 
+  it('maps a successful Pathfinder escape without battle victory to costly fail-forward',()=>{
+    const worldObjective=campaignWorldObjectives.find(item=>item.id==='summer_pathfinder_festival_routes')!;
+    const scenario=worldObjectiveToTacticalScenario(worldObjective);
+    const battle=createTacticalScenarioBattle(scenario,companions,progression,47);
+    const escaped={...battle,round:2};
+    const terminal=resolveTacticalScenarioResult(scenario,escaped,'festival-attempt-escape');
+    expect(terminal?.objectiveResult).toBe('success');
+    expect(terminal?.battleResult).toBeNull();
+
+    const handed=handoffTacticalTerminalResult(createTacticalTerminalHandoffState(),terminal);
+    expect(handed.result).not.toBeNull();
+    const outcome=mapTacticalResultToGuardianFestivalOutcome(handed.result!);
+    expect(outcome).toBe('costly_victory');
+
+    const world=resolveGuardianFestivalWorldOutcome({
+      outcome,
+      worldHistory:{currentFacts:[],inheritedFacts:['ancient_route_opened']},
+      majorOutcomes:{},
+      failForwardOutcomes:[],
+    });
+    expect(world.worldHistory.currentFacts).toEqual(['festival_heavy_losses']);
+    expect(world.worldHistory.inheritedFacts).toEqual(['ancient_route_opened']);
+    expect(world.failForwardOutcomes).toEqual(['guardian_festival']);
+  });
+
   it('keeps Bond Intervention as I/O only while the World state remains untouched',()=>{
     const worldObjective=campaignWorldObjectives.find(item=>item.id==='spring_pathfinder_hidden_route')!;
     const scenario=worldObjectiveToTacticalScenario(worldObjective);
