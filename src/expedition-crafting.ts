@@ -41,13 +41,17 @@ function isOneTimeRecipeCompleted(recipe: ExpeditionCraftingRecipe, progress: Ex
   ));
 }
 
+function hasValidMaterialBalances(materials: ExpeditionMaterials): boolean {
+  return expeditionMaterialIds.every(id => Number.isFinite(materials[id]) && materials[id] >= 0);
+}
+
 export function canCraft(
   recipeId: ExpeditionCraftingRecipeId,
   materials: ExpeditionMaterials,
   progress: ExpeditionCraftingProgress = {},
 ): boolean {
   const recipe = craftingRecipes.find(item => item.id === recipeId);
-  if (!recipe || isOneTimeRecipeCompleted(recipe, progress)) return false;
+  if (!recipe || isOneTimeRecipeCompleted(recipe, progress) || !hasValidMaterialBalances(materials)) return false;
   return expeditionMaterialIds.every(id => materials[id] >= (recipe.costs[id] ?? 0));
 }
 

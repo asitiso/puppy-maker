@@ -55,7 +55,7 @@ export function isValidSeasonPurchaseKey(value:string):boolean {
 
 export function resolveSeasonPurchase(input:{ seasonKey:SeasonJourneyKey; offerId:SeasonShopOfferId; tokens:number; purchaseKeys:string[] }) {
   const offer = seasonShopOffers(input.seasonKey).find(item => item.id === input.offerId);
-  if (!offer) return { accepted:false as const };
+  if (!offer || !Number.isFinite(input.tokens)) return { accepted:false as const };
   const prefix = `${input.seasonKey}:${offer.id}:`;
   const usedOrdinals = new Set<number>();
   for (const key of input.purchaseKeys) {

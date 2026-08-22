@@ -69,6 +69,14 @@ function allStagesCleared(records: ExpeditionPersistentState['expeditionRecords'
   return expeditionStageDefinitions.every(stage => isExpeditionStageCleared(records[stage.id]));
 }
 
+function allStageRewardsPaid(state: ExpeditionPersistentState): boolean {
+  return expeditionStageDefinitions.every(stage => state.rewardedExpeditionStages.includes(stage.id));
+}
+
+function safeMaterialBalance(value: number): number {
+  return Math.max(0, Math.floor(Number.isFinite(value) ? value : 0));
+}
+
 export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: ExpeditionStageId, score: number): { state: ExpeditionRewardState; summary: ExpeditionFinishSummary } {
   const stage = stageDefinition(stageId);
   const grade = expeditionGrade(score, stage.target);
@@ -94,6 +102,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
   const wasStageRewarded = state.rewardedExpeditionStages.includes(stageId);
   const regionWasComplete = regionNowComplete(stage.region, state.expeditionRecords);
   const fullWasComplete = allStagesCleared(state.expeditionRecords);
+  const worldRewardWasPaid = allStageRewardsPaid(state);
   const firstClear = clearedNow && !wasCleared && !wasStageRewarded;
   const expeditionRecords = updateExpeditionRecord(state.expeditionRecords, stageId, score, stage.target);
   let next: ExpeditionRewardState = { ...state, expeditionRecords };
@@ -108,7 +117,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
       ...next,
       expeditionMaterials: {
         ...next.expeditionMaterials,
-        [material]: next.expeditionMaterials[material] + materialReward,
+        [material]: safeMaterialBalance(next.expeditionMaterials[material]) + materialReward,
       },
     };
   }
@@ -161,7 +170,7 @@ export function resolveExpeditionFinish(state: ExpeditionRewardState, stageId: E
 
   let fullCompleted = false;
   if (clearedNow && allStagesCleared(next.expeditionRecords) && !next.ownedExpeditionRelics.includes('explorer_compass')) {
-    fullCompleted = !fullWasComplete;
+    fullCompleted = !fullWasComplete && !worldRewardWasPaid;
     next = {
       ...next,
       gems: next.gems + (fullCompleted ? 5 : 0),

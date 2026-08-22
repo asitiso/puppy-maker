@@ -33,8 +33,22 @@ const directivePool: WeeklyDirective[] = [
   { id:'gift_week', label:'선물의 온기', counter:'gift', target:3, reward:{ journeyPoints:20, tokens:5 } },
 ];
 
+function canonicalCalendarValue(value:number,min:number,max?:number) {
+  const finite = Number.isFinite(value) ? Math.floor(value) : min;
+  return Math.max(min,max === undefined ? finite : Math.min(max,finite));
+}
+
+function canonicalWeeklyPeriod(year:number,month:number,week:number) {
+  return {
+    year:canonicalCalendarValue(year,1),
+    month:canonicalCalendarValue(month,1,12),
+    week:canonicalCalendarValue(week,1,4),
+  };
+}
+
 export function weeklyDirectiveKey(year:number, month:number, week:number) {
-  return `${Math.max(1,Math.floor(year))}-${Math.max(1,Math.min(12,Math.floor(month)))}-${Math.max(1,Math.min(4,Math.floor(week)))}` as const;
+  const canonical = canonicalWeeklyPeriod(year,month,week);
+  return `${canonical.year}-${canonical.month}-${canonical.week}` as const;
 }
 
 function directiveActionGroup(counter:WeeklyDirectiveCounter) {
@@ -42,7 +56,8 @@ function directiveActionGroup(counter:WeeklyDirectiveCounter) {
 }
 
 export function weeklyDirectives(year:number, month:number, week:number): WeeklyDirective[] {
-  const seed = Math.max(0,Math.floor(year * 37 + month * 11 + week * 5));
+  const canonical = canonicalWeeklyPeriod(year,month,week);
+  const seed = Math.max(0,Math.floor(canonical.year * 37 + canonical.month * 11 + canonical.week * 5));
   const result: WeeklyDirective[] = [];
   let cursor = seed % directivePool.length;
   while (result.length < 3) {
@@ -65,13 +80,14 @@ export function advanceWeeklyDirectives(
   rewardedKeys:string[] = [],
   key?:string,
 ) {
-  const next = { ...progress };
+  const next:Record<string,number> = {};
   const completed: WeeklyDirective[] = [];
   let journeyPoints = 0;
   let tokens = 0;
 
   for (const directive of directives) {
-    const before = Math.max(0,Math.floor(next[directive.id] ?? 0));
+    const stored = progress[directive.id];
+    const before = Number.isFinite(stored) ? Math.max(0,Math.floor(stored)) : 0;
     const after = matches(directive,event) ? Math.min(directive.target,before + 1) : before;
     next[directive.id] = after;
     const reached = after >= directive.target;

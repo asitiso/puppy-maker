@@ -138,7 +138,7 @@ export function hydrateGameState(raw:unknown):GameState {
   const v3 = hydrateV3PersistentState(source);
   return {
     ...base,
-    ...(typeof source.monthsCompleted==='number'?{monthsCompleted:Math.max(0,Math.floor(source.monthsCompleted))}:{}),
+    ...(typeof source.monthsCompleted==='number'?{monthsCompleted:safeInt(source.monthsCompleted)}:{}),
     ...(Array.isArray(source.eventHistory)?{eventHistory:source.eventHistory.filter((value):value is string=>typeof value==='string')}:{}),
     ...(Array.isArray(source.endingCollection)?{endingCollection:source.endingCollection.filter((value):value is string=>typeof value==='string')}:{}),
     ...(typeof source.activeEventId==='string'?{activeEventId:source.activeEventId}:{}),
@@ -179,11 +179,14 @@ export function reducer(state:GameState,action:Action):GameState {
       if (tacticalCompanionBonds === state.tacticalCompanionBonds) return state;
       return { ...state, tacticalCompanionBonds };
     }
+    const rounds = Math.max(1,safeInt(action.rounds));
+    const survivingAllies = Math.min(3,safeInt(action.survivingAllies));
+    const damageTaken = safeInt(action.damageTaken);
     const grade = gradeTacticalBattle({
       result:action.result,
-      rounds:action.rounds,
-      survivingAllies:action.survivingAllies,
-      damageTaken:action.damageTaken,
+      rounds,
+      survivingAllies,
+      damageTaken,
     });
     const firstClear = !state.claimedTacticalFirstClears.includes(action.encounterId);
     const reward = tacticalEncounterReward(action.encounterId,grade,firstClear);
@@ -192,7 +195,7 @@ export function reducer(state:GameState,action:Action):GameState {
       tacticalCompanionBonds,
       tacticalBattleRecords:{
         ...state.tacticalBattleRecords,
-        [action.encounterId]:updateTacticalRecord(state.tacticalBattleRecords[action.encounterId],{ grade,rounds:action.rounds }),
+        [action.encounterId]:updateTacticalRecord(state.tacticalBattleRecords[action.encounterId],{ grade,rounds }),
       },
       claimedTacticalFirstClears:firstClear ? [...state.claimedTacticalFirstClears,action.encounterId] : state.claimedTacticalFirstClears,
       gold:state.gold + reward.gold,

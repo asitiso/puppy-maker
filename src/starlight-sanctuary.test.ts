@@ -40,6 +40,24 @@ describe('starlight sanctuary', () => {
     expect(ready.accepted).toBe(true);
   });
 
+  it('rejects non-finite resources and renown before granting permanent facility levels', () => {
+    expect(resolveSanctuaryUpgrade({
+      facility:'training_hall', levels:emptySanctuaryLevels(),
+      gold:Number.POSITIVE_INFINITY, materials:{ star_bark:3, arcane_shard:0, wind_pearl:0 },
+      renown:{ starlight_forest:0, ancient_city:0, wind_lakes:0 },
+    }).accepted).toBe(false);
+    expect(resolveSanctuaryUpgrade({
+      facility:'training_hall', levels:emptySanctuaryLevels(),
+      gold:500, materials:{ star_bark:Number.POSITIVE_INFINITY, arcane_shard:0, wind_pearl:0 },
+      renown:{ starlight_forest:0, ancient_city:0, wind_lakes:0 },
+    }).accepted).toBe(false);
+    expect(resolveSanctuaryUpgrade({
+      facility:'training_hall', levels:{ ...emptySanctuaryLevels(), training_hall:2 },
+      gold:1600, materials:{ star_bark:7, arcane_shard:3, wind_pearl:3 },
+      renown:{ starlight_forest:Number.POSITIVE_INFINITY, ancient_city:0, wind_lakes:0 },
+    }).accepted).toBe(false);
+  });
+
   it('derives capped effects from facility levels', () => {
     expect(sanctuaryEffects({ training_hall:3, archive_library:3, herb_garden:3, observatory:3 })).toEqual({
       trainingPercent:3,

@@ -64,6 +64,12 @@ describe('season shop', () => {
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'expedition_cache', tokens:29, purchaseKeys:[] })).toEqual({ accepted:false });
   });
 
+  it('rejects non-finite token balances instead of minting shop rewards', () => {
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.NaN, purchaseKeys:[] })).toEqual({ accepted:false });
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.POSITIVE_INFINITY, purchaseKeys:[] })).toEqual({ accepted:false });
+    expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:Number.NEGATIVE_INFINITY, purchaseKeys:[] })).toEqual({ accepted:false });
+  });
+
   it('enforces per-season purchase limits without affecting another season', () => {
     const used = [seasonPurchaseKey('1-spring','gold_pouch',1), seasonPurchaseKey('1-spring','gold_pouch',2)];
     expect(resolveSeasonPurchase({ seasonKey:'1-spring', offerId:'gold_pouch', tokens:99, purchaseKeys:used })).toEqual({ accepted:false });

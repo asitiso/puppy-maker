@@ -1,6 +1,7 @@
 import type { SeasonJourneyKey } from './season-journey';
 import { isValidSeasonPurchaseKey } from './season-shop';
 import type { SeasonKeepsakeMilestoneId } from './season-keepsakes';
+import { weeklyDirectives } from './weekly-directives';
 
 export type SeasonJourneyHistoryEntry = {
   key:SeasonJourneyKey;
@@ -21,10 +22,10 @@ export type LiveOpsPersistentState = {
   claimedSeasonKeepsakeMilestones?:SeasonKeepsakeMilestoneId[];
 };
 
-const seasonKeyPattern = /^\d+-(spring|summer|autumn|winter)$/;
-const seasonTierPattern = /^\d+-(spring|summer|autumn|winter):(10|[1-9])$/;
-const weekKeyPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]$/;
-const weeklyRewardPattern = /^\d+-(?:[1-9]|1[0-2])-[1-4]:(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
+const seasonKeyPattern = /^[1-9]\d*-(spring|summer|autumn|winter)$/;
+const seasonTierPattern = /^[1-9]\d*-(spring|summer|autumn|winter):(10|[1-9])$/;
+const weekKeyPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]$/;
+const weeklyRewardPattern = /^[1-9]\d*-(?:[1-9]|1[0-2])-[1-4]:(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
 const directiveIdPattern = /^(steady_training|field_patrol|warm_bond|guardian_sortie|elite_clear|deep_training|adventure_week|gift_week)$/;
 const keepsakeMilestonePattern = /^(first_keepsake|four_seasons|eight_seasons)$/;
 const isRecord = (value:unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -52,6 +53,14 @@ function hydrateNumberMap(raw:unknown, keyPattern:RegExp) {
     result[key] = safeInt(value);
   }
   return result;
+}
+
+function hydrateWeeklyProgress(raw:unknown, weekKey:string|null):Record<string,number> {
+  const hydrated = hydrateNumberMap(raw,directiveIdPattern);
+  if (!weekKey) return {};
+  const [year,month,week] = weekKey.split('-').map(Number);
+  const assigned = new Set(weeklyDirectives(year,month,week).map(directive => directive.id));
+  return Object.fromEntries(Object.entries(hydrated).filter(([id]) => assigned.has(id as never)));
 }
 
 function hydrateUniqueStrings(raw:unknown, pattern:RegExp) {
@@ -82,12 +91,13 @@ function hydrateShopPurchases(raw:unknown):string[] {
 
 export function hydrateLiveOpsState(raw:unknown): LiveOpsPersistentState {
   const source = isRecord(raw) ? raw : {};
+  const weeklyDirectiveKey = typeof source.weeklyDirectiveKey === 'string' && weekKeyPattern.test(source.weeklyDirectiveKey) ? source.weeklyDirectiveKey : null;
   return {
     seasonJourneyScores:hydrateNumberMap(source.seasonJourneyScores,seasonKeyPattern),
     claimedSeasonJourneyTiers:hydrateUniqueStrings(source.claimedSeasonJourneyTiers,seasonTierPattern),
     seasonTokenBalances:hydrateNumberMap(source.seasonTokenBalances,seasonKeyPattern),
-    weeklyDirectiveKey:typeof source.weeklyDirectiveKey === 'string' && weekKeyPattern.test(source.weeklyDirectiveKey) ? source.weeklyDirectiveKey : null,
-    weeklyDirectiveProgress:hydrateNumberMap(source.weeklyDirectiveProgress,directiveIdPattern),
+    weeklyDirectiveKey,
+    weeklyDirectiveProgress:hydrateWeeklyProgress(source.weeklyDirectiveProgress,weeklyDirectiveKey),
     rewardedWeeklyDirectives:hydrateUniqueStrings(source.rewardedWeeklyDirectives,weeklyRewardPattern),
     seasonJourneyHistory:hydrateHistory(source.seasonJourneyHistory),
     seasonShopPurchases:hydrateShopPurchases(source.seasonShopPurchases),

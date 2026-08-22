@@ -9,11 +9,19 @@ import {
 describe('Calling depth effects', () => {
   it('builds stable monthly legend reward keys', () => {
     expect(legendRewardKey(2, 7, 'vanguard_legend')).toBe('2-7:vanguard_legend');
+    expect(legendRewardKey(0, 99, 'vanguard_legend')).toBe('1-12:vanguard_legend');
+    expect(legendRewardKey(Number.NaN, Number.POSITIVE_INFINITY, 'vanguard_legend')).toBe('1-1:vanguard_legend');
   });
 
   it('accelerates discovery eligibility only with Pathfinder eye', () => {
     expect(effectivePathfinderExplorationXp(3, 'pathfinder', ['pathfinder_eye'])).toBe(6);
     expect(effectivePathfinderExplorationXp(3, 'vanguard', ['pathfinder_eye'])).toBe(3);
+  });
+
+  it('sanitizes malformed exploration xp before applying Pathfinder eye', () => {
+    expect(effectivePathfinderExplorationXp(Number.NaN, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(Number.POSITIVE_INFINITY, 'pathfinder', ['pathfinder_eye'])).toBe(3);
+    expect(effectivePathfinderExplorationXp(-50, 'pathfinder', ['pathfinder_eye'])).toBe(3);
   });
 
   it('detects specialist Calling mastery from expedition actions', () => {
@@ -78,5 +86,16 @@ describe('Calling depth effects', () => {
     });
     expect(result.stressDelta).toBe(4);
     expect(result.applied).toContain('heart_anchor');
+  });
+
+  it('does not leak non-finite fatigue or stress deltas from expedition Calling rewards', () => {
+    const result = applyExpeditionCallingRewards({
+      year:1, month:4, calling:null, traits:[], signatures:[], legendRewardKeys:[],
+      stageId:'forest_path', grade:'A', firstClear:false, discovery:null, regionCompleted:null, materialReward:1,
+      fatigueDelta:Number.NaN, stressDelta:Number.POSITIVE_INFINITY,
+    });
+
+    expect(result.fatigueDelta).toBe(0);
+    expect(result.stressDelta).toBe(0);
   });
 });

@@ -6,7 +6,9 @@ import type { GuardianCallingId } from './guardian-callings';
 import type { GrowthTraitId } from './growth-traits';
 
 export function legendRewardKey(year:number, month:number, effectId:string): string {
-  return `${Math.max(1, Math.floor(year))}-${Math.max(1, Math.min(12, Math.floor(month)))}:${effectId}`;
+  const safeYear = Math.max(1, Math.floor(Number.isFinite(year) ? year : 1));
+  const safeMonth = Math.max(1, Math.min(12, Math.floor(Number.isFinite(month) ? month : 1)));
+  return `${safeYear}-${safeMonth}:${effectId}`;
 }
 
 export function effectivePathfinderExplorationXp(
@@ -14,7 +16,12 @@ export function effectivePathfinderExplorationXp(
   calling:GuardianCallingId | null,
   traits:readonly GrowthTraitId[],
 ): number {
-  return Math.max(0, Math.floor(xp)) + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+  const safeXp = Math.max(0, Math.floor(Number.isFinite(xp) ? xp : 0));
+  return safeXp + (calling === 'pathfinder' && traits.includes('pathfinder_eye') ? 3 : 0);
+}
+
+function hasValidAction(value:number): boolean {
+  return Number.isFinite(value) && value > 0;
 }
 
 export function specialistMasteryCalling(
@@ -23,10 +30,10 @@ export function specialistMasteryCalling(
   summary:{ stageId:ExpeditionStageId; grade:ExpeditionGrade; discovery:string | null; materialReward:number },
 ): GuardianCallingId | null {
   if (!calling || summary.grade === 'C') return null;
-  if (calling === 'vanguard') return actions.attack > 0 ? calling : null;
-  if (calling === 'arcanist') return actions.charge > 0 ? calling : null;
-  if (calling === 'caretaker') return actions.dodge > 0 ? calling : null;
-  const acted = actions.attack + actions.dodge + actions.charge > 0;
+  if (calling === 'vanguard') return hasValidAction(actions.attack) ? calling : null;
+  if (calling === 'arcanist') return hasValidAction(actions.charge) ? calling : null;
+  if (calling === 'caretaker') return hasValidAction(actions.dodge) ? calling : null;
+  const acted = hasValidAction(actions.attack) || hasValidAction(actions.dodge) || hasValidAction(actions.charge);
   const explored = summary.discovery !== null || summary.materialReward > 0 || isBossStage(summary.stageId);
   return acted && explored ? calling : null;
 }
@@ -57,16 +64,21 @@ export type ExpeditionCallingRewardResult = {
   applied:string[];
 };
 
+function safeNonNegativeDelta(value:number): number {
+  return Math.max(0, Number.isFinite(value) ? value : 0);
+}
+
 export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput): ExpeditionCallingRewardResult {
   let extraMaterial = 0;
-  let fatigueDelta = Math.max(0, input.fatigueDelta);
-  let stressDelta = Math.max(0, input.stressDelta);
+  let fatigueDelta = safeNonNegativeDelta(input.fatigueDelta);
+  let stressDelta = safeNonNegativeDelta(input.stressDelta);
   let legendRewardKeys = [...input.legendRewardKeys];
   const applied:string[] = [];
   const signatures = new Set(input.signatures);
   const traits = new Set(input.traits);
+  const successful = input.grade !== 'C';
 
-  if (input.calling === 'pathfinder') {
+  if (successful && input.calling === 'pathfinder') {
     if (signatures.has('trail_reading') && input.firstClear && input.materialReward > 0) {
       extraMaterial += 1;
       applied.push('trail_reading');
@@ -82,7 +94,7 @@ export function applyExpeditionCallingRewards(input:ExpeditionCallingRewardInput
     applied.push('heart_anchor');
   }
 
-  if (input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
+  if (successful && input.calling === 'vanguard' && traits.has('vanguard_legend') && input.firstClear) {
     const key = legendRewardKey(input.year, input.month, 'vanguard_legend');
     if (!legendRewardKeys.includes(key)) {
       fatigueDelta = Math.max(0, fatigueDelta - 2);

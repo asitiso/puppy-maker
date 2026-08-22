@@ -18,6 +18,12 @@ export type ExpeditionPersistentState = {
 const stageIds = expeditionStageDefinitions.map(stage => stage.id);
 const regionIds = expeditionRegionDefinitions.map(region => region.id);
 const validGrades: ExpeditionGrade[] = ['S', 'A', 'B', 'C'];
+const regionCompletionRelics: Partial<Record<ExpeditionRelicId, ExpeditionRegionId>> = {
+  moonfang_charm: 'starlight_forest',
+  mana_prism: 'ancient_city',
+  wind_feather: 'wind_lakes',
+  bond_locket: 'starlight_forest',
+};
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const finite = (value: unknown, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
@@ -66,21 +72,44 @@ function hydrateMaterials(raw: unknown): ExpeditionMaterials {
 
 export function hydrateExpeditionPersistentState(raw: unknown): ExpeditionPersistentState {
   const source = isRecord(raw) ? raw : {};
-  const milestones = uniqueAllowed(source.craftingMilestones, craftingMilestoneIds);
+  let milestones = uniqueAllowed(source.craftingMilestones, craftingMilestoneIds);
   const storedOwned = uniqueAllowed(source.ownedExpeditionRelics, expeditionRelicIds);
+  if (storedOwned.includes('guardian_thread') && !milestones.includes('crafted_guardian_thread')) {
+    milestones = [...milestones, 'crafted_guardian_thread'];
+  }
   const owned: ExpeditionRelicId[] = milestones.includes('crafted_guardian_thread') && !storedOwned.includes('guardian_thread')
     ? [...storedOwned, 'guardian_thread']
     : storedOwned;
   const equipped = uniqueAllowed(source.equippedExpeditionRelics, expeditionRelicIds).filter(id => owned.includes(id)).slice(0, 3);
+  const rewardedExpeditionStages = uniqueAllowed(source.rewardedExpeditionStages, stageIds);
+  const rewardedExpeditionRegions = uniqueAllowed(source.rewardedExpeditionRegions, regionIds);
+  const expeditionStoryEntries = uniqueAllowed(source.expeditionStoryEntries, stageIds);
+  const clearEvidence = new Set<ExpeditionStageId>([...rewardedExpeditionStages, ...expeditionStoryEntries]);
+  for (const regionId of rewardedExpeditionRegions) {
+    const region = expeditionRegionDefinitions.find(item => item.id === regionId);
+    for (const stageId of region?.stages ?? []) clearEvidence.add(stageId);
+  }
+  for (const relicId of owned) {
+    const regionId = regionCompletionRelics[relicId];
+    const region = regionId ? expeditionRegionDefinitions.find(item => item.id === regionId) : null;
+    for (const stageId of region?.stages ?? []) clearEvidence.add(stageId);
+  }
+  if (owned.includes('explorer_compass')) {
+    for (const stageId of stageIds) clearEvidence.add(stageId);
+  }
+  const expeditionRecords = hydrateRecords(source.expeditionRecords);
+  for (const stageId of clearEvidence) {
+    expeditionRecords[stageId] = { ...expeditionRecords[stageId], cleared: true };
+  }
   return {
-    expeditionRecords: hydrateRecords(source.expeditionRecords),
+    expeditionRecords,
     expeditionMaterials: hydrateMaterials(source.expeditionMaterials),
     ownedExpeditionRelics: owned,
     equippedExpeditionRelics: equipped,
-    rewardedExpeditionStages: uniqueAllowed(source.rewardedExpeditionStages, stageIds),
-    rewardedExpeditionRegions: uniqueAllowed(source.rewardedExpeditionRegions, regionIds),
+    rewardedExpeditionStages,
+    rewardedExpeditionRegions,
     expeditionDiscoveries: uniqueAllowed(source.expeditionDiscoveries, expeditionDiscoveryIds),
-    expeditionStoryEntries: uniqueAllowed(source.expeditionStoryEntries, stageIds),
+    expeditionStoryEntries,
     craftingMilestones: milestones,
   };
 }

@@ -26,7 +26,8 @@ export const seasonJourneyTiers: SeasonJourneyTier[] = [
 ];
 
 export function seasonJourneyKey(year:number, month:number): SeasonJourneyKey {
-  return `${Math.max(1, Math.floor(year))}-${seasonalProfile(month).season}` as SeasonJourneyKey;
+  const safeYear = Number.isFinite(year) ? Math.max(1, Math.floor(year)) : 1;
+  return `${safeYear}-${seasonalProfile(month).season}` as SeasonJourneyKey;
 }
 
 export function seasonJourneyPoints(action:SeasonJourneyAction): number {
@@ -42,8 +43,9 @@ export function journeyTierClaimKey(key:SeasonJourneyKey, tier:SeasonJourneyTier
 }
 
 export function newlyEarnedJourneyTiers(previousScore:number, nextScore:number, claimedKeys:string[], key?:SeasonJourneyKey): SeasonJourneyTier[] {
-  const floorPrevious = Math.max(0, Math.floor(previousScore));
-  const floorNext = Math.max(floorPrevious, Math.floor(nextScore));
+  const floorPrevious = Number.isFinite(previousScore) ? Math.max(0, Math.floor(previousScore)) : 0;
+  if (!Number.isFinite(nextScore)) return [];
+  const floorNext = Math.max(floorPrevious, Math.max(0, Math.floor(nextScore)));
   return seasonJourneyTiers.filter(tier => {
     if (floorNext < tier.threshold) return false;
     if (!key) return floorPrevious < tier.threshold;

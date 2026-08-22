@@ -52,22 +52,29 @@ export const expeditionRegionDefinitions: ExpeditionRegionDefinition[] = [
 
 const stageOrder = expeditionStageDefinitions.map(stage => stage.id);
 const gradeRank: Record<ExpeditionGrade, number> = { C: 0, B: 1, A: 2, S: 3 };
+const safeScore = (score: number) => Number.isFinite(score) ? Math.max(0, score) : 0;
+const safeGrade = (grade: unknown): ExpeditionGrade => (
+  typeof grade === 'string' && Object.prototype.hasOwnProperty.call(gradeRank, grade)
+    ? grade as ExpeditionGrade
+    : 'C'
+);
 
 export function emptyExpeditionRecords(): Record<ExpeditionStageId, ExpeditionStageRecord> {
   return Object.fromEntries(stageOrder.map(id => [id, { bestScore: 0, bestGrade: 'C', cleared: false }])) as Record<ExpeditionStageId, ExpeditionStageRecord>;
 }
 
 export function expeditionGrade(score: number, target: number): ExpeditionGrade {
-  const safeTarget = Math.max(1, target);
-  const ratio = Math.max(0, score) / safeTarget;
+  const safeTarget = Math.max(1, Number.isFinite(target) ? target : 1);
+  const ratio = safeScore(score) / safeTarget;
   if (ratio >= 1.2) return 'S';
   if (ratio >= 1) return 'A';
   if (ratio >= 0.8) return 'B';
   return 'C';
 }
 
-export function isExpeditionStageCleared(record: ExpeditionStageRecord): boolean {
-  return record.cleared || gradeRank[record.bestGrade] >= gradeRank.B;
+export function isExpeditionStageCleared(record: ExpeditionStageRecord | undefined): boolean {
+  if (!record) return false;
+  return record.cleared === true || gradeRank[safeGrade(record.bestGrade)] >= gradeRank.B;
 }
 
 export function isExpeditionStageUnlocked(stageId: ExpeditionStageId, records: Record<ExpeditionStageId, ExpeditionStageRecord>): boolean {
@@ -82,16 +89,20 @@ export function updateExpeditionRecord(
   score: number,
   target: number,
 ): Record<ExpeditionStageId, ExpeditionStageRecord> {
-  const current = records[stageId];
-  const grade = expeditionGrade(score, target);
-  const betterScore = Math.max(current.bestScore, Math.max(0, Math.floor(score)));
-  const betterGrade = gradeRank[grade] > gradeRank[current.bestGrade] ? grade : current.bestGrade;
+  const stored = records[stageId] ?? { bestScore: 0, bestGrade: 'C', cleared: false };
+  const currentScore = Math.floor(safeScore(stored.bestScore));
+  const currentGrade = safeGrade(stored.bestGrade);
+  const currentCleared = stored.cleared === true || gradeRank[currentGrade] >= gradeRank.B;
+  const normalizedScore = safeScore(score);
+  const grade = expeditionGrade(normalizedScore, target);
+  const betterScore = Math.max(currentScore, Math.floor(normalizedScore));
+  const betterGrade = gradeRank[grade] > gradeRank[currentGrade] ? grade : currentGrade;
   return {
     ...records,
     [stageId]: {
       bestScore: betterScore,
       bestGrade: betterGrade,
-      cleared: current.cleared || gradeRank[grade] >= gradeRank.B,
+      cleared: currentCleared || gradeRank[grade] >= gradeRank.B,
     },
   };
 }
