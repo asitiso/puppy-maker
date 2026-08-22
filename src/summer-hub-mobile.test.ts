@@ -23,10 +23,10 @@ describe('Summer Hub mobile/accessibility contract', () => {
 
   it('keeps 44px touch targets, Korean wrapping, internal scrolling and reduced motion', () => {
     const source = css();
-    expect(source).toContain('min-height: 44px');
-    expect(source).toContain('word-break: keep-all');
-    expect(source).toContain('overflow-wrap: anywhere');
-    expect(source).toContain('overscroll-behavior: contain');
-    expect(source).toContain('prefers-reduced-motion: reduce');
+    expect(source).toMatch(/min-height\s*:\s*44px/);
+    expect(source).toMatch(/word-break\s*:\s*keep-all/);
+    expect(source).toMatch(/overflow-wrap\s*:\s*anywhere/);
+    expect(source).toMatch(/overscroll-behavior\s*:\s*contain/);
+    expect(source).toMatch(/prefers-reduced-motion\s*:\s*reduce/);
   });
 });
