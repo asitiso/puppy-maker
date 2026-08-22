@@ -57,6 +57,24 @@ export type FifthPathAutumnPresentation = {
   nextSeason: 'winter';
 };
 
+export type FifthPathWinterOutcome = 'victory' | 'costly_victory' | 'defeat';
+
+export type FifthPathWinterPresentationInput = FifthPathSeasonPresentationInput & {
+  outcome: FifthPathWinterOutcome;
+};
+
+export type FifthPathWinterPresentation = {
+  campaign: 'true_path';
+  season: 'winter';
+  title: string;
+  objective: string;
+  outcome: FifthPathWinterOutcome;
+  resolution: string;
+  bond: string;
+  world: readonly string[];
+  next: 'true_ending';
+};
+
 export function buildFifthPathSpringPresentation(
   input: FifthPathSpringPresentationInput,
 ): FifthPathSpringPresentation {
@@ -111,5 +129,29 @@ export function buildFifthPathAutumnPresentation(
     bond: input.bondSignals[0] ?? '리라는 과거의 정답보다 함께 만드는 다음 선택을 바라봐요.',
     world: [...input.worldSignals],
     nextSeason: 'winter',
+  };
+}
+
+const winterResolutions: Record<FifthPathWinterOutcome, string> = {
+  victory: '긴 밤의 반복을 끊고 모두가 다음 선택을 할 수 있는 새벽을 열었어요.',
+  costly_victory: '긴 밤은 끝났지만 그 선택의 흔적과 약속은 다음 삶에도 남아요.',
+  defeat: '이번 밤을 완전히 이기지는 못했지만, 반복을 알아본 기억이 다음 새벽의 길이 돼요.',
+};
+
+export function buildFifthPathWinterPresentation(
+  input: FifthPathWinterPresentationInput,
+): FifthPathWinterPresentation | null {
+  if (input.activeCampaign !== 'true_path' || input.season !== 'winter') return null;
+
+  return {
+    campaign: 'true_path',
+    season: 'winter',
+    title: '다섯 번째 길 · Long Night',
+    objective: '긴 밤의 원인을 끝내는 대신, 세계가 스스로 다음 선택을 할 구조를 남긴다',
+    outcome: input.outcome,
+    resolution: winterResolutions[input.outcome],
+    bond: input.bondSignals[0] ?? '리라는 이번에는 기억을 잃지 않겠다고 약속해요.',
+    world: [...input.worldSignals],
+    next: 'true_ending',
   };
 }
