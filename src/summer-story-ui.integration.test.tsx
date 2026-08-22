@@ -63,6 +63,7 @@ describe('Summer Lane A story + UI vertical slice', () => {
     expect(journey).toContain('Guardian Festival');
     expect(journey).toContain(character);
     expect(journey).toContain('SUMMER SCENE');
+    expect(journey).not.toContain('src=""');
 
     const serialized = JSON.stringify(model);
     expect(serialized).not.toMatch(/campaignAffinities|rawScore|affinity/i);
