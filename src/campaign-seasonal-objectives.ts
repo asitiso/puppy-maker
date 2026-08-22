@@ -1,4 +1,5 @@
 import { mainCampaignIds, type MainCampaignId } from './campaign-model';
+import type { TrueClueId } from './legacy-state';
 import type { SeasonId } from './seasonal-cycle';
 
 export type CampaignSeasonalObjectiveSeason = 'spring'|'summer';
@@ -61,10 +62,7 @@ export type CampaignSeasonalLegacyHook = {
     objectiveId:CampaignSeasonalObjectiveId;
     sourceDomain:CampaignSeasonalSignalKind;
   };
-  trueClue:undefined|{
-    clueId:string;
-    domain:'season';
-  };
+  trueClue:TrueClueId|undefined;
 };
 
 const signalKinds = [
