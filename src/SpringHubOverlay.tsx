@@ -105,7 +105,7 @@ export default function SpringHubOverlay({ open, model, onOpen, onClose }: Sprin
 
   if (!open) {
     const [seasonLabel, monthLabel = ''] = model.season.split(' · ');
-    return <div className="spring-home-entry" ref={node => { launcherRef.current = node; }}>
+    return <div className="spring-home-entry" aria-label={`캠페인 요약 · ${model.season}`} ref={node => { launcherRef.current = node; }}>
       <SpringCampaignHome
         seasonLabel={seasonLabel}
         monthLabel={monthLabel}
