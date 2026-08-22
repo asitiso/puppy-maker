@@ -12,6 +12,8 @@ import {
 } from './tactical-encounters';
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
+import { prepareNewPossibilityV3State } from './ngplus-replay';
+import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
 import {
   emptyV3PersistentState,
@@ -156,7 +158,22 @@ export function hydrateGameState(raw:unknown):GameState {
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
-  if (action.type === 'NEW_RUN' || action.type === 'EVENT_CHOICE') return state;
+  if (action.type === 'NEW_RUN') {
+    const transition = prepareNewPossibilityV3State(pickV3PersistentState(state));
+    if (!transition.started) return state;
+    const tactical = resetTacticalForNgPlus(state);
+    return {
+      ...initialState,
+      ...transition.state,
+      tacticalBattleRecords:{...tactical.tacticalBattleRecords},
+      claimedTacticalFirstClears:[...tactical.claimedTacticalFirstClears],
+      selectedTacticalCompanions:[...tactical.selectedTacticalCompanions],
+      tacticalCompanionBonds:{...tactical.tacticalCompanionBonds},
+      tacticalAutoBattle:tactical.tacticalAutoBattle,
+      tacticalBattleSpeed:tactical.tacticalBattleSpeed,
+    } as GameState;
+  }
+  if (action.type === 'EVENT_CHOICE') return state;
 
   if (action.type === 'SET_TACTICAL_PARTY') {
     const companions = validParty(action.companions);
