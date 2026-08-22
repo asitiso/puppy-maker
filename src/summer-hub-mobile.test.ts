@@ -1,9 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+// @ts-ignore -- Node contract test only.
+import { readFileSync } from 'node:fs';
 
-const cssPath = path.join(process.cwd(), 'src', 'summer-hub.css');
-const css = () => fs.readFileSync(cssPath, 'utf8');
+const css = () => readFileSync(new URL('./summer-hub.css', import.meta.url), 'utf8');
 
 describe('Summer Hub mobile/accessibility contract', () => {
   it('keeps explicit 360, 390 and 430 mobile breakpoints', () => {
