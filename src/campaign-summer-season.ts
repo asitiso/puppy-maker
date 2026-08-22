@@ -86,8 +86,10 @@ export function resolveSummerCampaignOutcome(input:{campaign:unknown;outcome:unk
 
 export function commitSummerCampaignOutcome(state:CampaignRunState,result:SummerCampaignOutcome):CampaignRunState{
   if(state.majorOutcomes.guardian_festival!==undefined)return state;
+  if(state.activeCampaign!==null&&state.activeCampaign!==result.campaignId)return state;
   return {
     ...state,
+    activeCampaign:state.activeCampaign??result.campaignId,
     majorOutcomes:{...state.majorOutcomes,guardian_festival:result.outcome},
     seasonMilestones:state.seasonMilestones.includes('summer_resolved')
       ? state.seasonMilestones
