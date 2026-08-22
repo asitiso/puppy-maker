@@ -1,6 +1,7 @@
 export * from './game-tactical-base';
 
 import * as Base from './game-tactical-base';
+import type {MainCampaignId} from './campaign-model';
 import {
   gradeTacticalBattle,
   tacticalEncounterDefinitions,
@@ -13,7 +14,7 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { hydrateTacticalPersistentState } from './tactical-state';
-import {openSpringPathConvergence} from './v3-spring-integration';
+import {commitSpringPath,openSpringPathConvergence} from './v3-spring-integration';
 import {
   emptyV3PersistentState,
   hydrateV3PersistentState,
@@ -69,6 +70,9 @@ export type Action = Base.Action | {
   speed:1|2;
 } | {
   type:'OPEN_SPRING_PATH_CONVERGENCE';
+} | {
+  type:'COMMIT_SPRING_CAMPAIGN';
+  campaign:MainCampaignId;
 } | {
   type:'NEW_RUN';
 } | {
@@ -164,6 +168,12 @@ export function reducer(state:GameState,action:Action):GameState {
   if(action.type === 'OPEN_SPRING_PATH_CONVERGENCE'){
     const campaignRun=openSpringPathConvergence(state);
     return campaignRun===state.campaignRun?state:{...state,campaignRun};
+  }
+
+  if(action.type === 'COMMIT_SPRING_CAMPAIGN'){
+    const result=commitSpringPath(state,action.campaign);
+    if(result.campaignRun===state.campaignRun&&result.characterBonds===state.characterBonds)return state;
+    return {...state,...result};
   }
 
   if (action.type === 'SET_TACTICAL_PARTY') {
