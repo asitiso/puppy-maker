@@ -1,0 +1,24 @@
+.ngplus-replay-shell{box-sizing:border-box;min-height:100vh;min-height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);overflow-wrap:anywhere;word-break:keep-all}
+.ngplus-replay-shell button{min-height:44px}
+.ngplus-replay-home{display:grid;gap:12px;padding:16px;background:linear-gradient(180deg,#f4f1ff,#eef7ff)}
+.ngplus-entry-card,.ngplus-home-card,.ngplus-replay-panel section{background:#fff;border:1px solid rgba(53,42,91,.12);border-radius:18px;padding:16px;box-shadow:0 12px 30px rgba(46,35,84,.08)}
+.ngplus-entry-card small,.ngplus-replay-panel small{letter-spacing:.08em;font-weight:700}
+.ngplus-home-card button,.ngplus-vn-choices button,.ngplus-replay-header button,.ngplus-vn>button{border:0;border-radius:12px;padding:10px 14px;font:inherit}
+.ngplus-replay-backdrop{position:fixed;inset:0;z-index:70;background:rgba(19,16,36,.54);display:flex;align-items:stretch;justify-content:center}
+.ngplus-replay-panel{width:min(100%,760px);background:#f7f5ff;display:flex;flex-direction:column}
+.ngplus-replay-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px;border-bottom:1px solid rgba(53,42,91,.12)}
+.ngplus-replay-header button{min-width:44px}
+.ngplus-replay-scroll{overflow:auto;display:grid;gap:12px;padding:14px 14px calc(18px + env(safe-area-inset-bottom))}
+.ngplus-replay-list{display:grid;gap:8px}
+.ngplus-replay-list p{margin:0}
+.ngplus-path-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ngplus-path-card,.ngplus-special-card{border:1px solid rgba(53,42,91,.14);border-radius:14px;padding:12px;background:#fbfaff}
+.ngplus-special-card{margin-top:10px;border-style:dashed}
+.ngplus-path-card ul,.ngplus-special-card ul{margin:8px 0 0;padding-left:20px}
+.ngplus-vn-stage{display:flex;gap:12px;align-items:flex-end}
+.ngplus-vn-portrait{width:96px;max-height:160px;object-fit:contain}
+.ngplus-vn-choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+@media (max-width:430px){.ngplus-replay-home{padding:14px}.ngplus-replay-scroll{padding-inline:12px}.ngplus-path-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:390px){.ngplus-replay-header{padding:14px}.ngplus-entry-card,.ngplus-home-card,.ngplus-replay-panel section{padding:14px}.ngplus-path-grid{grid-template-columns:1fr}}
+@media (max-width:360px){.ngplus-replay-home{padding:10px}.ngplus-replay-scroll{padding-inline:10px}.ngplus-vn-stage{align-items:flex-start}.ngplus-vn-portrait{width:76px}}
+@media (prefers-reduced-motion: reduce){.ngplus-replay-shell *{animation:none!important;transition:none!important}}
