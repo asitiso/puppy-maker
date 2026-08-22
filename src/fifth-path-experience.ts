@@ -23,6 +23,24 @@ export type FifthPathSpringPresentation = {
   autoSelectedCampaign: null;
 };
 
+export type FifthPathSeasonPresentationInput = {
+  activeCampaign: string | null;
+  season: 'summer' | 'autumn' | 'winter';
+  worldSignals: readonly string[];
+  bondSignals: readonly string[];
+};
+
+export type FifthPathSummerPresentation = {
+  campaign: 'true_path';
+  season: 'summer';
+  title: string;
+  objective: string;
+  reveal: string;
+  lyra: string;
+  world: readonly string[];
+  nextSeason: 'autumn';
+};
+
 export function buildFifthPathSpringPresentation(
   input: FifthPathSpringPresentationInput,
 ): FifthPathSpringPresentation {
@@ -38,5 +56,22 @@ export function buildFifthPathSpringPresentation(
         }
       : null,
     autoSelectedCampaign: null,
+  };
+}
+
+export function buildFifthPathSummerPresentation(
+  input: FifthPathSeasonPresentationInput,
+): FifthPathSummerPresentation | null {
+  if (input.activeCampaign !== 'true_path' || input.season !== 'summer') return null;
+
+  return {
+    campaign: 'true_path',
+    season: 'summer',
+    title: '다섯 번째 길 · Summer',
+    objective: '갈라진 길들의 뒤에 있는 하나의 원인을 추적한다',
+    reveal: '서로 달라 보였던 선택들이 더 깊은 하나의 현상으로 이어지기 시작해요.',
+    lyra: input.bondSignals[0] ?? '리라는 설명할 수 없는 익숙함을 느껴요.',
+    world: [...input.worldSignals],
+    nextSeason: 'autumn',
   };
 }
