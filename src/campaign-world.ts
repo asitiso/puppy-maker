@@ -1,4 +1,5 @@
 import {
+  mainCampaignIds,
   majorEventIds,
   majorOutcomeResults,
   type MainCampaignId,
@@ -119,6 +120,10 @@ function isMajorOutcomeResult(value: unknown): value is MajorOutcomeResult {
   return typeof value === 'string' && majorOutcomeResults.includes(value as MajorOutcomeResult);
 }
 
+function isMainCampaignId(value: unknown): value is MainCampaignId {
+  return typeof value === 'string' && mainCampaignIds.includes(value as MainCampaignId);
+}
+
 function sanitizeMajorOutcomes(raw: unknown): Partial<Record<MajorEventId, MajorOutcomeResult>> {
   if (!isV3Record(raw)) return {};
   const result: Partial<Record<MajorEventId, MajorOutcomeResult>> = {};
@@ -211,5 +216,40 @@ export function resolveGuardianFestivalWorldOutcome(
     worldHistory,
     majorOutcomes,
     failForwardOutcomes,
+  };
+}
+
+export type GreatExpeditionWorldPrerequisiteInput = {
+  activeCampaign: unknown;
+  worldHistory: unknown;
+  majorOutcomes: unknown;
+  failForwardOutcomes: unknown;
+};
+
+export type GreatExpeditionWorldPrerequisite = {
+  campaign: MainCampaignId | null;
+  ready: boolean;
+  guardianFestivalOutcome: MajorOutcomeResult | null;
+  festivalFailForward: boolean;
+  currentFacts: WorldFactId[];
+  inheritedFacts: WorldFactId[];
+};
+
+export function buildGreatExpeditionWorldPrerequisite(
+  input: GreatExpeditionWorldPrerequisiteInput,
+): GreatExpeditionWorldPrerequisite {
+  const campaign = isMainCampaignId(input.activeCampaign) ? input.activeCampaign : null;
+  const worldHistory = sanitizeCampaignWorldFacts(input.worldHistory);
+  const majorOutcomes = sanitizeMajorOutcomes(input.majorOutcomes);
+  const failForwardOutcomes = uniqueRegistered(input.failForwardOutcomes, majorEventIds);
+  const guardianFestivalOutcome = majorOutcomes.guardian_festival ?? null;
+
+  return {
+    campaign,
+    ready: campaign !== null && guardianFestivalOutcome !== null,
+    guardianFestivalOutcome,
+    festivalFailForward: failForwardOutcomes.includes('guardian_festival'),
+    currentFacts: worldHistory.currentFacts,
+    inheritedFacts: worldHistory.inheritedFacts,
   };
 }
