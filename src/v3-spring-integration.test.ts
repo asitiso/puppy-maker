@@ -1,22 +1,39 @@
 import {describe,expect,it} from 'vitest';
+import type {MainCampaignId} from './campaign-model';
 import {initialState,reducer,type GameState} from './game';
 import {deriveSpringAffinityEvidence,springPathCandidates} from './v3-spring-integration';
 
-function highVanguardTrainingState():GameState{
+const campaignTraining:Record<MainCampaignId,'rest'|'herb'|'hunt'|'magic'>={
+  caretaker:'rest',
+  pathfinder:'herb',
+  vanguard:'hunt',
+  arcanist:'magic',
+};
+
+function highCampaignTrainingState(campaign:MainCampaignId):GameState{
+  const activity=campaignTraining[campaign];
   return {
     ...initialState,
     month:4,
     week:2,
     mastery:{
       ...initialState.mastery,
-      hunt:{xp:999},
+      [activity]:{xp:999},
     },
   };
 }
 
+function highVanguardTrainingState():GameState{
+  return highCampaignTrainingState('vanguard');
+}
+
+function committedCampaignState(campaign:MainCampaignId):GameState{
+  const opened=reducer(highCampaignTrainingState(campaign),{type:'OPEN_SPRING_PATH_CONVERGENCE'} as never);
+  return reducer(opened,{type:'COMMIT_SPRING_CAMPAIGN',campaign} as never);
+}
+
 function committedVanguardState():GameState{
-  const opened=reducer(highVanguardTrainingState(),{type:'OPEN_SPRING_PATH_CONVERGENCE'} as never);
-  return reducer(opened,{type:'COMMIT_SPRING_CAMPAIGN',campaign:'vanguard'} as never);
+  return committedCampaignState('vanguard');
 }
 
 describe('V3 Spring shared integration',()=>{
@@ -95,5 +112,22 @@ describe('V3 Spring shared integration',()=>{
 
     const summer={...committed,month:6,week:1};
     expect(reducer(summer,action).campaignRun.claimedSeasonalObjectives).toEqual([]);
+  });
+
+  it('translates existing dialogue and outing actions into Spring seasonal signals without adding new chores',()=>{
+    const caretaker=committedCampaignState('caretaker');
+    const cared=reducer(caretaker,{type:'CHOOSE',choice:'hug'} as never);
+    expect(cared.campaignRun.claimedSeasonalObjectives).toEqual([
+      '1-spring:caretaker:spring_caretaker_bond',
+    ]);
+    expect(reducer(cared,{type:'CHOOSE',choice:'hug'} as never).campaignRun.claimedSeasonalObjectives).toEqual(
+      cared.campaignRun.claimedSeasonalObjectives,
+    );
+
+    const pathfinder=committedCampaignState('pathfinder');
+    const explored=reducer(pathfinder,{type:'GO_OUTING',location:'forest'} as never);
+    expect(explored.campaignRun.claimedSeasonalObjectives).toEqual([
+      '1-spring:pathfinder:spring_pathfinder_discovery',
+    ]);
   });
 });
