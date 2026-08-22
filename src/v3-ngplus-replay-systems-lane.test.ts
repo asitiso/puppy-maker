@@ -65,7 +65,7 @@ describe('V3 NG+ Macro B authoritative replay transition',()=>{
     expect(replayed.legacy.runSummaries).toHaveLength(1);
   });
 
-  it('resets raw growth, normal currencies and current Season/weekly state for clean Spring replay',()=>{
+  it('resets raw growth, currencies, Season/weekly and Tactical run state for clean Spring replay',()=>{
     const completed=completedWinterGameState();
     const dirty:GameState={
       ...completed,
@@ -79,6 +79,14 @@ describe('V3 NG+ Macro B authoritative replay transition',()=>{
       seasonJourneyScores:{'1-spring':999},
       claimedSeasonJourneyTiers:['1-spring:1'],
       seasonTokenBalances:{'1-spring':999},
+      tacticalBattleRecords:{training_ground:{grade:'S',bestRounds:2,clearCount:9}},
+      claimedTacticalFirstClears:['training_ground'],
+      selectedTacticalCompanions:['wolf','cat'],
+      tacticalCompanionBonds:{
+        bear:{xp:120,level:3},owl:{xp:80,level:2},wolf:{xp:300,level:4},cat:{xp:220,level:4},
+      },
+      tacticalAutoBattle:true,
+      tacticalBattleSpeed:2,
     };
     const next=reducer(dirty,{type:'NEW_RUN'});
 
@@ -92,6 +100,12 @@ describe('V3 NG+ Macro B authoritative replay transition',()=>{
     expect(next.seasonJourneyScores).toEqual({});
     expect(next.claimedSeasonJourneyTiers).toEqual([]);
     expect(next.seasonTokenBalances).toEqual({});
+    expect(next.tacticalBattleRecords).toEqual({});
+    expect(next.claimedTacticalFirstClears).toEqual([]);
+    expect(next.selectedTacticalCompanions).toEqual([]);
+    expect(next.tacticalCompanionBonds).toEqual(initialState.tacticalCompanionBonds);
+    expect(next.tacticalAutoBattle).toBe(true);
+    expect(next.tacticalBattleSpeed).toBe(2);
   });
 
   it('stays save/load/reload idempotent after the authoritative start',()=>{
