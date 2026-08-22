@@ -10,9 +10,7 @@ import {
 } from './autumn-major-choice';
 
 const context=(overrides:Partial<AutumnChoiceContext>={}):AutumnChoiceContext=>({
-  currentWorldFacts:[],
-  inheritedWorldFacts:[],
-  evidenceKeys:[],
+  thirdEligible:false,
   characterBonds:emptyCharacterBondsState(),
   ...overrides,
 });
@@ -29,31 +27,18 @@ describe('V3 Autumn Major Choice domain',()=>{
     expect(new Set(definition?.baseOptions).size).toBe(2);
   });
 
-  it('never grants an earned third option from inherited history alone',()=>{
-    const resolved=resolveAutumnChoiceOptions('caretaker',context({
-      inheritedWorldFacts:['festival_saved'],
-      evidenceKeys:['caretaker_team_solution_ready'],
-    }));
-    expect(resolved.options).toHaveLength(2);
-    expect(resolved.earned.available).toBe(false);
-  });
-
   it.each([
-    ['caretaker','caretaker_team_solution_ready','mira_summer_share_responsibility','team_solution'],
-    ['pathfinder','pathfinder_limited_access_ready','kael_summer_respect_boundaries','limited_access'],
-    ['vanguard','vanguard_coalition_command_ready','rex_summer_lead_together','coalition_command'],
-    ['arcanist','arcanist_controlled_use_ready','selene_summer_restrain_power','controlled_use'],
-  ] as const)('unlocks the earned option only from current evidence plus lived Bond history for %s',(campaign,evidence,promise,earned)=>{
-    const bonds=emptyCharacterBondsState();
-    const character=campaign==='caretaker'?'mira':campaign==='pathfinder'?'kael':campaign==='vanguard'?'rex':'selene';
-    bonds[character].promises=[promise];
-    const resolved=resolveAutumnChoiceOptions(campaign,context({
-      currentWorldFacts:['festival_saved'],
-      evidenceKeys:[evidence],
-      characterBonds:bonds,
-    }));
-    expect(resolved.options).toHaveLength(3);
-    expect(resolved.earned).toMatchObject({available:true,optionId:earned});
+    ['caretaker','team_solution'],
+    ['pathfinder','limited_access'],
+    ['vanguard','coalition_command'],
+    ['arcanist','controlled_use'],
+  ] as const)('consumes the upstream third-option eligibility result without reinterpreting evidence for %s',(campaign,earned)=>{
+    const locked=resolveAutumnChoiceOptions(campaign,context({thirdEligible:false}));
+    const earnedResult=resolveAutumnChoiceOptions(campaign,context({thirdEligible:true}));
+    expect(locked.options).toHaveLength(2);
+    expect(locked.earned).toMatchObject({available:false,optionId:earned});
+    expect(earnedResult.options).toHaveLength(3);
+    expect(earnedResult.earned).toMatchObject({available:true,optionId:earned});
   });
 
   it('rejects unavailable earned options and malformed choices without inventing progression',()=>{
@@ -86,18 +71,26 @@ describe('V3 Autumn Major Choice domain',()=>{
     const first=applyAutumnChoiceBondConsequence(initial,committed.aftermath);
     const second=applyAutumnChoiceBondConsequence(first.bonds,committed.aftermath);
     expect(first.applied).toBe(true);
-    expect(first.bonds.rex.memories.length).toBe(1);
+    expect(first.bonds.rex.memories).toContain('rex_autumn_preserve_independence');
     expect(second.applied).toBe(false);
     expect(second.bonds).toEqual(first.bonds);
   });
 
-  it('exposes qualitative presentation without raw requirements, scores, or numeric trust',()=>{
+  it('keeps every earned choice commit-able when the upstream gate is open',()=>{
+    for(const [campaign,choice] of [
+      ['caretaker','team_solution'],['pathfinder','limited_access'],['vanguard','coalition_command'],['arcanist','controlled_use'],
+    ] as const){
+      expect(commitAutumnMajorChoice(campaign,choice,context({thirdEligible:true}),null).status).toBe('committed');
+    }
+  });
+
+  it('exposes qualitative presentation without raw eligibility internals, scores, or numeric trust',()=>{
     const resolved=resolveAutumnChoiceOptions('caretaker',context());
     const view=autumnChoicePresentation(resolved);
     const serialized=JSON.stringify(view);
     expect(view.options).toHaveLength(3);
     expect(view.options[2]).toMatchObject({available:false});
     expect(view.options[2].hint.length).toBeGreaterThan(0);
-    expect(serialized).not.toMatch(/trust|score|requirement|threshold|campaignAffinities|raw/i);
+    expect(serialized).not.toMatch(/trust|score|requirement|threshold|campaignAffinities|raw|evidence/i);
   });
 });
