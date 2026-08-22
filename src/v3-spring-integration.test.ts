@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {initialState,reducer,type GameState} from './game';
-import {springPathCandidates} from './v3-spring-integration';
+import {deriveSpringAffinityEvidence,springPathCandidates} from './v3-spring-integration';
 
 function highVanguardTrainingState():GameState{
   return {
@@ -51,5 +51,23 @@ describe('V3 Spring shared integration',()=>{
     const duplicate=reducer(committed,{type:'COMMIT_SPRING_CAMPAIGN',campaign:'vanguard'} as never);
     expect(duplicate.campaignRun).toEqual(committed.campaignRun);
     expect(duplicate.characterBonds).toEqual(committed.characterBonds);
+  });
+
+  it('reconstructs distinct Calling, Personality, dialogue, Bond, exploration, Tactical and training evidence from persisted play',()=>{
+    const played:GameState={
+      ...initialState,
+      activeCalling:'arcanist',
+      personality:{...initialState.personality,curiosity:26},
+      lastChoice:'hug',
+      stats:{...initialState.stats,affection:90},
+      discoveries:['moon_feather','tiny_bell'],
+      mastery:{...initialState.mastery,hunt:{xp:5}},
+      tacticalBattleRecords:{training_duel:{grade:'A',bestRounds:4,clearCount:2}} as never,
+    };
+    const evidence=deriveSpringAffinityEvidence(played);
+    expect(new Set(evidence.filter(item=>item.amount>0).map(item=>item.source))).toEqual(new Set([
+      'training','dialogue','bond','exploration','tactical','calling','personality',
+    ]));
+    expect(springPathCandidates(played).map(item=>item.campaign)).toEqual(['caretaker','pathfinder','vanguard']);
   });
 });
