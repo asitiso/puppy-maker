@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import SummerHubOverlay from './SummerHubOverlay';
 import { emptyCharacterBondsState } from './character-bonds';
 import {
@@ -69,5 +69,21 @@ describe('Summer Lane A story + UI vertical slice', () => {
     expect(serialized).not.toMatch(/campaignAffinities|rawScore|affinity/i);
     expect(serialized).not.toMatch(/"trust"\s*:/i);
     expect(journey).not.toContain('/ 100');
+  });
+
+  it('does not emit a React warning when a Summer character portrait is unavailable', () => {
+    const result = resolveSummerCampaignStory('caretaker', 'defeat');
+    const applied = applySummerStoryBondConsequence(emptyCharacterBondsState(), result);
+    const presentation = summerCampaignStoryPresentation('caretaker', 'defeat', applied.bonds);
+    const model = buildSummerStoryUiModel(presentation, '여름 · 1월');
+    const warnings: string[] = [];
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      warnings.push(args.map(String).join(' '));
+    });
+
+    renderToStaticMarkup(<SummerHubOverlay open model={model} onOpen={() => undefined} onClose={() => undefined} />);
+    errorSpy.mockRestore();
+
+    expect(warnings.join('\n')).not.toMatch(/empty string.*src attribute/i);
   });
 });
