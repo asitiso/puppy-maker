@@ -23,11 +23,19 @@ const campaignSeasonalObjectiveClaimTriples = new Set([
   'autumn:vanguard:autumn_vanguard_coalition',
   'autumn:arcanist:autumn_arcanist_relic',
   'autumn:arcanist:autumn_arcanist_control',
+  'winter:caretaker:winter_caretaker_protection',
+  'winter:caretaker:winter_caretaker_shared_burden',
+  'winter:pathfinder:winter_pathfinder_route',
+  'winter:pathfinder:winter_pathfinder_route_memory',
+  'winter:vanguard:winter_vanguard_command',
+  'winter:vanguard:winter_vanguard_elite_chain',
+  'winter:arcanist:winter_arcanist_reality',
+  'winter:arcanist:winter_arcanist_control',
 ]);
 
 export function isValidCampaignSeasonalObjectiveClaimKey(value:unknown):value is string {
   if(typeof value!=='string') return false;
-  const match=/^([1-9]\d*)-(spring|summer|autumn):(caretaker|pathfinder|vanguard|arcanist):([a-z0-9_]+)$/.exec(value);
+  const match=/^([1-9]\d*)-(spring|summer|autumn|winter):(caretaker|pathfinder|vanguard|arcanist):([a-z0-9_]+)$/.exec(value);
   if(!match) return false;
   return campaignSeasonalObjectiveClaimTriples.has(`${match[2]}:${match[3]}:${match[4]}`);
 }
