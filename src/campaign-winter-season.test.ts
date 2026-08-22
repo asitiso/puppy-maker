@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCampaignRunState} from './campaign-state';
+import {sanitizeCampaignSeasonalObjectiveClaimKeys} from './campaign-seasonal-claim-keys';
 import {emptyV3PersistentState} from './v3-persistent-state';
 import {
   commitLongNightOutcome,
@@ -36,6 +37,16 @@ describe('V3 Winter campaign season + ending runtime',()=>{
       year:4,week:4,campaign:'caretaker',facts:['long_night_protection','responsibility_sharing'],claimedKeys:[first.claimKey],
     });
     expect(duplicate).toEqual(expect.objectContaining({accepted:false,reason:'already_claimed',claimKey:first.claimKey}));
+  });
+
+  it('registers canonical Winter claims and sanitizes stale or malformed variants',()=>{
+    expect(sanitizeCampaignSeasonalObjectiveClaimKeys([
+      '4-winter:caretaker:winter_caretaker_protection',
+      '4-winter:caretaker:winter_caretaker_protection',
+      '04-winter:caretaker:winter_caretaker_protection',
+      '4-winter:caretaker:winter_vanguard_command',
+      '4-winter:caretaker:stale',
+    ])).toEqual(['4-winter:caretaker:winter_caretaker_protection']);
   });
 
   it('rejects malformed Winter objective context and True Campaign input',()=>{
