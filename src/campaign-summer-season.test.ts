@@ -53,12 +53,13 @@ describe('V3 Summer campaign season runtime',()=>{
     expect(resolveSummerCampaignOutcome({campaign:'vanguard',outcome:'unknown'})).toEqual({accepted:false,reason:'invalid_result'});
   });
 
-  it('commits Summer result once and never lets replay overwrite authoritative history',()=>{
+  it('commits Summer result once, persists campaign identity, and never lets replay overwrite authoritative history',()=>{
     const initial=emptyCampaignRunState();
     const victory=resolveSummerCampaignOutcome({campaign:'vanguard',outcome:'victory'});
     expect(victory.accepted).toBe(true);
     if(!victory.accepted)return;
     const committed=commitSummerCampaignOutcome(initial,victory);
+    expect(committed.activeCampaign).toBe('vanguard');
     expect(committed.majorOutcomes.guardian_festival).toBe('victory');
     expect(committed.seasonMilestones).toEqual(['summer_resolved']);
 
@@ -69,6 +70,14 @@ describe('V3 Summer campaign season runtime',()=>{
     expect(afterReplay).toBe(committed);
     expect(afterReplay.majorOutcomes.guardian_festival).toBe('victory');
     expect(afterReplay.seasonMilestones).toEqual(['summer_resolved']);
+  });
+
+  it('rejects a Summer result that conflicts with an already authoritative campaign identity',()=>{
+    const caretaker={...emptyCampaignRunState(),activeCampaign:'caretaker' as const};
+    const vanguard=resolveSummerCampaignOutcome({campaign:'vanguard',outcome:'victory'});
+    expect(vanguard.accepted).toBe(true);
+    if(!vanguard.accepted)return;
+    expect(commitSummerCampaignOutcome(caretaker,vanguard)).toBe(caretaker);
   });
 
   it('rejects malformed context and unsupported cross-campaign facts',()=>{
