@@ -145,6 +145,7 @@ describe('V3 Winter story + modular ending semantics',()=>{
     const result=resolveWinterEndingStory(input('arcanist'));
     const view=winterEndingPresentation(result);
     expect(view.dimensions.map(item=>item.id)).toEqual(['campaign','bond','world','career']);
+    expect(view.dimensions.every(item=>item.titleKey.length>0&&item.summaryKey.length>0)).toBe(true);
     const serialized=JSON.stringify(view);
     expect(serialized).not.toMatch(/score|trust|affinit|threshold|raw|bestScore|sGrades/i);
     expect(view.epilogueKey.length).toBeGreaterThan(0);
