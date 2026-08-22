@@ -80,7 +80,7 @@ describe('V3 Summer campaign story + Character Bond',()=>{
   });
 
   it('keeps valid Summer Bond ids through hydration and drops stale ids',()=>{
-    const result=resolveSummerCampaignStory('selene' as never,'victory' as never);
+    const result=resolveSummerCampaignStory('arcanist','victory');
     const bonds=applySummerStoryBondConsequence(emptyCharacterBondsState(),result).bonds;
     const hydrated=hydrateCharacterBondsState({
       ...bonds,
