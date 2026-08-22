@@ -1,7 +1,12 @@
+import type {MainCampaignId} from './campaign-model';
 import type {CampaignRunState} from './campaign-state';
+import type {CharacterBondsState} from './character-bonds';
 import {
+  applyFirstCommitmentCharacterBond,
+  commitSpringCampaign,
   openPathConvergence,
   pathConvergence,
+  resolveFirstCommitment,
   type SpringAffinityEvidence,
   type SpringPathCandidate,
 } from './spring-raising';
@@ -16,6 +21,7 @@ type SpringIntegrationState={
     magic:{xp:number};
   };
   campaignRun:CampaignRunState;
+  characterBonds:CharacterBondsState;
 };
 
 const trainingSources=[
@@ -45,4 +51,19 @@ export function springConvergenceReady(state:Pick<SpringIntegrationState,'month'
 export function openSpringPathConvergence(state:SpringIntegrationState):CampaignRunState{
   if(!springConvergenceReady(state))return state.campaignRun;
   return openPathConvergence(state.campaignRun,deriveSpringAffinityEvidence(state)).state;
+}
+
+export function commitSpringPath(
+  state:SpringIntegrationState,
+  selection:MainCampaignId,
+):{campaignRun:CampaignRunState;characterBonds:CharacterBondsState}{
+  const committed=commitSpringCampaign(state.campaignRun,springPathCandidates(state),selection);
+  if(!committed.committed)return {campaignRun:state.campaignRun,characterBonds:state.characterBonds};
+  const commitment=resolveFirstCommitment(committed.state);
+  return {
+    campaignRun:commitment.state,
+    characterBonds:commitment.event
+      ? applyFirstCommitmentCharacterBond(state.characterBonds,commitment.event)
+      : state.characterBonds,
+  };
 }
