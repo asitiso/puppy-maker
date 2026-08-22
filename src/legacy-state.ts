@@ -27,7 +27,7 @@ export type RunSummary={
   majorWorldOutcomes:WorldFactId[];
   keyBondMemories:CharacterMemoryRef[];
   trueClues:TrueClueId[];
-  truePathEvidence:TruePathEvidenceId[];
+  truePathEvidence?:TruePathEvidenceId[];
 };
 
 export type LegacyState={
@@ -88,6 +88,7 @@ function hydrateRunSummaries(raw:unknown):RunSummary[]{
     const runNumber=safePositiveInt(value.runNumber,0);
     if(runNumber<1||accepted.has(runNumber))continue;
     accepted.add(runNumber);
+    const truePathEvidence=uniqueRegistered(value.truePathEvidence,truePathEvidenceIds);
     out.push({
       runNumber,
       campaign:value.campaign,
@@ -97,7 +98,7 @@ function hydrateRunSummaries(raw:unknown):RunSummary[]{
       majorWorldOutcomes:uniqueRegistered(value.majorWorldOutcomes,worldFactIds),
       keyBondMemories:hydrateMemoryRefs(value.keyBondMemories),
       trueClues:uniqueRegistered(value.trueClues,trueClueIds),
-      truePathEvidence:uniqueRegistered(value.truePathEvidence,truePathEvidenceIds),
+      ...(truePathEvidence.length?{truePathEvidence}:{}),
     });
   }
   return out.sort((a,b)=>a.runNumber-b.runNumber);
