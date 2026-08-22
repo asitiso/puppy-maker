@@ -68,7 +68,8 @@ describe('V3 Summer Guardian Festival Tactical climaxes', () => {
   it('compiles every climax through the existing Tactical scenario adapter', () => {
     for (const climax of summerGuardianFestivalTacticalClimaxes) {
       expect(climax.id).toBe(`summer-guardian-festival:${climax.campaign}`);
-      expect(climax.battleNode.id).toBeTruthy();
+      expect(climax.battleNode.stageId).toBe(climax.stageId);
+      expect(climax.battleNode.enemyArchetypes).toHaveLength(3);
       expect(climax.modifiers.every(modifier => modifier.campaign === climax.campaign)).toBe(true);
     }
   });
