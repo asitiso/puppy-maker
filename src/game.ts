@@ -13,6 +13,7 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { hydrateTacticalPersistentState } from './tactical-state';
+import {openSpringPathConvergence} from './v3-spring-integration';
 import {
   emptyV3PersistentState,
   hydrateV3PersistentState,
@@ -66,6 +67,8 @@ export type Action = Base.Action | {
   type:'SET_TACTICAL_PREFERENCES';
   auto:boolean;
   speed:1|2;
+} | {
+  type:'OPEN_SPRING_PATH_CONVERGENCE';
 } | {
   type:'NEW_RUN';
 } | {
@@ -157,6 +160,11 @@ export function hydrateGameState(raw:unknown):GameState {
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
   if (action.type === 'NEW_RUN' || action.type === 'EVENT_CHOICE') return state;
+
+  if(action.type === 'OPEN_SPRING_PATH_CONVERGENCE'){
+    const campaignRun=openSpringPathConvergence(state);
+    return campaignRun===state.campaignRun?state:{...state,campaignRun};
+  }
 
   if (action.type === 'SET_TACTICAL_PARTY') {
     const companions = validParty(action.companions);
