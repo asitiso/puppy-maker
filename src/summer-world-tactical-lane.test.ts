@@ -121,7 +121,6 @@ describe('V3 Summer Lane B World + Tactical Guardian Festival E2E', () => {
 
   it('rejects World/Tactical campaign mismatch instead of inventing a cross-route fallback', () => {
     const caretaker = getSummerGuardianFestivalWorldRoute('caretaker')!;
-    const vanguard = getSummerGuardianFestivalTacticalClimax('vanguard')!;
-    expect(() => summerWorldRouteToTacticalClimax({ ...caretaker, stageId: vanguard.stageId })).toThrow();
+    expect(() => summerWorldRouteToTacticalClimax({ ...caretaker, stageId: 'city_core' })).toThrow();
   });
 });
