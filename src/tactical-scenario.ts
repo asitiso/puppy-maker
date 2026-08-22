@@ -1,5 +1,5 @@
 import type { MainCampaignId } from './campaign-model';
-import { isBattleFinished, type BattleSession, type TacticalStatusId } from './tactical-battle';
+import { isBattleFinished, type BattleResult, type BattleSession, type TacticalStatusId } from './tactical-battle';
 import type { CompanionId, LeaderCombatProgression } from './tactical-companions';
 import { createTacticalExpeditionBattle, tacticalBattleNodeForStage, type TacticalBattleNode } from './tactical-expedition';
 
@@ -44,10 +44,24 @@ export type TacticalScenario = {
   failForward:boolean;
 };
 
+export type TacticalScenarioResult = {
+  scenarioId:string;
+  campaign:MainCampaignId;
+  attemptKey:string;
+  terminalKey:string;
+  objectiveResult:Exclude<TacticalScenarioObjectiveResult,null>;
+  battleResult:BattleResult|null;
+  failForward:boolean;
+  rounds:number;
+  survivingAllies:number;
+  damageTaken:number;
+};
+
 const statusIds:readonly TacticalStatusId[]=['guard','focus','break','regen'];
 const nonEmpty=(value:string)=>typeof value==='string'&&value.trim().length>0;
 const positiveInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=1;
 const nonNegativeInteger=(value:number)=>Number.isFinite(value)&&Number.isInteger(value)&&value>=0;
+const safeInteger=(value:number)=>Number.isFinite(value)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value))):0;
 
 function validModifier(modifier:TacticalScenarioModifier):boolean {
   if(!modifier||typeof modifier!=='object') return false;
@@ -132,4 +146,38 @@ export function evaluateTacticalScenarioObjective(scenario:TacticalScenario,sess
   if(target&&(!Number.isFinite(target.hp)||target.hp<=0)) return 'success';
   if(battleResult==='defeat'||battleResult==='victory') return 'failure';
   return null;
+}
+
+export function resolveTacticalScenarioResult(
+  scenario:TacticalScenario,
+  session:BattleSession,
+  attemptKey:string,
+):TacticalScenarioResult|null {
+  const key=typeof attemptKey==='string'?attemptKey.trim():'';
+  if(!key) throw new Error('Tactical scenario attempt key is required');
+  const objectiveResult=evaluateTacticalScenarioObjective(scenario,session);
+  if(!objectiveResult) return null;
+
+  let damageTaken=0;
+  let survivingAllies=0;
+  for(const unit of session.units) {
+    if(unit.side!=='ally') continue;
+    const hp=safeInteger(unit.hp);
+    const maxHp=Number.isFinite(unit.maxHp)?Math.max(hp,safeInteger(unit.maxHp)):hp;
+    if(Number.isFinite(unit.hp)&&unit.hp>0) survivingAllies+=1;
+    damageTaken=Math.min(Number.MAX_SAFE_INTEGER,damageTaken+Math.max(0,maxHp-Math.min(hp,maxHp)));
+  }
+
+  return {
+    scenarioId:scenario.id,
+    campaign:scenario.campaign,
+    attemptKey:key,
+    terminalKey:`${scenario.id}:${key}`,
+    objectiveResult,
+    battleResult:isBattleFinished(session),
+    failForward:scenario.failForward,
+    rounds:Number.isFinite(session.round)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(session.round)-1)):0,
+    survivingAllies,
+    damageTaken,
+  };
 }
