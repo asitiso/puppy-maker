@@ -1,6 +1,12 @@
-import type { MainCampaignId } from './campaign-model';
+import {
+  majorEventIds,
+  majorOutcomeResults,
+  type MainCampaignId,
+  type MajorEventId,
+  type MajorOutcomeResult,
+} from './campaign-model';
 import type { ExpeditionRegionId, ExpeditionStageId } from './expedition-regions';
-import { uniqueRegistered } from './v3-state-sanitize';
+import { isV3Record, uniqueRegistered } from './v3-state-sanitize';
 import {
   hydrateWorldHistoryState,
   worldFactIds,
@@ -107,4 +113,103 @@ export function sanitizeWorldFactIds(raw: unknown): WorldFactId[] {
 
 export function sanitizeCampaignWorldFacts(raw: unknown): WorldHistoryState {
   return hydrateWorldHistoryState(raw);
+}
+
+function isMajorOutcomeResult(value: unknown): value is MajorOutcomeResult {
+  return typeof value === 'string' && majorOutcomeResults.includes(value as MajorOutcomeResult);
+}
+
+function sanitizeMajorOutcomes(raw: unknown): Partial<Record<MajorEventId, MajorOutcomeResult>> {
+  if (!isV3Record(raw)) return {};
+  const result: Partial<Record<MajorEventId, MajorOutcomeResult>> = {};
+  for (const eventId of majorEventIds) {
+    const value = raw[eventId];
+    if (isMajorOutcomeResult(value)) result[eventId] = value;
+  }
+  return result;
+}
+
+function guardianFestivalFact(outcome: MajorOutcomeResult): WorldFactId {
+  return outcome === 'exceptional_victory' || outcome === 'victory'
+    ? 'festival_saved'
+    : 'festival_heavy_losses';
+}
+
+export type GuardianFestivalWorldOutcomeInput = {
+  outcome: unknown;
+  worldHistory: unknown;
+  majorOutcomes: unknown;
+  failForwardOutcomes: unknown;
+};
+
+export type GuardianFestivalWorldOutcomeResult = {
+  applied: boolean;
+  eventId: 'guardian_festival';
+  outcome: MajorOutcomeResult | null;
+  fact: WorldFactId | null;
+  worldHistory: WorldHistoryState;
+  majorOutcomes: Partial<Record<MajorEventId, MajorOutcomeResult>>;
+  failForwardOutcomes: MajorEventId[];
+};
+
+export function resolveGuardianFestivalWorldOutcome(
+  input: GuardianFestivalWorldOutcomeInput,
+): GuardianFestivalWorldOutcomeResult {
+  let worldHistory = sanitizeCampaignWorldFacts(input.worldHistory);
+  const majorOutcomes = sanitizeMajorOutcomes(input.majorOutcomes);
+  let failForwardOutcomes = uniqueRegistered(input.failForwardOutcomes, majorEventIds);
+  const existing = majorOutcomes.guardian_festival;
+
+  if (existing) {
+    const fact = guardianFestivalFact(existing);
+    worldHistory = {
+      ...worldHistory,
+      currentFacts: sanitizeWorldFactIds([...worldHistory.currentFacts, fact]),
+    };
+    return {
+      applied: false,
+      eventId: 'guardian_festival',
+      outcome: existing,
+      fact,
+      worldHistory,
+      majorOutcomes,
+      failForwardOutcomes,
+    };
+  }
+
+  if (!isMajorOutcomeResult(input.outcome)) {
+    return {
+      applied: false,
+      eventId: 'guardian_festival',
+      outcome: null,
+      fact: null,
+      worldHistory,
+      majorOutcomes,
+      failForwardOutcomes,
+    };
+  }
+
+  const outcome = input.outcome;
+  const fact = guardianFestivalFact(outcome);
+  worldHistory = {
+    ...worldHistory,
+    currentFacts: sanitizeWorldFactIds([...worldHistory.currentFacts, fact]),
+  };
+  majorOutcomes.guardian_festival = outcome;
+  if (outcome === 'costly_victory' || outcome === 'defeat') {
+    failForwardOutcomes = uniqueRegistered(
+      [...failForwardOutcomes, 'guardian_festival'],
+      majorEventIds,
+    );
+  }
+
+  return {
+    applied: true,
+    eventId: 'guardian_festival',
+    outcome,
+    fact,
+    worldHistory,
+    majorOutcomes,
+    failForwardOutcomes,
+  };
 }
