@@ -13,6 +13,7 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { commitTruePath } from './fifth-path-state';
+import { resolveHollowFinalChoice,type HollowFinalChoice } from './hollow-choice';
 import { prepareNewPossibilityV3State } from './ngplus-replay';
 import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
@@ -73,6 +74,9 @@ export type Action = Base.Action | {
   type:'NEW_RUN';
 } | {
   type:'COMMIT_TRUE_PATH';
+} | {
+  type:'RESOLVE_HOLLOW_FINAL_CHOICE';
+  choice:HollowFinalChoice;
 } | {
   type:'EVENT_CHOICE';
   eventId:string;
@@ -180,6 +184,11 @@ export function reducer(state:GameState,action:Action):GameState {
     const transition=commitTruePath(pickV3PersistentState(state));
     if(!transition.committed)return state;
     return {...state,...transition.state} as GameState;
+  }
+  if (action.type === 'RESOLVE_HOLLOW_FINAL_CHOICE') {
+    const transition=resolveHollowFinalChoice(state.campaignRun,action.choice);
+    if(!transition.committed)return state;
+    return {...state,campaignRun:transition.state};
   }
   if (action.type === 'EVENT_CHOICE') return state;
 
