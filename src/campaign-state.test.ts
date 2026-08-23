@@ -6,7 +6,7 @@ describe('V3 campaign run hydration',()=>{
     expect(emptyCampaignRunState()).toMatchObject({
       runNumber:1,phase:'spring_exploration',activeCampaign:null,activeRoute:'normal',
       campaignAffinities:{caretaker:0,pathfinder:0,vanguard:0,arcanist:0},
-      dangerState:{score:0,behaviors:[]},
+      dangerState:{score:0,behaviors:[],evidence:[]},
     });
   });
 
@@ -25,7 +25,11 @@ describe('V3 campaign run hydration',()=>{
     expect(state.activeCampaign).toBeNull();
     expect(state.activeRoute).toBe('normal');
     expect(state.campaignAffinities).toEqual({caretaker:12,pathfinder:0,vanguard:0,arcanist:0});
-    expect(state.dangerState).toEqual({score:0,behaviors:['used_forbidden_relic']});
+    expect(state.dangerState).toEqual({
+      score:0,
+      behaviors:['used_forbidden_relic'],
+      evidence:['forbidden_relic'],
+    });
     expect(state.seasonMilestones).toEqual(['path_convergence']);
     expect(state.majorChoices).toEqual({});
     expect(state.majorOutcomes).toEqual({guardian_festival:'defeat'});

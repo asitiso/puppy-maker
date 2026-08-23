@@ -4,6 +4,8 @@ import {
   campaignPhases,
   campaignRoutes,
   dangerBehaviorIds,
+  hollowDangerEvidenceByBehavior,
+  hollowDangerEvidenceIds,
   mainCampaignIds,
   majorChoiceOptions,
   majorEventIds,
@@ -13,6 +15,7 @@ import {
   type CampaignPhase,
   type CampaignRoute,
   type DangerBehaviorId,
+  type HollowDangerEvidenceId,
   type MainCampaignId,
   type MajorChoiceId,
   type MajorChoiceOptionId,
@@ -28,7 +31,7 @@ export type CampaignRunState={
   activeCampaign:CampaignId|null;
   activeRoute:CampaignRoute;
   campaignAffinities:Record<MainCampaignId,number>;
-  dangerState:{score:number;behaviors:DangerBehaviorId[]};
+  dangerState:{score:number;behaviors:DangerBehaviorId[];evidence?:HollowDangerEvidenceId[]};
   seasonMilestones:CampaignMilestoneId[];
   majorChoices:Partial<Record<MajorChoiceId,MajorChoiceOptionId>>;
   majorOutcomes:Partial<Record<MajorEventId,MajorOutcomeResult>>;
@@ -44,7 +47,7 @@ export function emptyCampaignRunState():CampaignRunState{
     activeCampaign:null,
     activeRoute:'normal',
     campaignAffinities:{caretaker:0,pathfinder:0,vanguard:0,arcanist:0},
-    dangerState:{score:0,behaviors:[]},
+    dangerState:{score:0,behaviors:[],evidence:[]},
     seasonMilestones:[],
     majorChoices:{},
     majorOutcomes:{},
@@ -90,6 +93,12 @@ export function hydrateCampaignRunState(raw:unknown):CampaignRunState{
   const activeRoute=typeof source.activeRoute==='string'&&(campaignRoutes as readonly string[]).includes(source.activeRoute)
     ? source.activeRoute as CampaignRoute
     : 'normal';
+  const dangerBehaviors=uniqueRegistered(dangerSource.behaviors,dangerBehaviorIds);
+  const explicitDangerEvidence=uniqueRegistered(dangerSource.evidence,hollowDangerEvidenceIds);
+  const inferredDangerEvidence=dangerBehaviors.map(behavior=>hollowDangerEvidenceByBehavior[behavior]);
+  const dangerEvidence=hollowDangerEvidenceIds.filter(id=>
+    explicitDangerEvidence.includes(id)||inferredDangerEvidence.includes(id),
+  );
 
   return {
     runNumber:safePositiveInt(source.runNumber,1),
@@ -99,7 +108,8 @@ export function hydrateCampaignRunState(raw:unknown):CampaignRunState{
     campaignAffinities,
     dangerState:{
       score:safeNonNegativeInt(dangerSource.score),
-      behaviors:uniqueRegistered(dangerSource.behaviors,dangerBehaviorIds),
+      behaviors:dangerBehaviors,
+      evidence:dangerEvidence,
     },
     seasonMilestones:uniqueRegistered(source.seasonMilestones,campaignMilestoneIds),
     majorChoices,
