@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHollowCampaignPresentation,
   buildHollowChoiceAftermathPresentation,
+  buildHollowEndingPresentation,
   buildHollowTemptationPresentation,
 } from './hollow-path-experience';
 
@@ -157,6 +158,39 @@ describe('Hollow Path playable campaign presentation', () => {
       expect(winter?.outcome).toBe(outcome);
       expect(winter?.resolution?.length).toBeGreaterThan(0);
       expect(winter?.next).toBe('hollow_ending');
+    },
+  );
+});
+
+describe('Hollow Ending qualitative epilogue', () => {
+  it('does not present an ending before the authoritative ending state is reached', () => {
+    expect(buildHollowEndingPresentation({
+      reachedHollowEnding: false,
+      outcome: 'victory',
+      worldLegacy: ['마을은 선택의 흔적을 기억해요.'],
+      bondLegacy: ['리라는 마지막 선택을 기억해요.'],
+    })).toBeNull();
+  });
+
+  it.each(['victory', 'costly_victory', 'defeat'] as const)(
+    'presents %s as a qualitative fail-forward epilogue without hidden optimization values',
+    (outcome) => {
+      const ending = buildHollowEndingPresentation({
+        reachedHollowEnding: true,
+        outcome,
+        worldLegacy: ['세계는 지름길로 바뀐 약속을 기억해요.'],
+        bondLegacy: ['리라는 끝까지 당신을 선택의 주체로 기억해요.'],
+      });
+
+      expect(ending?.id).toBe('hollow_ending');
+      expect(ending?.title).toBe('Hollow Ending · 빈자리 이후');
+      expect(ending?.outcome).toBe(outcome);
+      expect(ending?.summary.length).toBeGreaterThan(0);
+      expect(ending?.worldLegacy).toEqual(['세계는 지름길로 바뀐 약속을 기억해요.']);
+      expect(ending?.bondLegacy).toEqual(['리라는 끝까지 당신을 선택의 주체로 기억해요.']);
+      expect(ending?.future).toContain('다음 삶');
+
+      expect(JSON.stringify(ending)).not.toMatch(/danger|score|affinity|trust\s*[:=]?\s*\d|threshold|rank|\d+\s*\/\s*100/i);
     },
   );
 });
