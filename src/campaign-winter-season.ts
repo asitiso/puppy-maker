@@ -253,7 +253,7 @@ export function selectCompletedRunHandoff(state:V3PersistentState){
   const summary=state.legacy.runSummaries.find(item=>item.runNumber===state.campaignRun.runNumber&&item.campaign===campaign);
   if(!summary?.ending||summary.route!==state.campaignRun.activeRoute)return null;
   const dimensions=parseModularEndingId(summary.ending);
-  if(!dimensions||dimensions.campaign!==campaign||summary.career!==dimensions.career)return null;
+  if(!dimensions||(campaign==='true_path'&&dimensions.campaign!=='true_path')||summary.career!==dimensions.career)return null;
   return {
     runNumber:state.campaignRun.runNumber,
     campaignId:campaign,
