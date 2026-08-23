@@ -59,19 +59,19 @@ export function commitFifthPathOutcome(state:V3PersistentState,result:AcceptedFi
   | {committed:false;state:V3PersistentState;reason:'not_ready'|'already_committed'}{
   const run=state.campaignRun;
   if(
+    run.majorOutcomes.long_night!==undefined||
+    run.seasonMilestones.includes('winter_resolved')||
+    run.claimedCampaignRewards.includes('winter_resolved')
+  ){
+    return {committed:false,state,reason:'already_committed'};
+  }
+  if(
     run.activeCampaign!=='true_path'||
     run.phase!=='winter'||
     !run.seasonMilestones.includes('autumn_resolved')||
     !hasWinterClaim(state)
   ){
     return {committed:false,state,reason:'not_ready'};
-  }
-  if(
-    run.majorOutcomes.long_night!==undefined||
-    run.seasonMilestones.includes('winter_resolved')||
-    run.claimedCampaignRewards.includes('winter_resolved')
-  ){
-    return {committed:false,state,reason:'already_committed'};
   }
   const seasonMilestones=[...run.seasonMilestones,'winter_resolved' as const];
   const failForwardOutcomes=result.failForward&&!run.failForwardOutcomes.includes('long_night')
