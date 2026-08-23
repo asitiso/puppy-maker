@@ -63,7 +63,7 @@ function selectCompletedTruePathHandoff(current:V3PersistentState):{runNumber:nu
   )return null;
 
   const summary=current.legacy.runSummaries.find(item=>item.runNumber===run.runNumber&&item.campaign==='true_path');
-  if(!summary)return null;
+  if(!summary||typeof summary.ending!=='string')return null;
   const match=trueEndingIdPattern.exec(summary.ending);
   if(!match||summary.career!==match[3])return null;
   return {runNumber:run.runNumber};
