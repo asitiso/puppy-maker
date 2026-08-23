@@ -1,18 +1,18 @@
 import {describe,expect,it} from 'vitest';
-import {emptyCampaignRunState} from './campaign-state';
+import {emptyCampaignRunState,type CampaignRunState} from './campaign-state';
 import {emptyV3PersistentState} from './v3-persistent-state';
 import {initialState,reducer} from './game';
 import {resolveHollowFinalChoice} from './hollow-choice';
 
-function candidateRun(){
+function candidateRun():CampaignRunState{
   return {
     ...emptyCampaignRunState(),
-    phase:'summer' as const,
-    activeCampaign:'caretaker' as const,
+    phase:'summer',
+    activeCampaign:'caretaker',
     dangerState:{
       score:999,
       behaviors:[],
-      evidence:['instrumental_bond','civilian_tradeoff','veyr_power'] as const,
+      evidence:['instrumental_bond','civilian_tradeoff','veyr_power'],
     },
   };
 }
@@ -49,9 +49,9 @@ describe('Hollow explicit final choice',()=>{
   });
 
   it('rejects acceptance without canonical current-run candidate evidence',()=>{
-    const state={
+    const state:CampaignRunState={
       ...candidateRun(),
-      dangerState:{score:999,behaviors:[],evidence:['veyr_power'] as const},
+      dangerState:{score:999,behaviors:[],evidence:['veyr_power']},
     };
     expect(resolveHollowFinalChoice(state,'accept')).toEqual({
       committed:false,state,reason:'not_available',
