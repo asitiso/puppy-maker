@@ -79,6 +79,23 @@ export type HollowCampaignPresentation = {
   next: 'autumn' | 'winter' | 'hollow_ending';
 };
 
+export type HollowEndingInput = {
+  reachedHollowEnding: boolean;
+  outcome: HollowCampaignOutcome;
+  worldLegacy: readonly string[];
+  bondLegacy: readonly string[];
+};
+
+export type HollowEndingPresentation = {
+  id: 'hollow_ending';
+  title: string;
+  outcome: HollowCampaignOutcome;
+  summary: string;
+  worldLegacy: readonly string[];
+  bondLegacy: readonly string[];
+  future: string;
+};
+
 const PRESENTATION_BY_TIER: Record<
   HollowDangerTier,
   Pick<HollowTemptationPresentation, 'atmosphere' | 'veyr' | 'temptation'>
@@ -123,6 +140,12 @@ const HOLLOW_WINTER_RESOLUTION: Record<HollowCampaignOutcome, string> = {
   victory: '마지막 균열을 넘어섰지만, 베이르와 함께 택한 방식이 세계와 관계에 분명한 흔적으로 남아요.',
   costly_victory: '긴 밤은 끝났지만 지름길의 대가도 함께 남아, 다음 날의 관계와 약속을 다시 만들어야 해요.',
   defeat: '이번 밤을 이기지 못했어도 선택의 흔적은 사라지지 않고, 세계는 그 결과를 안은 채 다음 장면으로 넘어가요.',
+};
+
+const HOLLOW_ENDING_SUMMARY: Record<HollowCampaignOutcome, string> = {
+  victory: '긴 밤을 넘어섰지만, 가장 빠른 길을 택해 얻은 것과 남겨 둔 것이 모두 새로운 세계의 일부가 되었어요.',
+  costly_victory: '끝은 찾아왔지만 그 과정에서 바뀐 약속과 관계는 원래 모습으로 돌아가지 않고, 서로 다른 기억으로 남아요.',
+  defeat: '마지막 균열을 넘지 못했어도 지금까지의 선택은 사라지지 않고, 남은 사람들의 기억 속에서 다음 가능성으로 이어져요.',
 };
 
 export function buildHollowTemptationPresentation(
@@ -237,5 +260,21 @@ export function buildHollowCampaignPresentation(
     outcome,
     resolution: outcome ? HOLLOW_WINTER_RESOLUTION[outcome] : '마지막 선택의 결과가 정해지면 그 흔적을 안고 다음 장면으로 이어져요.',
     next: 'hollow_ending',
+  };
+}
+
+export function buildHollowEndingPresentation(
+  input: HollowEndingInput,
+): HollowEndingPresentation | null {
+  if (!input.reachedHollowEnding) return null;
+
+  return {
+    id: 'hollow_ending',
+    title: 'Hollow Ending · 빈자리 이후',
+    outcome: input.outcome,
+    summary: HOLLOW_ENDING_SUMMARY[input.outcome],
+    worldLegacy: input.worldLegacy,
+    bondLegacy: input.bondLegacy,
+    future: '다음 삶은 이번에 남긴 빈자리와 약속을 기억한 채, 다시 어떤 길을 선택할지 묻는 곳에서 시작돼요.',
   };
 }
