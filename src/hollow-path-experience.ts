@@ -34,6 +34,24 @@ export type HollowTemptationPresentation = {
   autoSelectedRoute: null;
 };
 
+export type HollowChoiceResult = 'refused' | 'accepted';
+
+export type HollowChoiceAftermathInput = {
+  result: HollowChoiceResult;
+  activeRoute: string;
+  currentRouteLabel: string;
+};
+
+export type HollowChoiceAftermathPresentation = {
+  hollowActive: boolean;
+  routeLabel: string;
+  title: string;
+  summary: string;
+  veyr: string;
+  bondConsequence: string;
+  autoSelectedRoute: null;
+};
+
 const PRESENTATION_BY_TIER: Record<
   HollowDangerTier,
   Pick<HollowTemptationPresentation, 'atmosphere' | 'veyr' | 'temptation'>
@@ -89,6 +107,46 @@ export function buildHollowTemptationPresentation(
       ? '지난 삶에서 비슷한 선택을 했던 기억이 현재의 장면에 희미하게 겹쳐 보여요.'
       : null,
     finalChoice: canResolveFinalChoice ? FINAL_CHOICE : null,
+    autoSelectedRoute: null,
+  };
+}
+
+export function buildHollowChoiceAftermathPresentation(
+  input: HollowChoiceAftermathInput,
+): HollowChoiceAftermathPresentation {
+  const hollowActive = input.result === 'accepted' && input.activeRoute === 'hollow';
+
+  if (hollowActive) {
+    return {
+      hollowActive: true,
+      routeLabel: 'Hollow Path',
+      title: 'Hollow Path · 첫 번째 균열',
+      summary: '베이르의 손을 잡은 선택이 세계와 관계의 결을 바꾸기 시작해요.',
+      veyr: '“이제야 같은 방향을 보고 있네. 다음 선택은 더 쉬워질 거야.”',
+      bondConsequence: '리라는 당신을 막아 세우기보다, 다음 선택에서도 당신이 무엇을 지키는지 지켜보겠다고 말해요.',
+      autoSelectedRoute: null,
+    };
+  }
+
+  if (input.result === 'refused') {
+    return {
+      hollowActive: false,
+      routeLabel: input.currentRouteLabel,
+      title: '손을 놓은 뒤',
+      summary: '눈앞의 지름길을 포기했지만, 지금의 길을 스스로 다시 선택했다는 의미가 남아요.',
+      veyr: '“그래. 네가 고른 거니까.”',
+      bondConsequence: '리라는 안도하기보다, 이번 거절이 다음 선택에서도 이어질지 조용히 지켜봐요.',
+      autoSelectedRoute: null,
+    };
+  }
+
+  return {
+    hollowActive: false,
+    routeLabel: input.currentRouteLabel,
+    title: '선택이 세계에 닿기 전',
+    summary: '손을 내민 선택은 아직 세계의 길로 확정되지 않았어요.',
+    veyr: '“결정은 했잖아. 이제 세계가 따라오면 돼.”',
+    bondConsequence: '리라는 아직 달라진 길의 이름 대신, 당신의 다음 행동을 기다려요.',
     autoSelectedRoute: null,
   };
 }
