@@ -52,10 +52,27 @@ function promoteLegacyEchoes(legacy:LegacyState):LegacyState{
   });
 }
 
+const trueEndingIdPattern=/^v3:true_path:([a-z][a-z0-9_]{0,63}):([a-z][a-z0-9_]{0,63}):([a-z][a-z0-9_]{0,63})$/;
+
+function selectCompletedTruePathHandoff(current:V3PersistentState):{runNumber:number}|null{
+  const run=current.campaignRun;
+  if(
+    run.activeCampaign!=='true_path'||
+    !run.seasonMilestones.includes('ending_committed')||
+    run.majorOutcomes.long_night===undefined
+  )return null;
+
+  const summary=current.legacy.runSummaries.find(item=>item.runNumber===run.runNumber&&item.campaign==='true_path');
+  if(!summary)return null;
+  const match=trueEndingIdPattern.exec(summary.ending);
+  if(!match||summary.career!==match[3])return null;
+  return {runNumber:run.runNumber};
+}
+
 export function prepareNewPossibilityV3State(current:V3PersistentState):
   | {started:false;state:V3PersistentState;reason:'not_ready'}
   | {started:true;state:V3PersistentState;sourceRunNumber:number;nextRunNumber:number}{
-  const handoff=selectCompletedRunHandoff(current);
+  const handoff=selectCompletedRunHandoff(current)??selectCompletedTruePathHandoff(current);
   if(!handoff)return {started:false,state:current,reason:'not_ready'};
 
   const legacy=promoteLegacyEchoes(current.legacy);
