@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildHollowTemptationPresentation } from './hollow-path-experience';
+import {
+  buildHollowChoiceAftermathPresentation,
+  buildHollowTemptationPresentation,
+} from './hollow-path-experience';
 
 describe('Hollow Path temptation presentation contract', () => {
   it('keeps the current route playable while the atmosphere shifts without exposing hidden danger internals', () => {
@@ -54,5 +57,46 @@ describe('Hollow Path temptation presentation contract', () => {
       accept: { id: 'accept_hollow', label: '베이르의 손을 잡는다' },
       refuse: { id: 'refuse_hollow', label: '여기서 멈추고 지금의 길을 지킨다' },
     });
+  });
+});
+
+describe('Hollow Path explicit choice aftermath', () => {
+  it('makes refusal meaningful while preserving the authoritative current route', () => {
+    const refused = buildHollowChoiceAftermathPresentation({
+      result: 'refused',
+      activeRoute: 'true_path',
+      currentRouteLabel: 'True Path',
+    });
+
+    expect(refused.hollowActive).toBe(false);
+    expect(refused.routeLabel).toBe('True Path');
+    expect(refused.title).toBe('손을 놓은 뒤');
+    expect(refused.summary).toContain('지금의 길');
+    expect(refused.bondConsequence).toContain('리라');
+    expect(refused.autoSelectedRoute).toBeNull();
+  });
+
+  it('does not present Hollow from an accept result until the authoritative route is Hollow', () => {
+    const pending = buildHollowChoiceAftermathPresentation({
+      result: 'accepted',
+      activeRoute: 'true_path',
+      currentRouteLabel: 'True Path',
+    });
+    const committed = buildHollowChoiceAftermathPresentation({
+      result: 'accepted',
+      activeRoute: 'hollow',
+      currentRouteLabel: 'True Path',
+    });
+
+    expect(pending.hollowActive).toBe(false);
+    expect(pending.routeLabel).toBe('True Path');
+    expect(pending.title).not.toMatch(/Hollow/i);
+
+    expect(committed.hollowActive).toBe(true);
+    expect(committed.routeLabel).toBe('Hollow Path');
+    expect(committed.title).toBe('Hollow Path · 첫 번째 균열');
+    expect(committed.veyr).toContain('이제');
+    expect(committed.bondConsequence).toContain('리라');
+    expect(committed.autoSelectedRoute).toBeNull();
   });
 });
