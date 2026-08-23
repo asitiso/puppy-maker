@@ -46,6 +46,7 @@ describe('V3 Fifth Path outcome, reward and ending persistence',()=>{
   ] as const)('commits %s/%s as fail-forward outcome with qualitative reward once', (battleResult,cost,outcome,memoryId,worldFact)=>{
     const resolved=resolveFifthPathOutcome({battleResult,cost});
     expect(resolved).toEqual({accepted:true,outcome,memoryId,worldFact,failForward:battleResult==='defeat'});
+    if(!resolved.accepted)return;
     const first=commitFifthPathOutcome(winterReady(),resolved);
     expect(first.committed).toBe(true);
     if(!first.committed)return;
