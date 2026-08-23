@@ -1,12 +1,14 @@
 import {
+  campaignIds,
   mainCampaignIds,
   majorOutcomeResults,
+  type CampaignId,
   type MainCampaignId,
   type MajorOutcomeResult,
 } from './campaign-model';
 import type {CampaignRunState} from './campaign-state';
 import {sanitizeCampaignSeasonalObjectiveClaimKeys} from './campaign-seasonal-claim-keys';
-import {hydrateLegacyState} from './legacy-state';
+import {hydrateLegacyState,type TruePathEvidenceId} from './legacy-state';
 import type {V3PersistentState} from './v3-persistent-state';
 
 export type WinterCampaignActionFact=
@@ -20,6 +22,7 @@ export type WinterCampaignActionFact=
   | 'rift_control';
 
 const mainCampaignSet=new Set<string>(mainCampaignIds);
+const campaignSet=new Set<string>(campaignIds);
 const winterFactSet=new Set<string>([
   'long_night_protection','responsibility_sharing','long_night_route','route_knowledge',
   'long_night_command','elite_chain','long_night_reality','rift_control',
@@ -27,6 +30,10 @@ const winterFactSet=new Set<string>([
 
 function campaignId(value:unknown):MainCampaignId|null{
   return typeof value==='string'&&mainCampaignSet.has(value)?value as MainCampaignId:null;
+}
+
+function completedCampaignId(value:unknown):CampaignId|null{
+  return typeof value==='string'&&campaignSet.has(value)?value as CampaignId:null;
 }
 
 function canonicalYear(value:unknown):number|null{
@@ -188,6 +195,7 @@ export type WinterEndingSummaryInput={
   majorWorldOutcomes?:unknown;
   keyBondMemories?:unknown;
   trueClues?:unknown;
+  truePathEvidence?:TruePathEvidenceId[];
 };
 
 export function commitWinterEnding(state:V3PersistentState,ending:ModularEnding,summary:WinterEndingSummaryInput={}):
@@ -213,6 +221,7 @@ export function commitWinterEnding(state:V3PersistentState,ending:ModularEnding,
     majorWorldOutcomes:summary.majorWorldOutcomes??[],
     keyBondMemories:summary.keyBondMemories??[],
     trueClues:summary.trueClues??[],
+    ...(summary.truePathEvidence?.length?{truePathEvidence:summary.truePathEvidence}:{}),
   };
   const legacy=hydrateLegacyState({
     ...state.legacy,
@@ -238,13 +247,13 @@ export function commitWinterEnding(state:V3PersistentState,ending:ModularEnding,
 
 export function selectCompletedRunHandoff(state:V3PersistentState){
   if(!state.campaignRun.seasonMilestones.includes('ending_committed'))return null;
-  const campaign=campaignId(state.campaignRun.activeCampaign);
+  const campaign=completedCampaignId(state.campaignRun.activeCampaign);
   const longNightOutcome=state.campaignRun.majorOutcomes.long_night;
   if(!campaign||!longNightOutcome)return null;
   const summary=state.legacy.runSummaries.find(item=>item.runNumber===state.campaignRun.runNumber&&item.campaign===campaign);
-  if(!summary?.ending)return null;
+  if(!summary?.ending||summary.route!==state.campaignRun.activeRoute)return null;
   const dimensions=parseModularEndingId(summary.ending);
-  if(!dimensions||summary.career!==dimensions.career)return null;
+  if(!dimensions||(campaign==='true_path'&&dimensions.campaign!=='true_path')||summary.career!==dimensions.career)return null;
   return {
     runNumber:state.campaignRun.runNumber,
     campaignId:campaign,

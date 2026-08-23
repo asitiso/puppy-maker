@@ -1,11 +1,10 @@
 import {emptyCampaignRunState} from './campaign-state';
 import {emptyCharacterBondsState} from './character-bonds';
-import {mainCampaignIds} from './campaign-model';
 import {selectCompletedRunHandoff} from './campaign-winter-season';
+import {resolveFifthPathEligibility} from './fifth-path-eligibility';
 import {
   hydrateLegacyState,
   ngPlusUnlockIds,
-  trueClueIds,
   type LegacyState,
   type NgPlusUnlockId,
 } from './legacy-state';
@@ -19,12 +18,7 @@ export function selectNgPlusUnlocks(legacy:LegacyState):NgPlusUnlockId[]{
     selected.add('relationship_reunion');
   }
   if(legacy.legacyWorldFacts.length>0)selected.add('world_echo');
-
-  const completedCampaigns=new Set(legacy.completedCampaigns);
-  const clues=new Set(legacy.trueClues);
-  const allMainCampaigns=mainCampaignIds.every(id=>completedCampaigns.has(id));
-  const allTrueClues=trueClueIds.every(id=>clues.has(id));
-  if(allMainCampaigns&&allTrueClues)selected.add('fifth_path_candidate');
+  if(resolveFifthPathEligibility(legacy).eligible)selected.add('fifth_path_candidate');
 
   return ngPlusUnlockIds.filter(id=>selected.has(id));
 }
