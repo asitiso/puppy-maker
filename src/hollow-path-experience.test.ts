@@ -24,7 +24,7 @@ describe('Hollow Path temptation presentation contract', () => {
     expect(fractured.finalChoice).toBeNull();
     expect(fractured.atmosphere).not.toBe(stable.atmosphere);
     expect(fractured.temptation.shortTermBenefit.length).toBeGreaterThan(0);
-    expect(fractured.vey r).toBeUndefined();
+    expect(fractured.veyr.length).toBeGreaterThan(0);
 
     const visible = JSON.stringify({
       routeLabel: fractured.routeLabel,
@@ -49,7 +49,7 @@ describe('Hollow Path temptation presentation contract', () => {
     expect(candidate.autoSelectedRoute).toBeNull();
     expect(candidate.inheritedEcho).toContain('지난 삶');
     expect(candidate.finalChoice).toEqual({
-      id: 'vey r_final_offer',
+      id: 'veyr_final_offer',
       prompt: '베이르가 마지막으로 손을 내밀어요. 지금의 길을 버릴지, 여기서 멈출지는 아직 당신의 선택이에요.',
       accept: { id: 'accept_hollow', label: '베이르의 손을 잡는다' },
       refuse: { id: 'refuse_hollow', label: '여기서 멈추고 지금의 길을 지킨다' },
