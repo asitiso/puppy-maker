@@ -52,6 +52,33 @@ export type HollowChoiceAftermathPresentation = {
   autoSelectedRoute: null;
 };
 
+export type HollowCampaignChapter = 'summer' | 'autumn' | 'winter';
+export type HollowCampaignOutcome = 'victory' | 'costly_victory' | 'defeat';
+
+export type HollowCampaignPresentationInput = {
+  activeRoute: string;
+  chapter: HollowCampaignChapter;
+  objective: string;
+  outcome?: HollowCampaignOutcome;
+  worldSignals: readonly string[];
+  bondSignals: readonly string[];
+};
+
+export type HollowCampaignPresentation = {
+  title: string;
+  objective: string;
+  veyr: string;
+  tension: {
+    shortTermGain: string;
+    longTermCost: string;
+  };
+  world: readonly string[];
+  bond: readonly string[];
+  outcome: HollowCampaignOutcome | null;
+  resolution: string | null;
+  next: 'autumn' | 'winter' | 'hollow_ending';
+};
+
 const PRESENTATION_BY_TIER: Record<
   HollowDangerTier,
   Pick<HollowTemptationPresentation, 'atmosphere' | 'veyr' | 'temptation'>
@@ -90,6 +117,12 @@ const FINAL_CHOICE: HollowFinalChoice = {
   prompt: '베이르가 마지막으로 손을 내밀어요. 지금의 길을 버릴지, 여기서 멈출지는 아직 당신의 선택이에요.',
   accept: { id: 'accept_hollow', label: '베이르의 손을 잡는다' },
   refuse: { id: 'refuse_hollow', label: '여기서 멈추고 지금의 길을 지킨다' },
+};
+
+const HOLLOW_WINTER_RESOLUTION: Record<HollowCampaignOutcome, string> = {
+  victory: '마지막 균열을 넘어섰지만, 베이르와 함께 택한 방식이 세계와 관계에 분명한 흔적으로 남아요.',
+  costly_victory: '긴 밤은 끝났지만 지름길의 대가도 함께 남아, 다음 날의 관계와 약속을 다시 만들어야 해요.',
+  defeat: '이번 밤을 이기지 못했어도 선택의 흔적은 사라지지 않고, 세계는 그 결과를 안은 채 다음 장면으로 넘어가요.',
 };
 
 export function buildHollowTemptationPresentation(
@@ -148,5 +181,61 @@ export function buildHollowChoiceAftermathPresentation(
     veyr: '“결정은 했잖아. 이제 세계가 따라오면 돼.”',
     bondConsequence: '리라는 아직 달라진 길의 이름 대신, 당신의 다음 행동을 기다려요.',
     autoSelectedRoute: null,
+  };
+}
+
+export function buildHollowCampaignPresentation(
+  input: HollowCampaignPresentationInput,
+): HollowCampaignPresentation | null {
+  if (input.activeRoute !== 'hollow') return null;
+
+  if (input.chapter === 'summer') {
+    return {
+      title: 'Hollow Path · Summer',
+      objective: input.objective,
+      veyr: '“빠르게 끝내면 더 많은 걸 지킬 수 있어. 망설일 이유가 없잖아.”',
+      tension: {
+        shortTermGain: '눈앞의 위기를 더 적은 시간과 자원으로 넘길 수 있어요.',
+        longTermCost: '누가 도움을 받았고 누가 남겨졌는지가 세계와 관계의 기억으로 남아요.',
+      },
+      world: input.worldSignals,
+      bond: input.bondSignals,
+      outcome: null,
+      resolution: null,
+      next: 'autumn',
+    };
+  }
+
+  if (input.chapter === 'autumn') {
+    return {
+      title: 'Hollow Path · Autumn',
+      objective: input.objective,
+      veyr: '“이미 효과를 봤잖아. 이번에도 가장 쉬운 문부터 열면 돼.”',
+      tension: {
+        shortTermGain: '갈라진 세력을 즉시 움직일 만큼 강한 해법을 선택할 수 있어요.',
+        longTermCost: '성과를 위해 바꾼 약속과 관계의 의미가 다음 선택까지 따라와요.',
+      },
+      world: input.worldSignals,
+      bond: input.bondSignals,
+      outcome: null,
+      resolution: null,
+      next: 'winter',
+    };
+  }
+
+  const outcome = input.outcome ?? null;
+  return {
+    title: 'Hollow Path · Long Night',
+    objective: input.objective,
+    veyr: '“끝까지 왔어. 결과가 무엇이든 이제 이 선택은 네 것이야.”',
+    tension: {
+      shortTermGain: '마지막 균열을 정면으로 통과할 수 있는 가장 직접적인 힘을 얻어요.',
+      longTermCost: '승패와 관계없이 지금까지의 선택이 세계와 관계의 결말에 흔적으로 남아요.',
+    },
+    world: input.worldSignals,
+    bond: input.bondSignals,
+    outcome,
+    resolution: outcome ? HOLLOW_WINTER_RESOLUTION[outcome] : '마지막 선택의 결과가 정해지면 그 흔적을 안고 다음 장면으로 이어져요.',
+    next: 'hollow_ending',
   };
 }
