@@ -38,7 +38,7 @@ const focusableSelector = 'button:not([disabled]), [href], [tabindex]:not([tabin
 function renderCurrent(current: FifthPathHubViewModel['current']) {
   if (!current) return null;
 
-  if ('id' in current && current.id === 'true_ending') {
+  if ('id' in current) {
     return (
       <section className="fifth-path-panel fifth-path-ending" aria-labelledby="fifth-true-ending-title">
         <p className="fifth-path-kicker">TRUE ENDING</p>
