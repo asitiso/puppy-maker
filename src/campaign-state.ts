@@ -25,13 +25,20 @@ import {
 import {sanitizeCampaignSeasonalObjectiveClaimKeys} from './campaign-seasonal-claim-keys';
 import {isV3Record,safeNonNegativeInt,safePositiveInt,uniqueRegistered} from './v3-state-sanitize';
 
+export type HollowFinalChoiceResolution='accepted'|'refused';
+
 export type CampaignRunState={
   runNumber:number;
   phase:CampaignPhase;
   activeCampaign:CampaignId|null;
   activeRoute:CampaignRoute;
   campaignAffinities:Record<MainCampaignId,number>;
-  dangerState:{score:number;behaviors:DangerBehaviorId[];evidence?:HollowDangerEvidenceId[]};
+  dangerState:{
+    score:number;
+    behaviors:DangerBehaviorId[];
+    evidence?:HollowDangerEvidenceId[];
+    finalChoiceResolution?:HollowFinalChoiceResolution;
+  };
   seasonMilestones:CampaignMilestoneId[];
   majorChoices:Partial<Record<MajorChoiceId,MajorChoiceOptionId>>;
   majorOutcomes:Partial<Record<MajorEventId,MajorOutcomeResult>>;
@@ -99,6 +106,9 @@ export function hydrateCampaignRunState(raw:unknown):CampaignRunState{
   const dangerEvidence=hollowDangerEvidenceIds.filter(id=>
     explicitDangerEvidence.includes(id)||inferredDangerEvidence.includes(id),
   );
+  const finalChoiceResolution=dangerSource.finalChoiceResolution==='accepted'||dangerSource.finalChoiceResolution==='refused'
+    ? dangerSource.finalChoiceResolution as HollowFinalChoiceResolution
+    : undefined;
 
   return {
     runNumber:safePositiveInt(source.runNumber,1),
@@ -110,6 +120,7 @@ export function hydrateCampaignRunState(raw:unknown):CampaignRunState{
       score:safeNonNegativeInt(dangerSource.score),
       behaviors:dangerBehaviors,
       evidence:dangerEvidence,
+      ...(finalChoiceResolution?{finalChoiceResolution}:{}),
     },
     seasonMilestones:uniqueRegistered(source.seasonMilestones,campaignMilestoneIds),
     majorChoices,
