@@ -1,0 +1,94 @@
+export type HollowDangerTier = 'stable' | 'fractured' | 'hollow_candidate';
+
+export type HollowTemptationInput = {
+  dangerTier: HollowDangerTier;
+  currentRouteLabel: string;
+  inheritedEcho: boolean;
+  finalChoiceAvailable: boolean;
+};
+
+export type HollowFinalChoice = {
+  id: 'veyr_final_offer';
+  prompt: string;
+  accept: {
+    id: 'accept_hollow';
+    label: string;
+  };
+  refuse: {
+    id: 'refuse_hollow';
+    label: string;
+  };
+};
+
+export type HollowTemptationPresentation = {
+  routeLabel: string;
+  atmosphere: string;
+  veyr: string;
+  temptation: {
+    label: string;
+    shortTermBenefit: string;
+    costHint: string;
+  };
+  inheritedEcho: string | null;
+  finalChoice: HollowFinalChoice | null;
+  autoSelectedRoute: null;
+};
+
+const PRESENTATION_BY_TIER: Record<
+  HollowDangerTier,
+  Pick<HollowTemptationPresentation, 'atmosphere' | 'veyr' | 'temptation'>
+> = {
+  stable: {
+    atmosphere: '익숙한 풍경은 그대로지만, 몇몇 선택이 이전보다 오래 마음에 남아요.',
+    veyr: '베이르는 아직 멀리서 지켜보기만 해요.',
+    temptation: {
+      label: '더 빠른 해결을 택한다',
+      shortTermBenefit: '지금의 위기를 더 적은 준비로 넘길 수 있어요.',
+      costHint: '누군가는 그 선택을 오래 기억할 거예요.',
+    },
+  },
+  fractured: {
+    atmosphere: '같은 장소인데도 대화가 조금 짧아지고, 사람들이 당신의 다음 선택을 먼저 살펴봐요.',
+    veyr: '“선택은 이미 쉬워지고 있잖아. 필요한 걸 먼저 취하면 돼.”',
+    temptation: {
+      label: '베이르의 지름길을 이용한다',
+      shortTermBenefit: '이번 국면의 자원과 시간을 아끼며 즉시 우위를 만들 수 있어요.',
+      costHint: '도움을 받은 사람과 도움을 잃은 사람이 같은 장면을 다르게 기억할 거예요.',
+    },
+  },
+  hollow_candidate: {
+    atmosphere: '익숙했던 길의 표지판은 남아 있지만, 모두가 당신이 어디로 향할지 기다리고 있어요.',
+    veyr: '“여기까지 왔어. 이제 마지막으로 네가 고르면 돼.”',
+    temptation: {
+      label: '마지막 지름길을 받아들일지 결정한다',
+      shortTermBenefit: '눈앞의 위기를 가장 빠른 방식으로 뒤집을 수 있어요.',
+      costHint: '이 선택 뒤에는 지금까지 걸어온 길과의 관계도 달라질 수 있어요.',
+    },
+  },
+};
+
+const FINAL_CHOICE: HollowFinalChoice = {
+  id: 'veyr_final_offer',
+  prompt: '베이르가 마지막으로 손을 내밀어요. 지금의 길을 버릴지, 여기서 멈출지는 아직 당신의 선택이에요.',
+  accept: { id: 'accept_hollow', label: '베이르의 손을 잡는다' },
+  refuse: { id: 'refuse_hollow', label: '여기서 멈추고 지금의 길을 지킨다' },
+};
+
+export function buildHollowTemptationPresentation(
+  input: HollowTemptationInput,
+): HollowTemptationPresentation {
+  const presentation = PRESENTATION_BY_TIER[input.dangerTier];
+  const canResolveFinalChoice = input.dangerTier === 'hollow_candidate' && input.finalChoiceAvailable;
+
+  return {
+    routeLabel: input.currentRouteLabel,
+    atmosphere: presentation.atmosphere,
+    veyr: presentation.veyr,
+    temptation: presentation.temptation,
+    inheritedEcho: input.inheritedEcho
+      ? '지난 삶에서 비슷한 선택을 했던 기억이 현재의 장면에 희미하게 겹쳐 보여요.'
+      : null,
+    finalChoice: canResolveFinalChoice ? FINAL_CHOICE : null,
+    autoSelectedRoute: null,
+  };
+}
