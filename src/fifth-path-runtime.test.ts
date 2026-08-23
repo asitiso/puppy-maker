@@ -1,19 +1,19 @@
 import {describe,expect,it} from 'vitest';
-import {emptyV3PersistentState,hydrateV3PersistentState} from './v3-persistent-state';
+import {emptyV3PersistentState,hydrateV3PersistentState,type V3PersistentState} from './v3-persistent-state';
 import {commitFifthSeasonObjective,resolveFifthSeasonObjective} from './fifth-path-runtime';
 
-function truePathState(){
+function truePathState():V3PersistentState{
   const base=emptyV3PersistentState();
   return {
     ...base,
     campaignRun:{
       ...base.campaignRun,
       runNumber:5,
-      phase:'summer' as const,
-      activeCampaign:'true_path' as const,
-      seasonMilestones:['path_convergence' as const],
+      phase:'summer',
+      activeCampaign:'true_path',
+      seasonMilestones:['path_convergence'],
     },
-    worldHistory:{currentFacts:[],inheritedFacts:['festival_saved' as const]},
+    worldHistory:{currentFacts:[],inheritedFacts:['festival_saved']},
   };
 }
 
