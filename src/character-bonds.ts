@@ -40,7 +40,12 @@ export const characterBondIdRegistry:Record<CharacterId,Registry>={
     memories:['selene_first_commitment',...festivalMemories('selene'),'selene_autumn_use_relic','selene_autumn_destroy_relic','selene_autumn_controlled_use',...winterMemories('selene')],
   },
   noa:{conflicts:[],promises:[],memories:[]},eiden:{conflicts:[],promises:[],memories:[]},
-  lyra:{conflicts:[],promises:[],memories:[]},veyr:{conflicts:[],promises:[],memories:[]},
+  lyra:{
+    conflicts:['lyra_cycle_cost'],
+    promises:['lyra_choose_this_life'],
+    memories:['lyra_true_path_victory','lyra_true_path_costly_victory','lyra_true_path_defeat'],
+  },
+  veyr:{conflicts:[],promises:[],memories:[]},
 };
 
 const emptyBond=():CharacterBondState=>({trust:0,conflicts:[],promises:[],memories:[]});

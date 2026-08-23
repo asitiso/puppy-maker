@@ -59,6 +59,11 @@ export const ngPlusWorldEchoDefinitions: Readonly<Record<WorldFactId, NgPlusWorl
   caretaker_critical_person_saved: echo('caretaker_critical_person_saved', 'reward', 'caretaker'),
   caretaker_risk_shared: echo('caretaker_risk_shared', 'reward', 'caretaker'),
   caretaker_team_solution: echo('caretaker_team_solution', 'reward', 'caretaker'),
+
+  true_path_echoes_aligned: echo('true_path_echoes_aligned', 'flavor', null),
+  true_path_world_rewoven: echo('true_path_world_rewoven', 'starting_event', null),
+  true_path_cycle_rejoined: echo('true_path_cycle_rejoined', 'hidden_quest', null),
+  true_path_cost_borne: echo('true_path_cost_borne', 'flavor', null),
 };
 
 export function buildNgPlusWorldEchoPresentation(

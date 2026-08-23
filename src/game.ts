@@ -12,6 +12,7 @@ import {
 } from './tactical-encounters';
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
+import { commitTruePath } from './fifth-path-state';
 import { prepareNewPossibilityV3State } from './ngplus-replay';
 import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
@@ -70,6 +71,8 @@ export type Action = Base.Action | {
   speed:1|2;
 } | {
   type:'NEW_RUN';
+} | {
+  type:'COMMIT_TRUE_PATH';
 } | {
   type:'EVENT_CHOICE';
   eventId:string;
@@ -172,6 +175,11 @@ export function reducer(state:GameState,action:Action):GameState {
       tacticalAutoBattle:tactical.tacticalAutoBattle,
       tacticalBattleSpeed:tactical.tacticalBattleSpeed,
     } as GameState;
+  }
+  if (action.type === 'COMMIT_TRUE_PATH') {
+    const transition=commitTruePath(pickV3PersistentState(state));
+    if(!transition.committed)return state;
+    return {...state,...transition.state} as GameState;
   }
   if (action.type === 'EVENT_CHOICE') return state;
 
