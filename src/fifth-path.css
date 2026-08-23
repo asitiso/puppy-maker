@@ -1,0 +1,133 @@
+.fifth-path-home,
+.fifth-path-shell{
+  box-sizing:border-box;
+  width:100%;
+  color:#f6f0ff;
+  background:linear-gradient(180deg,#18152b 0%,#221b3d 52%,#10101b 100%);
+  overflow-wrap:anywhere;
+  word-break:keep-all;
+}
+
+.fifth-path-home{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:18px;
+  border-radius:20px;
+}
+
+.fifth-path-shell{
+  min-height:100vh;
+  min-height:100dvh;
+  padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
+  overflow:auto;
+}
+
+.fifth-path-header,
+.fifth-path-vn-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.fifth-path-panel{
+  max-width:760px;
+  margin:18px auto 0;
+  padding:18px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:18px;
+  background:rgba(255,255,255,.07);
+}
+
+.fifth-path-header{
+  max-width:760px;
+  margin:0 auto;
+}
+
+.fifth-path-kicker{
+  margin:0 0 6px;
+  font-size:.78rem;
+  letter-spacing:.12em;
+  opacity:.72;
+}
+
+.fifth-path-header h1,
+.fifth-path-panel h2,
+.fifth-path-card h3{
+  margin:0 0 10px;
+}
+
+.fifth-path-candidates,
+.fifth-path-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.fifth-path-card,
+.fifth-path-choice{
+  padding:14px;
+  border-radius:14px;
+  background:rgba(15,12,28,.55);
+}
+
+.fifth-path-special{
+  margin-top:14px;
+  border:1px solid rgba(220,195,255,.42);
+}
+
+.fifth-path-objective,
+.fifth-path-future{
+  font-weight:700;
+}
+
+.fifth-path-vn img{
+  width:72px;
+  height:72px;
+  object-fit:cover;
+  border-radius:16px;
+}
+
+.fifth-path-vn-choices{
+  display:grid;
+  gap:8px;
+  margin-top:12px;
+}
+
+.fifth-path-shell button,
+.fifth-path-home button{
+  min-height:44px;
+  padding:10px 14px;
+  border:0;
+  border-radius:12px;
+  font:inherit;
+  cursor:pointer;
+}
+
+.fifth-path-shell button:focus-visible,
+.fifth-path-home button:focus-visible{
+  outline:3px solid currentColor;
+  outline-offset:3px;
+}
+
+@media (max-width: 430px){
+  .fifth-path-shell{padding-left:14px;padding-right:14px}
+  .fifth-path-panel{padding:16px}
+}
+
+@media (max-width: 390px){
+  .fifth-path-candidates,.fifth-path-grid{grid-template-columns:1fr}
+  .fifth-path-header{align-items:center}
+}
+
+@media (max-width: 360px){
+  .fifth-path-shell{padding-left:12px;padding-right:12px}
+  .fifth-path-home{align-items:stretch;flex-direction:column}
+  .fifth-path-header{align-items:stretch;flex-direction:column}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .fifth-path-shell *, .fifth-path-home *{animation:none!important;transition:none!important}
+}
