@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildHollowCampaignPresentation,
   buildHollowChoiceAftermathPresentation,
   buildHollowTemptationPresentation,
 } from './hollow-path-experience';
@@ -99,4 +100,63 @@ describe('Hollow Path explicit choice aftermath', () => {
     expect(committed.bondConsequence).toContain('리라');
     expect(committed.autoSelectedRoute).toBeNull();
   });
+});
+
+describe('Hollow Path playable campaign presentation', () => {
+  it('does not open Hollow campaign presentation until the authoritative route is Hollow', () => {
+    expect(buildHollowCampaignPresentation({
+      activeRoute: 'true_path',
+      chapter: 'summer',
+      objective: '무너진 피난로를 확보한다',
+      worldSignals: ['주민들이 지름길의 대가를 기억해요.'],
+      bondSignals: ['리라는 선택의 이유를 묻고 있어요.'],
+    })).toBeNull();
+  });
+
+  it('presents Summer and Autumn as useful-but-costly Hollow chapters driven by Veyr, World and Bond consequences', () => {
+    const summer = buildHollowCampaignPresentation({
+      activeRoute: 'hollow',
+      chapter: 'summer',
+      objective: '무너진 피난로를 확보한다',
+      worldSignals: ['구조는 빨라졌지만 남겨진 마을이 생겼어요.'],
+      bondSignals: ['리라는 결과보다 누구를 남겼는지 기억해요.'],
+    });
+    const autumn = buildHollowCampaignPresentation({
+      activeRoute: 'hollow',
+      chapter: 'autumn',
+      objective: '분열된 동맹을 다시 움직인다',
+      worldSignals: ['동맹은 움직였지만 약속의 의미가 달라졌어요.'],
+      bondSignals: ['리라는 베이르의 말이 점점 당신의 말과 닮아간다고 느껴요.'],
+    });
+
+    expect(summer?.title).toBe('Hollow Path · Summer');
+    expect(summer?.veyr).toContain('빠르');
+    expect(summer?.tension.shortTermGain.length).toBeGreaterThan(0);
+    expect(summer?.tension.longTermCost.length).toBeGreaterThan(0);
+    expect(summer?.next).toBe('autumn');
+
+    expect(autumn?.title).toBe('Hollow Path · Autumn');
+    expect(autumn?.world).toEqual(['동맹은 움직였지만 약속의 의미가 달라졌어요.']);
+    expect(autumn?.bond).toEqual(['리라는 베이르의 말이 점점 당신의 말과 닮아간다고 느껴요.']);
+    expect(autumn?.next).toBe('winter');
+  });
+
+  it.each(['victory', 'costly_victory', 'defeat'] as const)(
+    'keeps Winter outcome %s fail-forward into the Hollow ending',
+    (outcome) => {
+      const winter = buildHollowCampaignPresentation({
+        activeRoute: 'hollow',
+        chapter: 'winter',
+        objective: '베이르와 함께 마지막 균열을 통과한다',
+        outcome,
+        worldSignals: ['세계는 선택의 흔적을 그대로 안고 다음 날을 맞아요.'],
+        bondSignals: ['리라는 끝까지 당신의 선택을 자신의 기억으로 남겨요.'],
+      });
+
+      expect(winter?.title).toBe('Hollow Path · Long Night');
+      expect(winter?.outcome).toBe(outcome);
+      expect(winter?.resolution?.length).toBeGreaterThan(0);
+      expect(winter?.next).toBe('hollow_ending');
+    },
+  );
 });
