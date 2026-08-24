@@ -64,6 +64,9 @@ export const ngPlusWorldEchoDefinitions: Readonly<Record<WorldFactId, NgPlusWorl
   true_path_world_rewoven: echo('true_path_world_rewoven', 'starting_event', null),
   true_path_cycle_rejoined: echo('true_path_cycle_rejoined', 'hidden_quest', null),
   true_path_cost_borne: echo('true_path_cost_borne', 'flavor', null),
+
+  hollow_shortcut_taken: echo('hollow_shortcut_taken', 'flavor', null),
+  hollow_rift_entrenched: echo('hollow_rift_entrenched', 'hidden_quest', null),
 };
 
 export function buildNgPlusWorldEchoPresentation(
