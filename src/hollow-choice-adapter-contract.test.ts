@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {emptyCampaignRunState} from './campaign-state';
+import {emptyCampaignRunState,type CampaignRunState} from './campaign-state';
 import {commitHollowDangerAction,resolveHollowDangerAction} from './hollow-danger-actions';
 import {resolveHollowFinalChoice} from './hollow-choice';
 
@@ -39,14 +39,14 @@ describe('Hollow choice adapter frozen contract',()=>{
   });
 
   it('lets explicit final choice mutate only route/resolution after canonical candidate evidence exists',()=>{
-    const state={
+    const state:CampaignRunState={
       ...emptyCampaignRunState(),
-      phase:'summer' as const,
-      activeCampaign:'caretaker' as const,
+      phase:'summer',
+      activeCampaign:'caretaker',
       dangerState:{
         score:999,
         behaviors:[],
-        evidence:['instrumental_bond','civilian_tradeoff','veyr_power'] as const,
+        evidence:['instrumental_bond','civilian_tradeoff','veyr_power'],
       },
     };
     const accepted=resolveHollowFinalChoice(state,'accept');
