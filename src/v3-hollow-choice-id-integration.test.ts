@@ -7,7 +7,7 @@ const candidateRun=()=>({
   ...emptyCampaignRunState(),
   phase:'summer' as const,
   activeCampaign:'caretaker' as const,
-  activeRoute:'true_path' as const,
+  activeRoute:'normal' as const,
   dangerState:{
     score:0,
     behaviors:[],
@@ -26,8 +26,8 @@ describe('Hollow Macro A -> B final-choice ID integration',()=>{
 
   it('accepts the frozen player-facing refuse_hollow ID without changing the current route',()=>{
     const state={...initialState,campaignRun:candidateRun()};
-    const next=reducer(state,{type:'RESOLVE_HOLLOW_FINAL_CHOICE',choice:'refuse_hollow'} as any);
+    const next=reducer(state,{type:'RESOLVE_HOLLOW_FINAL_CHOICE',choice:'refuse_hollow'});
     expect(next.campaignRun.dangerState.finalChoiceResolution).toBe('refused');
-    expect(next.campaignRun.activeRoute).toBe('true_path');
+    expect(next.campaignRun.activeRoute).toBe('normal');
   });
 });
