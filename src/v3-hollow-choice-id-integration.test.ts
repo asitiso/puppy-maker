@@ -1,17 +1,17 @@
 import {describe,expect,it} from 'vitest';
-import {emptyCampaignRunState} from './campaign-state';
+import {emptyCampaignRunState,type CampaignRunState} from './campaign-state';
 import {resolveHollowFinalChoice} from './hollow-choice';
 import {initialState,reducer} from './game';
 
-const candidateRun=()=>({
+const candidateRun=():CampaignRunState=>({
   ...emptyCampaignRunState(),
-  phase:'summer' as const,
-  activeCampaign:'caretaker' as const,
-  activeRoute:'normal' as const,
+  phase:'summer',
+  activeCampaign:'caretaker',
+  activeRoute:'normal',
   dangerState:{
     score:0,
     behaviors:[],
-    evidence:['instrumental_bond','civilian_tradeoff','veyr_power'] as const,
+    evidence:['instrumental_bond','civilian_tradeoff','veyr_power'],
   },
 });
 
