@@ -35,6 +35,7 @@ import type { SanctuarySpecializationId } from './sanctuary-specializations';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
+import type { WeeklyFocusId } from './weekly-life';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -192,9 +193,12 @@ type AppProps = {
   onTacticalPartyReady?: (setParty:(companions:[CompanionId,CompanionId])=>void) => void;
   onTacticalPreferencesReady?: (setPreferences:(auto:boolean,speed:1|2)=>void) => void;
   onTacticalCompleteReady?: (complete:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void) => void;
+  onWeeklyFocusReady?: (select:(focus:WeeklyFocusId)=>void) => void;
+  onWeeklyCompleteReady?: (complete:()=>void) => void;
+  onWeeklyAdvanceReady?: (advance:()=>void) => void;
 };
 
-export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady }: AppProps = {}) {
+export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady, onWeeklyFocusReady, onWeeklyCompleteReady, onWeeklyAdvanceReady }: AppProps = {}) {
   const [state, dispatch] = useReducer(reducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
@@ -220,6 +224,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const setTacticalParty = useCallback((companions:[CompanionId,CompanionId]) => dispatch({ type:'SET_TACTICAL_PARTY', companions }), []);
   const setTacticalPreferences = useCallback((auto:boolean,speed:1|2) => dispatch({ type:'SET_TACTICAL_PREFERENCES', auto, speed }), []);
   const completeTacticalBattle = useCallback((encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId]) => dispatch({ type:'COMPLETE_TACTICAL_BATTLE', encounterId, result, rounds, survivingAllies, damageTaken, companions }), []);
+  const selectWeeklyFocus = useCallback((focus:WeeklyFocusId) => dispatch({type:'SELECT_WEEKLY_FOCUS',focus}), []);
+  const completeWeeklyFocus = useCallback(() => dispatch({type:'COMPLETE_WEEKLY_FOCUS'}), []);
+  const advanceWeek = useCallback(() => dispatch({type:'ADVANCE_WEEK'}), []);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
   }, [state]);
@@ -248,6 +255,9 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onTacticalPartyReady?.(setTacticalParty), [setTacticalParty,onTacticalPartyReady]);
   useEffect(() => onTacticalPreferencesReady?.(setTacticalPreferences), [setTacticalPreferences,onTacticalPreferencesReady]);
   useEffect(() => onTacticalCompleteReady?.(completeTacticalBattle), [completeTacticalBattle,onTacticalCompleteReady]);
+  useEffect(() => onWeeklyFocusReady?.(selectWeeklyFocus), [selectWeeklyFocus,onWeeklyFocusReady]);
+  useEffect(() => onWeeklyCompleteReady?.(completeWeeklyFocus), [completeWeeklyFocus,onWeeklyCompleteReady]);
+  useEffect(() => onWeeklyAdvanceReady?.(advanceWeek), [advanceWeek,onWeeklyAdvanceReady]);
 
   return <main className="page"><div className="game-shell"><div className="ornate-corners"><i/><i/><i/><i/></div>{state.screen === 'hub' && <Hub state={state} go={() => navigate('schedule')}/>} {state.screen === 'schedule' && <Schedule state={state} dispatch={dispatch}/>} {state.screen === 'training' && <Training state={state} dispatch={dispatch}/>} {state.screen === 'dialogue' && <Dialogue state={state} dispatch={dispatch}/>} {state.screen === 'result' && <Result state={state} dispatch={dispatch}/>}</div></main>;
 }
