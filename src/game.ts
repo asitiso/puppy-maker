@@ -15,8 +15,16 @@ import { grantBattleBond, type CompanionBondState, type CompanionId } from './ta
 import { commitTruePath } from './fifth-path-state';
 import { resolveHollowFinalChoice,type HollowFinalChoice } from './hollow-choice';
 import { prepareNewPossibilityV3State } from './ngplus-replay';
+import { selectCompletedRunHandoff } from './campaign-winter-season';
 import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
+import {
+  buildAncestorRecord,
+  canStartNextGeneration,
+  emptyLineageState,
+  hydrateLineageState,
+  type LineageState,
+} from './lineage';
 import { weekKey } from './weekly-calendar';
 import {
   emptyWeeklyLifeState,
@@ -65,6 +73,7 @@ export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & V3P
   tacticalAutoBattle:boolean;
   tacticalBattleSpeed:1|2;
   weeklyLife:WeeklyLifeState;
+  lineage:LineageState;
 };
 
 export type Action = Base.Action | {
@@ -84,6 +93,8 @@ export type Action = Base.Action | {
   speed:1|2;
 } | {
   type:'NEW_RUN';
+} | {
+  type:'START_NEXT_GENERATION';
 } | {
   type:'COMMIT_TRUE_PATH';
 } | {
@@ -114,6 +125,7 @@ export const initialState:GameState = {
   tacticalAutoBattle:tacticalDefaults.autoBattle,
   tacticalBattleSpeed:tacticalDefaults.battleSpeed,
   weeklyLife:emptyWeeklyLifeState(),
+  lineage:emptyLineageState(),
   ...v3Defaults,
 };
 
@@ -178,6 +190,7 @@ export function hydrateGameState(raw:unknown):GameState {
     battleSpeed:source.tacticalBattleSpeed,
   });
   const v3 = hydrateV3PersistentState(source);
+  const lineage=hydrateLineageState(source.lineage);
   const hydratedWeeklyLife = hydrateWeeklyLifeState(source.weeklyLife);
   const currentWeekKey = weekKey(base.year,base.month,base.week);
   const weeklyLife:WeeklyLifeState = {
@@ -202,12 +215,43 @@ export function hydrateGameState(raw:unknown):GameState {
     tacticalAutoBattle:tactical.autoBattle,
     tacticalBattleSpeed:tactical.battleSpeed,
     weeklyLife,
+    lineage,
     ...v3,
   } as GameState;
 }
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+  if (action.type === 'START_NEXT_GENERATION') {
+    const handoff=selectCompletedRunHandoff(pickV3PersistentState(state));
+    if(!canStartNextGeneration({
+      year:state.year,
+      resolvedEnding:state.resolvedEnding??null,
+      campaignCompleted:Boolean(handoff),
+    }))return state;
+    if(state.lineage.ancestors.some(ancestor=>ancestor.generation===state.lineage.generation))return state;
+    const route=state.campaignRun.activeRoute==='hollow'
+      ? 'hollow' as const
+      : state.campaignRun.activeCampaign;
+    const ending=typeof state.resolvedEnding==='string'&&state.resolvedEnding.trim().length>0
+      ? state.resolvedEnding
+      : handoff?.endingId??null;
+    const ancestor=buildAncestorRecord({
+      generation:state.lineage.generation,
+      yearsLived:state.year,
+      route,
+      ending,
+      guardianRank:Base.currentGuardianStatus(state as Base.GameState).rank,
+      personality:state.personality,
+      worldFacts:[...state.worldHistory.inheritedFacts,...state.worldHistory.currentFacts],
+    });
+    const lineage=hydrateLineageState({
+      generation:state.lineage.generation+1,
+      heritageTraits:ancestor.heritageTraits,
+      ancestors:[...state.lineage.ancestors,ancestor],
+    });
+    return {...initialState,lineage} as GameState;
+  }
   if (action.type === 'NEW_RUN') {
     const transition = prepareNewPossibilityV3State(pickV3PersistentState(state));
     if (!transition.started) return state;
@@ -215,6 +259,7 @@ export function reducer(state:GameState,action:Action):GameState {
     return {
       ...initialState,
       ...transition.state,
+      lineage:state.lineage,
       tacticalBattleRecords:{...tactical.tacticalBattleRecords},
       claimedTacticalFirstClears:[...tactical.claimedTacticalFirstClears],
       selectedTacticalCompanions:[...tactical.selectedTacticalCompanions],
@@ -254,6 +299,7 @@ export function reducer(state:GameState,action:Action):GameState {
       activeRoute:state.campaignRun.activeRoute,
       runNumber:state.campaignRun.runNumber,
       inheritedFactCount:state.worldHistory.inheritedFacts.length,
+      heritageTraits:state.lineage.heritageTraits,
     });
     const resolutionKey=weeklyEventResolutionKey(state.year,state.month,state.week,event);
     const alreadyResolved=weekly.resolvedEventKeys.includes(resolutionKey);
