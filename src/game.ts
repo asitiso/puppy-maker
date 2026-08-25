@@ -17,6 +17,7 @@ import { resolveHollowFinalChoice,type HollowFinalChoice } from './hollow-choice
 import { prepareNewPossibilityV3State } from './ngplus-replay';
 import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
+import {emptyLineageState,hydrateLineageState,type LineageState} from './lineage';
 import { weekKey } from './weekly-calendar';
 import {
   emptyWeeklyLifeState,
@@ -65,6 +66,7 @@ export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & V3P
   tacticalAutoBattle:boolean;
   tacticalBattleSpeed:1|2;
   weeklyLife:WeeklyLifeState;
+  lineage:LineageState;
 };
 
 export type Action = Base.Action | {
@@ -114,6 +116,7 @@ export const initialState:GameState = {
   tacticalAutoBattle:tacticalDefaults.autoBattle,
   tacticalBattleSpeed:tacticalDefaults.battleSpeed,
   weeklyLife:emptyWeeklyLifeState(),
+  lineage:emptyLineageState(),
   ...v3Defaults,
 };
 
@@ -178,6 +181,7 @@ export function hydrateGameState(raw:unknown):GameState {
     battleSpeed:source.tacticalBattleSpeed,
   });
   const v3 = hydrateV3PersistentState(source);
+  const lineage=hydrateLineageState(source.lineage);
   const hydratedWeeklyLife = hydrateWeeklyLifeState(source.weeklyLife);
   const currentWeekKey = weekKey(base.year,base.month,base.week);
   const weeklyLife:WeeklyLifeState = {
@@ -202,6 +206,7 @@ export function hydrateGameState(raw:unknown):GameState {
     tacticalAutoBattle:tactical.autoBattle,
     tacticalBattleSpeed:tactical.battleSpeed,
     weeklyLife,
+    lineage,
     ...v3,
   } as GameState;
 }
