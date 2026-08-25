@@ -1,5 +1,6 @@
 import type {GameState} from './game';
 import LineageChronicle from './LineageChronicle';
+import WorldChronicle from './WorldChronicle';
 import './lineage-chronicle.css';
 import {livingNpcLabels,weeklyNpcPresence} from './living-npcs';
 import {weekKey} from './weekly-calendar';
@@ -60,5 +61,6 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
         : selected&&<button type="button" className="weekly-planner-resolve" onClick={onComplete}>이번 주 마무리</button>}
     </section>
     <LineageChronicle state={state}/>
+    <WorldChronicle generation={state.lineage.generation} world={state.generationalWorld}/>
   </>;
 }
