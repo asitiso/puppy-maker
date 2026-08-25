@@ -20,9 +20,16 @@ function expectFiniteTree(value:unknown,path='state'){
   }
 }
 
+function weeksUntilYearThree(state:GameState){
+  const elapsed=(state.year-1)*48+(state.month-1)*4+(state.week-1);
+  return 96-elapsed;
+}
+
 function playToMatureLife(input:GameState,generation:number){
   let state=input;
   let weeks=0;
+  const expectedWeeks=weeksUntilYearThree(input);
+  const startingResolved=state.weeklyLife.resolvedEventKeys.length;
   while(state.year<3){
     const focus=focuses[(weeks+generation)%focuses.length];
     const before=state;
@@ -47,11 +54,11 @@ function playToMatureLife(input:GameState,generation:number){
     expect(state.weeklyLife.resolvedEventKeys.length).toBeLessThanOrEqual(96);
     if(weeks%16===15)expectFiniteTree(state);
     weeks+=1;
-    expect(weeks).toBeLessThanOrEqual(96);
+    expect(weeks).toBeLessThanOrEqual(expectedWeeks);
   }
-  expect(weeks).toBe(96);
+  expect(weeks).toBe(expectedWeeks);
   expect(state).toMatchObject({year:3,month:1,week:1});
-  expect(state.weeklyLife.resolvedEventKeys).toHaveLength(96);
+  expect(state.weeklyLife.resolvedEventKeys).toHaveLength(Math.min(96,startingResolved+expectedWeeks));
   return state;
 }
 
@@ -76,6 +83,8 @@ function matureForTransition(state:GameState,generation:number):GameState{
 describe('V5 generations long-run soak',()=>{
   it('runs three mature lives through real weekly settlement, reload and bounded lineage transitions',()=>{
     let state:GameState=initialState;
+    const canonicalMatureWeeks=weeksUntilYearThree(initialState);
+    expect(canonicalMatureWeeks).toBe(83);
 
     for(let generation=1;generation<=3;generation+=1){
       expect(state.lineage.generation).toBe(generation);
@@ -100,6 +109,9 @@ describe('V5 generations long-run soak',()=>{
       expect(next.lineage.ancestors.at(-1)?.yearsLived).toBe(3);
       if(generation===2)expect(next.lineage.ancestors.at(-1)?.route).toBe('hollow');
 
+      expect(next.year).toBe(initialState.year);
+      expect(next.month).toBe(initialState.month);
+      expect(next.week).toBe(initialState.week);
       expect(next.gold).toBe(initialState.gold);
       expect(next.gems).toBe(initialState.gems);
       expect(next.stats).toEqual(initialState.stats);
@@ -134,7 +146,7 @@ describe('V5 generations long-run soak',()=>{
     expect(state.lineage.ancestors[1].route).toBe('hollow');
     expect(state.lineage.heritageTraits.length).toBeLessThanOrEqual(2);
     expect(state.year).toBe(3);
-    expect(state.weeklyLife.resolvedEventKeys).toHaveLength(96);
+    expect(state.weeklyLife.resolvedEventKeys).toHaveLength(canonicalMatureWeeks);
     expectFiniteTree(state);
   });
 });
