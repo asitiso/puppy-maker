@@ -299,6 +299,7 @@ export function reducer(state:GameState,action:Action):GameState {
       activeRoute:state.campaignRun.activeRoute,
       runNumber:state.campaignRun.runNumber,
       inheritedFactCount:state.worldHistory.inheritedFacts.length,
+      heritageTraits:state.lineage.heritageTraits,
     });
     const resolutionKey=weeklyEventResolutionKey(state.year,state.month,state.week,event);
     const alreadyResolved=weekly.resolvedEventKeys.includes(resolutionKey);
