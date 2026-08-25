@@ -12,6 +12,7 @@ const eventLabels:Record<WeeklyEventId,string>={
   training_partner:'함께하는 훈련',quiet_rain:'조용한 비',market_day:'시장 열리는 날',campfire_invitation:'모닥불의 초대',
   guardian_patrol:'수호대 순찰',rival_challenge:'라이벌의 도전',festival_preparation:'축제 준비',old_echo:'오래된 메아리',rift_whisper:'균열의 속삭임',
   independent_patrol:'독립 순찰',veteran_patrol:'숙련 수호자 순찰',ancestral_story:'가문의 이야기',
+  academy_drill:'수호자 학교 훈련',legacy_road_patrol:'이어진 옛길 순찰',rift_watch_rounds:'균열 감시 순회',scarred_district:'상흔이 남은 거리',
 };
 
 type Props={
@@ -32,12 +33,18 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
     month:state.month,
     runNumber:state.campaignRun.runNumber,
     inheritedFactCount:state.worldHistory.inheritedFacts.length,
+    generation:state.lineage.generation,
+    legacyMarkers:state.generationalWorld.legacyMarkers,
+    completedProjects:state.generationalWorld.completedProjects,
   });
   const event=selected?weeklyEventFor({
     year:state.year,month:state.month,week:state.week,focus:selected,
     activeCampaign:state.campaignRun.activeCampaign,activeRoute:state.campaignRun.activeRoute,
     runNumber:state.campaignRun.runNumber,inheritedFactCount:state.worldHistory.inheritedFacts.length,
     heritageTraits:state.lineage.heritageTraits,
+    generation:state.lineage.generation,
+    legacyMarkers:state.generationalWorld.legacyMarkers,
+    completedProjects:state.generationalWorld.completedProjects,
   }):null;
 
   return <>
