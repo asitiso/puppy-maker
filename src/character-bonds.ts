@@ -45,7 +45,11 @@ export const characterBondIdRegistry:Record<CharacterId,Registry>={
     promises:['lyra_choose_this_life'],
     memories:['lyra_true_path_victory','lyra_true_path_costly_victory','lyra_true_path_defeat'],
   },
-  veyr:{conflicts:[],promises:[],memories:[]},
+  veyr:{
+    conflicts:[],
+    promises:[],
+    memories:['veyr_hollow_victory','veyr_hollow_costly_victory','veyr_hollow_defeat'],
+  },
 };
 
 const emptyBond=():CharacterBondState=>({trust:0,conflicts:[],promises:[],memories:[]});
