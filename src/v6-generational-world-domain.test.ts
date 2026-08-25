@@ -24,4 +24,13 @@ describe('V6 generational world domain contract',()=>{
     const state:GenerationalWorldState={legacyMarkers:[],activeProject:null,projectProgress:0,completedProjects:[]};
     expect(state.projectProgress).toBe(0);
   });
+
+  it('exports hydration, derivation and project mutation helpers',async()=>{
+    const domain=await import('./generational-world');
+    expect(typeof (domain as Record<string,unknown>).emptyGenerationalWorldState).toBe('function');
+    expect(typeof (domain as Record<string,unknown>).hydrateGenerationalWorldState).toBe('function');
+    expect(typeof (domain as Record<string,unknown>).deriveLegacyWorldMarkers).toBe('function');
+    expect(typeof (domain as Record<string,unknown>).startPublicProject).toBe('function');
+    expect(typeof (domain as Record<string,unknown>).contributeToPublicProject).toBe('function');
+  });
 });
