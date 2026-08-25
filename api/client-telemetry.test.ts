@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import handler from './client-telemetry';
 
@@ -14,6 +15,12 @@ function response():MockResponse{
 afterEach(()=>vi.restoreAllMocks());
 
 describe('/api/client-telemetry',()=>{
+  it('uses a Node ESM-safe runtime import for the shared telemetry contract',()=>{
+    const source=readFileSync(new URL('./client-telemetry.ts',import.meta.url),'utf8');
+    expect(source).toContain("from '../src/client-telemetry-contract.js'");
+    expect(source).not.toContain("from '../src/client-telemetry-contract';");
+  });
+
   it('serves a GET health check',async()=>{
     const res=response();
     await handler({method:'GET'},res);
