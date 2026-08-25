@@ -1,3 +1,4 @@
+// @ts-ignore -- Vitest executes this source contract in Node; keep Node types out of app dependencies.
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
