@@ -21,11 +21,13 @@ const expeditionCss = css('./expedition-ui.css');
 const tacticalCss = css('./tactical-battle.css');
 
 describe('Layered Home mobile UI contract', () => {
-  it('exposes one prominent current-task action on the home scene', () => {
-    expect(home).toContain('className="lh-primary-action"');
+  it('exposes one prominent authoritative current-task action on the home scene', () => {
+    expect(home.match(/className="lh-primary-action"/g)?.length).toBe(1);
     expect(home).toContain('지금 할 일');
-    expect(home).toContain('conditionLabels[state.condition]');
-    expect(home).toContain('${stamina}/100');
+    expect(home).toContain('const primaryTask = hubNextAction(state);');
+    expect(home).toContain('{primaryTask.label}');
+    expect(home).toContain('{primaryTask.detail}');
+    expect(home).not.toContain('const primaryTask = unclaimedMail.length > 0');
   });
 
   it('suppresses unsupported weather copy instead of presenting it as game state', () => {
