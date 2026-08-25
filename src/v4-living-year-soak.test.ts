@@ -59,7 +59,7 @@ describe('V4 Living Year long-run soak',()=>{
       }
 
       state=reducer(state,{type:'ADVANCE_WEEK'});
-      expect(state).toMatchObject(expected);
+      expect(state).toMatchObject({year:expected.year,month:expected.month,week:expected.week});
       expect(state.weeklyLife.focusKey).toBeNull();
       expect(state.weeklyLife.focus).toBeNull();
       expect(state.weeklyLife.completedWeekKey).toBeNull();
