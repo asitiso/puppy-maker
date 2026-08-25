@@ -178,6 +178,15 @@ export function hydrateGameState(raw:unknown):GameState {
     battleSpeed:source.tacticalBattleSpeed,
   });
   const v3 = hydrateV3PersistentState(source);
+  const hydratedWeeklyLife = hydrateWeeklyLifeState(source.weeklyLife);
+  const currentWeekKey = weekKey(base.year,base.month,base.week);
+  const weeklyLife:WeeklyLifeState = {
+    ...hydratedWeeklyLife,
+    focusKey:hydratedWeeklyLife.focusKey===currentWeekKey?currentWeekKey:null,
+    focus:hydratedWeeklyLife.focusKey===currentWeekKey?hydratedWeeklyLife.focus:null,
+    completedWeekKey:hydratedWeeklyLife.completedWeekKey===currentWeekKey?currentWeekKey:null,
+    lastEvent:hydratedWeeklyLife.completedWeekKey===currentWeekKey?hydratedWeeklyLife.lastEvent:null,
+  };
   return {
     ...base,
     ...(typeof source.monthsCompleted==='number'?{monthsCompleted:safeInt(source.monthsCompleted)}:{}),
@@ -192,7 +201,7 @@ export function hydrateGameState(raw:unknown):GameState {
     tacticalCompanionBonds:tactical.companionBonds,
     tacticalAutoBattle:tactical.autoBattle,
     tacticalBattleSpeed:tactical.battleSpeed,
-    weeklyLife:hydrateWeeklyLifeState(source.weeklyLife),
+    weeklyLife,
     ...v3,
   } as GameState;
 }
