@@ -15,9 +15,16 @@ import { grantBattleBond, type CompanionBondState, type CompanionId } from './ta
 import { commitTruePath } from './fifth-path-state';
 import { resolveHollowFinalChoice,type HollowFinalChoice } from './hollow-choice';
 import { prepareNewPossibilityV3State } from './ngplus-replay';
+import { selectCompletedRunHandoff } from './campaign-winter-season';
 import { resetTacticalForNgPlus } from './tactical-ngplus-reset';
 import { hydrateTacticalPersistentState } from './tactical-state';
-import {emptyLineageState,hydrateLineageState,type LineageState} from './lineage';
+import {
+  buildAncestorRecord,
+  canStartNextGeneration,
+  emptyLineageState,
+  hydrateLineageState,
+  type LineageState,
+} from './lineage';
 import { weekKey } from './weekly-calendar';
 import {
   emptyWeeklyLifeState,
@@ -86,6 +93,8 @@ export type Action = Base.Action | {
   speed:1|2;
 } | {
   type:'NEW_RUN';
+} | {
+  type:'START_NEXT_GENERATION';
 } | {
   type:'COMMIT_TRUE_PATH';
 } | {
@@ -213,6 +222,36 @@ export function hydrateGameState(raw:unknown):GameState {
 
 export function reducer(state:GameState,action:Action):GameState {
   if (action.type === 'RESET') return initialState;
+  if (action.type === 'START_NEXT_GENERATION') {
+    const handoff=selectCompletedRunHandoff(pickV3PersistentState(state));
+    if(!canStartNextGeneration({
+      year:state.year,
+      resolvedEnding:state.resolvedEnding??null,
+      campaignCompleted:Boolean(handoff),
+    }))return state;
+    if(state.lineage.ancestors.some(ancestor=>ancestor.generation===state.lineage.generation))return state;
+    const route=state.campaignRun.activeRoute==='hollow'
+      ? 'hollow' as const
+      : state.campaignRun.activeCampaign;
+    const ending=typeof state.resolvedEnding==='string'&&state.resolvedEnding.trim().length>0
+      ? state.resolvedEnding
+      : handoff?.endingId??null;
+    const ancestor=buildAncestorRecord({
+      generation:state.lineage.generation,
+      yearsLived:state.year,
+      route,
+      ending,
+      guardianRank:Base.currentGuardianStatus(state as Base.GameState).rank,
+      personality:state.personality,
+      worldFacts:[...state.worldHistory.inheritedFacts,...state.worldHistory.currentFacts],
+    });
+    const lineage=hydrateLineageState({
+      generation:state.lineage.generation+1,
+      heritageTraits:ancestor.heritageTraits,
+      ancestors:[...state.lineage.ancestors,ancestor],
+    });
+    return {...initialState,lineage} as GameState;
+  }
   if (action.type === 'NEW_RUN') {
     const transition = prepareNewPossibilityV3State(pickV3PersistentState(state));
     if (!transition.started) return state;
