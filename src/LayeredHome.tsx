@@ -31,6 +31,7 @@ import { attendanceKey, attendanceReward } from './attendance';
 import { talentDefinitions } from './advanced-talents';
 import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
+import { hubNextAction } from './hub-next-action';
 import { mailDefinitions } from './mail-rewards';
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { monthlyMissionDefinitions } from './monthly-missions';
@@ -38,6 +39,8 @@ import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 import RunGuidanceCard from './RunGuidanceCard';
 import { getRunGuidance } from './run-guidance';
+import WeeklyPlannerCard from './WeeklyPlannerCard';
+import type { WeeklyFocusId } from './weekly-life';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
   return <img className="lh-frame" src={src} alt={alt} draggable={false} />;
@@ -68,10 +71,6 @@ const shortcuts: Array<[string, string, HomeMenuId]> = [
 const nav: Array<[string, string, HomeMenuId]> = [
   ['calendar', '스케줄', 'schedule'], ['bag', '가방', 'bag'], ['quest', '퀘스트', 'quest'], ['map', '외출', 'outing'], ['heart', '교감', 'bond']
 ];
-
-const conditionLabels: Record<GameState['condition'], string> = {
-  energetic: '활기참', normal: '평범함', focused: '집중됨', tired: '피곤함',
-};
 
 const recommendations: Record<GameState['condition'], string> = {
   energetic: '몸이 가벼워요. 사냥 훈련이나 외출에 잘 맞는 날이에요.',
@@ -107,16 +106,22 @@ type LayeredHomeProps = {
   onAttendance: () => void;
   onMail: (mail: MailRewardId) => void;
   onMonthlyFocus: (focus: GameState['monthlyFocus']) => void;
+  onWeeklyFocus?: (focus: WeeklyFocusId) => void;
+  onCompleteWeek?: () => void;
+  onAdvanceWeek?: () => void;
+  onExpedition?: () => void;
+  onSeason?: () => void;
   onMenuReady?: (openMenu: (id: HomeMenuId) => void) => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onMenuReady }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onWeeklyFocus, onCompleteWeek, onAdvanceWeek, onExpedition, onSeason, onMenuReady }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const panelLauncherRef = useRef<HTMLElement | null>(null);
   const panelCloseRef = useRef<HTMLButtonElement | null>(null);
+  const plannerRef = useRef<HTMLDivElement | null>(null);
   const staticPanel = activePanel ? getHomePanel(activePanel) : null;
   const stamina = Math.max(0, 100 - state.stats.fatigue);
   const rank = relationshipRank(state.stats.affection);
@@ -149,6 +154,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : isMailPanel ? '우편함' : staticPanel?.title ?? '';
   const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : isMailPanel ? 'MILESTONE MAIL' : staticPanel?.eyebrow ?? '';
   const runGuidance = getRunGuidance(state);
+  const primaryTask = hubNextAction(state);
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -171,13 +177,21 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     panelLauncherRef.current?.focus();
   }, []);
 
-  const primaryTask = unclaimedMail.length > 0
-    ? { label: `우편 보상 ${unclaimedMail.length}개 확인`, detail: '받을 보상이 있어요.', action: () => openMenu('mail') }
-    : !attendanceClaimed
-      ? { label: '이번 달 출석 보상 확인', detail: '이번 달 보상을 바로 확인해요.', action: () => openMenu('attendance') }
-      : unclaimedAchievementCount > 0
-        ? { label: `업적 보상 ${unclaimedAchievementCount}개 확인`, detail: '완료한 성장 보상이 있어요.', action: () => openMenu('quest', 2) }
-        : { label: '이번 주 스케줄 정하기', detail: `${conditionLabels[state.condition]} · 체력 ${stamina}/100`, action: onSchedule };
+  const runPrimaryTask = () => {
+    switch (primaryTask.route) {
+      case 'mail': return openMenu('mail');
+      case 'attendance': return openMenu('attendance');
+      case 'achievement': return openMenu('quest', 2);
+      case 'weekly_planner': return plannerRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+      case 'advance_week': return onAdvanceWeek?.();
+      case 'schedule': return onSchedule();
+      case 'outing': return openMenu('outing');
+      case 'bond': return openMenu('bond');
+      case 'expedition':
+      case 'tactical': return onExpedition?.();
+      case 'season': return onSeason?.();
+    }
+  };
 
   useEffect(() => onMenuReady?.((id: HomeMenuId) => openMenu(id)), [openMenu, onMenuReady]);
 
@@ -214,12 +228,15 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin gold">●</i><b>{state.gold.toLocaleString()}</b></span><span><i className="coin gem">◆</i><b>{state.gems.toLocaleString()}</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i style={{ width: `${stamina}%` }} /><b>{stamina} / 100</b></div></div>
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
     <RunGuidanceCard guidance={runGuidance} />
+    <div className="lh-weekly-planner" ref={plannerRef}>
+      <WeeklyPlannerCard state={state} onSelectFocus={focus => onWeeklyFocus?.(focus)} onComplete={() => onCompleteWeek?.()} onAdvance={() => onAdvanceWeek?.()} />
+    </div>
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}{id === 'mail' && unclaimedMail.length > 0 ? ` ${unclaimedMail.length}` : ''}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{unclaimedAchievementCount}개 수령 가능</small></button></div>
 
-    <button className="lh-primary-action" onClick={primaryTask.action} aria-label={`지금 할 일: ${primaryTask.label}`}>
+    <button className="lh-primary-action" onClick={runPrimaryTask} aria-label={`지금 할 일: ${primaryTask.label}`}>
       <small>지금 할 일</small><b>{primaryTask.label}</b><span>{primaryTask.detail}</span>
     </button>
 
