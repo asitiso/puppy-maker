@@ -61,7 +61,7 @@ describe('Expanded Polish V3 persistence hardening',()=>{
       characterBonds:null,
     });
     expect(hydrated.campaignRun.runNumber).toBe(1);
-    expect(hydrated.campaignRun.campaignAffinities).toEqual({caretaker:0,pathfinder:0,vanguard:0,arcanist:2});
+    expect(hydrated.campaignRun.campaignAffinities).toEqual({caretaker:0,pathfinder:0,vanguard:4,arcanist:2});
     expect(hydrated.campaignRun.dangerState.score).toBe(0);
     expect(hydrated.campaignRun.dangerState.behaviors).toEqual(['accepted_veyr_power']);
     expect(hydrated.campaignRun.dangerState.evidence).toEqual(['veyr_power']);
@@ -91,7 +91,7 @@ describe('Expanded Polish V3 persistence hardening',()=>{
     expect(second.state).toBe(first.state);
   });
 
-  it('clears Hollow current authority on NEW_RUN and never turns inherited echoes into a new candidate',()=>{
+  it('clears Hollow current authority on NEW_RUN and rejects arbitrary non-canonical manual echoes',()=>{
     const current=completedRun({campaign:'true_path',route:'hollow',endingCampaign:'hollow'});
     current.legacy.relationshipEchoes={veyr:['hollow_bond_memory']};
     const next=prepareNewPossibilityV3State(current);
@@ -101,6 +101,6 @@ describe('Expanded Polish V3 persistence hardening',()=>{
     expect(next.state.campaignRun.activeCampaign).toBeNull();
     expect(next.state.campaignRun.dangerState).toMatchObject({score:0,behaviors:[],evidence:[]});
     expect(next.state.campaignRun.dangerState.finalChoiceResolution).toBeUndefined();
-    expect(next.state.legacy.relationshipEchoes.veyr).toContain('hollow_bond_memory');
+    expect(next.state.legacy.relationshipEchoes.veyr).toBeUndefined();
   });
 });
