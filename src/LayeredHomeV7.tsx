@@ -25,6 +25,11 @@ type Props={
   onAdvanceWeek?:()=>void;
   onExpedition?:()=>void;
   onSeason?:()=>void;
+  onRaising?:()=>void;
+  onSanctuary?:()=>void;
+  onWorldProgress?:()=>void;
+  onArchive?:()=>void;
+  onAmbition?:()=>void;
   onMenuReady?:(openMenu:(id:HomeMenuId)=>void)=>void;
 };
 
@@ -52,6 +57,11 @@ export default function LayeredHomeV7(props:Props){
     setCategory('home');
     legacyOpenMenu?.(id);
   },[legacyOpenMenu]);
+
+  const leaveSheet=useCallback((action?:()=>void)=>{
+    setCategory('home');
+    action?.();
+  },[]);
 
   const notificationCount=useMemo(()=>{
     const mail=new Set(currentAvailableMail(state));
@@ -110,9 +120,14 @@ export default function LayeredHomeV7(props:Props){
       state={state}
       onClose={()=>setCategory('home')}
       onOpenMenu={openLegacy}
-      onSchedule={()=>{setCategory('home');props.onSchedule();}}
-      onExpedition={()=>{setCategory('home');props.onExpedition?.();}}
-      onSeason={()=>{setCategory('home');props.onSeason?.();}}
+      onSchedule={()=>leaveSheet(props.onSchedule)}
+      onExpedition={()=>leaveSheet(props.onExpedition)}
+      onSeason={()=>leaveSheet(props.onSeason)}
+      onRaising={()=>leaveSheet(props.onRaising)}
+      onSanctuary={()=>leaveSheet(props.onSanctuary)}
+      onWorldProgress={()=>leaveSheet(props.onWorldProgress)}
+      onArchive={()=>leaveSheet(props.onArchive)}
+      onAmbition={()=>leaveSheet(props.onAmbition)}
       onWeeklyFocus={props.onWeeklyFocus}
       onCompleteWeek={props.onCompleteWeek}
       onAdvanceWeek={props.onAdvanceWeek}
