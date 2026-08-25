@@ -13,6 +13,15 @@ import {
 import type { BattleResult } from './tactical-battle';
 import { grantBattleBond, type CompanionBondState, type CompanionId } from './tactical-companions';
 import { commitTruePath } from './fifth-path-state';
+import {
+  contributeToPublicProject,
+  deriveLegacyWorldMarkers,
+  emptyGenerationalWorldState,
+  hydrateGenerationalWorldState,
+  startPublicProject,
+  type GenerationalWorldState,
+  type PublicProjectId,
+} from './generational-world';
 import { resolveHollowFinalChoice,type HollowFinalChoice } from './hollow-choice';
 import { prepareNewPossibilityV3State } from './ngplus-replay';
 import { selectCompletedRunHandoff } from './campaign-winter-season';
@@ -74,6 +83,7 @@ export type GameState = Omit<Base.GameState,'memories'|'lastGrowthReport'> & V3P
   tacticalBattleSpeed:1|2;
   weeklyLife:WeeklyLifeState;
   lineage:LineageState;
+  generationalWorld:GenerationalWorldState;
 };
 
 export type Action = Base.Action | {
@@ -95,6 +105,9 @@ export type Action = Base.Action | {
   type:'NEW_RUN';
 } | {
   type:'START_NEXT_GENERATION';
+} | {
+  type:'START_PUBLIC_PROJECT';
+  projectId:PublicProjectId;
 } | {
   type:'COMMIT_TRUE_PATH';
 } | {
@@ -126,6 +139,7 @@ export const initialState:GameState = {
   tacticalBattleSpeed:tacticalDefaults.battleSpeed,
   weeklyLife:emptyWeeklyLifeState(),
   lineage:emptyLineageState(),
+  generationalWorld:emptyGenerationalWorldState(),
   ...v3Defaults,
 };
 
@@ -191,6 +205,7 @@ export function hydrateGameState(raw:unknown):GameState {
   });
   const v3 = hydrateV3PersistentState(source);
   const lineage=hydrateLineageState(source.lineage);
+  const generationalWorld=hydrateGenerationalWorldState(source.generationalWorld);
   const hydratedWeeklyLife = hydrateWeeklyLifeState(source.weeklyLife);
   const currentWeekKey = weekKey(base.year,base.month,base.week);
   const weeklyLife:WeeklyLifeState = {
@@ -216,6 +231,7 @@ export function hydrateGameState(raw:unknown):GameState {
     tacticalBattleSpeed:tactical.battleSpeed,
     weeklyLife,
     lineage,
+    generationalWorld,
     ...v3,
   } as GameState;
 }
@@ -250,7 +266,16 @@ export function reducer(state:GameState,action:Action):GameState {
       heritageTraits:ancestor.heritageTraits,
       ancestors:[...state.lineage.ancestors,ancestor],
     });
-    return {...initialState,lineage} as GameState;
+    const generationalWorld=hydrateGenerationalWorldState({
+      legacyMarkers:deriveLegacyWorldMarkers({
+        ancestors:lineage.ancestors,
+        inheritedFacts:state.worldHistory.inheritedFacts,
+      }),
+      activeProject:null,
+      projectProgress:0,
+      completedProjects:state.generationalWorld.completedProjects,
+    });
+    return {...initialState,lineage,generationalWorld} as GameState;
   }
   if (action.type === 'NEW_RUN') {
     const transition = prepareNewPossibilityV3State(pickV3PersistentState(state));
@@ -260,6 +285,7 @@ export function reducer(state:GameState,action:Action):GameState {
       ...initialState,
       ...transition.state,
       lineage:state.lineage,
+      generationalWorld:state.generationalWorld,
       tacticalBattleRecords:{...tactical.tacticalBattleRecords},
       claimedTacticalFirstClears:[...tactical.claimedTacticalFirstClears],
       selectedTacticalCompanions:[...tactical.selectedTacticalCompanions],
@@ -279,6 +305,11 @@ export function reducer(state:GameState,action:Action):GameState {
     return {...state,campaignRun:transition.state};
   }
   if (action.type === 'EVENT_CHOICE') return state;
+
+  if(action.type==='START_PUBLIC_PROJECT'){
+    const generationalWorld=startPublicProject(state.generationalWorld,action.projectId);
+    return generationalWorld===state.generationalWorld?state:{...state,generationalWorld};
+  }
 
   if(action.type==='SELECT_WEEKLY_FOCUS'){
     const current=weekKey(state.year,state.month,state.week);
@@ -300,6 +331,9 @@ export function reducer(state:GameState,action:Action):GameState {
       runNumber:state.campaignRun.runNumber,
       inheritedFactCount:state.worldHistory.inheritedFacts.length,
       heritageTraits:state.lineage.heritageTraits,
+      generation:state.lineage.generation,
+      legacyMarkers:state.generationalWorld.legacyMarkers,
+      completedProjects:state.generationalWorld.completedProjects,
     });
     const resolutionKey=weeklyEventResolutionKey(state.year,state.month,state.week,event);
     const alreadyResolved=weekly.resolvedEventKeys.includes(resolutionKey);
@@ -310,7 +344,10 @@ export function reducer(state:GameState,action:Action):GameState {
       resolvedEventKeys:alreadyResolved?weekly.resolvedEventKeys:[...weekly.resolvedEventKeys,resolutionKey].slice(-96),
     };
     if(alreadyResolved) return {...state,weeklyLife};
-    return {...applyWeeklyEffect(state,event),weeklyLife};
+    const generationalWorld=weekly.focus==='world'
+      ? contributeToPublicProject(state.generationalWorld,10)
+      : state.generationalWorld;
+    return {...applyWeeklyEffect(state,event),weeklyLife,generationalWorld};
   }
 
   if(action.type==='ADVANCE_WEEK'){
