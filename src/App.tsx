@@ -27,14 +27,14 @@ import type { BattleResult } from './tactical-battle';
 import type { CompanionId } from './tactical-companions';
 import type { TacticalEncounterId } from './tactical-encounters';
 import { monthlyFocusDefinitions } from './monthly-focus';
-import { loadResilientSave, repairPrimarySave, writeResilientSave } from './save-resilience';
+import { reportClientTelemetry } from './client-observability';
+import { loadProductionState, writeProductionState } from './production-storage';
 import { scheduleSynergies, scheduleSynergyDefinitions } from './schedule-synergies';
 import type { SanctuaryMasterworkId } from './sanctuary-masterworks';
 import type { SanctuarySpecializationId } from './sanctuary-specializations';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
-import { readAmbitionSelections } from './yearly-ambition-selection';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -195,17 +195,7 @@ type AppProps = {
 };
 
 export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady }: AppProps = {}) {
-  const [state, dispatch] = useReducer(reducer, initialState, () => {
-    const loaded = loadResilientSave(localStorage);
-    if (loaded.recovered) repairPrimarySave(localStorage, loaded);
-    const hydrated = loaded.state;
-    try {
-      const legacyAmbitions = readAmbitionSelections(JSON.parse(localStorage.getItem('puppy-maker-yearly-ambitions') || '{}'));
-      return { ...hydrated, yearlyAmbitions: { ...legacyAmbitions, ...hydrated.yearlyAmbitions } };
-    } catch {
-      return hydrated;
-    }
-  });
+  const [state, dispatch] = useReducer(reducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
   const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
@@ -231,8 +221,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const setTacticalPreferences = useCallback((auto:boolean,speed:1|2) => dispatch({ type:'SET_TACTICAL_PREFERENCES', auto, speed }), []);
   const completeTacticalBattle = useCallback((encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId]) => dispatch({ type:'COMPLETE_TACTICAL_BATTLE', encounterId, result, rounds, survivingAllies, damageTaken, companions }), []);
   useEffect(() => {
-    writeResilientSave(localStorage, state);
-    localStorage.removeItem('puppy-maker-yearly-ambitions');
+    writeProductionState(localStorage, state, reportClientTelemetry);
   }, [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
   useEffect(() => onNavigateReady?.(navigate), [navigate, onNavigateReady]);
