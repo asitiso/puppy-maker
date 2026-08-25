@@ -17,6 +17,22 @@ export const publicProjectIds=[
 export type LegacyWorldMarkerId=typeof legacyWorldMarkerIds[number];
 export type PublicProjectId=typeof publicProjectIds[number];
 
+export const legacyWorldMarkerLabels:Record<LegacyWorldMarkerId,string>={
+  festival_tradition:'축제의 전통',
+  open_road_network:'이어진 옛길',
+  regional_compact:'지역 연맹',
+  restored_riftward:'복원된 균열 방벽',
+  forbidden_legacy:'금단의 유산',
+  hollow_scar:'Hollow의 흉터',
+};
+
+export const publicProjectDefinitions:Record<PublicProjectId,{label:string;description:string}>={
+  guardian_academy:{label:'수호자 아카데미',description:'후대 수호자와 시민이 함께 배우는 기반을 세워요.'},
+  ancient_road_restoration:{label:'고대 도로 복원',description:'세대를 가로지르는 오래된 길과 교역망을 다시 연결해요.'},
+  regional_council:{label:'지역 평의회',description:'여러 지역의 목소리를 모아 장기 협력 구조를 만들어요.'},
+  rift_watch:{label:'균열 감시대',description:'균열의 흔적을 세대에 걸쳐 관찰하고 위험을 기록해요.'},
+};
+
 export type GenerationalWorldState={
   legacyMarkers:LegacyWorldMarkerId[];
   activeProject:PublicProjectId|null;
