@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import app from './App.tsx?raw';
 import root from './Root.tsx?raw';
 import home from './LayeredHome.tsx?raw';
-import css from './layered-home.css?raw';
+import css from './weekly-planner.css?raw';
 
 describe('V4 Living Year home integration',()=>{
   it('uses the authoritative hub selector instead of duplicating reward priority in LayeredHome',()=>{
@@ -16,14 +16,16 @@ describe('V4 Living Year home integration',()=>{
     for(const route of ['weekly_planner','advance_week','schedule','outing','bond','expedition','tactical','season']) expect(home).toContain(`'${route}'`);
   });
 
-  it('threads weekly actions from App reducer dispatch through Root into LayeredHome',()=>{
+  it('threads weekly actions from App reducer dispatch through Root into LayeredHome without storing callbacks as React updaters',()=>{
     expect(app).toContain("type:'SELECT_WEEKLY_FOCUS'");
     expect(app).toContain("type:'COMPLETE_WEEKLY_FOCUS'");
     expect(app).toContain("type:'ADVANCE_WEEK'");
-    expect(root).toContain('onWeeklyFocusReady={setSelectWeeklyFocus}');
-    expect(root).toContain('onWeeklyFocus={focus => selectWeeklyFocus?.(focus)}');
-    expect(root).toContain('onCompleteWeek={() => completeWeeklyFocus?.()}');
-    expect(root).toContain('onAdvanceWeek={() => advanceWeek?.()}');
+    expect(root).toContain('const captureWeeklyFocus');
+    expect(root).toContain('setSelectWeeklyFocus(() => next)');
+    expect(root).toContain('onWeeklyFocusReady={captureWeeklyFocus}');
+    expect(root).toContain('onWeeklyFocus={handleWeeklyFocus}');
+    expect(root).toContain('onCompleteWeek={handleCompleteWeek}');
+    expect(root).toContain('onAdvanceWeek={handleAdvanceWeek}');
   });
 
   it('keeps the planner mobile-safe, touch-sized, keyboard-visible and reduced-motion aware',()=>{
