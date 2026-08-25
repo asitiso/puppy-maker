@@ -62,6 +62,12 @@ export type AncestorRecordInput={
   worldFacts:readonly unknown[];
 };
 
+export type NextGenerationEligibilityInput={
+  year:unknown;
+  resolvedEnding:unknown;
+  campaignCompleted:boolean;
+};
+
 const personalityKeys:LineagePersonalityKey[]=['courage','kindness','curiosity','calmness'];
 const guardianRankIds=guardianRankDefinitions.map(item=>item.id);
 const lineageRouteIds:LineageRouteId[]=[...campaignIds,'hollow'];
@@ -171,6 +177,12 @@ export function buildAncestorRecord(input:AncestorRecordInput):AncestorRecord{
     majorWorldFacts,
     heritageTraits:deriveHeritageTraits({personality:input.personality,route,worldFacts:majorWorldFacts}),
   };
+}
+
+export function canStartNextGeneration(input:NextGenerationEligibilityInput):boolean{
+  const mature=typeof input.year==='number'&&Number.isFinite(input.year)&&Math.floor(input.year)>=3;
+  const hasEnding=typeof input.resolvedEnding==='string'&&input.resolvedEnding.trim().length>0;
+  return mature&&(hasEnding||input.campaignCompleted===true);
 }
 
 export function lifeStageForYear(year:number):LifeStage{
