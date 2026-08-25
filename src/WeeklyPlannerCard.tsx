@@ -1,4 +1,5 @@
 import type {GameState} from './game';
+import LineageChronicle from './LineageChronicle';
 import {livingNpcLabels,weeklyNpcPresence} from './living-npcs';
 import {weekKey} from './weekly-calendar';
 import {weeklyEventFor,type WeeklyEventId,type WeeklyFocusId,weeklyFocusIds} from './weekly-life';
@@ -38,15 +39,18 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
     heritageTraits:state.lineage.heritageTraits,
   }):null;
 
-  return <section className="weekly-planner-card" aria-label="이번 주 계획">
-    <header><small>LIVING YEAR</small><strong>{state.year}년차 {state.month}월 {state.week}주차</strong><span>{completed?'이번 주 완료':selected?`선택됨 · ${focusLabels[selected]}`:'이번 주의 중심을 골라보세요'}</span></header>
-    <div className="weekly-presence"><small>이번 주 만남</small><b>{npcs.map(id=>livingNpcLabels[id]).join(' · ')}</b></div>
-    <div className="weekly-focus-grid">
-      {weeklyFocusIds.map(focus=><button key={focus} type="button" aria-pressed={selected===focus} disabled={completed} onClick={()=>onSelectFocus(focus)}>{focusLabels[focus]}</button>)}
-    </div>
-    <div className="weekly-event-teaser"><small>이번 주 이야기</small><b>{event?eventLabels[event]:'중심을 고르면 이번 주의 만남이 정해져요.'}</b></div>
-    {completed
-      ? <button type="button" className="weekly-planner-advance" onClick={onAdvance}>다음 주 시작</button>
-      : selected&&<button type="button" className="weekly-planner-resolve" onClick={onComplete}>이번 주 마무리</button>}
-  </section>;
+  return <>
+    <section className="weekly-planner-card" aria-label="이번 주 계획">
+      <header><small>LIVING YEAR</small><strong>{state.year}년차 {state.month}월 {state.week}주차</strong><span>{completed?'이번 주 완료':selected?`선택됨 · ${focusLabels[selected]}`:'이번 주의 중심을 골라보세요'}</span></header>
+      <div className="weekly-presence"><small>이번 주 만남</small><b>{npcs.map(id=>livingNpcLabels[id]).join(' · ')}</b></div>
+      <div className="weekly-focus-grid">
+        {weeklyFocusIds.map(focus=><button key={focus} type="button" aria-pressed={selected===focus} disabled={completed} onClick={()=>onSelectFocus(focus)}>{focusLabels[focus]}</button>)}
+      </div>
+      <div className="weekly-event-teaser"><small>이번 주 이야기</small><b>{event?eventLabels[event]:'중심을 고르면 이번 주의 만남이 정해져요.'}</b></div>
+      {completed
+        ? <button type="button" className="weekly-planner-advance" onClick={onAdvance}>다음 주 시작</button>
+        : selected&&<button type="button" className="weekly-planner-resolve" onClick={onComplete}>이번 주 마무리</button>}
+    </section>
+    <LineageChronicle state={state}/>
+  </>;
 }
