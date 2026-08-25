@@ -42,16 +42,14 @@ describe('V5 lineage chronicle UI',()=>{
     expect(ready).toContain('새 삶은 능력치가 아니라 기억을 이어받아요.');
   });
 
-  it('bridges the visible LayeredHome Chronicle into the authoritative App reducer without taking over the primary CTA',()=>{
+  it('mounts inside the visible weekly overlay and bridges requests into the authoritative App reducer',()=>{
     const appSource=readFileSync(new URL('./App.tsx',import.meta.url),'utf8');
-    const rootSource=readFileSync(new URL('./Root.tsx',import.meta.url),'utf8');
+    const plannerSource=readFileSync(new URL('./WeeklyPlannerCard.tsx',import.meta.url),'utf8');
     const homeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
-    expect(appSource).toContain('onStartNextGenerationReady');
+    expect(appSource).toContain('nextGenerationRequestEvent');
     expect(appSource).toContain("dispatch({type:'START_NEXT_GENERATION'})");
-    expect(rootSource).toContain('onStartNextGenerationReady={captureStartNextGeneration}');
-    expect(rootSource).toContain('onStartNextGeneration={handleStartNextGeneration}');
-    expect(homeSource).toContain("import LineageChronicle from './LineageChronicle';");
-    expect(homeSource).toContain('<LineageChronicle state={state} onStartNextGeneration={onStartNextGeneration}/>');
+    expect(plannerSource).toContain("import LineageChronicle from './LineageChronicle';");
+    expect(plannerSource).toContain('<LineageChronicle state={state}/>');
     expect(homeSource).toContain('const primaryTask = hubNextAction(state);');
     expect((homeSource.match(/className="lh-primary-action"/g)??[])).toHaveLength(1);
   });
