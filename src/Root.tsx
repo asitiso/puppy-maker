@@ -3,7 +3,7 @@ import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
-import LayeredHome from './LayeredHome';
+import LayeredHomeV7 from './LayeredHomeV7';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
 import SanctuaryOverlay from './SanctuaryOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
@@ -95,8 +95,8 @@ export default function Root() {
   const captureAttendance = useCallback((nextClaim: () => void) => setClaimAttendance(() => nextClaim), []);
   const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
   const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
-  const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
-  const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setSetGuardianCalling(() => nextSetCalling), []);
+  const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setYearlyAmbition(() => nextSetAmbition), []);
+  const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setGuardianCalling(() => nextSetCalling), []);
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
   const captureSeasonPurchase = useCallback((nextPurchase: (offer: SeasonShopOfferId) => void) => setPurchaseSeasonOffer(() => nextPurchase), []);
   const captureSeasonLegacyUnlock = useCallback((nextUnlock: (nodeId: SeasonLegacyNodeId) => void) => setUnlockSeasonLegacyNode(() => nextUnlock), []);
@@ -170,7 +170,7 @@ export default function Root() {
       onWeeklyAdvanceReady={captureWeeklyAdvance}
     />
     {gameState.screen === 'hub' && <>
-      <LayeredHome
+      <LayeredHomeV7
         state={gameState}
         onSchedule={openSchedule}
         onClaimAchievement={handleClaimAchievement}
