@@ -1,4 +1,5 @@
 import type {GameState} from './game';
+import {publicProjectDefinitions} from './generational-world';
 import type {HomeMenuId} from './home-panels';
 import LineageChronicle from './LineageChronicle';
 import MobileNavIcon,{type MobileNavIconName} from './MobileNavIcon';
@@ -48,6 +49,8 @@ const meta:Record<Exclude<MobileCategoryId,'home'>,{label:string;eyebrow:string;
 
 export default function MobileCategorySheet({category,state,onClose,onOpenMenu,onSchedule,onExpedition,onSeason,onWeeklyFocus,onCompleteWeek,onAdvanceWeek}:Props){
   const info=meta[category];
+  const activeProject=state.generationalWorld.activeProject;
+  const activeProjectLabel=activeProject?publicProjectDefinitions[activeProject].label:null;
   return <div className="v7-category-backdrop" onClick={onClose}>
     <section className="v7-category-sheet" role="dialog" aria-modal="true" aria-label={`${info.label} 메뉴`} onClick={event=>event.stopPropagation()}>
       <header className="v7-category-header">
@@ -75,7 +78,7 @@ export default function MobileCategorySheet({category,state,onClose,onOpenMenu,o
       {category==='adventure'&&<div className="v7-category-grid">
         <Entry icon="adventure" title="외출" description="마을과 주변 지역에서 새로운 일을 찾아요." onClick={()=>onOpenMenu('outing')}/>
         <Entry icon="adventure" title="원정과 전투" description="Expedition과 Tactical 전투에 도전해요." onClick={()=>onExpedition?.()}/>
-        <div className="v7-category-summary"><small>WORLD</small><b>세계 프로젝트</b><span>{state.generationalWorld.activeProject?`진행 중 · ${state.generationalWorld.activeProject}`:'진행 중인 장기 프로젝트가 없어요.'}</span></div>
+        <div className="v7-category-summary"><small>WORLD</small><b>세계 프로젝트</b><span>{activeProjectLabel?`진행 중 · ${activeProjectLabel} ${state.generationalWorld.projectProgress}%`:'진행 중인 장기 프로젝트가 없어요.'}</span></div>
       </div>}
 
       {category==='bond'&&<div className="v7-category-grid">
