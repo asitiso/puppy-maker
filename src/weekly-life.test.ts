@@ -22,7 +22,9 @@ describe('V4 weekly life state',()=>{
     const selected=selectWeeklyFocus(emptyWeeklyLifeState(),'2-5-3','bond');
     expect(selected.focusKey).toBe('2-5-3');
     expect(selected.focus).toBe('bond');
-    expect(selectWeeklyFocus({...selected,completedWeekKey:'2-5-3'},'2-5-3','world')).toBe(selected);
+    const completed={...selected,completedWeekKey:'2-5-3'};
+    expect(selectWeeklyFocus(completed,'2-5-3','world')).toBe(completed);
+    expect(completed.focus).toBe('bond');
   });
 
   it('derives the same event for the same semantic week without rerolling',()=>{
