@@ -22,6 +22,7 @@ function lineageState():GameState{
 describe('V5 lineage chronicle UI',()=>{
   it('shows generation identity, life stage, bounded heritage and recent ancestors',()=>{
     const html=renderToStaticMarkup(<LineageChronicle state={lineageState()} />);
+    expect(html).toContain('가문 연대기');
     expect(html).toContain('3세대 · 2년차');
     expect(html).toContain('청년 수호자');
     expect(html).toContain('따뜻한 혈통');
@@ -41,13 +42,16 @@ describe('V5 lineage chronicle UI',()=>{
     expect(ready).toContain('새 삶은 능력치가 아니라 기억을 이어받아요.');
   });
 
-  it('bridges the Chronicle request into the authoritative App reducer while leaving Hub primary CTA ownership untouched',()=>{
+  it('bridges the visible LayeredHome Chronicle into the authoritative App reducer without taking over the primary CTA',()=>{
     const appSource=readFileSync(new URL('./App.tsx',import.meta.url),'utf8');
-    const plannerSource=readFileSync(new URL('./WeeklyPlannerCard.tsx',import.meta.url),'utf8');
+    const rootSource=readFileSync(new URL('./Root.tsx',import.meta.url),'utf8');
     const homeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
-    expect(appSource).toContain("nextGenerationRequestEvent");
+    expect(appSource).toContain('onStartNextGenerationReady');
     expect(appSource).toContain("dispatch({type:'START_NEXT_GENERATION'})");
-    expect(plannerSource).toContain('<LineageChronicle state={state}/>');
+    expect(rootSource).toContain('onStartNextGenerationReady={captureStartNextGeneration}');
+    expect(rootSource).toContain('onStartNextGeneration={handleStartNextGeneration}');
+    expect(homeSource).toContain("import LineageChronicle from './LineageChronicle';");
+    expect(homeSource).toContain('<LineageChronicle state={state} onStartNextGeneration={onStartNextGeneration}/>');
     expect(homeSource).toContain('const primaryTask = hubNextAction(state);');
     expect((homeSource.match(/className="lh-primary-action"/g)??[])).toHaveLength(1);
   });
