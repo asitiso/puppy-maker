@@ -37,7 +37,9 @@ import type { SanctuarySpecializationId } from './sanctuary-specializations';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
+import type { WeeklyFocusId } from './weekly-life';
 import './layered-home.css';
+import './weekly-planner.css';
 import './home-panels.css';
 import './seasonal-home.css';
 import './season-live-ops.css';
@@ -78,6 +80,9 @@ export default function Root() {
   const [setTacticalParty, setSetTacticalParty] = useState<((companions:[CompanionId,CompanionId])=>void)|null>(null);
   const [setTacticalPreferences, setSetTacticalPreferences] = useState<((auto:boolean,speed:1|2)=>void)|null>(null);
   const [completeTacticalBattle, setCompleteTacticalBattle] = useState<((encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void)|null>(null);
+  const [selectWeeklyFocus, setSelectWeeklyFocus] = useState<((focus:WeeklyFocusId)=>void)|null>(null);
+  const [completeWeeklyFocus, setCompleteWeeklyFocus] = useState<(()=>void)|null>(null);
+  const [advanceWeek, setAdvanceWeek] = useState<(()=>void)|null>(null);
   const [expeditionOpen, setExpeditionOpen] = useState(false);
   const [raisingOpen, setRaisingOpen] = useState(false);
   const [seasonLiveOpen, setSeasonLiveOpen] = useState(false);
@@ -108,6 +113,9 @@ export default function Root() {
   const captureTacticalParty = useCallback((next:(companions:[CompanionId,CompanionId])=>void)=>setSetTacticalParty(()=>next),[]);
   const captureTacticalPreferences = useCallback((next:(auto:boolean,speed:1|2)=>void)=>setSetTacticalPreferences(()=>next),[]);
   const captureTacticalComplete = useCallback((next:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void)=>setCompleteTacticalBattle(()=>next),[]);
+  const captureWeeklyFocus = useCallback((next:(focus:WeeklyFocusId)=>void)=>setSelectWeeklyFocus(() => next),[]);
+  const captureWeeklyComplete = useCallback((next:()=>void)=>setCompleteWeeklyFocus(() => next),[]);
+  const captureWeeklyAdvance = useCallback((next:()=>void)=>setAdvanceWeek(() => next),[]);
 
   const openSchedule = useCallback(() => navigate?.('schedule'), [navigate]);
   const handleClaimAchievement = useCallback((achievement: AchievementId) => claimAchievement?.(achievement), [claimAchievement]);
@@ -126,6 +134,9 @@ export default function Root() {
   const handleSanctuaryMasterwork = useCallback((masterwork: SanctuaryMasterworkId) => buildSanctuaryMasterwork?.(masterwork), [buildSanctuaryMasterwork]);
   const handleAstralRiftClear = useCallback((riftId: AstralRiftId, intensity: AstralRiftIntensity) => clearAstralRift?.(riftId,intensity), [clearAstralRift]);
   const handleAstralRiftRelic = useCallback((relicId: AstralRiftRelicId) => purchaseAstralRiftRelic?.(relicId), [purchaseAstralRiftRelic]);
+  const handleWeeklyFocus = useCallback((focus:WeeklyFocusId)=>selectWeeklyFocus?.(focus),[selectWeeklyFocus]);
+  const handleCompleteWeek = useCallback(()=>completeWeeklyFocus?.(),[completeWeeklyFocus]);
+  const handleAdvanceWeek = useCallback(()=>advanceWeek?.(),[advanceWeek]);
 
   return <>
     <App
@@ -154,6 +165,9 @@ export default function Root() {
       onTacticalPartyReady={captureTacticalParty}
       onTacticalPreferencesReady={captureTacticalPreferences}
       onTacticalCompleteReady={captureTacticalComplete}
+      onWeeklyFocusReady={captureWeeklyFocus}
+      onWeeklyCompleteReady={captureWeeklyComplete}
+      onWeeklyAdvanceReady={captureWeeklyAdvance}
     />
     {gameState.screen === 'hub' && <>
       <LayeredHome
@@ -165,6 +179,11 @@ export default function Root() {
         onAttendance={handleAttendance}
         onMail={handleMail}
         onMonthlyFocus={handleMonthlyFocus}
+        onWeeklyFocus={handleWeeklyFocus}
+        onCompleteWeek={handleCompleteWeek}
+        onAdvanceWeek={handleAdvanceWeek}
+        onExpedition={handleOpenExpedition}
+        onSeason={() => setSeasonLiveOpen(true)}
         onMenuReady={captureHomeMenu}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
