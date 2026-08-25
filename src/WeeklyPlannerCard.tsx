@@ -21,9 +21,10 @@ type Props={
   onSelectFocus:(focus:WeeklyFocusId)=>void;
   onComplete:()=>void;
   onAdvance:()=>void;
+  showChronicles?:boolean;
 };
 
-export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdvance}:Props){
+export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdvance,showChronicles=true}:Props){
   const current=weekKey(state.year,state.month,state.week);
   const selected=state.weeklyLife.focusKey===current?state.weeklyLife.focus:null;
   const completed=state.weeklyLife.completedWeekKey===current;
@@ -60,7 +61,6 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
         ? <button type="button" className="weekly-planner-advance" onClick={onAdvance}>다음 주 시작</button>
         : selected&&<button type="button" className="weekly-planner-resolve" onClick={onComplete}>이번 주 마무리</button>}
     </section>
-    <LineageChronicle state={state}/>
-    <WorldChronicle generation={state.lineage.generation} world={state.generationalWorld}/>
+    {showChronicles&&<><LineageChronicle state={state}/><WorldChronicle generation={state.lineage.generation} world={state.generationalWorld}/></>}
   </>;
 }
