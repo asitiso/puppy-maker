@@ -46,9 +46,31 @@ export type LineageState={
   ancestors:AncestorRecord[];
 };
 
+export type HeritageDerivationInput={
+  personality:Personality;
+  route:LineageRouteId|null;
+  worldFacts:readonly unknown[];
+};
+
+export type AncestorRecordInput={
+  generation:number;
+  yearsLived:number;
+  route:LineageRouteId|null;
+  ending:string|null;
+  guardianRank:GuardianRankId;
+  personality:Personality;
+  worldFacts:readonly unknown[];
+};
+
 const personalityKeys:LineagePersonalityKey[]=['courage','kindness','curiosity','calmness'];
 const guardianRankIds=guardianRankDefinitions.map(item=>item.id);
 const lineageRouteIds:LineageRouteId[]=[...campaignIds,'hollow'];
+const personalityHeritage:Record<LineagePersonalityKey,HeritageTraitId>={
+  courage:'steadfast_guardian',
+  kindness:'warm_heart',
+  curiosity:'trail_memory',
+  calmness:'arcane_echo',
+};
 
 function positiveInt(value:unknown,fallback=1):number{
   return typeof value==='number'&&Number.isFinite(value)&&value>0?Math.max(1,Math.floor(value)):fallback;
@@ -64,25 +86,31 @@ function nullableEnding(value:unknown):string|null{
   return typeof value==='string'&&value.trim().length>0?value:null;
 }
 
+function sanitizeRoute(value:unknown):LineageRouteId|null{
+  return typeof value==='string'&&(lineageRouteIds as readonly string[]).includes(value)
+    ? value as LineageRouteId
+    : null;
+}
+
+function sanitizeGuardianRank(value:unknown):GuardianRankId{
+  return typeof value==='string'&&(guardianRankIds as readonly string[]).includes(value)
+    ? value as GuardianRankId
+    : 'trainee';
+}
+
 function hydrateAncestor(raw:unknown):AncestorRecord|null{
   if(!isV3Record(raw))return null;
   const generation=positiveInt(raw.generation,0);
   if(generation<1)return null;
-  const route=typeof raw.route==='string'&&(lineageRouteIds as readonly string[]).includes(raw.route)
-    ? raw.route as LineageRouteId
-    : null;
-  const guardianRank=typeof raw.guardianRank==='string'&&(guardianRankIds as readonly string[]).includes(raw.guardianRank)
-    ? raw.guardianRank as GuardianRankId
-    : 'trainee';
   const personalityKey=typeof raw.personalityKey==='string'&&(personalityKeys as readonly string[]).includes(raw.personalityKey)
     ? raw.personalityKey as LineagePersonalityKey
     : 'kindness';
   return {
     generation,
     yearsLived:positiveInt(raw.yearsLived),
-    route,
+    route:sanitizeRoute(raw.route),
     ending:nullableEnding(raw.ending),
-    guardianRank,
+    guardianRank:sanitizeGuardianRank(raw.guardianRank),
     personalityKey,
     majorWorldFacts:canonicalValues(raw.majorWorldFacts,worldFactIds),
     heritageTraits:canonicalValues(raw.heritageTraits,heritageTraitIds,2),
@@ -106,6 +134,43 @@ export function hydrateLineageState(raw:unknown):LineageState{
   }
   const ancestors=[...byGeneration.values()].sort((a,b)=>a.generation-b.generation).slice(-8);
   return {generation,heritageTraits,ancestors};
+}
+
+export function dominantPersonalityKey(personality:Personality):LineagePersonalityKey{
+  let selected=personalityKeys[0];
+  let best=Number.isFinite(personality[selected])?personality[selected]:0;
+  for(const key of personalityKeys.slice(1)){
+    const value=Number.isFinite(personality[key])?personality[key]:0;
+    if(value>best){
+      selected=key;
+      best=value;
+    }
+  }
+  return selected;
+}
+
+export function deriveHeritageTraits(input:HeritageDerivationInput):HeritageTraitId[]{
+  const worldFacts=canonicalValues(input.worldFacts,worldFactIds);
+  const candidates:HeritageTraitId[]=[personalityHeritage[dominantPersonalityKey(input.personality)]];
+  if(input.route==='true_path')candidates.push('true_echo');
+  if(input.route==='hollow')candidates.push('hollow_echo');
+  if(worldFacts.length>=2)candidates.push('world_witness');
+  return canonicalValues(candidates,heritageTraitIds,2);
+}
+
+export function buildAncestorRecord(input:AncestorRecordInput):AncestorRecord{
+  const route=sanitizeRoute(input.route);
+  const majorWorldFacts=canonicalValues(input.worldFacts,worldFactIds);
+  return {
+    generation:positiveInt(input.generation),
+    yearsLived:positiveInt(input.yearsLived),
+    route,
+    ending:nullableEnding(input.ending),
+    guardianRank:sanitizeGuardianRank(input.guardianRank),
+    personalityKey:dominantPersonalityKey(input.personality),
+    majorWorldFacts,
+    heritageTraits:deriveHeritageTraits({personality:input.personality,route,worldFacts:majorWorldFacts}),
+  };
 }
 
 export function lifeStageForYear(year:number):LifeStage{
