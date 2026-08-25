@@ -1,9 +1,10 @@
+import {lifeStageForYear,type HeritageTraitId} from './lineage';
 import {isCanonicalWeekKey,weekKey} from './weekly-calendar';
 
 export const weeklyFocusIds=['training','rest','outing','bond','world','tactical','season'] as const;
 export type WeeklyFocusId=typeof weeklyFocusIds[number];
 
-export const weeklyEventIds=['training_partner','quiet_rain','market_day','campfire_invitation','guardian_patrol','rival_challenge','festival_preparation','old_echo','rift_whisper'] as const;
+export const weeklyEventIds=['training_partner','quiet_rain','market_day','campfire_invitation','guardian_patrol','rival_challenge','festival_preparation','old_echo','rift_whisper','independent_patrol','veteran_patrol','ancestral_story'] as const;
 export type WeeklyEventId=typeof weeklyEventIds[number];
 
 export type WeeklyLifeState={
@@ -23,6 +24,7 @@ export type WeeklyLifeContext={
   activeRoute:string|null;
   runNumber:number;
   inheritedFactCount:number;
+  heritageTraits?:readonly HeritageTraitId[];
 };
 
 export type WeeklyEventEffect={
@@ -68,6 +70,12 @@ export function weeklyEventFor(context:WeeklyLifeContext):WeeklyEventId{
   if(context.activeRoute==='hollow') return 'rift_whisper';
   if(context.activeCampaign==='true_path') return 'old_echo';
   if(context.runNumber>1&&context.inheritedFactCount>0&&context.focus==='season') return 'old_echo';
+  if(context.focus==='bond'&&(context.heritageTraits?.length??0)>0) return 'ancestral_story';
+  if(context.focus==='world'){
+    const stage=lifeStageForYear(context.year);
+    if(stage==='young_guardian') return 'independent_patrol';
+    if(stage==='seasoned_guardian') return 'veteran_patrol';
+  }
   const byFocus:Record<WeeklyFocusId,WeeklyEventId>={
     training:'training_partner',rest:'quiet_rain',outing:'market_day',bond:'campfire_invitation',
     world:'guardian_patrol',tactical:'rival_challenge',season:'festival_preparation',
@@ -86,6 +94,9 @@ export function weeklyEventEffect(id:WeeklyEventId):WeeklyEventEffect{
     festival_preparation:{gold:40,stats:{morality:1}},
     old_echo:{gold:0,stats:{affection:1}},
     rift_whisper:{gold:0,stats:{magic:1,stress:2}},
+    independent_patrol:{gold:0,stats:{morality:1}},
+    veteran_patrol:{gold:0,stats:{morality:1,fatigue:1}},
+    ancestral_story:{gold:0,stats:{affection:1}},
   };
   return effects[id];
 }

@@ -36,6 +36,7 @@ import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import type { WeeklyFocusId } from './weekly-life';
+import {nextGenerationRequestEvent} from './lineage-ui-events';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -227,6 +228,12 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   const selectWeeklyFocus = useCallback((focus:WeeklyFocusId) => dispatch({type:'SELECT_WEEKLY_FOCUS',focus}), []);
   const completeWeeklyFocus = useCallback(() => dispatch({type:'COMPLETE_WEEKLY_FOCUS'}), []);
   const advanceWeek = useCallback(() => dispatch({type:'ADVANCE_WEEK'}), []);
+  const startNextGeneration = useCallback(() => dispatch({type:'START_NEXT_GENERATION'}), []);
+  useEffect(() => {
+    const handleStartNextGeneration=()=>startNextGeneration();
+    window.addEventListener(nextGenerationRequestEvent,handleStartNextGeneration);
+    return ()=>window.removeEventListener(nextGenerationRequestEvent,handleStartNextGeneration);
+  },[startNextGeneration]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
   }, [state]);
