@@ -2,18 +2,7 @@ import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
 import LineageChronicle from './LineageChronicle';
-import LayeredHome from './LayeredHome';
 import {initialState,type GameState} from './game';
-
-const callbacks={
-  onSchedule:vi.fn(),
-  onClaimAchievement:vi.fn(),
-  onOuting:vi.fn(),
-  onGift:vi.fn(),
-  onAttendance:vi.fn(),
-  onMail:vi.fn(),
-  onMonthlyFocus:vi.fn(),
-};
 
 function lineageState():GameState{
   return {
@@ -52,20 +41,17 @@ describe('V5 lineage chronicle UI',()=>{
     expect(ready).toContain('새 삶은 능력치가 아니라 기억을 이어받아요.');
   });
 
-  it('integrates beside the authoritative Hub CTA instead of becoming a second primary action',()=>{
-    const html=renderToStaticMarkup(<LayeredHome state={lineageState()} {...callbacks}/>);
-    expect(html).toContain('가문 연대기');
-    expect((html.match(/lh-primary-action/g)??[])).toHaveLength(1);
-
+  it('mounts in the authoritative App dispatch lane while leaving the Hub primary selector untouched',()=>{
+    const appSource=readFileSync(new URL('./App.tsx',import.meta.url),'utf8');
     const homeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
+    expect(appSource).toContain("import LineageChronicle from './LineageChronicle';");
+    expect(appSource).toContain("<LineageChronicle state={state} onStartNextGeneration={() => dispatch({type:'START_NEXT_GENERATION'})}/>");
     expect(homeSource).toContain('const primaryTask = hubNextAction(state);');
     expect((homeSource.match(/className="lh-primary-action"/g)??[])).toHaveLength(1);
   });
 
-  it('wires the explicit action through Root and keeps mobile/accessibility contracts',()=>{
-    const rootSource=readFileSync(new URL('./Root.tsx',import.meta.url),'utf8');
+  it('keeps mobile, touch, safe-area and reduced-motion contracts',()=>{
     const css=readFileSync(new URL('./lineage-chronicle.css',import.meta.url),'utf8');
-    expect(rootSource).toContain("dispatch({ type: 'START_NEXT_GENERATION' })");
     expect(css).toMatch(/min-height:\s*44px/);
     expect(css).toContain('@media(max-width:430px)');
     expect(css).toContain('@media(max-width:390px)');
