@@ -259,6 +259,7 @@ export function reducer(state:GameState,action:Action):GameState {
     return {
       ...initialState,
       ...transition.state,
+      lineage:state.lineage,
       tacticalBattleRecords:{...tactical.tacticalBattleRecords},
       claimedTacticalFirstClears:[...tactical.claimedTacticalFirstClears],
       selectedTacticalCompanions:[...tactical.selectedTacticalCompanions],
