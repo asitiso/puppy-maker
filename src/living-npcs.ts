@@ -1,4 +1,5 @@
 import type {CharacterId} from './campaign-model';
+import type {LegacyWorldMarkerId,PublicProjectId} from './generational-world';
 
 export type LivingNpcContext={
   activeCampaign:string|null;
@@ -7,6 +8,9 @@ export type LivingNpcContext={
   month:number;
   runNumber:number;
   inheritedFactCount:number;
+  generation?:number;
+  legacyMarkers?:readonly LegacyWorldMarkerId[];
+  completedProjects?:readonly PublicProjectId[];
 };
 
 const campaignRepresentative:Record<string,CharacterId>={
@@ -35,6 +39,12 @@ export function weeklyNpcPresence(context:LivingNpcContext):CharacterId[]{
   };
 
   if(context.runNumber>1&&context.inheritedFactCount>0&&primary!=='lyra'&&primary!=='veyr') add('lyra');
+
+  const markers=context.legacyMarkers??[];
+  const completed=context.completedProjects??[];
+  if(completed.includes('guardian_academy')) add('eiden');
+  if((context.generation??1)>1&&markers.includes('hollow_scar')&&context.activeRoute!=='hollow') add('lyra');
+  if(markers.includes('regional_compact')||completed.includes('regional_council')) add('noa');
 
   const normalizedWeek=Math.min(4,Math.max(1,Number.isFinite(context.week)?Math.floor(context.week):1));
   for(const id of sharedRotation[normalizedWeek]) add(id);
