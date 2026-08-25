@@ -1,4 +1,4 @@
-import type {CharacterId} from './character-bonds';
+import type {CharacterId} from './campaign-model';
 
 export type LivingNpcContext={
   activeCampaign:string|null;
