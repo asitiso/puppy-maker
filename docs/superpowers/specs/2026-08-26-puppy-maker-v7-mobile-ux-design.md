@@ -1,7 +1,7 @@
 # V7 Mobile UX Cleanup / Home Simplification — Design
 
 ## Goal
-Rebuild the mobile-first home and major interactive panels so players can immediately understand what to do next, read every important label comfortably, and avoid overlapping or duplicated controls on 360px, 390px, and 430px-class phones.
+Rebuild the mobile-first home and major interactive panels so players can immediately understand what to do next, read every important label comfortably, and navigate the expanded game through clear categories without overlapping or duplicated controls on 360px, 390px, and 430px-class phones.
 
 ## Baseline
 - production main: `0166df866e51fae6e320edd5cc76dd5d166b3a57`
@@ -12,32 +12,126 @@ Rebuild the mobile-first home and major interactive panels so players can immedi
 ## Problems confirmed in current code
 1. `LayeredHome` simultaneously renders rank, currency/stamina, weather, RunGuidance, WeeklyPlanner, four shortcut buttons, collection goal, two promo buttons, the authoritative primary action, Luna dialogue, and five bottom-nav buttons. That creates too many simultaneous decision surfaces on mobile.
 2. The home uses many absolute-positioned percentage blocks. `lh-shortcuts`, `lh-goal`, `lh-primary-action`, `lh-dialogue`, `lh-bottom-nav`, `lh-weekly-planner`, and companion cards can visually compete or overlap as viewport height changes.
-3. Font sizes vary widely and include very small values such as 8px/9px/10px in actionable and explanatory UI. This is below the desired mobile reading comfort for a game designed mobile-first.
-4. WeeklyPlanner currently renders seven focus buttons plus Lineage Chronicle and World Chronicle directly in the same home flow, increasing control density.
-5. Overlay/panel content inherits multiple ad-hoc text sizes and button styles instead of a small shared mobile type/button scale.
+3. Font sizes vary widely and include very small values such as 8px/9px/10px in actionable and explanatory UI.
+4. WeeklyPlanner renders seven focus buttons plus Lineage Chronicle and World Chronicle directly in the same home flow.
+5. Existing bottom categories (`스케줄 / 가방 / 퀘스트 / 외출 / 교감`) describe individual features, not the now-larger game domains, so new systems accumulate as duplicate shortcuts and floating cards.
 
-## Design principles
-### 1. One dominant action
-`hubNextAction(state)` remains the only authoritative home primary action. V7 must not add a second prominent CTA competing with it.
+## Information architecture — six clear mobile categories
+The bottom navigation becomes six semantic destinations. Labels stay short enough for 360px while each category is broad enough to remain stable as the game grows.
 
-### 2. Progressive disclosure
-The home should show only the information needed for the next decision. Detailed weekly focus choices, chronicles, achievements, mail, collection detail, and long-form records move behind a single expandable/action-sheet style surface rather than being fully expanded at once.
+### 1. 홈
+Purpose: only the current situation and the single most important action.
+- compact generation/year/month/week status
+- gold / gems / stamina
+- current Luna/context line
+- exactly one authoritative `hubNextAction(state)` CTA
+- notification badge only when there is actionable mail/attendance/reward information
 
-### 3. Four mobile layers
-The default home is organized conceptually into four layers:
-- **Status bar:** generation/year/month/week, stamina, gold/gems, guardian rank in compact readable form.
-- **Primary task card:** `hubNextAction` label and short detail, one large action.
-- **Today/This week summary:** compact summary of weekly plan, Luna relationship/status, and active world/generation signals with at most 2 secondary buttons visible.
-- **Navigation:** five bottom destinations remain, but shortcut duplication above them is removed or folded into a single `더보기`/utility entry.
+### 2. 생활
+Purpose: time management and routine progression.
+- weekly plan and weekly focus
+- schedule
+- monthly focus / monthly missions
+- attendance
+- mail / routine notices
+- week/month advancement context
 
-### 4. Utility consolidation
-The four top shortcuts (`출석체크`, `이벤트`, `우편함`, `미션`) and the two promo circles are not all shown simultaneously. They are consolidated into one compact utility launcher with badges for actionable items. Existing destinations and reducer behavior stay intact.
+### 3. 성장
+Purpose: raising and long-term character progression.
+- growth achievements
+- mastery / talents / guardian rank / career records already exposed by current panels
+- season progression entry
+- inventory/status information that supports raising
 
-### 5. Weekly planner simplification
-The home no longer shows all seven weekly focus buttons at once. The compact weekly card shows current selection/status and one `이번 주 계획` secondary action. Opening it reveals the seven focus choices in a sheet/panel. `LineageChronicle` and `WorldChronicle` remain available but are collapsed under history/world sections rather than permanently occupying the home stack.
+### 4. 모험
+Purpose: leaving home to actively play content.
+- outing
+- Expedition
+- Tactical
+- world/campaign activity entry points
+- generational public project progress where it is actionable
 
-### 6. Mobile typography tokens
-Introduce a small shared mobile scale used by home and major home-launched panels:
+### 5. 인연
+Purpose: Luna and character relationships.
+- bond / affection
+- gifts
+- character story/event archive
+- living NPC relationship context
+
+### 6. 기록
+Purpose: history, collection and multi-generation records.
+- Lineage Chronicle
+- World Chronicle
+- memories / discoveries / collection summary
+- campaign/ending history where already available
+
+The navigation labels are exactly `홈 / 생활 / 성장 / 모험 / 인연 / 기록`.
+
+## Navigation behavior
+- Home is not an overlay; selecting `홈` closes category/detail sheets and returns to the clean scene.
+- The other five categories open a large mobile category sheet with 2–4 clearly grouped destinations rather than placing every destination on the home scene.
+- Existing `HomeMenuId` destinations remain internally valid for compatibility. New semantic categories map to them instead of deleting reducer or callback behavior.
+- Category sheets use progressive disclosure: category overview → detail panel. Do not show every system at once.
+
+## Icon and visual language
+V7 creates an in-app SVG icon system instead of adding mismatched raster assets.
+
+### Six primary icons
+- `home`: cottage/roof + small star accent — safe return / current place
+- `life`: calendar page + sun dot — weekly/monthly routine
+- `growth`: sprout + upward spark — raising/progression
+- `adventure`: compass/waypoint — expedition/exploration
+- `bond`: heart + paw accent — relationships
+- `records`: open book + constellation spark — history/archive
+
+### Icon rules
+- shared `24×24` viewBox
+- 1.8–2px rounded stroke, `currentColor`
+- no text baked into icon assets
+- inactive: warm ivory line at reduced opacity
+- active: gold/cream foreground plus subtle filled circular/rounded backing
+- notification badge is separate from the icon
+- minimum rendered icon 22px on bottom navigation; category-sheet icons 24–28px
+- selected state must also use shape/background/label weight, not color alone
+
+### Visual tone
+Keep the existing warm fantasy home scene, parchment/gold language and Luna character art. V7 makes the chrome quieter and cleaner instead of replacing the game's visual identity.
+- dark translucent navigation glass over the scene
+- warm parchment sheets for detailed reading
+- gold only for focus/selection/reward, not every control
+- fewer ornamental frames around small controls
+- cards use consistent radius/shadow/border tokens
+
+## Default home composition
+The default mobile home has only four persistent interactive zones.
+1. **Compact status header** — generation/year/month/week, currency, stamina, guardian rank, notification icon.
+2. **Luna scene** — character remains the visual center and can still be tapped for affection feedback.
+3. **Primary task card** — `hubNextAction` label and short detail, exactly one large action.
+4. **Six-item bottom navigation** — `홈 / 생활 / 성장 / 모험 / 인연 / 기록`.
+
+The existing always-visible shortcut row, promo circles, collection goal panel, full weekly planner, Lineage Chronicle and World Chronicle are removed from the default scene.
+
+## Home status
+Create a compact status surface rather than separate rank/currency/weather frames.
+- first line: `N세대 · X년차 · M월 W주차`
+- second line: gold, gems, stamina
+- guardian rank as a small readable chip or short label
+- one notification bell/message affordance only when actionable; notification access routes to the correct semantic category/detail instead of becoming a seventh content category
+
+## Weekly planner simplification
+- Weekly planning lives under `생활`.
+- Home never renders all seven weekly focus buttons.
+- `생활` overview shows current week, selected focus and completion state.
+- `이번 주 계획` opens the seven focus choices in a dedicated sheet/detail region.
+- select/complete/advance reducer semantics remain unchanged.
+
+## Records simplification
+- `LineageChronicle` and `WorldChronicle` move to the `기록` category.
+- They are not permanently rendered on home.
+- The records overview may show one short summary for generation/legacy, then expandable/detail content.
+
+## Mobile typography tokens
+Create shared tokens used by home, category sheets and home-launched detail panels.
 - `--ui-text-caption: 12px`
 - `--ui-text-small: 13px`
 - `--ui-text-body: 15px`
@@ -47,67 +141,73 @@ Introduce a small shared mobile scale used by home and major home-launched panel
 - `--ui-text-display: 24px`
 
 Rules:
-- Actionable button text must not be below 14px; primary/secondary button labels target 15px+.
-- Essential status/body text must not be below 13px.
-- 12px is reserved for nonessential captions/eyebrows only.
-- Existing 8px/9px home labels are removed from important content.
-- Line height uses at least 1.35 for body copy.
+- actionable button text must not be below 14px
+- primary/secondary labels target 15px+
+- essential status/body text must not be below 13px
+- 12px only for nonessential captions/eyebrows
+- remove current 8px/9px important home labels
+- body line-height >= 1.35
 
-### 7. Shared control tokens
-- minimum touch target: 44px × 44px
-- primary button min-height: 52px
-- secondary/list button min-height: 48px
-- sheet close button: 44px
-- consistent radius, padding, focus-visible outline, pressed state
-- controls that are not immediate binary settings must not masquerade as toggles
+## Shared control tokens
+- minimum touch target: `44px × 44px`
+- primary button min-height: `52px`
+- secondary/list button min-height: `48px`
+- bottom navigation target: at least `48px` high with 44px hit area
+- sheet close button: `44px`
+- consistent radius, padding, focus-visible outline and pressed state
+- no decorative toggle treatment for non-binary actions
 
-### 8. Layout safety
-The home remains 9:16/mobile-first but should rely less on independent overlapping absolute blocks. The scene/character can remain layered, while interactive UI is placed in deliberate top / middle / bottom bands with reserved space.
+## Layout safety
+The scene can remain layered/absolute, but interactive chrome uses reserved top/middle/bottom bands rather than independently overlapping percentage blocks.
 
 Viewport contracts:
-- 360×640
-- 390×844
-- 430px-class width
+- `360×640`
+- `390×844`
+- `430px` class
 - `100dvh`
-- safe-area top/bottom/left/right
+- all safe-area insets
 - no horizontal overflow
 - no primary-action/dialogue/nav overlap
-- long Korean labels wrap or truncate intentionally
-
-### 9. Desktop compatibility
-Desktop is secondary. V7 must not make the existing desktop shell unusable, but no desktop-specific redesign is required. Wider viewports should center the same mobile-first composition rather than introduce a different information architecture.
+- six bottom items remain independently tappable
+- long Korean labels wrap/truncate intentionally
 
 ## Proposed component boundaries
-### `MobileHomeStatus`
-Compact display-only status summary. No navigation authority.
+### `MobileNavIcon`
+Reusable SVG icon renderer for the six category icons and common utility icons.
 
-### `HomeUtilitySheet`
-Owns utility destinations previously shown as multiple top shortcuts/promos. It calls existing `openMenu` destinations; no game-state mutations are duplicated.
+### `MobileHomeStatus`
+Compact display-only status summary plus actionable notification affordance. No game progression authority.
+
+### `MobileCategorySheet`
+Semantic category overview for `생활 / 성장 / 모험 / 인연 / 기록`. Routes to existing destinations/callbacks and can host compact records/planner content.
 
 ### `WeeklyPlannerCard`
-Supports compact mode on home. Detailed focus grid is rendered only when its planner panel/sheet is open.
+Gains a detail/compact composition suitable for the `생활` category. It no longer owns persistent home placement.
 
 ### `LayeredHome`
-Continues to own presentation state and `openMenu`. It consumes `hubNextAction` and renders exactly one prominent primary action.
+Owns presentation state, semantic category state and existing `openMenu`. It still consumes `hubNextAction` and renders exactly one prominent primary action.
 
 ### Shared CSS tokens
-Add a focused mobile UI token stylesheet and reuse it from layered-home / planner / chronicle / home panel CSS. No dependency/framework replacement.
+Add `mobile-ui-tokens.css` and apply it to layered home, category sheets, planner, chronicles and home panels.
 
 ## Interaction behavior
-1. Player lands on home and sees current status + one obvious next action.
-2. If the player wants a different activity, bottom navigation remains available.
-3. Utility notifications are represented by one utility launcher/badge rather than four always-visible shortcut buttons.
-4. Weekly planning opens into a dedicated panel/sheet; choosing a focus closes or updates the detail state without adding another persistent home control row.
-5. Home-launched panels use consistent title/body/button typography and fixed close-target behavior.
+1. Player lands on home and sees status, Luna and one obvious next action.
+2. Bottom navigation changes semantic category, not individual low-level feature.
+3. Category overview explains what belongs there and presents only the most useful sub-destinations.
+4. Existing detail panels remain reachable through category destinations.
+5. `홈` always closes open category/detail presentation state.
+6. Notification badge opens the relevant existing reward/detail destination; it does not duplicate content.
+7. Focus returns correctly when detail dialogs close.
 
 ## Accessibility
-- preserve focus return on panel close
-- Escape closes dialogs where currently supported
+- preserve focus return on detail panel close
+- Escape closes modal/detail layers where currently supported
 - `aria-modal`, labels, pressed/current states preserved
+- every navigation item has visible text plus icon
 - no touch target below 44px
 - visible focus outline
 - `prefers-reduced-motion: reduce` disables nonessential transitions/animations
-- color is not the only indication of selected/available state
+- color is not the only selected/available indication
 
 ## Compatibility invariants
 - `hubNextAction` remains authoritative and unique
@@ -115,30 +215,36 @@ Add a focused mobile UI token stylesheet and reuse it from layered-home / planne
 - save schema unchanged
 - V3/V4/V5/V6 systems unchanged
 - NG+/generation/True/Hollow rules unchanged
-- existing menu IDs and callbacks remain valid
+- existing `HomeMenuId` and callbacks remain valid internally
 - no raw progression reset or migration
 
 ## Testing strategy
-### Source/UI contract tests
+### Source/UI contracts
+- navigation labels exactly contain `홈 / 생활 / 성장 / 모험 / 인연 / 기록`
+- six semantic nav items each have icon + label and >=44px hit target
 - exactly one `.lh-primary-action`
-- no always-visible legacy shortcut cluster on <=430px
-- utility launcher exposes existing destinations
-- weekly focus grid is hidden from default compact home and available in planner detail
-- actionable home/panel text uses tokenized size classes/variables instead of 8px/9px hard-coded values
-- mobile control minimum heights are 44/48/52px as designed
+- legacy shortcut cluster and promo circles are absent from default mobile home
+- full weekly focus grid is absent from default home
+- Lineage/World Chronicle are absent from default home and available in records category
+- actionable home/panel text uses shared token values rather than 8px/9px important labels
 - safe-area and reduced-motion declarations exist
 
-### Functional tests
-- every existing shortcut destination still opens
+### Functional contracts
+- home nav closes category/detail surfaces
+- life category can reach schedule, weekly planner, missions, attendance and mail
+- growth category can reach achievements/status/season progression
+- adventure category can reach outing and Expedition/Tactical callbacks
+- bond category can reach bond and story/event content
+- records category renders lineage/world records
 - `hubNextAction` routing remains unchanged
-- weekly select/complete/advance still works
-- panel focus/close behavior still works
+- weekly select/complete/advance remains unchanged
+- panel focus/close behavior remains intact
 
 ### Regression
 - full Vitest suite
 - TypeScript build
 - Vite production build
-- existing mobile tests for Spring/Summer/Autumn/Winter/Fifth/Hollow/NG+ remain green
+- existing Spring/Summer/Autumn/Winter/Fifth/Hollow/NG+/V4/V5/V6 tests remain green
 
 ## Release gate
 RED contracts → minimal refactor → targeted UI tests → full regression/build → preview visual smoke → integration tree verification → release PR synthetic CI → exact main push CI → exact Vercel production SHA → root/API 200 → production runtime error/fatal log check.
