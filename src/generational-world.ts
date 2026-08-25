@@ -23,3 +23,28 @@ export type GenerationalWorldState={
   projectProgress:number;
   completedProjects:PublicProjectId[];
 };
+
+export type LegacyWorldDerivationInput={
+  ancestors?:readonly unknown[];
+  inheritedFacts?:readonly unknown[];
+};
+
+export function emptyGenerationalWorldState():GenerationalWorldState{
+  return {legacyMarkers:[],activeProject:null,projectProgress:0,completedProjects:[]};
+}
+
+export function hydrateGenerationalWorldState(_raw:unknown):GenerationalWorldState{
+  return emptyGenerationalWorldState();
+}
+
+export function deriveLegacyWorldMarkers(_input:LegacyWorldDerivationInput):LegacyWorldMarkerId[]{
+  return [];
+}
+
+export function startPublicProject(state:GenerationalWorldState,_id:PublicProjectId):GenerationalWorldState{
+  return state;
+}
+
+export function contributeToPublicProject(state:GenerationalWorldState,_amount:number):GenerationalWorldState{
+  return state;
+}
