@@ -1,4 +1,4 @@
-import {parseClientTelemetryPayload} from '../src/client-telemetry-contract';
+import {parseClientTelemetryPayload} from '../src/client-telemetry-contract.js';
 
 type TelemetryRequest = {method?:string;body?:unknown};
 type TelemetryResponse = {
