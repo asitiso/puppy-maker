@@ -36,7 +36,9 @@ import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import type { WeeklyFocusId } from './weekly-life';
+import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
+import {publicProjectRequestEvent} from './public-project-ui-events';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -234,6 +236,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     window.addEventListener(nextGenerationRequestEvent,handleStartNextGeneration);
     return ()=>window.removeEventListener(nextGenerationRequestEvent,handleStartNextGeneration);
   },[startNextGeneration]);
+  useEffect(() => {
+    const handleStartPublicProject=(event:Event)=>{
+      const projectId=(event as CustomEvent<PublicProjectId>).detail;
+      if(projectId)dispatch({type:'START_PUBLIC_PROJECT',projectId});
+    };
+    window.addEventListener(publicProjectRequestEvent,handleStartPublicProject);
+    return ()=>window.removeEventListener(publicProjectRequestEvent,handleStartPublicProject);
+  },[]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
   }, [state]);

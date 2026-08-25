@@ -1,10 +1,11 @@
+import type {LegacyWorldMarkerId,PublicProjectId} from './generational-world';
 import {lifeStageForYear,type HeritageTraitId} from './lineage';
 import {isCanonicalWeekKey,weekKey} from './weekly-calendar';
 
 export const weeklyFocusIds=['training','rest','outing','bond','world','tactical','season'] as const;
 export type WeeklyFocusId=typeof weeklyFocusIds[number];
 
-export const weeklyEventIds=['training_partner','quiet_rain','market_day','campfire_invitation','guardian_patrol','rival_challenge','festival_preparation','old_echo','rift_whisper','independent_patrol','veteran_patrol','ancestral_story'] as const;
+export const weeklyEventIds=['training_partner','quiet_rain','market_day','campfire_invitation','guardian_patrol','rival_challenge','festival_preparation','old_echo','rift_whisper','independent_patrol','veteran_patrol','ancestral_story','academy_drill','legacy_road_patrol','rift_watch_rounds','scarred_district'] as const;
 export type WeeklyEventId=typeof weeklyEventIds[number];
 
 export type WeeklyLifeState={
@@ -25,6 +26,9 @@ export type WeeklyLifeContext={
   runNumber:number;
   inheritedFactCount:number;
   heritageTraits?:readonly HeritageTraitId[];
+  generation?:number;
+  legacyMarkers?:readonly LegacyWorldMarkerId[];
+  completedProjects?:readonly PublicProjectId[];
 };
 
 export type WeeklyEventEffect={
@@ -72,6 +76,12 @@ export function weeklyEventFor(context:WeeklyLifeContext):WeeklyEventId{
   if(context.runNumber>1&&context.inheritedFactCount>0&&context.focus==='season') return 'old_echo';
   if(context.focus==='bond'&&(context.heritageTraits?.length??0)>0) return 'ancestral_story';
   if(context.focus==='world'){
+    const markers=context.legacyMarkers??[];
+    const completed=context.completedProjects??[];
+    if(completed.includes('rift_watch')||markers.includes('restored_riftward')) return 'rift_watch_rounds';
+    if(completed.includes('guardian_academy')) return 'academy_drill';
+    if((context.generation??1)>1&&markers.includes('hollow_scar')) return 'scarred_district';
+    if(completed.includes('ancient_road_restoration')||markers.includes('open_road_network')) return 'legacy_road_patrol';
     const stage=lifeStageForYear(context.year);
     if(stage==='young_guardian') return 'independent_patrol';
     if(stage==='seasoned_guardian') return 'veteran_patrol';
@@ -97,6 +107,10 @@ export function weeklyEventEffect(id:WeeklyEventId):WeeklyEventEffect{
     independent_patrol:{gold:0,stats:{morality:1}},
     veteran_patrol:{gold:0,stats:{morality:1,fatigue:1}},
     ancestral_story:{gold:0,stats:{affection:1}},
+    academy_drill:{gold:0,stats:{strength:1,fatigue:1}},
+    legacy_road_patrol:{gold:20,stats:{morality:1,fatigue:1}},
+    rift_watch_rounds:{gold:0,stats:{magic:1,stress:1}},
+    scarred_district:{gold:0,stats:{morality:1,stress:1}},
   };
   return effects[id];
 }
