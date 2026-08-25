@@ -1,5 +1,6 @@
 import type {GameState} from './game';
 import LineageChronicle from './LineageChronicle';
+import './lineage-chronicle.css';
 import {livingNpcLabels,weeklyNpcPresence} from './living-npcs';
 import {weekKey} from './weekly-calendar';
 import {weeklyEventFor,type WeeklyEventId,type WeeklyFocusId,weeklyFocusIds} from './weekly-life';
