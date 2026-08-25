@@ -36,6 +36,8 @@ import { monthlyFocusDefinitions } from './monthly-focus';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
+import RunGuidanceCard from './RunGuidanceCard';
+import { getRunGuidance } from './run-guidance';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
   return <img className="lh-frame" src={src} alt={alt} draggable={false} />;
@@ -146,6 +148,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const hasPanel = Boolean(staticPanel || isQuestPanel || isBondPanel || isBagPanel || isOutingPanel || isMissionPanel || isEventPanel || isAttendancePanel || isMailPanel);
   const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : isMailPanel ? '우편함' : staticPanel?.title ?? '';
   const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : isMailPanel ? 'MILESTONE MAIL' : staticPanel?.eyebrow ?? '';
+  const runGuidance = getRunGuidance(state);
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -210,6 +213,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-level"><Frame src="/ui/level_badge_frame.png" /><div><small>RANK</small><strong>{guardian.points}</strong><span>{guardianShortLabel}</span></div></div>
     <div className="lh-currency"><Frame src="/ui/currency_hud_frame.png" /><div className="lh-currency-values"><span><i className="coin gold">●</i><b>{state.gold.toLocaleString()}</b></span><span><i className="coin gem">◆</i><b>{state.gems.toLocaleString()}</b></span></div><div className="lh-hp"><Frame src="/ui/stamina_hud_frame.png" /><i style={{ width: `${stamina}%` }} /><b>{stamina} / 100</b></div></div>
     <div className="lh-weather"><Frame src="/ui/info_card_frame.png" /><div><b>{state.month}월 {state.week}주차</b><span>☀ 맑음</span></div></div>
+    <RunGuidanceCard guidance={runGuidance} />
 
     <div className="lh-shortcuts">{shortcuts.map(([icon, label, id]) => <button key={id} onClick={() => openMenu(id)}><Frame src="/ui/home_shortcut_button_frame.png" /><span className="lh-shortcut-icon"><GameIcon name={icon} /></span><b>{label}{id === 'mail' && unclaimedMail.length > 0 ? ` ${unclaimedMail.length}` : ''}</b></button>)}</div>
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
