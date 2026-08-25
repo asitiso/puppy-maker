@@ -1,0 +1,64 @@
+.production-error-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: calc(24px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  background: #151a2f;
+  color: #f7f7fb;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.production-error-card {
+  width: min(100%, 32rem);
+  padding: 28px 24px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 20px;
+  background: rgba(255,255,255,.07);
+  box-shadow: 0 20px 60px rgba(0,0,0,.24);
+}
+
+.production-error-kicker {
+  margin: 0 0 8px;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  opacity: .72;
+}
+
+.production-error-card h1 {
+  margin: 0 0 12px;
+  font-size: clamp(1.45rem, 7vw, 2rem);
+}
+
+.production-error-card p {
+  margin: 0 0 22px;
+  line-height: 1.65;
+}
+
+.production-error-screen button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.production-error-screen button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .production-error-screen * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
