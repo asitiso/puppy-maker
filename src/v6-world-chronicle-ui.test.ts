@@ -13,7 +13,7 @@ describe('V6 World Chronicle player-facing contract',()=>{
 
     const component=readFileSync(here('WorldChronicle.tsx'),'utf8');
     const css=readFileSync(here('world-chronicle.css'),'utf8');
-    const home=readFileSync(here('LayeredHome.tsx'),'utf8');
+    const planner=readFileSync(here('WeeklyPlannerCard.tsx'),'utf8');
     const app=readFileSync(here('App.tsx'),'utf8');
     const bridge=readFileSync(here('public-project-ui-events.ts'),'utf8');
 
@@ -22,8 +22,8 @@ describe('V6 World Chronicle player-facing contract',()=>{
     expect(component).toContain('publicProjectDefinitions');
     expect(component).toContain('requestPublicProjectStart');
     expect(component).toContain('장기 세계 프로젝트');
-    expect(home).toContain("import WorldChronicle from './WorldChronicle';");
-    expect(home).toContain('<WorldChronicle');
+    expect(planner).toContain("import WorldChronicle from './WorldChronicle';");
+    expect(planner).toContain('<WorldChronicle');
     expect(app).toContain('publicProjectRequestEvent');
     expect(app).toContain("dispatch({type:'START_PUBLIC_PROJECT',projectId})");
     expect(bridge).toContain('CustomEvent');
