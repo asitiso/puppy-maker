@@ -95,8 +95,8 @@ export default function Root() {
   const captureAttendance = useCallback((nextClaim: () => void) => setClaimAttendance(() => nextClaim), []);
   const captureMail = useCallback((nextClaim: (mail: MailRewardId) => void) => setClaimMail(() => nextClaim), []);
   const captureMonthlyFocus = useCallback((nextSetFocus: (focus: GameState['monthlyFocus']) => void) => setSetMonthlyFocus(() => nextSetFocus), []);
-  const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setYearlyAmbition(() => nextSetAmbition), []);
-  const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setGuardianCalling(() => nextSetCalling), []);
+  const captureYearlyAmbition = useCallback((nextSetAmbition: (ambition: YearlyAmbitionId) => void) => setSetYearlyAmbition(() => nextSetAmbition), []);
+  const captureGuardianCalling = useCallback((nextSetCalling: (calling: GuardianCallingId) => void) => setSetGuardianCalling(() => nextSetCalling), []);
   const captureGrowthTrait = useCallback((nextPurchaseTrait: (trait: GrowthTraitId) => void) => setPurchaseGrowthTrait(() => nextPurchaseTrait), []);
   const captureSeasonPurchase = useCallback((nextPurchase: (offer: SeasonShopOfferId) => void) => setPurchaseSeasonOffer(() => nextPurchase), []);
   const captureSeasonLegacyUnlock = useCallback((nextUnlock: (nodeId: SeasonLegacyNodeId) => void) => setUnlockSeasonLegacyNode(() => nextUnlock), []);
