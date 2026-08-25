@@ -1,8 +1,11 @@
 import {describe,expect,it} from 'vitest';
+// @ts-ignore -- Vitest executes this contract test in Node; keep Node types out of app dependencies.
+import {readFileSync} from 'node:fs';
 import app from './App.tsx?raw';
 import root from './Root.tsx?raw';
 import home from './LayeredHome.tsx?raw';
-import css from './weekly-planner.css?raw';
+
+const css=readFileSync(new URL('./weekly-planner.css',import.meta.url),'utf8');
 
 describe('V4 Living Year home integration',()=>{
   it('uses the authoritative hub selector instead of duplicating reward priority in LayeredHome',()=>{
