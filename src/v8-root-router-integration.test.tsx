@@ -20,8 +20,11 @@ describe('V8 root router integration',()=>{
 
   it('removes legacy independent overlay open-state authority',()=>{
     for(const legacyState of ['seasonLiveOpen','sanctuaryOpen','raisingOpen','expeditionOpen','worldProgressOpen','archiveOpen','ambitionOpen']){
-      expect(root).not.toContain(legacyState);
+      const setter=`set${legacyState[0].toUpperCase()}${legacyState.slice(1)}`;
+      expect(root).not.toContain(`const [${legacyState},`);
+      expect(root).not.toContain(setter);
     }
+    expect(root).toContain('mobileNavigationReducer');
   });
 
   it('routes App schedule, training, dialogue and result screens through V8 play routes',()=>{
@@ -36,9 +39,10 @@ describe('V8 root router integration',()=>{
     expect(home).toContain('onWeeklyPlannerNavigate');
   });
 
-  it('reports Tactical setup, active and result phases to the router',()=>{
+  it('reports Tactical setup, active and result phases to the router without callback-driven setup loops',()=>{
     expect(tactical).toContain('onPhaseChange');
     expect(tactical).toContain("onPhaseChange?.('active')");
     expect(tactical).toContain("onPhaseChange?.('result')");
+    expect(tactical).toContain('onPhaseChangeRef.current');
   });
 });
