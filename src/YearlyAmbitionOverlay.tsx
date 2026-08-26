@@ -5,8 +5,23 @@ import { currentYearAmbitionRecord } from './yearly-ambition-progress';
 import { ambitionRecommendation } from './yearly-ambition-recommendation';
 import { ambitionDefinitions, ambitionProgress, type YearlyAmbitionId } from './yearly-ambitions';
 
-export default function YearlyAmbitionOverlay({ state, onSelect }: { state: GameState; onSelect: (ambition: YearlyAmbitionId) => void }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+export default function YearlyAmbitionOverlay({
+  state,
+  onSelect,
+  open:controlledOpen,
+  onOpenChange,
+}: {
+  state: GameState;
+  onSelect: (ambition: YearlyAmbitionId) => void;
+  open?: boolean;
+  onOpenChange?: (open:boolean) => void;
+}) {
+  const [internalDetailsOpen, setInternalDetailsOpen] = useState(false);
+  const detailsOpen = controlledOpen ?? internalDetailsOpen;
+  const setDetailsOpen = (next:boolean) => {
+    if (controlledOpen === undefined) setInternalDetailsOpen(next);
+    onOpenChange?.(next);
+  };
   const selected = state.yearlyAmbitions[state.year] ?? null;
   const definition = selected ? ambitionDefinitions.find(item => item.id === selected) ?? null : null;
   const liveRecord = useMemo(() => currentYearAmbitionRecord({

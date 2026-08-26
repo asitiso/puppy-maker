@@ -2,11 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameState } from './game';
 import { worldUiSummary } from './world-ui';
 
-export default function WorldProgressOverlay({ state }: { state: GameState }) {
-  const [open, setOpen] = useState(false);
+export default function WorldProgressOverlay({
+  state,
+  open:controlledOpen,
+  onOpenChange,
+}: {
+  state: GameState;
+  open?: boolean;
+  onOpenChange?: (open:boolean) => void;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
   const launcherRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(open);
   const summary = worldUiSummary(state);
+  const setOpen = (next:boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   useEffect(() => {
     if (wasOpen.current && !open) launcherRef.current?.focus();

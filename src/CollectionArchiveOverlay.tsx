@@ -28,12 +28,21 @@ export default function CollectionArchiveOverlay({
   state,
   onNavigate,
   onExpedition,
+  open:controlledOpen,
+  onOpenChange,
 }: {
   state: GameState;
   onNavigate?: (id: HomeMenuId) => void;
   onExpedition?: () => void;
+  open?: boolean;
+  onOpenChange?: (open:boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (next:boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
@@ -108,7 +117,7 @@ export default function CollectionArchiveOverlay({
             <b>{recommendedCategory ? `${recommendedCategory.label} ${recommendedCategory.current} / ${recommendedCategory.total}` : '100 / 100'}</b>
             <p>{recommendation.reason}</p>
             {(homeRoute || recommendation.action === 'expedition') && <button onClick={followRecommendation}>바로 이동</button>}
-            {!homeRoute && recommendationRoute === 'ambition' && <small>홈의 올해의 야망 카드에서 현재 진행률과 다음 행동을 확인하세요.</small>}
+            {!homeRoute && recommendationRoute === 'ambition' && <small>성장 메뉴의 올해의 야망에서 현재 진행률과 다음 행동을 확인하세요.</small>}
             {!homeRoute && recommendationRoute === 'archive' && <small>연간 수호 기록을 쌓으면 이 도감에서 레거시 유물이 열려요.</small>}
           </div>
           <div className="legacy-card">
