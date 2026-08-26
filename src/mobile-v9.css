@@ -46,6 +46,22 @@
 .v9-feedback.is-warning{border-color:rgba(242,198,109,.42);background:rgba(87,62,24,.64)}
 .v9-feedback.is-error{border-color:rgba(240,139,154,.5);background:rgba(93,38,49,.66)}
 
+.v9-category-recommendation{display:grid;gap:4px;width:100%;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(242,198,109,.38);border-radius:18px;background:linear-gradient(135deg,rgba(92,64,35,.88),rgba(59,42,75,.88));color:#fff;text-align:left;box-shadow:0 10px 26px rgba(0,0,0,.2)}
+.v9-category-recommendation small{color:#f2c66d;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.v9-category-recommendation strong{font-size:18px;line-height:1.25}
+.v9-category-recommendation span{color:rgba(255,255,255,.88);font-size:13px;line-height:1.4}
+.v9-category-recommendation em{color:rgba(255,255,255,.64);font-size:11px;line-height:1.35;font-style:normal}
+.v8-category-entry.is-priority{border-color:rgba(242,198,109,.34);background:rgba(87,64,43,.54)}
+.v9-chronicle-details{overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:16px;background:rgba(27,20,39,.72)}
+.v9-chronicle-details>summary{display:flex;align-items:center;min-height:48px;padding:0 14px;cursor:pointer;font-weight:800;list-style:none}
+.v9-chronicle-details>summary::-webkit-details-marker{display:none}
+.v9-chronicle-details>summary::after{content:'＋';margin-left:auto;font-size:18px;opacity:.7}
+.v9-chronicle-details[open]>summary::after{content:'－'}
+.v9-chronicle-details .v8-embedded-section{padding:0 10px 12px}
+.v9-category-page .v8-category-header{display:flex;align-items:center;gap:7px;margin:-2px 0 10px;color:rgba(255,255,255,.62)}
+.v9-category-page .v8-category-header small{font-size:10px;font-weight:900;letter-spacing:.12em}
+.v9-category-page .v8-category-icon{width:28px;height:28px}
+
 /* V9 compact home HUD: context first, resources second, notification remains independently tappable. */
 .v9-home-status{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:2px 8px;min-height:58px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px}
 .v9-status-context{grid-column:1;grid-row:1;display:flex;align-items:center;gap:7px;min-width:0}
