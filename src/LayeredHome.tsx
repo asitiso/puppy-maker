@@ -39,6 +39,7 @@ import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
 import HomeCommandCenter from './HomeCommandCenter';
+import InformationPanel from './InformationPanel';
 import RunGuidanceCard from './RunGuidanceCard';
 import { getRunGuidance } from './run-guidance';
 import WeeklyPlannerCard from './WeeklyPlannerCard';
@@ -101,6 +102,9 @@ const discoveryLabels: Record<DiscoveryId, string> = {
   glass_shell: '유리빛 조개', wind_crystal: '바람 결정',
 };
 
+type QuestView = 'all' | 'ready' | 'active' | 'done';
+type BagView = 'all' | 'owned' | 'empty';
+
 type LayeredHomeProps = {
   state: GameState;
   onSchedule: () => void;
@@ -124,6 +128,8 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
+  const [questView, setQuestView] = useState<QuestView>('all');
+  const [bagView, setBagView] = useState<BagView>('all');
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const panelLauncherRef = useRef<HTMLElement | null>(null);
   const panelCloseRef = useRef<HTMLButtonElement | null>(null);
@@ -133,7 +139,24 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const rank = relationshipRank(state.stats.affection);
   const collection = collectionProgress(state);
   const eligible = new Set(eligibleAchievements(state));
-  const unclaimedAchievementCount = [...eligible].filter(id => !state.claimedAchievements.includes(id)).length;
+  const achievementRows = achievementDefinitions.map((item, index) => {
+    const claimed = state.claimedAchievements.includes(item.id);
+    const canClaim = eligible.has(item.id) && !claimed;
+    const status: Exclude<QuestView, 'all'> = claimed ? 'done' : canClaim ? 'ready' : 'active';
+    return { item, index, claimed, canClaim, status };
+  });
+  const readyAchievementCount = achievementRows.filter(row => row.status === 'ready').length;
+  const activeAchievementCount = achievementRows.filter(row => row.status === 'active').length;
+  const doneAchievementCount = achievementRows.filter(row => row.status === 'done').length;
+  const achievementPriority: Record<Exclude<QuestView, 'all'>, number> = { ready: 0, active: 1, done: 2 };
+  const visibleAchievements = achievementRows
+    .filter(row => questView === 'all' || row.status === questView)
+    .sort((a, b) => achievementPriority[a.status] - achievementPriority[b.status] || a.index - b.index);
+  const unclaimedAchievementCount = readyAchievementCount;
+  const giftRows = giftItemIds.map((id, index) => ({ id, index, item: giftDefinitions[id], quantity: state.inventory[id] ?? 0 }));
+  const ownedGiftTypes = giftRows.filter(row => row.quantity > 0).length;
+  const ownedGiftCount = giftRows.reduce((sum, row) => sum + Math.max(0, row.quantity), 0);
+  const visibleGifts = giftRows.filter(row => bagView === 'all' || (bagView === 'owned' ? row.quantity > 0 : row.quantity <= 0));
   const guardian = currentGuardianStatus(state);
   const guardianDefinition = guardianRankDefinitions.find(item => item.id === guardian.rank) ?? guardianRankDefinitions[0];
   const guardianShortLabel = guardianDefinition.label.replace(' 수호자', '');
@@ -258,16 +281,31 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
           <div><small>{panelEyebrow}</small><h2>{panelTitle}</h2></div>
           <button ref={panelCloseRef} className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">×</button>
         </header>
-        {isQuestPanel ? <div className="lh-panel-list">{achievementDefinitions.map((item, index) => {
-          const claimed = state.claimedAchievements.includes(item.id);
-          const canClaim = eligible.has(item.id) && !claimed;
-          const reward = item.reward.gold ? `${item.reward.gold}G` : `보석 ${item.reward.gems}`;
-          return <button key={item.id} disabled={!canClaim} onClick={() => canClaim && onClaimAchievement(item.id)}>
-            <span>{claimed ? '✓' : canClaim ? '!' : index + 1}</span>
-            <b>{item.title}<small>{item.description} · {reward}</small></b>
-            <i>{claimed ? '완료' : canClaim ? '받기' : '진행중'}</i>
-          </button>;
-        })}</div> : isAttendancePanel ? <div className="lh-panel-list">
+        {isQuestPanel ? <InformationPanel
+          summaryItems={[
+            { label:'수령 가능', value:readyAchievementCount },
+            { label:'진행 중', value:activeAchievementCount },
+            { label:'완료', value:doneAchievementCount },
+          ]}
+          filters={[
+            {id:'all',label:'전체',count:achievementRows.length},
+            {id:'ready',label:'수령 가능',count:readyAchievementCount},
+            {id:'active',label:'진행',count:activeAchievementCount},
+            {id:'done',label:'완료',count:doneAchievementCount},
+          ]}
+          activeFilter={questView}
+          onFilterChange={id => setQuestView(id as QuestView)}
+          emptyMessage="해당 상태의 업적이 없어요."
+        >
+          {visibleAchievements.length ? <div className="lh-panel-list v11-info-list">{visibleAchievements.map(({ item, index, claimed, canClaim }) => {
+            const reward = item.reward.gold ? `${item.reward.gold}G` : `보석 ${item.reward.gems}`;
+            return <button key={item.id} disabled={!canClaim} onClick={() => canClaim && onClaimAchievement(item.id)}>
+              <span>{claimed ? '✓' : canClaim ? '!' : index + 1}</span>
+              <b>{item.title}<small>{item.description} · {reward}</small></b>
+              <i>{claimed ? '완료' : canClaim ? '받기' : '진행중'}</i>
+            </button>;
+          })}</div> : null}
+        </InformationPanel> : isAttendancePanel ? <div className="lh-panel-list">
           <button disabled={attendanceClaimed} onClick={() => !attendanceClaimed && onAttendance()}>
             <span>{attendanceClaimed ? '✓' : '!'}</span>
             <b>{state.year}년차 {state.month}월 출석 보상<small>기본 150G{attendance.gems > 0 ? ` · 분기 보너스 보석 ${attendance.gems}개` : ' · 다음 분기월에는 보석 보너스'}</small></b>
@@ -341,15 +379,27 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
               <i>{visited ? '탐험' : '출발'}</i>
             </button>;
           })}
-        </div> : isBagPanel ? <div className="lh-panel-list">{giftItemIds.map((id, index) => {
-          const item = giftDefinitions[id];
-          const quantity = state.inventory[id];
-          return <button key={id} disabled={quantity <= 0} onClick={() => quantity > 0 && onGift(id)}>
+        </div> : isBagPanel ? <InformationPanel
+          summaryItems={[
+            { label:'보유 수량', value:ownedGiftCount },
+            { label:'보유 종류', value:ownedGiftTypes },
+            { label:'전체 종류', value:giftRows.length },
+          ]}
+          filters={[
+            {id:'all',label:'전체',count:giftRows.length},
+            {id:'owned',label:'보유',count:ownedGiftTypes},
+            {id:'empty',label:'미보유',count:giftRows.length - ownedGiftTypes},
+          ]}
+          activeFilter={bagView}
+          onFilterChange={id => setBagView(id as BagView)}
+          emptyMessage="해당 상태의 선물이 없어요."
+        >
+          {visibleGifts.length ? <div className="lh-panel-list v11-info-list">{visibleGifts.map(({ id, index, item, quantity }) => <button key={id} disabled={quantity <= 0} onClick={() => quantity > 0 && onGift(id)}>
             <span>{index + 1}</span>
             <b>{item.name}<small>{item.description}</small></b>
             <i>{quantity > 0 ? `선물하기 · ${quantity}개` : '없음'}</i>
-          </button>;
-        })}</div> : <div className="lh-panel-list">{staticPanel?.items.map((item, index) => <button key={item}><span>{index + 1}</span><b>{item}</b><i>›</i></button>)}</div>}
+          </button>)}</div> : null}
+        </InformationPanel> : <div className="lh-panel-list">{staticPanel?.items.map((item, index) => <button key={item}><span>{index + 1}</span><b>{item}</b><i>›</i></button>)}</div>}
       </section>
     </div>}
   </section>;
