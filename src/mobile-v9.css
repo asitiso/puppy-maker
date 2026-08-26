@@ -46,9 +46,33 @@
 .v9-feedback.is-warning{border-color:rgba(242,198,109,.42);background:rgba(87,62,24,.64)}
 .v9-feedback.is-error{border-color:rgba(240,139,154,.5);background:rgba(93,38,49,.66)}
 
+/* V9 compact home HUD: context first, resources second, notification remains independently tappable. */
+.v9-home-status{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:2px 8px;min-height:58px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px}
+.v9-status-context{grid-column:1;grid-row:1;display:flex;align-items:center;gap:7px;min-width:0}
+.v9-status-context>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:1.2}
+.v9-status-context .v7-guardian-chip{flex:0 0 auto;min-height:22px;padding:2px 7px;font-size:11px}
+.v9-status-resources{grid-column:1;grid-row:2;display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden}
+.v9-status-resources>span{display:inline-flex;align-items:center;gap:3px;min-width:0;padding:2px 6px;border-radius:999px;font-size:12px;line-height:1.2;white-space:nowrap;background:rgba(255,255,255,.08)}
+.v9-status-resources>span>b{font-size:10px;opacity:.82}
+.v9-status-notification{grid-column:2;grid-row:1/3;align-self:center;position:relative;inset:auto;min-width:44px;min-height:44px;margin:0}
+.v8-mobile-shell.is-home .v9-home-background{position:absolute;inset:0;width:100%;height:100%}
+.v8-mobile-shell.is-home .lh-character .v9-home-hero{display:block;width:100%;aspect-ratio:4/5;overflow:visible;background:transparent}
+.v8-mobile-shell.is-home .lh-character .v9-home-hero .v9-character-fallback{background:transparent}
+.v8-mobile-shell.is-home .lh-character .v9-home-hero .v9-character-image{object-fit:contain}
+.v8-mobile-shell.is-home .lh-character .v9-home-hero .v9-character-fallback-label{display:none}
+
 @media(max-width:390px){
   .v9-page-header{padding-inline:10px}
   .v9-page-content,.v9-page-sticky-action{padding-left:10px;padding-right:10px}
+  .v9-home-status{gap:2px 6px;padding-left:8px;padding-right:8px}
+  .v9-status-context>strong{font-size:11px}
+  .v9-status-resources{gap:4px}
+  .v9-status-resources>span{padding-inline:5px;font-size:11px}
+}
+
+@media(max-width:360px),(max-height:650px){
+  .v9-home-status{min-height:54px;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
+  .v9-status-context .v7-guardian-chip{max-width:76px;overflow:hidden;text-overflow:ellipsis}
 }
 
 @media(prefers-reduced-motion:reduce){
