@@ -3,7 +3,7 @@ import {publicProjectDefinitions} from './generational-world';
 import LineageChronicle from './LineageChronicle';
 import MobileNavIcon,{type MobileNavIconName} from './MobileNavIcon';
 import MobilePageShell from './MobilePageShell';
-import SemanticSceneBackground from './SemanticSceneBackground';
+import MobileSceneBackground from './MobileSceneBackground';
 import WeeklyPlannerCard from './WeeklyPlannerCard';
 import WorldChronicle from './WorldChronicle';
 import {mobileCategoryPriorityFeatures,mobileCategoryRecommendation} from './mobile-category-guidance';
@@ -77,7 +77,7 @@ export default function MobileCategoryPage({category,state,onOpenFeature,onWeekl
   const priority=new Set(mobileCategoryPriorityFeatures(category,state));
   const activeProject=state.generationalWorld.activeProject;
   const activeProjectLabel=activeProject?publicProjectDefinitions[activeProject].label:null;
-  const background=<SemanticSceneBackground slot={`category.${category}.background`} className="v9-category-background"/>;
+  const background=<MobileSceneBackground slot={`category.${category}.background`} className="v9-category-background"/>;
 
   return <MobilePageShell title={info.label} description={info.description} background={background} className={`v8-category-page v9-category-page is-${category}`}>
     <div className="v8-category-header" aria-hidden="true">
