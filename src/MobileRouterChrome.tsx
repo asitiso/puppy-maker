@@ -43,10 +43,10 @@ export default function MobileRouterChrome({
   state,navigation,guarded,pendingExit,onCategory,onBack,onHome,onRequestExit,onCancelExit,onConfirmExit,
   notificationCount=0,onNotifications=()=>undefined,children,
 }:Props){
+  void onBack;
   const route=navigation.current;
   const active=activeCategory(navigation);
   const appPlay=route.kind==='play'&&route.screen!=='tactical'&&route.screen!=='choice_event';
-  const ordinaryRoute=route.kind==='category'||route.kind==='feature';
   const shellClass=[
     'v8-mobile-shell',
     guarded?'is-guarded':'',
@@ -71,12 +71,7 @@ export default function MobileRouterChrome({
       </button>
     </nav>}
 
-    <div className="v8-route-body">
-      {ordinaryRoute&&<button type="button" className="v8-route-back" onClick={onBack} aria-label="이전 화면으로 돌아가기">
-        <span aria-hidden="true">‹</span><b>이전</b>
-      </button>}
-      {children}
-    </div>
+    <div className="v8-route-body">{children}</div>
 
     {!guarded&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
       {categories.map(item=><button
