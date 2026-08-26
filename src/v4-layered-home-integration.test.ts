@@ -8,9 +8,10 @@ import home from './LayeredHome.tsx?raw';
 const css=readFileSync(new URL('./weekly-planner.css',import.meta.url),'utf8');
 
 describe('V4 Living Year home integration',()=>{
-  it('uses the authoritative hub selector instead of duplicating reward priority in LayeredHome',()=>{
+  it('uses the authoritative guided-action selector instead of duplicating reward priority in LayeredHome',()=>{
     expect(home).toContain("from './hub-next-action'");
-    expect(home).toContain('hubNextAction(state)');
+    expect(home).toContain('hubGuidedActionStack(state)');
+    expect(home).toContain('<HomeCommandCenter');
     expect(home).not.toContain('const primaryTask = unclaimedMail.length > 0');
   });
 

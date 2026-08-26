@@ -31,12 +31,14 @@ import { attendanceKey, attendanceReward } from './attendance';
 import { talentDefinitions } from './advanced-talents';
 import { careerTitleDefinitions } from './career-records';
 import { guardianRankDefinitions } from './guardian-rank';
-import { hubNextAction } from './hub-next-action';
+import { hubGuidedActionStack } from './hub-next-action';
+import type { GuidedActionRoute } from './guided-actions';
 import { mailDefinitions } from './mail-rewards';
 import { monthlyFocusDefinitions } from './monthly-focus';
 import { monthlyMissionDefinitions } from './monthly-missions';
 import { storyChapterDefinitions } from './story-chapters';
 import { getHomePanel, type HomeMenuId } from './home-panels';
+import HomeCommandCenter from './HomeCommandCenter';
 import RunGuidanceCard from './RunGuidanceCard';
 import { getRunGuidance } from './run-guidance';
 import WeeklyPlannerCard from './WeeklyPlannerCard';
@@ -158,7 +160,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const panelTitle = isQuestPanel ? '성장 업적' : isBondPanel ? '루나와의 교감' : isBagPanel ? '가방' : isOutingPanel ? '외출' : isMissionPanel ? '이번 달 도전' : isEventPanel ? '루나 이야기' : isAttendancePanel ? '월간 출석' : isMailPanel ? '우편함' : staticPanel?.title ?? '';
   const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : isMailPanel ? 'MILESTONE MAIL' : staticPanel?.eyebrow ?? '';
   const runGuidance = getRunGuidance(state);
-  const primaryTask = hubNextAction(state);
+  const guidedActions = hubGuidedActionStack(state);
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -185,8 +187,8 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     panelLauncherRef.current?.focus();
   }, []);
 
-  const runPrimaryTask = () => {
-    switch (primaryTask.route) {
+  const runGuidedAction = (route: GuidedActionRoute) => {
+    switch (route) {
       case 'mail': return openMenu('mail');
       case 'attendance': return openMenu('attendance');
       case 'achievement': return openMenu('quest', 2);
@@ -244,9 +246,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <div className="lh-goal"><Frame src="/ui/weekly_goal_panel_frame.png" /><div><h3>성장 컬렉션</h3><p>기억 <b>{collection.memories}개</b></p><p>기술 <b>{collection.skills}개</b></p><p>발견물 <b>{state.discoveries.length} / {discoveryIds.length}</b></p></div></div>
     <div className="lh-promos"><button onClick={() => openMenu('event')}><span><GameIcon name="event" /></span><b>루나 이야기</b><small>{storyOpen.size} / {storyChapterDefinitions.length} 챕터</small></button><button onClick={() => openMenu('quest')}><span><GameIcon name="paw" /></span><b>성장 업적</b><small>{unclaimedAchievementCount}개 수령 가능</small></button></div>
 
-    <button className="lh-primary-action" onClick={runPrimaryTask} aria-label={`지금 할 일: ${primaryTask.label}`}>
-      <small>지금 할 일</small><b>{primaryTask.label}</b><span>{primaryTask.detail}</span>
-    </button>
+    <HomeCommandCenter stack={guidedActions} onAction={runGuidedAction}/>
 
     <div className="lh-dialogue"><Frame src="/ui/dialogue_panel_frame.png" /><span className="lh-name">루나</span><p>{petted ? '헤헤… 주인님의 손은 정말 따뜻해요!' : `관계 · ${relationshipLabels[rank]} · ${guardianDefinition.label}`}<br/>{petted ? `우리 사이는 지금 '${relationshipLabels[rank]}'예요.` : recommendations[state.condition]}</p><i className="lh-dialogue-next">◆</i></div>
 

@@ -22,10 +22,11 @@ describe('V7 mobile home information architecture compatibility', () => {
     expect(shell).toContain('mobileCategories.map');
   });
 
-  it('keeps exactly one authoritative primary action implementation', () => {
-    expect((legacyHome.match(/className="lh-primary-action"/g) ?? []).length).toBe(1);
-    expect(legacyHome).toContain('hubNextAction(state)');
-    expect(shell).toContain('hubNextAction(state)');
+  it('keeps exactly one authoritative guided primary action implementation', () => {
+    expect((legacyHome.match(/<HomeCommandCenter/g) ?? []).length).toBe(1);
+    expect(legacyHome).toContain('hubGuidedActionStack(state)');
+    expect(shell).toContain('hubGuidedActionStack(state).primary');
+    expect(shell).toContain("closest('.v10-command-primary .v10-guided-cta')");
   });
 
   it('hides legacy shortcut, promo, goal, planner and bottom-nav clutter from the visible V7 home', () => {
