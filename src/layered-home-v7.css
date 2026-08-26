@@ -42,7 +42,21 @@
 .v7-category-sheet .weekly-focus-grid button,.v7-category-sheet .weekly-planner-resolve,.v7-category-sheet .weekly-planner-advance{min-height:var(--ui-touch-min);font-size:var(--ui-text-button)}
 .v7-records-content{padding-bottom:18px}
 
-.seasonal-home-badge{display:none!important}
+.seasonal-home-badge,
+.season-live-entry,
+.sanctuary-entry,
+.raising-home-card,
+.expedition-home-card,
+.yearly-ambition-card,
+.collection-archive-trigger,
+.world-progress-card{display:none!important}
+
+@media(max-width:430px){
+  .season-live-panel button,.sanctuary-panel button,.raising-panel button,.expedition-map button,.expedition-battle button,.expedition-result button,.world-progress-panel button,.collection-archive-panel button,.yearly-ambition-panel button{min-height:var(--ui-touch-min)!important;font-size:var(--ui-text-button)!important}
+  .season-live-panel small,.sanctuary-panel small,.raising-panel small,.expedition-map small,.expedition-battle small,.expedition-result small,.world-progress-panel small,.collection-archive-panel small,.yearly-ambition-panel small{font-size:var(--ui-text-caption)!important;line-height:1.35}
+  .season-live-panel h1,.season-live-panel h2,.sanctuary-panel h1,.sanctuary-panel h2,.raising-panel h1,.raising-panel h2,.expedition-map h1,.expedition-map h2,.expedition-battle h1,.expedition-battle h2,.expedition-result h1,.expedition-result h2,.world-progress-panel h1,.world-progress-panel h2,.collection-archive-panel h1,.collection-archive-panel h2,.yearly-ambition-panel h1,.yearly-ambition-panel h2{font-size:var(--ui-text-title)!important;line-height:1.2}
+  .season-live-panel p,.sanctuary-panel p,.raising-panel p,.expedition-map p,.expedition-battle p,.expedition-result p,.world-progress-panel p,.collection-archive-panel p,.yearly-ambition-panel p{font-size:var(--ui-text-small);line-height:1.5}
+}
 
 @media(max-width:390px){
   .v7-home-status{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));padding-left:10px}
