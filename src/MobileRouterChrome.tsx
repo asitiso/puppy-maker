@@ -2,10 +2,13 @@ import type {ReactNode} from 'react';
 import type {GameState} from './game';
 import MobileHomeStatus from './MobileHomeStatus';
 import MobileNavIcon,{type MobileNavIconName} from './MobileNavIcon';
+import MobilePageShell from './MobilePageShell';
 import {MobileRouterActionsProvider} from './MobileRouterActionsContext';
-import type {MobileCategoryId,MobileNavigationState} from './mobile-router';
+import type {MobileVisualSlot} from './mobile-visual-assets';
+import type {MobileCategoryId,MobileFeatureId,MobileNavigationState} from './mobile-router';
 import './mobile-router-v8.css';
 import './mobile-legacy-feature-v8.css';
+import './mobile-v9-complex.css';
 
 type PendingExit='back'|'home'|null;
 
@@ -34,6 +37,16 @@ const categories:Array<{id:MobileCategoryId;label:string;icon:MobileNavIconName}
   {id:'records',label:'기록',icon:'records'},
 ];
 
+const complexFeatureMeta:Partial<Record<MobileFeatureId,{title:string;subtitle:string;backgroundSlot:MobileVisualSlot}>>={
+  raising:{title:'루나의 성장 방향',subtitle:'Calling · Trait · 관계 장면',backgroundSlot:'feature.raising.background'},
+  ambition:{title:'올해의 야망',subtitle:'한 해의 성장 목표와 진행률',backgroundSlot:'feature.ambition.background'},
+  season:{title:'시즌 여정',subtitle:'지령 · 교환소 · 계절 유산',backgroundSlot:'feature.season.background'},
+  sanctuary:{title:'별빛 성소',subtitle:'시설 · 전문화 · 천상 성장',backgroundSlot:'feature.sanctuary.background'},
+  expedition:{title:'수호자 원정',subtitle:'지역 · 전투 · 유물 · 제작',backgroundSlot:'feature.expedition.background'},
+  world:{title:'월드 진행',subtitle:'이벤트 · 명성 · 계절 원정',backgroundSlot:'feature.world.background'},
+  archive:{title:'성장 도감',subtitle:'성장과 원정의 수호 연대기',backgroundSlot:'feature.archive.background'},
+};
+
 function activeCategory(navigation:MobileNavigationState):MobileCategoryId{
   const route=navigation.current;
   if(route.kind==='home')return 'home';
@@ -53,6 +66,17 @@ export default function MobileRouterChrome({
     route.kind==='home'?'is-home':'',
     appPlay?'is-app-play':'',
   ].filter(Boolean).join(' ');
+  const complexMeta=route.kind==='feature'?complexFeatureMeta[route.feature]:undefined;
+  const routedChildren=route.kind==='feature'&&complexMeta
+    ? <MobilePageShell
+        title={complexMeta.title}
+        subtitle={complexMeta.subtitle}
+        backgroundSlot={complexMeta.backgroundSlot}
+        scrollKey={`feature:${route.feature}`}
+        onBack={onBack}
+        className={`v9-complex-feature is-${route.feature}`}
+      >{children}</MobilePageShell>
+    : children;
 
   return <MobileRouterActionsProvider onBack={onBack} onHome={onHome}>
     <div className={shellClass}>
@@ -72,7 +96,7 @@ export default function MobileRouterChrome({
         </button>
       </nav>}
 
-      <div className="v8-route-body">{children}</div>
+      <div className="v8-route-body">{routedChildren}</div>
 
       {!guarded&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
         {categories.map(item=><button
