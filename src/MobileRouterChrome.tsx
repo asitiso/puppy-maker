@@ -39,7 +39,7 @@ function activeCategory(navigation:MobileNavigationState):MobileCategoryId{
 }
 
 export default function MobileRouterChrome({
-  state,navigation,guarded,pendingExit,onCategory,onBack,onHome,onRequestExit,onCancelExit,onConfirmExit,
+  state,navigation,guarded,pendingExit,onCategory,onHome,onRequestExit,onCancelExit,onConfirmExit,
   notificationCount=0,onNotifications=()=>undefined,children,
 }:Props){
   const active=activeCategory(navigation);
@@ -50,7 +50,7 @@ export default function MobileRouterChrome({
       onNotifications={onNotifications}
     />}
 
-    {guarded&&<header className="v8-play-header" aria-label="진행 중인 플레이 이동">
+    {guarded&&<nav className="v8-play-guard" aria-label="진행 중인 플레이 제어">
       <button type="button" className="v8-play-back" onClick={()=>onRequestExit('back')} aria-label="진행을 종료하고 뒤로가기">
         <span aria-hidden="true">‹</span><b>뒤로</b>
       </button>
@@ -58,14 +58,11 @@ export default function MobileRouterChrome({
       <button type="button" className="v8-play-home" onClick={()=>onRequestExit('home')} aria-label="진행을 종료하고 홈으로 이동">
         <MobileNavIcon name="home"/><b>홈</b>
       </button>
-    </header>}
+    </nav>}
 
     <div className="v8-route-body">{children}</div>
 
-    {guarded?<nav className="v8-play-guard" aria-label="진행 중인 플레이 제어">
-      <button type="button" onClick={()=>onRequestExit('back')}><span aria-hidden="true">‹</span><b>뒤로</b></button>
-      <button type="button" onClick={()=>onRequestExit('home')}><MobileNavIcon name="home"/><b>홈</b></button>
-    </nav>:<nav className="v8-bottom-nav" aria-label="주요 메뉴">
+    {!guarded&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
       {categories.map(item=><button
         key={item.id}
         type="button"
