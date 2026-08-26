@@ -3,11 +3,11 @@ import {publicProjectDefinitions} from './generational-world';
 import LineageChronicle from './LineageChronicle';
 import MobileNavIcon,{type MobileNavIconName} from './MobileNavIcon';
 import MobilePageShell from './MobilePageShell';
-import MobileSceneBackground from './MobileSceneBackground';
 import WeeklyPlannerCard from './WeeklyPlannerCard';
 import WorldChronicle from './WorldChronicle';
 import {mobileCategoryPriorityFeatures,mobileCategoryRecommendation} from './mobile-category-guidance';
 import type {MobileContentCategory,MobileFeatureId} from './mobile-router';
+import type {MobileVisualSlot} from './mobile-visual-assets';
 import type {WeeklyFocusId} from './weekly-life';
 
 type Props={
@@ -19,15 +19,15 @@ type Props={
   onAdvanceWeek?:()=>void;
 };
 
-type CategoryMeta={label:string;eyebrow:string;description:string;icon:MobileNavIconName};
+type CategoryMeta={label:string;eyebrow:string;description:string;icon:MobileNavIconName;backgroundSlot:MobileVisualSlot};
 type EntryInfo={icon:MobileNavIconName;title:string;description:string};
 
 const meta:Record<MobileContentCategory,CategoryMeta>={
-  life:{label:'생활',eyebrow:'LIVING',description:'이번 주와 이번 달의 일상을 정리해요.',icon:'life'},
-  growth:{label:'성장',eyebrow:'GROWTH',description:'훈련과 성과, 장기 성장을 확인해요.',icon:'growth'},
-  adventure:{label:'모험',eyebrow:'ADVENTURE',description:'밖으로 나가 탐험하고 전투해요.',icon:'adventure'},
-  bond:{label:'인연',eyebrow:'BONDS',description:'루나와 친구들의 관계와 이야기를 만나요.',icon:'bond'},
-  records:{label:'기록',eyebrow:'CHRONICLE',description:'세대와 세계에 남긴 흔적을 돌아봐요.',icon:'records'},
+  life:{label:'생활',eyebrow:'LIVING',description:'이번 주와 이번 달의 일상을 정리해요.',icon:'life',backgroundSlot:'category.life.background'},
+  growth:{label:'성장',eyebrow:'GROWTH',description:'훈련과 성과, 장기 성장을 확인해요.',icon:'growth',backgroundSlot:'category.growth.background'},
+  adventure:{label:'모험',eyebrow:'ADVENTURE',description:'밖으로 나가 탐험하고 전투해요.',icon:'adventure',backgroundSlot:'category.adventure.background'},
+  bond:{label:'인연',eyebrow:'BONDS',description:'루나와 친구들의 관계와 이야기를 만나요.',icon:'bond',backgroundSlot:'category.bond.background'},
+  records:{label:'기록',eyebrow:'CHRONICLE',description:'세대와 세계에 남긴 흔적을 돌아봐요.',icon:'records',backgroundSlot:'category.records.background'},
 };
 
 const entries:Record<MobileFeatureId,EntryInfo>={
@@ -77,9 +77,8 @@ export default function MobileCategoryPage({category,state,onOpenFeature,onWeekl
   const priority=new Set(mobileCategoryPriorityFeatures(category,state));
   const activeProject=state.generationalWorld.activeProject;
   const activeProjectLabel=activeProject?publicProjectDefinitions[activeProject].label:null;
-  const background=<MobileSceneBackground slot={`category.${category}.background`} className="v9-category-background"/>;
 
-  return <MobilePageShell title={info.label} description={info.description} background={background} className={`v8-category-page v9-category-page is-${category}`}>
+  return <MobilePageShell title={info.label} subtitle={info.description} backgroundSlot={info.backgroundSlot} scrollKey={`category:${category}`} className={`v8-category-page v9-category-page is-${category}`}>
     <div className="v8-category-header" aria-hidden="true">
       <span className="v8-category-icon"><MobileNavIcon name={info.icon}/></span><small>{info.eyebrow}</small>
     </div>
