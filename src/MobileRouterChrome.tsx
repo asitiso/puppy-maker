@@ -39,11 +39,21 @@ function activeCategory(navigation:MobileNavigationState):MobileCategoryId{
 }
 
 export default function MobileRouterChrome({
-  state,navigation,guarded,pendingExit,onCategory,onHome,onRequestExit,onCancelExit,onConfirmExit,
+  state,navigation,guarded,pendingExit,onCategory,onBack,onHome,onRequestExit,onCancelExit,onConfirmExit,
   notificationCount=0,onNotifications=()=>undefined,children,
 }:Props){
+  const route=navigation.current;
   const active=activeCategory(navigation);
-  return <div className={`v8-mobile-shell${guarded?' is-guarded':''}`}>
+  const appPlay=route.kind==='play'&&route.screen!=='tactical'&&route.screen!=='choice_event';
+  const ordinaryRoute=route.kind==='category'||route.kind==='feature';
+  const shellClass=[
+    'v8-mobile-shell',
+    guarded?'is-guarded':'',
+    route.kind==='home'?'is-home':'',
+    appPlay?'is-app-play':'',
+  ].filter(Boolean).join(' ');
+
+  return <div className={shellClass}>
     {!guarded&&<MobileHomeStatus
       state={state}
       notificationCount={notificationCount}
@@ -60,7 +70,12 @@ export default function MobileRouterChrome({
       </button>
     </nav>}
 
-    <div className="v8-route-body">{children}</div>
+    <div className="v8-route-body">
+      {ordinaryRoute&&<button type="button" className="v8-route-back" onClick={onBack} aria-label="이전 화면으로 돌아가기">
+        <span aria-hidden="true">‹</span><b>이전</b>
+      </button>}
+      {children}
+    </div>
 
     {!guarded&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
       {categories.map(item=><button
