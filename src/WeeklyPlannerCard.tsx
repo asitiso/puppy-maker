@@ -2,8 +2,10 @@ import type {GameState} from './game';
 import LineageChronicle from './LineageChronicle';
 import WorldChronicle from './WorldChronicle';
 import './lineage-chronicle.css';
+import './mobile-v10-guidance.css';
 import {livingNpcLabels,weeklyNpcPresence} from './living-npcs';
 import {weekKey} from './weekly-calendar';
+import {weeklyFocusRecommendations} from './weekly-focus-guidance';
 import {weeklyEventFor,type WeeklyEventId,type WeeklyFocusId,weeklyFocusIds} from './weekly-life';
 
 const focusLabels:Record<WeeklyFocusId,string>={
@@ -28,6 +30,7 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
   const current=weekKey(state.year,state.month,state.week);
   const selected=state.weeklyLife.focusKey===current?state.weeklyLife.focus:null;
   const completed=state.weeklyLife.completedWeekKey===current;
+  const recommendations=weeklyFocusRecommendations(state);
   const npcs=weeklyNpcPresence({
     activeCampaign:state.campaignRun.activeCampaign,
     activeRoute:state.campaignRun.activeRoute,
@@ -53,8 +56,14 @@ export default function WeeklyPlannerCard({state,onSelectFocus,onComplete,onAdva
     <section className="weekly-planner-card" aria-label="이번 주 계획">
       <header><small>LIVING YEAR</small><strong>{state.year}년차 {state.month}월 {state.week}주차</strong><span>{completed?'이번 주 완료':selected?`선택됨 · ${focusLabels[selected]}`:'이번 주의 중심을 골라보세요'}</span></header>
       <div className="weekly-presence"><small>이번 주 만남</small><b>{npcs.map(id=>livingNpcLabels[id]).join(' · ')}</b></div>
+      {recommendations.length>0&&<div className="v10-weekly-recommendations" aria-label="이번 주 추천 선택">
+        <small>지금 살펴볼 선택</small>
+        <div className="v10-weekly-recommendation-list">
+          {recommendations.map(item=><button key={item.focus} type="button" className="v10-weekly-recommendation" data-recommended-focus={item.focus} disabled={completed} onClick={()=>onSelectFocus(item.focus)}><b>{item.label}</b><span>{item.reason}</span></button>)}
+        </div>
+      </div>}
       <div className="weekly-focus-grid">
-        {weeklyFocusIds.map(focus=><button key={focus} type="button" aria-pressed={selected===focus} disabled={completed} onClick={()=>onSelectFocus(focus)}>{focusLabels[focus]}</button>)}
+        {weeklyFocusIds.map(focus=><button key={focus} type="button" data-weekly-focus={focus} aria-pressed={selected===focus} disabled={completed} onClick={()=>onSelectFocus(focus)}>{focusLabels[focus]}</button>)}
       </div>
       <div className="weekly-event-teaser"><small>이번 주 이야기</small><b>{event?eventLabels[event]:'중심을 고르면 이번 주의 만남이 정해져요.'}</b></div>
       {completed
