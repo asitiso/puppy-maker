@@ -1,3 +1,4 @@
+// @ts-ignore -- Vitest executes this contract in Node; app tsconfig intentionally excludes Node globals.
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
