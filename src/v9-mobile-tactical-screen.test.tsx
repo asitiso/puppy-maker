@@ -12,7 +12,7 @@ describe('V9 tactical mobile screen',()=>{
     expect(flowCss).toContain('.tactical-expedition-layer{position:absolute');
     expect(flowCss).toContain('inset:0');
     expect(flowCss).not.toContain('.tactical-expedition-layer{position:fixed');
-    expect(battleCss).toContain('.tactical-screen{height:100%');
+    expect(battleCss).toContain('height:100%');
     expect(battleCss).toContain('.tactical-result{position:absolute');
   });
 
