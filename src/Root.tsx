@@ -3,7 +3,7 @@ import type { GiftItemId, OutingLocationId } from './adventure';
 import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
-import LayeredHome from './LayeredHome';
+import LayeredHomeV7 from './LayeredHomeV7';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
 import SanctuaryOverlay from './SanctuaryOverlay';
 import SeasonalHomeBadge from './SeasonalHomeBadge';
@@ -87,6 +87,9 @@ export default function Root() {
   const [raisingOpen, setRaisingOpen] = useState(false);
   const [seasonLiveOpen, setSeasonLiveOpen] = useState(false);
   const [sanctuaryOpen, setSanctuaryOpen] = useState(false);
+  const [worldProgressOpen, setWorldProgressOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [ambitionOpen, setAmbitionOpen] = useState(false);
 
   const captureNavigate = useCallback((nextNavigate: (screen: Screen) => void) => setNavigate(() => nextNavigate), []);
   const captureClaimAchievement = useCallback((nextClaim: (achievement: AchievementId) => void) => setClaimAchievement(() => nextClaim), []);
@@ -170,7 +173,7 @@ export default function Root() {
       onWeeklyAdvanceReady={captureWeeklyAdvance}
     />
     {gameState.screen === 'hub' && <>
-      <LayeredHome
+      <LayeredHomeV7
         state={gameState}
         onSchedule={openSchedule}
         onClaimAchievement={handleClaimAchievement}
@@ -184,6 +187,11 @@ export default function Root() {
         onAdvanceWeek={handleAdvanceWeek}
         onExpedition={handleOpenExpedition}
         onSeason={() => setSeasonLiveOpen(true)}
+        onRaising={() => setRaisingOpen(true)}
+        onSanctuary={() => setSanctuaryOpen(true)}
+        onWorldProgress={() => setWorldProgressOpen(true)}
+        onArchive={() => setArchiveOpen(true)}
+        onAmbition={() => setAmbitionOpen(true)}
         onMenuReady={captureHomeMenu}
       />
       <SeasonalHomeBadge month={gameState.month} stamps={gameState.seasonStamps} />
@@ -208,9 +216,9 @@ export default function Root() {
         onConvergenceClear={() => undefined}
         onGuardianBoon={() => undefined}
       />
-      <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} />
-      <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} />
-      <WorldProgressOverlay state={gameState} />
+      <YearlyAmbitionOverlay state={gameState} onSelect={handleYearlyAmbition} open={ambitionOpen} onOpenChange={setAmbitionOpen} />
+      <CollectionArchiveOverlay state={gameState} onNavigate={handleArchiveNavigate} onExpedition={handleOpenExpedition} open={archiveOpen} onOpenChange={setArchiveOpen} />
+      <WorldProgressOverlay state={gameState} open={worldProgressOpen} onOpenChange={setWorldProgressOpen} />
       <YearEndCeremonyOverlay state={gameState} />
       <RaisingIdentityOverlay
         state={gameState}

@@ -1,0 +1,30 @@
+:root{
+  --ui-text-caption:12px;
+  --ui-text-small:13px;
+  --ui-text-body:15px;
+  --ui-text-button:15px;
+  --ui-text-subtitle:17px;
+  --ui-text-title:21px;
+  --ui-text-display:24px;
+  --ui-touch-min:44px;
+  --ui-control-secondary:48px;
+  --ui-control-primary:52px;
+  --ui-radius-sm:12px;
+  --ui-radius-md:18px;
+  --ui-radius-lg:24px;
+  --ui-space-1:4px;
+  --ui-space-2:8px;
+  --ui-space-3:12px;
+  --ui-space-4:16px;
+  --ui-space-5:20px;
+  --ui-glass:rgba(20,15,32,.82);
+  --ui-glass-strong:rgba(20,15,32,.94);
+  --ui-parchment:#fff6df;
+  --ui-parchment-soft:#fffaf0;
+  --ui-ink:#473226;
+  --ui-ivory:#fff4d2;
+  --ui-gold:#f1cf78;
+  --ui-gold-strong:#d99c45;
+  --ui-border:rgba(241,207,120,.58);
+  --ui-shadow:0 12px 30px rgba(9,5,18,.36);
+}
