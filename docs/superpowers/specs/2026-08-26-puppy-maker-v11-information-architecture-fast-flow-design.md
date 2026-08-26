@@ -170,6 +170,7 @@ Exact file/export names may follow repository conventions, but the following sem
 
 ```ts
 type InformationItemState =
+  | 'claimable'
   | 'active'
   | 'near_complete'
   | 'complete'
@@ -210,6 +211,8 @@ type InformationPageModel = {
   filters: InformationFilterOption[];
 };
 ```
+
+`claimable` is a presentation state only when an existing domain explicitly says a reward/action can be claimed now. It must never be inferred from display text.
 
 These are presentation semantics, not a requirement for one giant universal exported type.
 
@@ -416,9 +419,9 @@ No new persistent “viewed”, “recent”, or discovery-history fields are ad
 
 ## 10. Screen 3 — Season / Meta
 
-Season/meta currently consists of multiple existing systems and surfaces. V11 improves entry and information hierarchy without merging them into a new gameplay engine.
+Season/meta consists of the existing systems and routed surfaces present in the current application. V11 improves entry and information hierarchy without merging them into a new gameplay engine.
 
-Potential existing domains include season journey/progression, weekly season activity, mastery, shop, archive/legacy/lifetime progression, Sanctuary, Astral/Rift, and convergence-style endgame surfaces where the current app already routes to them.
+During implementation, the landing may include only modules that are actually present in current route wiring and whose authoritative state can be read without duplication. No module is invented to fill the layout.
 
 ### V11 responsibility
 
@@ -572,9 +575,9 @@ Avoid decorative progress bars for states without measurable progress.
 
 Provide coherent presentation variants for:
 
+- claimable,
 - active,
 - near-complete,
-- claimable where relevant,
 - complete,
 - locked,
 - empty search,
