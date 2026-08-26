@@ -47,6 +47,13 @@ The six tabs remain:
 
 `홈 / 생활 / 성장 / 모험 / 인연 / 기록`
 
+Back ownership is intentionally singular in V9:
+
+- category dashboards do **not** show a separate sticky back button; the persistent six-tab nav, especially `홈`, is the global escape path;
+- feature pages show exactly one contextual back control inside the `MobilePageShell` header and return to their originating category;
+- `MobileRouterChrome` no longer renders the V8 ordinary-route sticky `이전` button on V9 surfaces;
+- guarded active-play screens use only the global guarded `뒤로 + 홈` chrome and never add a second page-level back control.
+
 ### 3.3 Guarded active play
 
 During only these loss-sensitive states:
@@ -187,7 +194,8 @@ Introduce a reusable page layer over V8 rather than styling each feature indepen
 Responsibilities:
 
 - page title and optional eyebrow;
-- optional back affordance when route semantics require it;
+- feature-page back affordance when route semantics require it;
+- no category-page back affordance;
 - optional scene background slot;
 - one scroll body;
 - optional sticky action zone;
@@ -195,7 +203,7 @@ Responsibilities:
 - correct safe-area padding;
 - accessibility landmarks.
 
-It does not own global six-tab navigation; `MobileRouterChrome` remains responsible for global chrome.
+It does not own global six-tab navigation; `MobileRouterChrome` remains responsible for global chrome. On V9 ordinary surfaces, `MobileRouterChrome` must not render an additional sticky route-back control. This guarantees exactly one visible back affordance per feature screen.
 
 ### 6.2 `MobilePrimaryAction`
 
@@ -408,12 +416,14 @@ Required contracts:
 - visual asset registry has stable required semantic slots and fallbacks;
 - missing visual art renders a usable fallback;
 - ordinary page shell has one primary scroll body;
+- category dashboards do not render a duplicate back control;
+- feature pages render exactly one contextual back control in the page header;
 - ordinary routes preserve six-tab navigation;
 - training/Tactical/unresolved choice active routes show guarded back/home only;
 - result routes restore ordinary navigation;
 - category dashboards expose recommendation before grouped secondary features;
 - disabled actions expose a visible/accessibility reason;
-- category back restores route and stored scroll state contract;
+- feature back restores category route and stored scroll state contract;
 - 360/390/430 CSS contracts preserve touch and safe-area rules;
 - Tactical UI has replaceable battle/companion visual hooks;
 - no mobile route requires nested legacy fullscreen modal framing.
