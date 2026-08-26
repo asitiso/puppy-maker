@@ -4,6 +4,7 @@ import MobileHomeStatus from './MobileHomeStatus';
 import MobileNavIcon,{type MobileNavIconName} from './MobileNavIcon';
 import type {MobileCategoryId,MobileNavigationState} from './mobile-router';
 import './mobile-router-v8.css';
+import './mobile-legacy-feature-v8.css';
 
 type PendingExit='back'|'home'|null;
 
