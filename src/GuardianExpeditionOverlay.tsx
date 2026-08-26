@@ -10,6 +10,7 @@ import { guardianCallingDefinitions } from './guardian-callings';
 import { callingMasteryLevel } from './calling-mastery';
 import { expeditionIdentityModifiers } from './raising-expedition-effects';
 import { worldResultSummary, worldUiSummary } from './world-ui';
+import InformationPanel from './InformationPanel';
 
 export type GuardianExpeditionOverlayProps = {
   state: GameState;
@@ -23,6 +24,7 @@ export type GuardianExpeditionOverlayProps = {
 };
 
 type View = 'map' | 'battle' | 'result';
+type StageView = 'all' | 'available' | 'cleared';
 
 const materialLabels = { star_bark: '별빛 나무껍질', arcane_shard: '마력 파편', wind_pearl: '바람 진주' } as const;
 
@@ -94,11 +96,13 @@ function Battle({ state, stageId, onFinish, onCancel }: {
 
 export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose, onFinish, onEquip, onUnequip, onCraft }: GuardianExpeditionOverlayProps) {
   const [view, setView] = useState<View>('map');
+  const [stageView, setStageView] = useState<StageView>('all');
   const [activeStage, setActiveStage] = useState<ExpeditionStageId>(() => nextExpeditionStage(state.expeditionRecords) ?? 'forest_path');
   const launcherRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(open);
   const cleared = expeditionStageDefinitions.filter(stage => isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const bosses = expeditionStageDefinitions.filter(stage => stage.boss && isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
+  const available = expeditionStageDefinitions.filter(stage => isExpeditionStageUnlocked(stage.id, state.expeditionRecords) && !isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const recommended = nextExpeditionStage(state.expeditionRecords);
   const world = worldUiSummary(state);
 
@@ -153,7 +157,11 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
         {worldResult.seasonRewardLabel && <div><b>시즌 보상</b><span>{worldResult.seasonRewardLabel}</span></div>}
         {worldResult.contractLabel && <div><b>월간 의뢰</b><span>{worldResult.contractLabel}</span></div>}
       </div>}
-      <button onClick={() => setView('map')}>원정 지도로 돌아가기</button>
+      <div className="v11-expedition-actions">
+        {result?.cleared && recommended && recommended !== activeStage && <button className="is-primary" onClick={() => { setActiveStage(recommended); setView('battle'); }}>다음 원정</button>}
+        <button onClick={() => setView('battle')}>다시 도전</button>
+        <button onClick={() => setView('map')}>원정 지도로 돌아가기</button>
+      </div>
     </section></div>;
   }
 
@@ -161,17 +169,43 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     <header><button onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
     <div className="expedition-world-event"><b>{world.expeditionMap.eventStrip}</b><span>{world.event.bonusLabel}</span></div>
     <div className="expedition-materials">{Object.entries(state.expeditionMaterials).map(([id, value]) => <span key={id}><b>{materialLabels[id as keyof typeof materialLabels]}</b>{value}</span>)}</div>
-    <div className="expedition-regions">{expeditionRegionDefinitions.map(region => <article key={region.id} className={region.id === world.expeditionMap.featuredRegionId ? 'event-featured' : ''}>
-      <h3>{region.name}<small>{world.expeditionMap.regionRenownLabels[region.id]} · {region.stages.filter(id => isExpeditionStageCleared(state.expeditionRecords[id])).length}/3</small></h3>
-      {region.stages.map((stageId, index) => {
-        const stage = stageDefinition(stageId);
-        const record = state.expeditionRecords[stageId];
-        const unlocked = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
-        return <button key={stageId} disabled={!unlocked} className={stageId === recommended ? 'recommended' : ''} onClick={() => { setActiveStage(stageId); setView('battle'); }}>
-          <span>{record.cleared ? record.bestGrade : unlocked ? index + 1 : '🔒'}</span><b>{stage.name}<small>{stage.boss ? 'BOSS · ' : ''}목표 {stage.target}{record.bestScore ? ` · BEST ${record.bestScore}` : ''}</small></b><i>{record.cleared ? '재도전' : unlocked ? '출발' : '잠김'}</i>
-        </button>;
-      })}
-    </article>)}</div>
+    <InformationPanel
+      summaryItems={[
+        { label:'도전 가능', value:available },
+        { label:'클리어', value:`${cleared}/9` },
+        { label:'보스', value:`${bosses}/3` },
+      ]}
+      filters={[
+        { id:'all', label:'전체', count:expeditionStageDefinitions.length },
+        { id:'available', label:'도전 가능', count:available },
+        { id:'cleared', label:'클리어', count:cleared },
+      ]}
+      activeFilter={stageView}
+      onFilterChange={id => setStageView(id as StageView)}
+    >
+      <div className="expedition-regions">{expeditionRegionDefinitions.map(region => {
+        const visibleStages = region.stages.filter(stageId => {
+          const unlocked = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
+          const stageCleared = isExpeditionStageCleared(state.expeditionRecords[stageId]);
+          if (stageView === 'available') return unlocked && !stageCleared;
+          if (stageView === 'cleared') return stageCleared;
+          return true;
+        });
+        return <article key={region.id} className={region.id === world.expeditionMap.featuredRegionId ? 'event-featured' : ''}>
+          <h3>{region.name}<small>{world.expeditionMap.regionRenownLabels[region.id]} · {region.stages.filter(id => isExpeditionStageCleared(state.expeditionRecords[id])).length}/3</small></h3>
+          {visibleStages.length === 0 ? <p className="v11-info-empty">해당 상태의 원정이 없어요.</p> : visibleStages.map(stageId => {
+            const stage = stageDefinition(stageId);
+            const record = state.expeditionRecords[stageId];
+            const unlocked = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
+            const stageCleared = isExpeditionStageCleared(record);
+            const index = region.stages.indexOf(stageId);
+            return <button key={stageId} disabled={!unlocked} className={stageId === recommended ? 'recommended' : ''} onClick={() => { setActiveStage(stageId); setView('battle'); }}>
+              <span>{stageCleared ? record?.bestGrade : unlocked ? index + 1 : '🔒'}</span><b>{stage.name}<small>{stage.boss ? 'BOSS · ' : ''}목표 {stage.target}{record?.bestScore ? ` · BEST ${record.bestScore}` : ''}</small></b><i>{stageCleared ? '재도전' : unlocked ? '출발' : '잠김'}</i>
+            </button>;
+          })}
+        </article>;
+      })}</div>
+    </InformationPanel>
     <div className="expedition-meta-panels">
       <article><h3>원정 유물 <small>{state.equippedExpeditionRelics.length}/3 장착</small></h3>{expeditionRelicDefinitions.map(relic => {
         const owned = state.ownedExpeditionRelics.includes(relic.id);
