@@ -2,6 +2,7 @@
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
+import {attendanceKey} from './attendance';
 import {initialState,type GameState} from './game';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import type {MobileFeatureId} from './mobile-router';
@@ -33,7 +34,7 @@ describe('V9 ordinary feature pages',()=>{
   });
 
   it('shows explicit reasons for completed, locked and unavailable actions',()=>{
-    const claimedAttendance={...initialState,claimedAttendanceMonths:[`${initialState.year}-${String(initialState.month).padStart(2,'0')}`]};
+    const claimedAttendance={...initialState,claimedAttendanceMonths:[attendanceKey(initialState.year,initialState.month)]};
     expect(render('attendance',claimedAttendance)).toContain('수령 완료');
     expect(render('mail')).toContain('조건을 달성하면');
     const noGifts={...initialState,inventory:{star_cookie:0,herb_tea:0,fox_charm:0}};
