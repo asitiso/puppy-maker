@@ -1,6 +1,10 @@
+// @ts-ignore -- source contract reads execute outside app tsconfig Node globals.
+import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
 import ActionResultSummary from './ActionResultSummary';
+
+const tacticalSource=readFileSync(new URL('./TacticalBattleScreen.tsx',import.meta.url),'utf8');
 
 describe('V10 action result feedback',()=>{
   it('shows authoritative supplied changes before current totals',()=>{
@@ -25,5 +29,13 @@ describe('V10 action result feedback',()=>{
     />);
     expect(html).toContain('기록된 원정 결과를 확인하세요.');
     expect(html).not.toContain('v10-result-change-list');
+  });
+
+  it('routes Tactical terminal feedback through the shared result summary while preserving retry',()=>{
+    expect(tacticalSource).toContain("from './ActionResultSummary'");
+    expect(tacticalSource).toContain('<ActionResultSummary');
+    expect(tacticalSource).toContain('RETRY');
+    expect(tacticalSource).toContain('onRetry');
+    expect(tacticalSource).toContain('onExit');
   });
 });
