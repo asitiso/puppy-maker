@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import TacticalBattleScreen from './TacticalBattleScreen';
 import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
@@ -14,6 +14,8 @@ import {
 } from './tactical-launcher';
 import './tactical-expedition-flow.css';
 
+export type TacticalPhase='setup'|'active'|'result';
+
 export type TacticalExpeditionFlowProps = {
   state:GameState;
   expeditionOpen:boolean;
@@ -22,6 +24,7 @@ export type TacticalExpeditionFlowProps = {
   onComplete:(encounterId:TacticalEncounterId,result:BattleResult,rounds:number,survivingAllies:number,damageTaken:number,companions:[CompanionId,CompanionId])=>void;
   onExpeditionFinish:(stageId:ExpeditionStageId,score:number,fatigueDelta:number,stressDelta:number,actionKinds:ExpeditionActionCounts)=>void;
   onExitToHome:()=>void;
+  onPhaseChange?:(phase:TacticalPhase)=>void;
 };
 
 const companionLabels:Record<CompanionId,string> = { bear:'곰 · 탱커',owl:'올빼미 · 지원',wolf:'늑대 · 딜러',cat:'고양이 · 교란' };
@@ -38,7 +41,7 @@ export function closeTacticalFlow(clearSession:()=>void,closeBattle:()=>void,onE
   onExitToHome();
 }
 
-export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,onSetPreferences,onComplete,onExpeditionFinish,onExitToHome}:TacticalExpeditionFlowProps) {
+export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,onSetPreferences,onComplete,onExpeditionFinish,onExitToHome,onPhaseChange}:TacticalExpeditionFlowProps) {
   const [open,setOpen] = useState(false);
   const [session,setSession] = useState<BattleSession|null>(null);
   const [party,setParty] = useState<[CompanionId,CompanionId]>(()=>tacticalPartyForGame(state));
@@ -53,6 +56,10 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     cat:state.tacticalCompanionBonds.cat.level,
   }),[state.tacticalCompanionBonds]);
 
+  useEffect(()=>{
+    if(expeditionOpen&&!open)onPhaseChange?.('setup');
+  },[expeditionOpen,open,onPhaseChange]);
+
   if (!expeditionOpen) return null;
 
   const chooseCompanion = (id:CompanionId) => {
@@ -60,10 +67,13 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     setParty(([first,second])=>[second,id]);
   };
 
+  const createSession = (seedOffset=0) => createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+seedOffset);
+
   const start = () => {
     onSetParty(party);
-    setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)));
+    setSession(createSession());
     setOpen(true);
+    onPhaseChange?.('active');
   };
 
   const toggleAuto = () => {
@@ -79,10 +89,21 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
 
   const complete = (result:BattleResult,finalSession:BattleSession) => {
     const metrics = tacticalCompletionMetrics(finalSession);
+    onPhaseChange?.('result');
     onComplete(tacticalEncounterForExpeditionStage(stageId),result,metrics.rounds,metrics.survivingAllies,metrics.damageTaken,party);
     const actionKinds:ExpeditionActionCounts = { attack:metrics.rounds,dodge:0,charge:0 };
     const expeditionScore = tacticalExpeditionFinishScore(stage.target,result);
     onExpeditionFinish(stageId,expeditionScore,result==='victory'?2:6,result==='victory'?1:5,actionKinds);
+  };
+
+  const retry = () => {
+    setSession(createSession(1));
+    onPhaseChange?.('active');
+  };
+
+  const exit = () => {
+    onPhaseChange?.('setup');
+    closeTacticalFlow(()=>setSession(null),()=>setOpen(false),onExitToHome);
   };
 
   if (open && session) {
@@ -96,8 +117,8 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         onToggleAuto={toggleAuto}
         onToggleSpeed={toggleSpeed}
         onComplete={complete}
-        onRetry={()=>setSession(createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+1))}
-        onExit={()=>closeTacticalFlow(()=>setSession(null),()=>setOpen(false),onExitToHome)}
+        onRetry={retry}
+        onExit={exit}
       />
     </div>;
   }
