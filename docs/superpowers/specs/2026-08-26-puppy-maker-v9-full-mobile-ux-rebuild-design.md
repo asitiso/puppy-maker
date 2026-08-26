@@ -203,17 +203,23 @@ When the active attempt resolves into a result state, normal navigation returns 
 
 ## 11. Return and history behavior
 
-V9 keeps route origin and relevant scroll position wherever practical.
+V9 keeps route origin and in-session category scroll position when a feature is pushed and later popped with Back. Reload persistence of scroll position is not required.
+
+Explicit completion contracts:
+
+- `생활 → 스케줄 → 훈련 → 결과 → 완료` returns to Home. Training is treated as a completed top-level weekly play cycle.
+- `모험 → 수호자 원정 → Tactical → 결과 → 완료` returns to the Expedition feature under `모험`.
+- `인연/스토리 → 선택 이벤트 → 결과 → 완료` returns to the originating story/bond feature.
+- ordinary feature Back always returns to its originating category or parent feature, never implicitly to Home.
 
 Examples:
 
 - `성장 → 업적 → 상세 → 보상 → 뒤로` returns to the previous achievement context;
-- `생활 → 우편 → 수령 → 뒤로` returns to mail/life context, not home;
-- `인연 → 이야기 → 선택 이벤트 → 결과` returns to the story flow;
-- `모험 → 원정 → Tactical → 결과` returns to the expedition/result context;
-- an explicitly completed top-level play cycle may return to home when that is the designed completion destination.
+- `생활 → 우편 → 수령 → 뒤로` returns to mail/life context, not Home;
+- `인연 → 이야기 → 선택 이벤트 → 결과` remains in the story flow;
+- `모험 → 원정 → Tactical → 결과` remains in the expedition flow.
 
-Back and Close must not be synonyms for “go home” unless home is actually the parent destination.
+Back and Close must not be synonyms for “go home” unless Home is actually the parent destination. A visible Home control remains the explicit escape to Home on ordinary screens.
 
 ## 12. Status, error, and empty states
 
@@ -286,6 +292,7 @@ V9 must include contract tests for:
 - guarded Back/Home during unresolved choice event,
 - normal navigation restored in result states,
 - category → feature → Back origin restoration,
+- category scroll restoration after Back within the same session,
 - long-list reachability,
 - single-scroll-owner behavior,
 - safe-area padding,
