@@ -15,16 +15,18 @@ import {mailDefinitions} from './mail-rewards';
 import MobileFeedback from './MobileFeedback';
 import MobilePageShell from './MobilePageShell';
 import MobilePrimaryAction from './MobilePrimaryAction';
+import {useMobileRouterActions} from './MobileRouterActionsContext';
 import {monthlyFocusDefinitions} from './monthly-focus';
 import {monthlyMissionDefinitions} from './monthly-missions';
 import type {MobileFeatureId} from './mobile-router';
 import type {MobileVisualSlot} from './mobile-visual-assets';
 import {storyChapterDefinitions} from './story-chapters';
+import './mobile-v9-feature.css';
 
 type Props={
   feature:MobileFeatureId;
   state:GameState;
-  onBack:()=>void;
+  onBack?:()=>void;
   onClaimAchievement:(achievement:AchievementId)=>void;
   onOuting:(location:OutingLocationId)=>void;
   onGift:(item:GiftItemId)=>void;
@@ -73,7 +75,9 @@ function Row({marker,title,description,status,disabled=false,disabledReason,onCl
   </MobilePrimaryAction>;
 }
 
-export default function MobileLegacyFeaturePage({feature,state,onBack,onClaimAchievement,onOuting,onGift,onAttendance,onMail,onMonthlyFocus}:Props){
+export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBack,onClaimAchievement,onOuting,onGift,onAttendance,onMail,onMonthlyFocus}:Props){
+  const routerActions=useMobileRouterActions();
+  const onBack=explicitBack??routerActions.onBack;
   const info=featureMeta[feature]??{eyebrow:'FEATURE',title:'기능',description:'선택한 기능을 확인해요.',backgroundSlot:'category.records.background' as const};
   const [feedback,setFeedback]=useState<string|null>(null);
   const eligible=new Set(eligibleAchievements(state));
