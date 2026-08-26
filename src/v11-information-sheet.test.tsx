@@ -1,3 +1,5 @@
+// @ts-ignore -- source contract reads execute outside app tsconfig Node globals.
+import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
 import InformationPanel from './InformationPanel';
@@ -7,6 +9,11 @@ const metrics=[
   {label:'돌봄',value:'1/2'},
   {label:'놀이',value:'2/2'},
 ];
+const layeredHomeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
+const archiveSource=readFileSync(new URL('./CollectionArchiveOverlay.tsx',import.meta.url),'utf8');
+const expeditionSource=readFileSync(new URL('./GuardianExpeditionOverlay.tsx',import.meta.url),'utf8');
+const mainSource=readFileSync(new URL('./main.tsx',import.meta.url),'utf8');
+const css=readFileSync(new URL('./mobile-v11-information.css',import.meta.url),'utf8');
 
 describe('V11 shared information surfaces',()=>{
   it('renders sheet summary before detail with one dominant primary action',()=>{
@@ -88,5 +95,41 @@ describe('V11 shared information surfaces',()=>{
 
     expect(html).toContain('role="status"');
     expect(html).toContain('완료한 기록이 아직 없어요.');
+  });
+
+  it('wires information-first filters into the existing quest and bag home panels',()=>{
+    expect(layeredHomeSource).toContain("from './InformationPanel'");
+    expect(layeredHomeSource).toContain('questView');
+    expect(layeredHomeSource).toContain('bagView');
+    expect(layeredHomeSource).toContain('<InformationPanel');
+    expect(layeredHomeSource).toContain("id:'ready'");
+    expect(layeredHomeSource).toContain("id:'owned'");
+  });
+
+  it('progressively discloses dense archive information instead of one endless record column',()=>{
+    expect(archiveSource).toContain('archiveView');
+    expect(archiveSource).toContain("'progress'");
+    expect(archiveSource).toContain("'legacy'");
+    expect(archiveSource).toContain("'history'");
+    expect(archiveSource).toContain('aria-pressed={archiveView');
+  });
+
+  it('filters expedition stages by state and offers safe result continuation',()=>{
+    expect(expeditionSource).toContain('stageView');
+    expect(expeditionSource).toContain("'available'");
+    expect(expeditionSource).toContain("'cleared'");
+    expect(expeditionSource).toContain('다시 도전');
+    expect(expeditionSource).toContain('다음 원정');
+  });
+
+  it('loads V11 styles and preserves compact mobile accessibility contracts',()=>{
+    expect(mainSource).toContain("import './mobile-v11-information.css'");
+    expect(css).toMatch(/max-width:\s*430px/);
+    expect(css).toMatch(/max-width:\s*390px/);
+    expect(css).toMatch(/max-height:\s*640px/);
+    expect(css).toContain('overflow-wrap:anywhere');
+    expect(css).toContain('env(safe-area-inset-bottom');
+    expect(css).toContain(':focus-visible');
+    expect(css).toContain('prefers-reduced-motion');
   });
 });
