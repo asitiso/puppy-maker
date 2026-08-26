@@ -1,18 +1,15 @@
-// @ts-ignore -- source contract reads execute outside app tsconfig Node globals.
-import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
+import InformationPanel from './InformationPanel';
 import InformationSheet from './InformationSheet';
-
-const layeredHomeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
 
 const metrics=[
   {label:'돌봄',value:'1/2'},
   {label:'놀이',value:'2/2'},
 ];
 
-describe('V11 shared information sheet',()=>{
-  it('renders summary before detail with one dominant primary action',()=>{
+describe('V11 shared information surfaces',()=>{
+  it('renders sheet summary before detail with one dominant primary action',()=>{
     const html=renderToStaticMarkup(
       <InformationSheet
         open
@@ -56,8 +53,40 @@ describe('V11 shared information sheet',()=>{
     expect(html).not.toContain('초과 액션');
   });
 
-  it('is consumed by the quest and collection home panels instead of duplicated sheet markup',()=>{
-    expect(layeredHomeSource).toContain("from './InformationSheet'");
-    expect((layeredHomeSource.match(/<InformationSheet/g)??[]).length).toBeGreaterThanOrEqual(2);
+  it('structures an existing panel as summary, state filters, then content',()=>{
+    const html=renderToStaticMarkup(
+      <InformationPanel
+        summaryItems={[
+          {label:'진행',value:3},
+          {label:'완료',value:7},
+        ]}
+        filters={[
+          {id:'all',label:'전체'},
+          {id:'active',label:'진행'},
+          {id:'done',label:'완료'},
+        ]}
+        activeFilter="active"
+        onFilterChange={vi.fn()}
+      >
+        <article>현재 목표</article>
+      </InformationPanel>,
+    );
+
+    expect(html.indexOf('v11-info-summary')).toBeLessThan(html.indexOf('v11-info-tabs'));
+    expect(html.indexOf('v11-info-tabs')).toBeLessThan(html.indexOf('현재 목표'));
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('data-information-filter="active"');
+  });
+
+  it('shows an explicit empty state when a filtered view has no content',()=>{
+    const html=renderToStaticMarkup(
+      <InformationPanel
+        summaryItems={[{label:'완료',value:0}]}
+        emptyMessage="완료한 기록이 아직 없어요."
+      />,
+    );
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('완료한 기록이 아직 없어요.');
   });
 });
