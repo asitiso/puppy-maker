@@ -112,9 +112,11 @@ type LayeredHomeProps = {
   onExpedition?: () => void;
   onSeason?: () => void;
   onMenuReady?: (openMenu: (id: HomeMenuId) => void) => void;
+  onMenuNavigate?: (id: HomeMenuId) => void;
+  onWeeklyPlannerNavigate?: () => void;
 };
 
-export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onWeeklyFocus, onCompleteWeek, onAdvanceWeek, onExpedition, onSeason, onMenuReady }: LayeredHomeProps) {
+export default function LayeredHome({ state, onSchedule, onClaimAchievement, onOuting, onGift, onAttendance, onMail, onMonthlyFocus, onWeeklyFocus, onCompleteWeek, onAdvanceWeek, onExpedition, onSeason, onMenuReady, onMenuNavigate, onWeeklyPlannerNavigate }: LayeredHomeProps) {
   const [petted, setPetted] = useState(false);
   const [activeNav, setActiveNav] = useState(-1);
   const [activePanel, setActivePanel] = useState<HomeMenuId | null>(null);
@@ -164,12 +166,16 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const openMenu = useCallback((id: HomeMenuId, index?: number) => {
     if (typeof index === 'number') setActiveNav(index);
     else setActiveNav(-1);
+    if (onMenuNavigate) {
+      onMenuNavigate(id);
+      return;
+    }
     if (id === 'schedule') return onSchedule();
     const activeElement = document.activeElement;
     panelLauncherRef.current = activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
-  }, [onSchedule]);
+  }, [onMenuNavigate, onSchedule]);
 
   const closePanel = useCallback(() => {
     setActivePanel(null);
@@ -182,7 +188,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
       case 'mail': return openMenu('mail');
       case 'attendance': return openMenu('attendance');
       case 'achievement': return openMenu('quest', 2);
-      case 'weekly_planner': return plannerRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+      case 'weekly_planner': return onWeeklyPlannerNavigate ? onWeeklyPlannerNavigate() : plannerRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
       case 'advance_week': return onAdvanceWeek?.();
       case 'schedule': return onSchedule();
       case 'outing': return openMenu('outing');
