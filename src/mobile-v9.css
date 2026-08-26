@@ -51,6 +51,7 @@
 .v9-category-recommendation strong{font-size:18px;line-height:1.25}
 .v9-category-recommendation span{color:rgba(255,255,255,.88);font-size:13px;line-height:1.4}
 .v9-category-recommendation em{color:rgba(255,255,255,.64);font-size:11px;line-height:1.35;font-style:normal}
+.v9-page-back:focus-visible,.v9-primary-action:focus-visible,.v9-category-recommendation:focus-visible{outline:3px solid #f2c66d;outline-offset:2px}
 .v8-category-entry.is-priority{border-color:rgba(242,198,109,.34);background:rgba(87,64,43,.54)}
 .v9-chronicle-details{overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:16px;background:rgba(27,20,39,.72)}
 .v9-chronicle-details>summary{display:flex;align-items:center;min-height:48px;padding:0 14px;cursor:pointer;font-weight:800;list-style:none}
