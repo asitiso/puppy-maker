@@ -77,6 +77,23 @@
 .v8-mobile-shell.is-home .lh-character .v9-home-hero .v9-character-image{object-fit:contain}
 .v8-mobile-shell.is-home .lh-character .v9-home-hero .v9-character-fallback-label{display:none}
 
+/* V9 active play: existing App reducer screens keep their DOM while the mobile host owns reachability. */
+.v8-app-host.is-normal-play .game-shell,.v8-app-host.is-guarded-play .game-shell{position:relative;min-height:0;overflow:hidden}
+.v8-app-host.is-normal-play .screen,.v8-app-host.is-guarded-play .screen{box-sizing:border-box;width:100%;height:100%;min-height:0;max-height:100%;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.v8-app-host.is-normal-play .diary-screen,.v8-app-host.is-normal-play .result-screen{overflow-y:auto;overflow-x:hidden;padding-bottom:calc(74px + env(safe-area-inset-bottom));scrollbar-gutter:stable}
+.v8-app-host.is-normal-play .diary-screen .planner-actions{position:sticky;left:0;right:0;bottom:0;z-index:12;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:8px;padding:10px max(10px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));background:linear-gradient(180deg,rgba(24,17,37,.18),rgba(24,17,37,.96) 26%);backdrop-filter:blur(10px)}
+.v8-app-host.is-normal-play .diary-screen .planner-actions button{min-height:52px;touch-action:manipulation}
+.v8-app-host.is-guarded-play .training-screen{position:relative;overflow:hidden;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+.v8-app-host.is-guarded-play .training-screen .battle-hud{z-index:8}
+.v8-app-host.is-guarded-play .training-screen .action-bar{position:absolute;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:14;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0;padding:0}
+.v8-app-host.is-guarded-play .training-screen .action-bar button{min-width:0;min-height:52px;padding:8px 4px;touch-action:manipulation}
+.v8-app-host.is-guarded-play .dialogue-screen{position:relative;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(12px + env(safe-area-inset-bottom));scrollbar-gutter:stable}
+.v8-app-host.is-guarded-play .dialogue-screen .dialogue-box{max-height:none}
+.v8-app-host.is-guarded-play .dialogue-screen .choices{display:grid;gap:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+.v8-app-host.is-guarded-play .dialogue-screen .choices button{min-height:52px;touch-action:manipulation}
+.v8-app-host.is-normal-play .result-screen .next-month{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));z-index:12;display:block;width:min(calc(100% - 20px),460px);min-height:52px;margin:12px auto 0;touch-action:manipulation;box-shadow:0 10px 28px rgba(0,0,0,.26)}
+.v8-app-host.is-normal-play .result-screen .result-card{max-width:100%}
+
 @media(max-width:390px){
   .v9-page-header{padding-inline:10px}
   .v9-page-content,.v9-page-sticky-action{padding-left:10px;padding-right:10px}
@@ -84,11 +101,23 @@
   .v9-status-context>strong{font-size:11px}
   .v9-status-resources{gap:4px}
   .v9-status-resources>span{padding-inline:5px;font-size:11px}
+  .v8-app-host.is-normal-play .diary-screen .book{max-width:100%;margin-inline:auto}
+  .v8-app-host.is-normal-play .diary-screen .week-row{min-width:0}
+  .v8-app-host.is-normal-play .diary-screen .activity-palette{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+  .v8-app-host.is-guarded-play .training-screen .battle-hud{gap:5px;padding-inline:8px}
+  .v8-app-host.is-guarded-play .training-screen .action-bar{left:6px;right:6px;gap:5px}
+  .v8-app-host.is-guarded-play .dialogue-screen .dialogue-box{left:8px;right:8px;width:auto}
 }
 
 @media(max-width:360px),(max-height:650px){
   .v9-home-status{min-height:54px;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
   .v9-status-context .v7-guardian-chip{max-width:76px;overflow:hidden;text-overflow:ellipsis}
+  .v8-app-host.is-normal-play .diary-screen,.v8-app-host.is-normal-play .result-screen{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  .v8-app-host.is-normal-play .diary-screen .planner-actions{padding-top:7px;padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+  .v8-app-host.is-guarded-play .training-screen{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  .v8-app-host.is-guarded-play .training-screen .action-bar{bottom:calc(5px + env(safe-area-inset-bottom))}
+  .v8-app-host.is-guarded-play .training-screen .action-bar button{min-height:48px;font-size:13px}
+  .v8-app-host.is-guarded-play .dialogue-screen .choices button{min-height:48px}
 }
 
 @media(prefers-reduced-motion:reduce){
