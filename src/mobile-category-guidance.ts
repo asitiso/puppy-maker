@@ -1,6 +1,7 @@
 import type {GameState} from './game';
-import {achievementDefinitions,eligibleAchievements} from './game';
+import {achievementDefinitions,eligibleAchievements,masteryLevel,unlockedSkills} from './game';
 import {attendanceKey} from './attendance';
+import {guardianGrowthPoints,guardianRank} from './guardian-rank';
 import {availableMail} from './mail-rewards';
 import type {MobileContentCategory,MobileFeatureId} from './mobile-router';
 
@@ -19,11 +20,25 @@ const fallback:Record<MobileContentCategory,MobileCategoryRecommendation>={
   records:{feature:'archive',label:'성장 도감',description:'성장·원정·유산 기록을 한곳에서 확인해요.',reason:'현재까지의 수집과 장기 진행을 가장 빠르게 파악할 수 있습니다.'},
 };
 
+function availableUnclaimedMail(state:GameState){
+  const points=guardianGrowthPoints({
+    memories:state.memories.length,
+    skills:unlockedSkills(state).length,
+    discoveries:state.discoveries.length,
+    masteryLevels:Object.values(state.mastery).map(entry=>masteryLevel(entry.xp)),
+  });
+  return availableMail({
+    memories:state.memories,
+    visitedOutings:state.visitedOutings,
+    guardianRank:guardianRank(points),
+  }).filter(id=>!state.claimedMailRewards.includes(id));
+}
+
 export function mobileCategoryRecommendation(category:MobileContentCategory,state:GameState):MobileCategoryRecommendation{
   if(category==='life'){
     const currentAttendance=attendanceKey(state.year,state.month);
     if(!state.claimedAttendanceMonths.includes(currentAttendance))return {feature:'attendance',label:'출석 보상 받기',description:'이번 달 받을 수 있는 출석 보상을 확인해요.',reason:'아직 수령하지 않은 보상이 있습니다.'};
-    if(availableMail(state.year,state.month).some(mail=>!state.claimedMailRewards.includes(mail.id)))return {feature:'mail',label:'우편 보상 확인',description:'도착한 편지와 보상을 확인해요.',reason:'아직 확인하지 않은 우편 보상이 있습니다.'};
+    if(availableUnclaimedMail(state).length)return {feature:'mail',label:'우편 보상 확인',description:'도착한 편지와 보상을 확인해요.',reason:'아직 확인하지 않은 우편 보상이 있습니다.'};
   }
   if(category==='growth'){
     const claimable=eligibleAchievements(state).find(id=>!state.claimedAchievements.includes(id));
@@ -48,7 +63,7 @@ export function mobileCategoryPriorityFeatures(category:MobileContentCategory,st
   if(category==='life'){
     const currentAttendance=attendanceKey(state.year,state.month);
     if(!state.claimedAttendanceMonths.includes(currentAttendance))extras.push('attendance');
-    if(availableMail(state.year,state.month).some(mail=>!state.claimedMailRewards.includes(mail.id)))extras.push('mail');
+    if(availableUnclaimedMail(state).length)extras.push('mail');
     extras.push('schedule');
   }else if(category==='growth'){
     if(eligibleAchievements(state).some(id=>!state.claimedAchievements.includes(id)))extras.push('achievements');
