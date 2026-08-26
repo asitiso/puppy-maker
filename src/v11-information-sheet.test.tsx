@@ -12,6 +12,8 @@ const metrics=[
 const layeredHomeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
 const archiveSource=readFileSync(new URL('./CollectionArchiveOverlay.tsx',import.meta.url),'utf8');
 const expeditionSource=readFileSync(new URL('./GuardianExpeditionOverlay.tsx',import.meta.url),'utf8');
+const astralSource=readFileSync(new URL('./AstralRiftPanel.tsx',import.meta.url),'utf8');
+const convergenceSource=readFileSync(new URL('./ConvergencePanel.tsx',import.meta.url),'utf8');
 const mainSource=readFileSync(new URL('./main.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('./mobile-v11-information.css',import.meta.url),'utf8');
 
@@ -120,6 +122,17 @@ describe('V11 shared information surfaces',()=>{
     expect(expeditionSource).toContain("'cleared'");
     expect(expeditionSource).toContain('다시 도전');
     expect(expeditionSource).toContain('다음 원정');
+  });
+
+  it('applies the same state-first discovery pattern to late-game meta challenges',()=>{
+    expect(astralSource).toContain("from './InformationPanel'");
+    expect(astralSource).toContain('riftView');
+    expect(astralSource).toContain("id:'available'");
+    expect(astralSource).toContain("id:'cleared'");
+    expect(convergenceSource).toContain("from './InformationPanel'");
+    expect(convergenceSource).toContain('convergenceView');
+    expect(convergenceSource).toContain("id:'available'");
+    expect(convergenceSource).toContain("id:'cleared'");
   });
 
   it('loads V11 styles and preserves compact mobile accessibility contracts',()=>{
