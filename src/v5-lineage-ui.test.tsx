@@ -51,8 +51,8 @@ describe('V5 lineage chronicle UI',()=>{
     expect(appSource).toContain("dispatch({type:'START_NEXT_GENERATION'})");
     expect(plannerSource).toContain("import LineageChronicle from './LineageChronicle';");
     expect(plannerSource).toContain('<LineageChronicle state={state}/>');
-    expect(homeSource).toContain('const primaryTask = hubNextAction(state);');
-    expect((homeSource.match(/className="lh-primary-action"/g)??[])).toHaveLength(1);
+    expect(homeSource).toContain('const guidedActions = hubGuidedActionStack(state);');
+    expect((homeSource.match(/<HomeCommandCenter/g)??[])).toHaveLength(1);
   });
 
   it('keeps mobile, touch, safe-area and reduced-motion contracts',()=>{

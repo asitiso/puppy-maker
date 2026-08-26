@@ -6,6 +6,7 @@ import {chooseAutoCombinationUltimate,chooseTacticalEngineAction} from './tactic
 import {buildCombinationUltimateViews,buildTacticalBattleView} from './tactical-ui';
 import {resolveCombinationUltimate} from './tactical-ultimate';
 import type {TacticalActionId} from './tactical-actions';
+import ActionResultSummary from './ActionResultSummary';
 import './tactical-battle.css';
 
 export type TacticalBattleScreenProps={
@@ -116,7 +117,17 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
     <div className="tactical-log" role="status" aria-live="polite" aria-label="Battle log">{log.length?log.map((line,index)=><span key={`${line}-${index}`}>{line}</span>):<span>{activeRaw?.side==='ally'?'카드 1장을 선택하세요.':'적의 행동을 기다리는 중...'}</span>}</div>
     {ultimateViews.length?<div className="tactical-ultimates" aria-label="Bond Lv5 합동기">{ultimateViews.map(ultimate=><button key={ultimate.companionId} className={selectedUltimate===ultimate.companionId?'selected':''} disabled={!ultimate.available||activeRaw?.id!=='runa'||auto||Boolean(v.result)} onClick={()=>chooseUltimate(ultimate.companionId)}><b>{ultimate.label}</b><small>MP {ultimate.mpCost} · BOND 5</small></button>)}</div>:null}
     <footer className="tactical-hand" aria-label="4장 전술 카드">{v.hand.map((id,index)=>{const action=v.actions.find(item=>item.id===id);return <button key={`${id}-${index}`} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}><b>{id.toUpperCase()}</b>{action?<small>AP {action.apCost}{action.mpCost?` · MP ${action.mpCost}`:''}</small>:<small>사용 불가</small>}</button>})}</footer>
-    {v.result?<div className="tactical-result" role="dialog" aria-label="전투 결과"><strong>{v.result==='victory'?'VICTORY':'DEFEAT'}</strong><span>ROUND {v.round}</span><div>{onRetry?<button onClick={onRetry}>RETRY</button>:null}{onExit?<button onClick={onExit}>EXIT</button>:null}</div></div>:null}
+    {v.result?<div className="tactical-result" role="dialog" aria-label="전투 결과">
+      {onExit||onRetry?<>
+        <ActionResultSummary
+          title={v.result==='victory'?'VICTORY':'DEFEAT'}
+          message={`ROUND ${v.round}`}
+          continuationLabel={onExit?'EXIT':'RETRY'}
+          onContinue={onExit??onRetry!}
+        />
+        {onExit&&onRetry?<button className="tactical-result-retry" onClick={onRetry}>RETRY</button>:null}
+      </>:<><strong>{v.result==='victory'?'VICTORY':'DEFEAT'}</strong><span>ROUND {v.round}</span></>}
+    </div>:null}
   </section>
 }
 export default TacticalBattleScreen;

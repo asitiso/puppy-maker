@@ -42,9 +42,9 @@ describe('V9 mobile home and status',()=>{
     expect(homeSource).not.toContain("'/assets/home/runa_idle_layer.png'");
   });
 
-  it('retains exactly one authoritative hubNextAction primary CTA',()=>{
-    expect(homeSource).toContain('const primaryTask = hubNextAction(state)');
-    expect((homeSource.match(/className="lh-primary-action"/g)??[])).toHaveLength(1);
-    expect(homeSource).toContain('runPrimaryTask');
+  it('retains exactly one authoritative guided-action command center',()=>{
+    expect(homeSource).toContain('const guidedActions = hubGuidedActionStack(state)');
+    expect((homeSource.match(/<HomeCommandCenter/g)??[])).toHaveLength(1);
+    expect(homeSource).toContain('runGuidedAction');
   });
 });
