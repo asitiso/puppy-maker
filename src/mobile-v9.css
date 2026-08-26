@@ -1,0 +1,30 @@
+@import './mobile-ui-tokens.css';
+
+.v9-scene-background{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:#171126}
+.v9-scene-fallback,.v9-scene-image,.v9-scene-overlay{position:absolute;inset:0;width:100%;height:100%}
+.v9-scene-fallback{background:linear-gradient(160deg,#25162f 0%,#4c335c 50%,#1a1325 100%)}
+.v9-scene-image{display:block}
+.v9-scene-overlay{background:transparent}
+.v9-scene-overlay.is-light{background:linear-gradient(180deg,rgba(14,9,22,.12),rgba(14,9,22,.28))}
+.v9-scene-overlay.is-medium{background:linear-gradient(180deg,rgba(12,8,19,.22),rgba(12,8,19,.48))}
+.v9-scene-overlay.is-heavy{background:linear-gradient(180deg,rgba(8,5,14,.46),rgba(8,5,14,.72))}
+
+.v9-fallback-home .v9-scene-fallback{background:radial-gradient(circle at 52% 35%,#765777 0%,#3f2b50 42%,#171126 100%)}
+.v9-fallback-life .v9-scene-fallback{background:linear-gradient(155deg,#58664f 0%,#314a42 48%,#182b31 100%)}
+.v9-fallback-growth .v9-scene-fallback{background:linear-gradient(155deg,#6e5b38 0%,#4c3e4f 50%,#251d37 100%)}
+.v9-fallback-adventure .v9-scene-fallback{background:linear-gradient(155deg,#31555a 0%,#344665 50%,#1c263b 100%)}
+.v9-fallback-bond .v9-scene-fallback{background:linear-gradient(155deg,#80545f 0%,#593c56 52%,#281f3b 100%)}
+.v9-fallback-records .v9-scene-fallback{background:linear-gradient(155deg,#4a456b 0%,#333457 50%,#191a31 100%)}
+.v9-fallback-battle .v9-scene-fallback{background:linear-gradient(160deg,#26343a 0%,#443347 48%,#171922 100%)}
+.v9-fallback-victory .v9-scene-fallback{background:radial-gradient(circle at 50% 30%,#b89145 0%,#6b5735 34%,#272138 100%)}
+.v9-fallback-defeat .v9-scene-fallback{background:radial-gradient(circle at 50% 30%,#65536a 0%,#3d3448 40%,#191621 100%)}
+
+.v9-character-art{position:relative;display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden;isolation:isolate}
+.v9-character-fallback,.v9-character-image{position:absolute;inset:0;width:100%;height:100%}
+.v9-character-fallback{background:radial-gradient(circle at 50% 42%,rgba(241,207,120,.28),rgba(102,72,124,.42) 45%,rgba(24,17,38,.15) 72%)}
+.v9-character-image{z-index:1;display:block}
+.v9-character-fallback-label{position:relative;z-index:2;display:grid;place-items:center;width:56px;height:56px;border:1px solid rgba(241,207,120,.5);border-radius:50%;background:rgba(35,24,51,.68);color:#ffe5a3;font-size:24px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+
+@media(prefers-reduced-motion:reduce){
+  .v9-scene-background *,.v9-character-art *{animation:none!important;transition:none!important}
+}
