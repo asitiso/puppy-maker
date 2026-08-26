@@ -19,14 +19,14 @@ const worldCss = css('./world-progress.css');
 const raisingCss = css('./raising-identity.css');
 const expeditionCss = css('./expedition-ui.css');
 const tacticalCss = css('./tactical-battle.css');
+const v10Css = css('./mobile-v10-guidance.css');
 
 describe('Layered Home mobile UI contract', () => {
   it('exposes one prominent authoritative current-task action on the home scene', () => {
-    expect(home.match(/className="lh-primary-action"/g)?.length).toBe(1);
-    expect(home).toContain('지금 할 일');
-    expect(home).toContain('const primaryTask = hubNextAction(state);');
-    expect(home).toContain('{primaryTask.label}');
-    expect(home).toContain('{primaryTask.detail}');
+    expect(home).toContain('const guidedActions = hubGuidedActionStack(state);');
+    expect((home.match(/<HomeCommandCenter/g) ?? []).length).toBe(1);
+    expect(home).toContain('stack={guidedActions}');
+    expect(home).toContain('onAction={runGuidedAction}');
     expect(home).not.toContain('const primaryTask = unclaimedMail.length > 0');
   });
 
@@ -59,9 +59,9 @@ describe('Layered Home mobile UI contract', () => {
   });
 
   it('keeps the primary CTA readable at 360x640 without three stacked text rows', () => {
-    expect(mobileCss).toContain('@media(max-width:390px) and (max-height:650px)');
-    expect(mobileCss).toContain('.layered-home .lh-primary-action span{display:none}');
-    expect(mobileCss).toContain('.layered-home .lh-primary-action{min-height:48px;padding:5px 10px}');
+    expect(v10Css).toContain('@media(max-height:640px)');
+    expect(v10Css).toContain('.layered-home .v10-command-primary{padding:6px 8px}');
+    expect(v10Css).toContain('.layered-home .v10-command-primary .v10-guided-cta{min-height:44px');
   });
 
   it('keeps tap controls and panel scrolling on deliberate touch gestures', () => {
