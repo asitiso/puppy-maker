@@ -18,8 +18,8 @@ const stack:GuidedActionStack={
 describe('V10 Home Command Center',()=>{
   it('renders exactly one primary action and at most two secondary actions',()=>{
     const html=renderToStaticMarkup(<HomeCommandCenter stack={stack} onAction={vi.fn()}/>);
-    expect((html.match(/v10-command-primary/g)??[]).length).toBe(1);
-    expect((html.match(/v10-command-secondary/g)??[]).length).toBeLessThanOrEqual(2);
+    expect((html.match(/data-guided-variant="primary"/g)??[]).length).toBe(1);
+    expect((html.match(/data-guided-variant="secondary"/g)??[]).length).toBeLessThanOrEqual(2);
     expect(html).toContain('받을 편지가 있어요');
     expect(html).toContain('보상을 먼저 확인하세요.');
   });
