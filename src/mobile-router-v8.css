@@ -32,8 +32,8 @@
 .v8-bottom-nav button>span{width:23px;height:23px}.v8-bottom-nav svg{width:100%;height:100%}
 .v8-bottom-nav b{font-size:13px;line-height:1.05;font-weight:800;white-space:nowrap}
 .v8-bottom-nav button.is-active{background:linear-gradient(180deg,rgba(241,207,120,.24),rgba(217,156,69,.12));color:var(--ui-gold);box-shadow:inset 0 0 0 1px rgba(241,207,120,.35)}
-.v8-bottom-nav button:active,.v8-play-guard button:active,.v8-exit-actions button:active{transform:translateY(1px);filter:brightness(.92)}
-.v8-bottom-nav button:focus-visible,.v8-play-guard button:focus-visible,.v8-exit-actions button:focus-visible{outline:3px solid #ffe29a;outline-offset:2px}
+.v8-bottom-nav button:active,.v8-play-guard button:active,.v8-exit-actions button:active,.v8-category-entry:active{transform:translateY(1px);filter:brightness(.92)}
+.v8-bottom-nav button:focus-visible,.v8-play-guard button:focus-visible,.v8-exit-actions button:focus-visible,.v8-category-entry:focus-visible{outline:3px solid #ffe29a;outline-offset:2px}
 
 .v8-play-guard{
   position:relative;z-index:6;min-height:60px;display:grid;grid-template-columns:minmax(84px,1fr) auto minmax(84px,1fr);align-items:center;gap:8px;
@@ -49,18 +49,37 @@
 .v8-exit-confirm h2{margin:0;font-size:21px;line-height:1.25}.v8-exit-confirm p{margin:9px 0 17px;font-size:15px;line-height:1.5;color:#725947}
 .v8-exit-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v8-exit-actions button{padding:10px 12px;font-size:15px;font-weight:900}.v8-exit-actions .is-safe{background:#ead9b5;color:#503a2b}.v8-exit-actions .is-danger{background:#8e3e43;color:#fff}
 
+.v8-category-page{width:100%;max-width:520px;margin:0 auto;padding:0 0 12px;display:grid;gap:12px;color:#493326}
+.v8-category-header{position:sticky;top:-8px;z-index:3;display:grid;grid-template-columns:48px minmax(0,1fr);gap:11px;align-items:center;padding:12px;border:1px solid #d9b96f;border-radius:18px;background:linear-gradient(180deg,rgba(255,248,232,.99),rgba(248,231,195,.97));box-shadow:0 8px 20px rgba(0,0,0,.22)}
+.v8-category-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#5b416f;color:#ffe4a0}.v8-category-icon svg{width:28px;height:28px}
+.v8-category-header small{display:block;font-size:12px;font-weight:900;letter-spacing:.09em;color:#8a6846}.v8-category-header h1{margin:1px 0 0;font-size:22px;line-height:1.15;color:#493326}.v8-category-header p{margin:4px 0 0;font-size:14px;line-height:1.4;color:#735844}
+.v8-category-content,.v8-category-grid{display:grid;gap:10px}.v8-category-grid{grid-template-columns:1fr}
+.v8-category-entry{width:100%;min-height:64px;display:grid;grid-template-columns:44px minmax(0,1fr) 22px;gap:10px;align-items:center;padding:10px 12px;border:1px solid #dfc78f;border-radius:16px;background:rgba(255,253,247,.96);color:#493326;text-align:left;font:inherit;box-shadow:0 4px 10px rgba(57,35,21,.08);touch-action:manipulation}
+.v8-category-entry-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:#f0e2c4;color:#654a79}.v8-category-entry-icon svg{width:25px;height:25px}.v8-category-entry-copy{min-width:0}.v8-category-entry-copy b{display:block;font-size:16px;line-height:1.25}.v8-category-entry-copy small{display:block;margin-top:3px;font-size:14px;line-height:1.4;font-weight:500;color:#765e4b;overflow-wrap:anywhere}.v8-category-chevron{width:20px;height:20px;color:#947649}
+.v8-category-summary{min-height:76px;padding:12px 14px;border:1px solid #dcc28b;border-radius:16px;background:rgba(239,224,193,.9);display:grid;gap:3px}.v8-category-summary small{font-size:12px;font-weight:900;color:#8b6a47}.v8-category-summary b{font-size:16px}.v8-category-summary span{font-size:14px;line-height:1.4;color:#725947;overflow-wrap:anywhere}
+.v8-section-title{margin:2px 0 0;padding:0 2px;font-size:18px;line-height:1.3;color:#fff0bd;text-shadow:0 2px 5px rgba(0,0,0,.45)}
+.v8-embedded-section{display:grid;gap:8px;min-width:0}
+.v8-category-page .weekly-planner-card,.v8-category-page .lineage-chronicle,.v8-category-page .world-chronicle{position:static!important;inset:auto!important;width:auto!important;max-width:none!important;margin:0!important;transform:none!important}
+.v8-category-page .weekly-planner-card{box-sizing:border-box}
+.v8-category-page .weekly-focus-grid button,.v8-category-page .weekly-planner-resolve,.v8-category-page .weekly-planner-advance{min-height:var(--ui-touch-min);font-size:15px}
+.v8-records-content{padding-bottom:4px}
+
 @media(max-width:430px){
   .v8-route-body{padding-inline:10px}.v8-bottom-nav b{font-size:13px}.v8-mobile-shell>.v7-home-status{margin-inline:8px}
+  .v8-category-header h1{font-size:21px}.v8-category-entry{min-height:62px}
 }
 @media(max-width:390px){
   .v8-mobile-shell>.v7-home-status{min-height:58px;margin-top:max(6px,env(safe-area-inset-top));padding-left:10px}
   .v8-route-body{padding-inline:8px}.v8-bottom-nav{padding-inline:3px}.v8-bottom-nav button{min-height:48px}.v8-bottom-nav b{font-size:12px}
   .v8-play-guard{grid-template-columns:minmax(76px,1fr) auto minmax(76px,1fr);padding-inline:7px}.v8-play-guard button{padding-inline:7px}
+  .v8-category-header{grid-template-columns:44px minmax(0,1fr);padding:10px}.v8-category-icon{width:44px;height:44px}.v8-category-header h1{font-size:20px}.v8-category-header p{font-size:14px}
+  .v8-category-entry{grid-template-columns:42px minmax(0,1fr) 20px;padding-inline:10px}.v8-category-entry-icon{width:42px;height:42px}.v8-category-entry-copy b{font-size:15px}.v8-category-entry-copy small{font-size:14px}
 }
 @media(max-width:360px){
   .v8-mobile-shell>.v7-home-status{min-height:56px}.v8-route-body{padding-inline:6px}
   .v8-bottom-nav{gap:1px}.v8-bottom-nav button>span{width:21px;height:21px}.v8-bottom-nav b{font-size:12px}
   .v8-exit-confirm{padding:17px}.v8-exit-actions{grid-template-columns:1fr}
+  .v8-category-header{top:-6px}.v8-category-header p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.v8-category-entry{min-height:60px;gap:8px}.v8-category-entry-copy small{line-height:1.35}
 }
 @media(prefers-reduced-motion:reduce){
   .v8-mobile-shell *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
