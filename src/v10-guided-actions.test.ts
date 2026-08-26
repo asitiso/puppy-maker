@@ -34,6 +34,16 @@ describe('V10 guided action stack',()=>{
     expect(stack.secondary.map(item=>item.id)).toEqual(['world','season']);
   });
 
+  it('does not fill secondary slots with the same route as the primary action',()=>{
+    const stack=guidedActionStack([
+      action({id:'training',domain:'raising',route:'schedule',priority:80}),
+      action({id:'fallback',route:'schedule',priority:10}),
+    ]);
+
+    expect(stack.primary.id).toBe('training');
+    expect(stack.secondary).toEqual([]);
+  });
+
   it('preserves blocked guidance and never invents a resolution route',()=>{
     const withResolution=action({
       id:'blocked-week',
