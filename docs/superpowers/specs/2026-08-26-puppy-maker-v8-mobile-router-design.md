@@ -93,15 +93,17 @@ finishFeature()
 finishPlayCycle()
 ```
 
-Rules:
-- `openCategory`: category becomes current route and is pushed from home or another category.
-- `openFeature`: remembers the origin category.
-- `back`: returns to the previous semantic route, never an implementation overlay.
-- `finishFeature`: returns to the feature's origin category.
-- `finishPlayCycle`: returns to home and clears transient play history.
-- `home`: clears stack and returns to `{kind:'home'}`.
-- repeated selection of the active bottom-nav category does not duplicate history.
-- switching bottom-nav categories replaces the current category/feature route rather than building a long category stack.
+Exact history rules:
+- initial state: `current={kind:'home'}`, `stack=[]`.
+- home → category: `stack=[home]`, current becomes that category.
+- category → feature: `stack=[home, category]`, current becomes that feature.
+- bottom-nav category switch from any home/category route: replace the category branch and normalize history to `stack=[home]`; do not accumulate category history.
+- repeated selection of the active category is a no-op.
+- feature → back/finishFeature: return to its category with `stack=[home]`.
+- category → back: return home and clear stack.
+- `home()`: clear stack and return home from anywhere.
+- play routes record their semantic origin, but `finishPlayCycle()` clears transient play history and returns home.
+- malformed or impossible stack/current combinations normalize to home.
 
 ## Bottom navigation behavior
 The six V7 categories remain:
@@ -112,11 +114,11 @@ The six V7 categories remain:
 - 인연
 - 기록
 
-The bottom navigation is visible on home and category pages and remains reachable while category content scrolls.
+**Home and category pages** always show the six-button bottom navigation. It remains reachable while category content scrolls.
 
-Feature pages may either keep the bottom bar visible or use a compact home/back footer when screen real estate is constrained; whichever option is used must be consistent per page class and must not allow hidden navigation traps.
+**Feature and play pages** do not show the six-button bar. They use a persistent page header with `뒤로` and `홈` controls. This is the single rule for all feature/play pages and preserves vertical space on 360×640 devices.
 
-Bottom category switching must work in one tap even while another category is open.
+Bottom category switching must work in one tap while another category page is open.
 
 ## Mobile shell layout
 Replace the V7 backdrop/sheet composition with a full-height shell:
@@ -124,13 +126,13 @@ Replace the V7 backdrop/sheet composition with a full-height shell:
 ```text
 safe area
 ┌─────────────────────────┐
-│ compact status/header   │  sticky/fixed within shell
+│ compact status/header   │  stable within shell
 ├─────────────────────────┤
 │                         │
 │ scrollable page body    │  overflow-y:auto; min-height:0
 │                         │
 ├─────────────────────────┤
-│ bottom navigation       │  persistent, safe-area aware
+│ bottom navigation       │  home/category only
 └─────────────────────────┘
 ```
 
@@ -139,11 +141,11 @@ Structural requirements:
 - content region uses `min-height:0` and `overflow-y:auto`.
 - body/root must not become the feature scroll container.
 - `overscroll-behavior:contain` prevents accidental background scrolling.
-- header and navigation never disappear below long content.
+- header and required navigation controls never disappear below long content.
 - no page requires scrolling back to the top just to close it.
 
 ## Status header redesign
-The status window becomes a stable compact component shared by home/category/feature pages.
+The status window becomes a stable compact component shared by home/category pages. Feature/play pages use the compact page header and may show a one-line resource summary only when relevant.
 
 ### Row 1
 - generation
@@ -165,13 +167,19 @@ Requirements:
 - notification button minimum touch target 44px.
 
 ## Page header
-Category and feature pages use a consistent page header:
-- back button when there is a parent route.
+Category and feature/play pages use a consistent page header.
+
+Category page:
+- page title and optional compact context.
+- bottom nav provides Home/category movement.
+
+Feature/play page:
+- 44×44px or larger Back control.
 - page title.
 - optional compact context/subtitle.
-- optional home button for deep feature/play routes.
+- 44×44px or larger Home control.
 
-Back and home controls must be at least 44×44px.
+The feature/play header remains visible while its body scrolls.
 
 ## Category pages
 V7 category content is retained but rendered as full pages rather than bottom sheets.
@@ -229,9 +237,10 @@ During migration, an adapter may render existing inner content inside the V8 pag
 
 Rules:
 - entering schedule records `life` as the origin category.
-- normal back from schedule before starting returns to 생활.
+- Back from schedule before starting returns to 생활.
+- Home from schedule returns home without starting training.
 - starting training enters play mode.
-- while a training attempt is active, accidental category switching is disabled or guarded; there must always be an explicit exit control.
+- while a training attempt is active, category navigation is unavailable; persistent Back/Home controls must follow a guarded exit path rather than silently discarding progress.
 - completing the full training/result cycle returns to **home**.
 
 ### Expedition/Tactical flow
@@ -240,7 +249,7 @@ Rules:
 Rules:
 - closing before starting returns to 모험.
 - completing/aborting the active expedition flow exits to 모험 unless the game reducer explicitly ends a global play cycle that should return home.
-- tactical result screen must expose a visible exit control.
+- tactical result screen must expose persistent exit controls.
 
 ## Feature-completion return rules
 Feature completion must preserve spatial memory:
@@ -266,11 +275,12 @@ Every route must satisfy:
 - reduced-motion
 
 For long content:
-- scrollable body has bottom padding at least `bottomNavHeight + safeArea + 16px` when bottom nav overlays content.
+- home/category scroll body has bottom padding at least `bottomNavHeight + safeArea + 16px` when needed.
+- feature/play body leaves space for any persistent header/footer controls.
 - sticky page header remains visible.
 - no fixed CTA can cover the last actionable row.
 - nested full-page scroll containers are prohibited.
-- dialogs used for truly modal confirmation must have their own bounded scroll area and accessible close button.
+- dialogs used only for truly modal confirmation have their own bounded scroll area and accessible close button.
 
 ## Touch feedback
 All main navigation and feature-entry controls:
@@ -300,6 +310,7 @@ Retain V7 token system, but enforce it across routed pages:
 - missing optional callbacks render disabled/unavailable entries rather than throwing.
 - feature completion callbacks run before navigation return so game-state mutations are not lost.
 - rapid repeated category taps cannot duplicate stack entries.
+- guarded active-play exits must ask for explicit confirmation only when leaving would discard an unfinished attempt; ordinary feature Back/Home actions require no confirmation.
 
 ## Data and save compatibility
 V8 adds no persistent gameplay fields.
@@ -329,6 +340,7 @@ Navigation state is ephemeral UI state only.
 ## Testing strategy
 ### Pure router tests
 Lock:
+- home/category/feature stack normalization.
 - category switching does not duplicate stack.
 - feature back returns to origin category.
 - `finishFeature()` returns to origin category.
@@ -337,7 +349,8 @@ Lock:
 
 ### Render/interaction tests
 Lock:
-- six bottom-nav categories remain reachable from category pages.
+- six bottom-nav categories remain reachable from every category page.
+- feature pages show persistent Back/Home instead of the six-button bar.
 - long category content scrolls while header/nav remain structurally persistent.
 - back from achievements returns to growth.
 - close from mail returns to life.
