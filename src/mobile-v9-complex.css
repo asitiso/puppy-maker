@@ -1,0 +1,75 @@
+@import './mobile-ui-tokens.css';
+
+.v9-complex-feature .v9-page-content{padding:10px 10px calc(18px + env(safe-area-inset-bottom))}
+
+/* Routed V9 pages own the viewport and scroll. Legacy surfaces keep only their content. */
+.v9-complex-feature .raising-overlay,
+.v9-complex-feature .yearly-ambition-backdrop,
+.v9-complex-feature .season-live-backdrop,
+.v9-complex-feature .sanctuary-backdrop,
+.v9-complex-feature .expedition-overlay,
+.v9-complex-feature .world-progress-backdrop,
+.v9-complex-feature .collection-archive-backdrop{
+  position:static!important;inset:auto!important;display:block!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;background:transparent!important;backdrop-filter:none!important;transform:none!important;
+}
+
+.v9-complex-feature .raising-panel,
+.v9-complex-feature .yearly-ambition-panel,
+.v9-complex-feature .season-live-panel,
+.v9-complex-feature .sanctuary-panel,
+.v9-complex-feature .expedition-map,
+.v9-complex-feature .expedition-battle,
+.v9-complex-feature .expedition-result,
+.v9-complex-feature .world-progress-panel,
+.v9-complex-feature .collection-archive-panel{
+  position:static!important;inset:auto!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;overflow:visible!important;border-radius:18px!important;transform:none!important;
+}
+
+.v9-complex-feature .raising-panel-frame,
+.v9-complex-feature .yearly-ambition-frame,
+.v9-complex-feature .season-live-frame,
+.v9-complex-feature .sanctuary-frame,
+.v9-complex-feature .world-progress-frame,
+.v9-complex-feature .collection-archive-frame{display:none!important}
+
+.v9-complex-feature .raising-content,
+.v9-complex-feature .yearly-ambition-content,
+.v9-complex-feature .season-live-content,
+.v9-complex-feature .sanctuary-content,
+.v9-complex-feature .world-progress-content,
+.v9-complex-feature .collection-archive-content{
+  position:relative!important;inset:auto!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:12px!important;
+}
+
+/* PageShell is the only top-level back/close chrome. Intra-feature navigation remains visible. */
+.v9-complex-feature .raising-content>header>button:first-child,
+.v9-complex-feature .yearly-ambition-close,
+.v9-complex-feature .season-live-content>header>button:last-child,
+.v9-complex-feature .sanctuary-content>header>button:last-child,
+.v9-complex-feature .expedition-map>header>button:first-child,
+.v9-complex-feature .world-progress-close,
+.v9-complex-feature .collection-archive-close{display:none!important}
+
+.v9-complex-feature.is-ambition .yearly-ambition-card,
+.v9-complex-feature.is-archive .collection-archive-trigger{display:none!important}
+
+.v9-complex-feature .raising-content>header,
+.v9-complex-feature .season-live-content>header,
+.v9-complex-feature .sanctuary-content>header,
+.v9-complex-feature .expedition-map>header{position:static!important;top:auto!important}
+
+.v9-complex-feature button,.v9-complex-feature [role="button"]{min-height:44px}
+.v9-complex-feature .expedition-finish{min-height:52px}
+
+@media(max-width:390px){
+  .v9-complex-feature .raising-content,
+  .v9-complex-feature .yearly-ambition-content,
+  .v9-complex-feature .season-live-content,
+  .v9-complex-feature .sanctuary-content,
+  .v9-complex-feature .world-progress-content,
+  .v9-complex-feature .collection-archive-content{padding:9px!important}
+}
+
+@media(max-height:650px){
+  .v9-complex-feature .v9-page-content{padding-top:6px}
+}

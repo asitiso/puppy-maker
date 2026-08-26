@@ -41,6 +41,8 @@ import RunGuidanceCard from './RunGuidanceCard';
 import { getRunGuidance } from './run-guidance';
 import WeeklyPlannerCard from './WeeklyPlannerCard';
 import type { WeeklyFocusId } from './weekly-life';
+import MobileSceneBackground from './MobileSceneBackground';
+import MobileCharacterArt from './MobileCharacterArt';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
   return <img className="lh-frame" src={src} alt={alt} draggable={false} />;
@@ -220,13 +222,13 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     style={{ '--px': tilt.x, '--py': tilt.y } as React.CSSProperties}
   >
     <div className="lh-scene-layer">
-      <img className="lh-background" src="/assets/home/home_bg_layer.webp" alt="" />
+      <MobileSceneBackground slot="home.background" className="v9-home-background"/>
       <div className="lh-window-light" /><div className="lh-fire-light" /><div className="lh-floor-glow" />
     </div>
     <div className="layered-vignette" /><div className="layered-particles" />
 
     <button className="lh-character" onClick={() => setPetted(true)} aria-label="루나와 교감">
-      <span className="lh-character-rim" /><img src={petted ? '/assets/runa/runa_talk.png' : '/assets/home/runa_idle_layer.png'} alt="수호 여우 루나" />
+      <span className="lh-character-rim" /><MobileCharacterArt slot="home.hero" className="v9-home-hero"/>
     </button>
     {petted && <img className="lh-heart" src="/assets/effects/affection_hearts.png" alt="" />}
 
