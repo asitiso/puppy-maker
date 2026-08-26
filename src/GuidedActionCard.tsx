@@ -6,7 +6,7 @@ type Props={action:GuidedAction;variant:'primary'|'secondary';onAction:(route:Gu
 export default function GuidedActionCard({action,variant,onAction}:Props){
   const blocked=action.state==='blocked';
   const target=blocked?action.resolveRoute:action.route;
-  return <article className={`v10-guided-action v10-command-${variant} is-${action.state}`} data-guided-action={action.id}>
+  return <article className={`v10-guided-action v10-command-${variant} is-${action.state}`} data-guided-action={action.id} data-guided-variant={variant}>
     <div className="v10-guided-copy">
       <strong>{action.label}</strong>
       <p>{action.detail}</p>
