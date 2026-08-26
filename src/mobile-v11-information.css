@@ -1,0 +1,20 @@
+.information-sheet{max-height:min(82dvh,720px);overflow-y:auto;overflow-wrap:anywhere;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.information-sheet__header{display:grid;gap:8px;padding-right:44px}
+.information-sheet__header h3{margin:0}
+.information-sheet__summary{font-weight:800;line-height:1.45}
+.information-sheet__metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.information-sheet__metric{display:grid;gap:4px;min-width:0;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.055)}
+.information-sheet__metric dt,.information-sheet__metric dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.information-sheet__metric dt{font-size:.76rem;opacity:.72}
+.information-sheet__metric dd{font-size:1rem;font-weight:900}
+.information-sheet__detail-region,.information-sheet__detail{margin:10px 0}
+.information-sheet__detail{line-height:1.55;opacity:.84}
+.information-sheet__disclosure,.information-sheet__secondary,.information-sheet__primary,.information-sheet__close{min-height:44px;touch-action:manipulation}
+.information-sheet__disclosure,.information-sheet__secondary{border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.06);font:inherit;font-weight:800;cursor:pointer}
+.information-sheet__disclosure{width:100%;padding:0 14px;text-align:left}
+.information-sheet__secondary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.information-sheet__secondary{padding:0 12px;min-width:0;overflow-wrap:anywhere}
+.information-sheet__primary{width:100%}
+.information-sheet__close:focus-visible,.information-sheet__disclosure:focus-visible,.information-sheet__secondary:focus-visible,.information-sheet__primary:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+@media(max-width:390px){.information-sheet__metrics{grid-template-columns:1fr}.information-sheet__secondary-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.information-sheet,.information-sheet *{scroll-behavior:auto;transition:none!important;animation:none!important}}
