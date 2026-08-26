@@ -2,7 +2,7 @@ import {useCallback,useMemo,useState,type MouseEvent} from 'react';
 import type {GiftItemId,OutingLocationId} from './adventure';
 import {attendanceKey} from './attendance';
 import {currentAvailableMail,eligibleAchievements,relationshipRank,type AchievementId,type GameState,type MailRewardId} from './game';
-import {hubNextAction} from './hub-next-action';
+import {hubGuidedActionStack} from './hub-next-action';
 import type {HomeMenuId} from './home-panels';
 import LayeredHome from './LayeredHome';
 import MobileCategorySheet,{mobileCategories,type MobileCategoryId} from './MobileCategorySheet';
@@ -45,7 +45,7 @@ export default function LayeredHomeV7(props:Props){
   const {state,onMenuReady}=props;
   const [category,setCategory]=useState<MobileCategoryId>('home');
   const [legacyOpenMenu,setLegacyOpenMenu]=useState<((id:HomeMenuId)=>void)|null>(null);
-  const primaryTask=hubNextAction(state);
+  const primaryTask=hubGuidedActionStack(state).primary;
   const relationship=relationshipLabels[relationshipRank(state.stats.affection)];
 
   const captureMenu=useCallback((openMenu:(id:HomeMenuId)=>void)=>{
@@ -86,7 +86,7 @@ export default function LayeredHomeV7(props:Props){
 
   const handleCapture=(event:MouseEvent<HTMLDivElement>)=>{
     const target=event.target;
-    if(!(target instanceof Element)||!target.closest('.lh-primary-action'))return;
+    if(!(target instanceof Element)||!target.closest('.v10-command-primary .v10-guided-cta'))return;
     if(primaryTask.route!=='weekly_planner')return;
     event.preventDefault();
     event.stopPropagation();
