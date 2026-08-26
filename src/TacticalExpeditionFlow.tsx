@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import TacticalBattleScreen from './TacticalBattleScreen';
 import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
@@ -47,6 +47,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   const [party,setParty] = useState<[CompanionId,CompanionId]>(()=>tacticalPartyForGame(state));
   const [auto,setAuto] = useState(state.tacticalAutoBattle);
   const [speed,setSpeed] = useState<1|2>(state.tacticalBattleSpeed);
+  const onPhaseChangeRef = useRef(onPhaseChange);
   const stageId = (nextExpeditionStage(state.expeditionRecords) ?? 'forest_path') as ExpeditionStageId;
   const stage = useMemo(()=>expeditionStageDefinitions.find(item=>item.id===stageId)!,[stageId]);
   const bondLevels = useMemo(()=>({
@@ -57,8 +58,12 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   }),[state.tacticalCompanionBonds]);
 
   useEffect(()=>{
-    if(expeditionOpen&&!open)onPhaseChange?.('setup');
-  },[expeditionOpen,open,onPhaseChange]);
+    onPhaseChangeRef.current=onPhaseChange;
+  },[onPhaseChange]);
+
+  useEffect(()=>{
+    if(expeditionOpen&&!open)onPhaseChangeRef.current?.('setup');
+  },[expeditionOpen,open]);
 
   if (!expeditionOpen) return null;
 
