@@ -19,21 +19,25 @@ describe('V9 training and choice active-play UX',()=>{
     expect(rootSource).toContain("const guardedAppPlay=gameState.screen==='training'||gameState.screen==='dialogue'");
   });
 
-  it('marks each inline App screen with one V9 presentation boundary',()=>{
-    for(const screen of ['schedule','training','dialogue','result']){
-      expect(appSource).toContain(`data-v9-play-screen=\"${screen}\"`);
-      expect(appSource).toContain(`v9-play-${screen}`);
+  it('preserves the four existing App presentation boundaries instead of duplicating screen markup',()=>{
+    for(const className of ['diary-screen','training-screen','dialogue-screen','result-screen']){
+      expect(appSource).toContain(className);
     }
+    expect(appSource).toContain('className="choices"');
+    expect(appSource).toContain('className="primary next-month"');
   });
 
-  it('keeps choice actions and the result completion CTA reachable in the mobile viewport',()=>{
-    expect(appSource).toContain('v9-choice-actions');
-    expect(appSource).toContain('v9-result-complete');
-    expect(cssSource).toContain('.v9-play-screen');
-    expect(cssSource).toContain('.v9-choice-actions');
-    expect(cssSource).toContain('.v9-result-complete');
-    expect(cssSource).toContain('.is-guarded-play');
-    expect(cssSource).toContain('.is-normal-play');
+  it('keeps planning, battle, choices and result completion reachable inside the mobile viewport',()=>{
+    for(const selector of [
+      '.v8-app-host.is-normal-play',
+      '.v8-app-host.is-guarded-play',
+      '.training-screen .action-bar',
+      '.dialogue-screen .choices',
+      '.result-screen .next-month',
+    ])expect(cssSource).toContain(selector);
+    expect(cssSource).toContain('overflow-y:auto');
+    expect(cssSource).toContain('env(safe-area-inset-bottom)');
+    expect(cssSource).toContain('min-height:52px');
   });
 
   it('preserves the authoritative reducer actions and exits through router navigation only',()=>{
