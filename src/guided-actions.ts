@@ -38,13 +38,5 @@ export function guidedActionStack(actions:readonly GuidedAction[]):GuidedActionS
     usedRoutes.add(action.route);
   }
 
-  if(secondary.length<2){
-    for(const action of remaining){
-      if(secondary.length>=2)break;
-      if(secondary.includes(action))continue;
-      secondary.push(action);
-    }
-  }
-
   return {primary,secondary};
 }
