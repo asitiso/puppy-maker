@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
 import {initialState} from './game';
-import MobileHomeStatus,{compactResource} from './MobileHomeStatus';
+import MobileHomeStatus,* as MobileStatusModule from './MobileHomeStatus';
 
 const statusSource=readFileSync(new URL('./MobileHomeStatus.tsx',import.meta.url),'utf8');
 const homeSource=readFileSync(new URL('./LayeredHome.tsx',import.meta.url),'utf8');
@@ -18,6 +18,9 @@ describe('V9 mobile home and status',()=>{
   });
 
   it('formats large resource values compactly without changing underlying state values',()=>{
+    const compactResource=(MobileStatusModule as typeof MobileStatusModule & {compactResource?:(value:number)=>string}).compactResource;
+    expect(compactResource).toBeTypeOf('function');
+    if(!compactResource)return;
     expect(compactResource(9999)).toBe('9,999');
     expect(compactResource(12000)).toBe('12.0K');
     expect(compactResource(125000)).toBe('125K');
@@ -26,8 +29,8 @@ describe('V9 mobile home and status',()=>{
   });
 
   it('keeps full resource values accessible when compact display is used',()=>{
-    expect(statusSource).toContain('aria-label={`골드 ${safeGold.toLocaleString()}`}`);
-    expect(statusSource).toContain('aria-label={`보석 ${safeGems.toLocaleString()}`}`);
+    expect(statusSource).toContain("aria-label={`골드 ${safeGold.toLocaleString()}`}");
+    expect(statusSource).toContain("aria-label={`보석 ${safeGems.toLocaleString()}`}");
   });
 
   it('consumes semantic home visual slots rather than hard-coded home art paths',()=>{
