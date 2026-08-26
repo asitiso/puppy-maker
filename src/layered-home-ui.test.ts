@@ -144,8 +144,9 @@ describe('Layered Home mobile UI contract', () => {
     expect(flowCss).toContain('@media(max-width:390px){.world-progress-card{top:49.5%}}');
   });
 
-  it('keeps tactical UI within the mobile viewport without changing engine rules', () => {
-    expect(tacticalCss).toContain('height:100dvh');
+  it('keeps tactical UI within the routed mobile viewport without changing engine rules', () => {
+    expect(tacticalCss).toContain('height:100%');
+    expect(tacticalCss).toContain('overscroll-behavior:contain');
     expect(tacticalCss).toContain('safe-area-inset-top');
     expect(tacticalCss).toContain('safe-area-inset-bottom');
     expect(tacticalCss).toContain('min-height:44px');
