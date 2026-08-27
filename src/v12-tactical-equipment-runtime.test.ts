@@ -27,14 +27,14 @@ describe('V12 behavioral equipment runtime',()=>{
     expect(next.units.find(u=>u.id==='e3')!.hp).toBe(100)
   })
 
-  it('Guardian Shield lets Bear intercept ally damage and counter the attacker',()=>{
+  it('Guardian Shield lets Bear intercept valid frontline ally damage and counter the attacker',()=>{
     let build=acquireEquipment(createDefaultV12State(),'guardian_shield')
     build=setParty(build,['bear','runa','owl'],'bear')
     build=equipItem(build,'guardian_shield')
     let session=applyV12LoadoutToBattle(baseBattle(),build.loadout)
     session={...session,timeline:['e1','runa','bear','owl','e2','e3']}
-    const next=resolveTacticalAction(session,{actorId:'e1',actionId:'attack',targetId:'owl'})
-    expect(next.units.find(u=>u.id==='owl')!.hp).toBeGreaterThan(60)
+    const next=resolveTacticalAction(session,{actorId:'e1',actionId:'attack',targetId:'runa'})
+    expect(next.units.find(u=>u.id==='runa')!.hp).toBeGreaterThan(80)
     expect(next.units.find(u=>u.id==='bear')!.hp).toBeLessThan(120)
     expect(next.units.find(u=>u.id==='e1')!.hp).toBeLessThan(100)
   })
