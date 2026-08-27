@@ -39,6 +39,7 @@ import type { WeeklyFocusId } from './weekly-life';
 import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
+import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -243,6 +244,19 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     };
     window.addEventListener(publicProjectRequestEvent,handleStartPublicProject);
     return ()=>window.removeEventListener(publicProjectRequestEvent,handleStartPublicProject);
+  },[]);
+  useEffect(() => {
+    const handleV12Build=(event:Event)=>{
+      const request=(event as CustomEvent<V12BuildRequest>).detail;
+      if(!request)return;
+      if(request.type==='party')dispatch({type:'SET_V12_PARTY',party:request.party,leader:request.leader});
+      else if(request.type==='outfit')dispatch({type:'SET_V12_OUTFIT',outfitId:request.outfitId});
+      else if(request.type==='equipment')dispatch({type:'SET_V12_EQUIPMENT',equipmentId:request.equipmentId});
+      else if(request.type==='begin-run')dispatch({type:'BEGIN_V12_RUN'});
+      else if(request.type==='end-run')dispatch({type:'END_V12_RUN'});
+    };
+    window.addEventListener(v12BuildRequestEvent,handleV12Build);
+    return ()=>window.removeEventListener(v12BuildRequestEvent,handleV12Build);
   },[]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
