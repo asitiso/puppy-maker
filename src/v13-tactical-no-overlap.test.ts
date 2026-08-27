@@ -1,10 +1,8 @@
-import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
-
-const flow=readFileSync(new URL('./TacticalExpeditionFlow.tsx',import.meta.url),'utf8');
-const flowCss=readFileSync(new URL('./tactical-expedition-flow.css',import.meta.url),'utf8');
-const loadout=readFileSync(new URL('./V12LoadoutPanel.tsx',import.meta.url),'utf8');
-const battleCss=readFileSync(new URL('./tactical-battle.css',import.meta.url),'utf8');
+import flow from './TacticalExpeditionFlow.tsx?raw';
+import flowCss from './tactical-expedition-flow.css?raw';
+import loadout from './V12LoadoutPanel.tsx?raw';
+import battleCss from './tactical-battle.css?raw';
 
 describe('V13 tactical controls never overlap',()=>{
   it('places companion selection before a dedicated start action instead of inside the loadout card',()=>{
