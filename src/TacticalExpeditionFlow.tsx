@@ -14,6 +14,7 @@ import {
   tacticalPartyForGame,
 } from './tactical-launcher';
 import type { CharacterBuildState, PlayableCharacterId } from './v12-character-builds';
+import { hasHiddenExpeditionInteraction } from './v12-tactical-equipment-runtime';
 import './tactical-expedition-flow.css';
 
 export type TacticalPhase='setup'|'active'|'result';
@@ -67,6 +68,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
       loadout:{...persisted.loadout,party:displayParty,leader},
     };
   },[party,state.v12Builds.characterBuilds]);
+  const hiddenInteraction=hasHiddenExpeditionInteraction(buildState.loadout);
 
   useEffect(()=>{
     onPhaseChangeRef.current=onPhaseChange;
@@ -149,6 +151,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
       <small>TACTICAL 3 VS 3</small>
       <strong>{stage.name} · 전술전</strong>
       <span>Leader + 파티 2명 · 의상 + 장비 3슬롯 · Bond 성장</span>
+      {hiddenInteraction?<span role="status">탐험가의 나침반이 숨은 원정 상호작용을 감지했습니다.</span>:null}
       <V12LoadoutPanel state={buildState} onStartRun={start} onEditParty={focusPartyPicker}/>
       <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
         {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
