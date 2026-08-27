@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   PLAYABLE_CHARACTERS,
   EQUIPMENT,
-  createDefaultV12State,
-  sanitizeV12State,
-  validateParty,
-  canEquip,
-  equipItem,
+  acquireEquipment,
   beginRunLoadout,
+  canEquip,
+  createDefaultV12State,
   endRunLoadout,
+  equipItem,
+  sanitizeV12State,
+  setParty,
+  setOutfit,
+  validateParty,
   type CharacterBuildState,
 } from './v12-character-builds'
 
@@ -29,10 +32,13 @@ describe('V12 character builds foundation', () => {
     expect(validateParty({ party: ['runa', 'bear', 'owl'], leader: 'cat' }, unlocked).ok).toBe(false)
   })
 
-  it('keeps outfit separate from the three equipment slots', () => {
+  it('keeps outfit separate from the three equipment slots and starts with a safe legacy party', () => {
     const state = createDefaultV12State()
+    expect(state.loadout.party).toEqual(['runa', 'bear', 'owl'])
+    expect(state.loadout.leader).toBe('runa')
     expect(state.loadout.outfitId).toBe('runa_classic')
     expect(state.loadout.equipment).toEqual({ weapon: null, defenseSupport: null, accessory: null })
+    expect(state.ownedEquipment).toEqual(['training_blade'])
   })
 
   it('defines behavioral equipment identities across all three slots and signature affinity', () => {
@@ -50,29 +56,49 @@ describe('V12 character builds foundation', () => {
     expect(canEquip('owl', EQUIPMENT.guardian_shield).allowed).toBe(false)
   })
 
-  it('locks loadout mutation during a run and restores editing when the run ends', () => {
+  it('requires ownership, deduplicates acquisition, and respects leader signature restrictions', () => {
     let state = createDefaultV12State()
+    expect(equipItem(state, 'star_staff')).toEqual(state)
+
+    state = acquireEquipment(state, 'star_staff')
+    state = acquireEquipment(state, 'star_staff')
+    expect(state.ownedEquipment.filter((id) => id === 'star_staff')).toHaveLength(1)
+    expect(equipItem(state, 'star_staff').loadout.equipment.weapon).toBe('star_staff')
+
+    state = acquireEquipment(state, 'guardian_shield')
+    expect(equipItem(state, 'guardian_shield')).toEqual(state)
+    state = setParty(state, ['bear', 'runa', 'owl'], 'bear')
+    expect(equipItem(state, 'guardian_shield').loadout.equipment.defenseSupport).toBe('guardian_shield')
+  })
+
+  it('locks party, outfit and equipment mutation during a run and restores editing when the run ends', () => {
+    let state = createDefaultV12State()
+    state = acquireEquipment(state, 'star_staff')
     state = equipItem(state, 'star_staff')
+    state = setOutfit(state, 'forest_charm')
     expect(state.loadout.equipment.weapon).toBe('star_staff')
+    expect(state.loadout.outfitId).toBe('forest_charm')
 
     state = beginRunLoadout(state)
-    const locked = equipItem(state, 'training_blade')
-    expect(locked).toEqual(state)
+    expect(setParty(state, ['runa', 'wolf', 'cat'], 'wolf')).toEqual(state)
+    expect(setOutfit(state, 'runa_classic')).toEqual(state)
+    expect(equipItem(state, 'training_blade')).toEqual(state)
     expect(state.runLoadoutSnapshot?.equipment.weapon).toBe('star_staff')
+    expect(state.runLoadoutSnapshot?.outfitId).toBe('forest_charm')
 
     state = endRunLoadout(state)
     state = equipItem(state, 'training_blade')
     expect(state.loadout.equipment.weapon).toBe('training_blade')
   })
 
-  it('sanitizes old or malformed save data into safe, idempotent V12 defaults', () => {
+  it('sanitizes old or malformed save data into a legal, idempotent V12 state', () => {
     const malformed = {
       unlockedCharacters: ['runa', 'cat', 'cat', 'unknown'],
       ownedEquipment: ['star_staff', 'star_staff', 'missing'],
       loadout: {
         party: ['cat', 'cat', 'unknown'],
         leader: 'unknown',
-        outfitId: '',
+        outfitId: 'deleted_outfit',
         equipment: { weapon: 'guardian_shield', defenseSupport: 'star_staff', accessory: 'missing' },
       },
       runLoadoutSnapshot: { nonsense: true },
@@ -81,10 +107,11 @@ describe('V12 character builds foundation', () => {
     const once = sanitizeV12State(malformed)
     const twice = sanitizeV12State(once)
 
-    expect(once.unlockedCharacters).toEqual(['runa', 'cat'])
+    expect(once.unlockedCharacters).toEqual(['runa', 'cat', 'bear'])
     expect(once.ownedEquipment).toEqual(['star_staff'])
-    expect(once.loadout.party).toEqual(['runa', 'bear', 'owl'])
+    expect(once.loadout.party).toEqual(['runa', 'cat', 'bear'])
     expect(once.loadout.leader).toBe('runa')
+    expect(once.loadout.outfitId).toBe('runa_classic')
     expect(once.loadout.equipment).toEqual({ weapon: null, defenseSupport: null, accessory: null })
     expect(once.runLoadoutSnapshot).toBeNull()
     expect(twice).toEqual(once)
