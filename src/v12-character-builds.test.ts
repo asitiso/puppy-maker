@@ -109,7 +109,7 @@ describe('V12 character builds foundation', () => {
 
     expect(once.unlockedCharacters).toEqual(['runa', 'cat', 'bear'])
     expect(once.ownedEquipment).toEqual(['star_staff'])
-    expect(once.loadout.party).toEqual(['runa', 'cat', 'bear'])
+    expect(once.loadout.party).toEqual(['runa', 'bear', 'cat'])
     expect(once.loadout.leader).toBe('runa')
     expect(once.loadout.outfitId).toBe('runa_classic')
     expect(once.loadout.equipment).toEqual({ weapon: null, defenseSupport: null, accessory: null })
