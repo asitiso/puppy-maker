@@ -8,6 +8,7 @@ import './lobby-art.css';
 import './schedule-synergy.css';
 import './celestial-ascension.css';
 import './production-safety.css';
+import './mobile-v11-information.css';
 
 installClientObservability();
 

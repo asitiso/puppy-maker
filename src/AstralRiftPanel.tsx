@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import type { GameState } from './game';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
 import { astralRiftUiSummary } from './astral-rift-ui';
+import InformationPanel from './InformationPanel';
 
 const intensityLabels:Record<AstralRiftIntensity,string> = { 1:'I', 2:'II', 3:'III' };
 const honorProgress = (id:string, progress:{ clearedRifts:number; sRifts:number; clearedCombinations:number }) => {
@@ -10,6 +12,8 @@ const honorProgress = (id:string, progress:{ clearedRifts:number; sRifts:number;
   if (id === 'six_rifts_s') return `${progress.sRifts}/6`;
   return `${progress.clearedCombinations}/18`;
 };
+
+type RiftView='all'|'available'|'cleared';
 
 export default function AstralRiftPanel({
   state,
@@ -21,29 +25,54 @@ export default function AstralRiftPanel({
   onRelic:(relicId:AstralRiftRelicId)=>void;
 }) {
   const summary = astralRiftUiSummary(state);
+  const [riftView,setRiftView]=useState<RiftView>('available');
+  const availableRifts=summary.rifts.filter(rift=>rift.intensities.some(item=>item.available));
+  const clearedRifts=summary.rifts.filter(rift=>rift.intensities.some(item=>item.clearCount>0));
+  const visibleRifts=summary.rifts.filter(rift=>{
+    if(riftView==='available') return rift.intensities.some(item=>item.available);
+    if(riftView==='cleared') return rift.intensities.some(item=>item.clearCount>0);
+    return true;
+  });
+
   return <article className="astral-rift-block">
     <div className="astral-rift-heading">
       <div><small>ASTRAL RIFT</small><h3>천상 균열</h3><p>승천과 성소의 힘으로 반복 가능한 천상 균열을 돌파해요.</p></div>
       <div className="astral-rift-currencies"><span>RIFT POWER <b>{summary.power}</b></span><span>RIFT ECHO <b>◈ {summary.echoes}</b></span></div>
     </div>
 
-    <div className="astral-rift-map">
-      {summary.rifts.map(rift => <section key={rift.id} className={summary.ascension.score >= rift.ascensionThreshold ? '' : 'is-locked'}>
-        <header><div><small>ASCENSION {rift.ascensionThreshold}</small><b>{rift.label}</b></div><span>{summary.ascension.score >= rift.ascensionThreshold ? 'OPEN' : 'LOCKED'}</span></header>
-        <div className="astral-rift-intensities">
-          {rift.intensities.map(item => <button
-            key={item.intensity}
-            disabled={!item.available}
-            className={item.grade ? `grade-${item.grade.toLowerCase()}` : ''}
-            onClick={() => onClear(rift.id,item.intensity)}
-          >
-            <strong>{intensityLabels[item.intensity]}</strong>
-            <span>{item.grade ? `${item.grade} · ${item.bestPower}P` : item.available ? '도전' : '잠김'}</span>
-            {item.clearCount > 0 && <small>{item.clearCount}회 돌파</small>}
-          </button>)}
-        </div>
-      </section>)}
-    </div>
+    <InformationPanel
+      summaryItems={[
+        {label:'도전 가능',value:availableRifts.length},
+        {label:'돌파 기록',value:clearedRifts.length},
+        {label:'전체 균열',value:summary.rifts.length},
+      ]}
+      filters={[
+        {id:'available',label:'도전 가능',count:availableRifts.length},
+        {id:'cleared',label:'돌파 완료',count:clearedRifts.length},
+        {id:'all',label:'전체',count:summary.rifts.length},
+      ]}
+      activeFilter={riftView}
+      onFilterChange={id=>setRiftView(id as RiftView)}
+      emptyMessage="이 상태에 해당하는 균열이 아직 없어요."
+    >
+      {visibleRifts.length?<div className="astral-rift-map">
+        {visibleRifts.map(rift => <section key={rift.id} className={summary.ascension.score >= rift.ascensionThreshold ? '' : 'is-locked'}>
+          <header><div><small>ASCENSION {rift.ascensionThreshold}</small><b>{rift.label}</b></div><span>{summary.ascension.score >= rift.ascensionThreshold ? 'OPEN' : 'LOCKED'}</span></header>
+          <div className="astral-rift-intensities">
+            {rift.intensities.map(item => <button
+              key={item.intensity}
+              disabled={!item.available}
+              className={item.grade ? `grade-${item.grade.toLowerCase()}` : ''}
+              onClick={() => onClear(rift.id,item.intensity)}
+            >
+              <strong>{intensityLabels[item.intensity]}</strong>
+              <span>{item.grade ? `${item.grade} · ${item.bestPower}P` : item.available ? '도전' : '잠김'}</span>
+              {item.clearCount > 0 && <small>{item.clearCount}회 돌파</small>}
+            </button>)}
+          </div>
+        </section>)}
+      </div>:null}
+    </InformationPanel>
 
     <div className="astral-rift-columns">
       <section>
