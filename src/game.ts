@@ -51,6 +51,17 @@ import {
   pickV3PersistentState,
   type V3PersistentState,
 } from './v3-persistent-state';
+import {
+  acquireEquipment,
+  beginRunLoadout,
+  endRunLoadout,
+  equipItem,
+  setOutfit,
+  setParty,
+  type EquipmentId,
+  type PlayableCharacterId,
+} from './v12-character-builds';
+import { unlockedWardrobe } from './game/wardrobe';
 
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
@@ -124,6 +135,23 @@ export type Action = Base.Action | {
   type:'COMPLETE_WEEKLY_FOCUS';
 } | {
   type:'ADVANCE_WEEK';
+} | {
+  type:'ACQUIRE_V12_EQUIPMENT';
+  equipmentId:EquipmentId;
+} | {
+  type:'SET_V12_EQUIPMENT';
+  equipmentId:EquipmentId;
+} | {
+  type:'SET_V12_OUTFIT';
+  outfitId:string;
+} | {
+  type:'SET_V12_PARTY';
+  party:[PlayableCharacterId,PlayableCharacterId,PlayableCharacterId];
+  leader:PlayableCharacterId;
+} | {
+  type:'BEGIN_V12_RUN';
+} | {
+  type:'END_V12_RUN';
 };
 
 const tacticalDefaults = hydrateTacticalPersistentState(undefined);
@@ -234,6 +262,11 @@ export function hydrateGameState(raw:unknown):GameState {
     generationalWorld,
     ...v3,
   } as GameState;
+}
+
+function withCharacterBuilds(state:GameState,characterBuilds:GameState['v12Builds']['characterBuilds']):GameState {
+  if(characterBuilds===state.v12Builds.characterBuilds)return state;
+  return {...state,v12Builds:{...state.v12Builds,characterBuilds}};
 }
 
 export function reducer(state:GameState,action:Action):GameState {
@@ -359,6 +392,38 @@ export function reducer(state:GameState,action:Action):GameState {
     const settled=reducer(state,{type:'NEXT_MONTH'} as Action);
     if(settled===state) return state;
     return {...settled,week:1,weeklyLife:resetWeeklySelection(state.weeklyLife)};
+  }
+
+  if(action.type==='ACQUIRE_V12_EQUIPMENT'){
+    return withCharacterBuilds(state,acquireEquipment(state.v12Builds.characterBuilds,action.equipmentId));
+  }
+
+  if(action.type==='SET_V12_EQUIPMENT'){
+    return withCharacterBuilds(state,equipItem(state.v12Builds.characterBuilds,action.equipmentId));
+  }
+
+  if(action.type==='SET_V12_OUTFIT'){
+    if(!unlockedWardrobe(state).includes(action.outfitId))return state;
+    return withCharacterBuilds(state,setOutfit(state.v12Builds.characterBuilds,action.outfitId));
+  }
+
+  if(action.type==='SET_V12_PARTY'){
+    const characterBuilds=setParty(state.v12Builds.characterBuilds,action.party,action.leader);
+    if(characterBuilds===state.v12Builds.characterBuilds)return state;
+    const companions=action.party.filter((id):id is CompanionId=>id!=='runa'&&companionIds.includes(id as CompanionId));
+    return {
+      ...state,
+      v12Builds:{...state.v12Builds,characterBuilds},
+      ...(action.party.includes('runa')&&companions.length===2?{selectedTacticalCompanions:companions}:{}),
+    };
+  }
+
+  if(action.type==='BEGIN_V12_RUN'){
+    return withCharacterBuilds(state,beginRunLoadout(state.v12Builds.characterBuilds));
+  }
+
+  if(action.type==='END_V12_RUN'){
+    return withCharacterBuilds(state,endRunLoadout(state.v12Builds.characterBuilds));
   }
 
   if (action.type === 'SET_TACTICAL_PARTY') {
