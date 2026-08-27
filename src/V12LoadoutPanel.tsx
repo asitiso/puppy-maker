@@ -13,6 +13,7 @@ export type V12LoadoutPanelProps = {
   onEditParty?: () => void
   onEditOutfit?: () => void
   onEditEquipment?: (slot: EquipmentSlot) => void
+  showPrimaryAction?: boolean
 }
 
 const SLOT_LABEL: Record<EquipmentSlot, string> = {
@@ -37,6 +38,7 @@ export default function V12LoadoutPanel({
   onEditParty,
   onEditOutfit,
   onEditEquipment,
+  showPrimaryAction = true,
 }: V12LoadoutPanelProps) {
   const locked = Boolean(state.runLoadoutSnapshot)
   const leader = state.loadout.leader
@@ -142,7 +144,7 @@ export default function V12LoadoutPanel({
 
       <footer className="v12-loadout__footer">
         <p>{locked ? '현재 런은 출발 시점의 로드아웃을 사용합니다.' : '편성을 확인하면 이 조합으로 런이 잠깁니다.'}</p>
-        <button
+        {showPrimaryAction ? <button
           type="button"
           className="v12-loadout__primary"
           data-v12-primary-action="true"
@@ -151,7 +153,7 @@ export default function V12LoadoutPanel({
           aria-disabled={locked}
         >
           {locked ? '런 진행 중' : '원정 시작'}
-        </button>
+        </button> : null}
       </footer>
     </section>
   )

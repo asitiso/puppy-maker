@@ -102,6 +102,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   };
 
   const start = () => {
+    if(buildState.runLoadoutSnapshot)return;
     requestV12Build({type:'party',party:buildState.loadout.party,leader:buildState.loadout.leader});
     requestV12Build({type:'begin-run'});
     onSetParty(party);
@@ -171,6 +172,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
       <V12LoadoutPanel
         state={buildState}
         onStartRun={start}
+        showPrimaryAction={false}
         onEditParty={() => setEditor('party')}
         onEditOutfit={() => setEditor('outfit')}
         onEditEquipment={slot => setEditor(slot)}
@@ -185,7 +187,12 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         onClose={()=>setEditor(null)}
       />:null}
       <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
-        {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
+        {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} type="button" className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
+      </div>
+      <div className="tactical-setup-actions">
+        <button type="button" className="tactical-start" onClick={start} disabled={Boolean(buildState.runLoadoutSnapshot)} aria-disabled={Boolean(buildState.runLoadoutSnapshot)}>
+          {buildState.runLoadoutSnapshot?'런 진행 중':'이 편성으로 원정 시작'}
+        </button>
       </div>
     </div>
   </aside>;
