@@ -12,7 +12,7 @@ export type V3PersistentState={
   characterBonds:CharacterBondsState;
   legacy:LegacyState;
   v12Builds:V12PersistentBuildState;
-  sceneCheckpoint:ActivityCheckpoint|null;
+  sceneCheckpoint?:ActivityCheckpoint|null;
 };
 
 export function emptyV3PersistentState():V3PersistentState{
@@ -29,24 +29,30 @@ export function emptyV3PersistentState():V3PersistentState{
 export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
   const source=isV3Record(raw)?raw:{};
   const legacySource=isV3Record(source.legacy)?source.legacy:{endingCollection:source.endingCollection};
+  const sceneCheckpoint=Object.prototype.hasOwnProperty.call(source,'sceneCheckpoint')
+    ? {sceneCheckpoint:sanitizeActivityCheckpoint(source.sceneCheckpoint)}
+    : {};
   return {
     campaignRun:hydrateCampaignRunState(source.campaignRun),
     worldHistory:hydrateWorldHistoryState(source.worldHistory),
     characterBonds:hydrateCharacterBondsState(source.characterBonds),
     legacy:hydrateLegacyState(legacySource),
     v12Builds:hydrateV12PersistentBuildState(source.v12Builds),
-    sceneCheckpoint:sanitizeActivityCheckpoint(source.sceneCheckpoint),
+    ...sceneCheckpoint,
   };
 }
 
 export function pickV3PersistentState(state:V3PersistentState):V3PersistentState{
+  const sceneCheckpoint=state.sceneCheckpoint===undefined
+    ? {}
+    : {sceneCheckpoint:sanitizeActivityCheckpoint(state.sceneCheckpoint)};
   return {
     campaignRun:state.campaignRun,
     worldHistory:state.worldHistory,
     characterBonds:state.characterBonds,
     legacy:state.legacy,
     v12Builds:state.v12Builds,
-    sceneCheckpoint:sanitizeActivityCheckpoint(state.sceneCheckpoint),
+    ...sceneCheckpoint,
   };
 }
 
