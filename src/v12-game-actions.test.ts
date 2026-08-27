@@ -2,16 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { initialState, reducer } from './game'
 
 describe('V12 GameState loadout actions',()=>{
-  it('persists equipment and outfit changes before a run',()=>{
-    let state=reducer(initialState,{type:'ACQUIRE_V12_EQUIPMENT',equipmentId:'star_staff'})
+  it('persists equipment and an already-unlocked outfit change before a run',()=>{
+    let state={...initialState,discoveredDestinations:['forest_path']}
+    state=reducer(state,{type:'ACQUIRE_V12_EQUIPMENT',equipmentId:'star_staff'})
     state=reducer(state,{type:'SET_V12_EQUIPMENT',equipmentId:'star_staff'})
     state=reducer(state,{type:'SET_V12_OUTFIT',outfitId:'forest_charm'})
     expect(state.v12Builds.characterBuilds.loadout.equipment.weapon).toBe('star_staff')
     expect(state.v12Builds.characterBuilds.loadout.outfitId).toBe('forest_charm')
   })
 
+  it('rejects a registered outfit until the existing wardrobe progression has unlocked it',()=>{
+    const locked=reducer(initialState,{type:'SET_V12_OUTFIT',outfitId:'moon_brooch'})
+    expect(locked.v12Builds.characterBuilds.loadout.outfitId).toBe('runa_classic')
+    const unlocked=reducer({...initialState,discoveredDestinations:['moon_garden']},{type:'SET_V12_OUTFIT',outfitId:'moon_brooch'})
+    expect(unlocked.v12Builds.characterBuilds.loadout.outfitId).toBe('moon_brooch')
+  })
+
   it('snapshots the current loadout at run start and rejects edits until run end',()=>{
-    let state=reducer(initialState,{type:'BEGIN_V12_RUN'})
+    let state={...initialState,discoveredDestinations:['forest_path']}
+    state=reducer(state,{type:'BEGIN_V12_RUN'})
     expect(state.v12Builds.characterBuilds.runLoadoutSnapshot).not.toBeNull()
     const locked=reducer(state,{type:'SET_V12_OUTFIT',outfitId:'forest_charm'})
     expect(locked).toEqual(state)
