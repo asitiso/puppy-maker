@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import TacticalBattleScreen from './TacticalBattleScreen';
+import V12BuildEditor from './V12BuildEditor';
 import V12LoadoutPanel from './V12LoadoutPanel';
 import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
@@ -7,17 +8,21 @@ import type { TacticalEncounterId } from './tactical-encounters';
 import { tacticalExpeditionFinishScore } from './tactical-expedition';
 import { expeditionStageDefinitions, nextExpeditionStage, type ExpeditionStageId } from './expedition-regions';
 import type { ExpeditionActionCounts, GameState } from './game';
+import { unlockedWardrobe } from './game/wardrobe';
 import {
   createTacticalBattleFromGame,
   tacticalCompletionMetrics,
   tacticalEncounterForExpeditionStage,
   tacticalPartyForGame,
 } from './tactical-launcher';
-import type { CharacterBuildState, PlayableCharacterId } from './v12-character-builds';
+import { beginRunLoadout, type CharacterBuildState, type EquipmentSlot, type PlayableCharacterId } from './v12-character-builds';
+import { requestV12Build } from './v12-build-ui-events';
 import { hasHiddenExpeditionInteraction } from './v12-tactical-equipment-runtime';
 import './tactical-expedition-flow.css';
 
 export type TacticalPhase='setup'|'active'|'result';
+
+type V12EditorKind='party'|'outfit'|EquipmentSlot;
 
 export type TacticalExpeditionFlowProps = {
   state:GameState;
@@ -50,6 +55,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   const [party,setParty] = useState<[CompanionId,CompanionId]>(()=>tacticalPartyForGame(state));
   const [auto,setAuto] = useState(state.tacticalAutoBattle);
   const [speed,setSpeed] = useState<1|2>(state.tacticalBattleSpeed);
+  const [editor,setEditor] = useState<V12EditorKind|null>(null);
   const onPhaseChangeRef = useRef(onPhaseChange);
   const stageId = (nextExpeditionStage(state.expeditionRecords) ?? 'forest_path') as ExpeditionStageId;
   const stage = useMemo(()=>expeditionStageDefinitions.find(item=>item.id===stageId)!,[stageId]);
@@ -68,7 +74,8 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
       loadout:{...persisted.loadout,party:displayParty,leader},
     };
   },[party,state.v12Builds.characterBuilds]);
-  const hiddenInteraction=hasHiddenExpeditionInteraction(buildState.loadout);
+  const unlockedOutfitIds = useMemo(()=>unlockedWardrobe(state),[state]);
+  const hiddenInteraction=hasHiddenExpeditionInteraction(buildState.runLoadoutSnapshot ?? buildState.loadout);
 
   useEffect(()=>{
     onPhaseChangeRef.current=onPhaseChange;
@@ -82,20 +89,26 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
 
   const chooseCompanion = (id:CompanionId) => {
     if (party.includes(id)) return;
-    setParty(([first,second])=>[second,id]);
+    setParty(([,second])=>[second,id]);
   };
 
-  const createSession = (seedOffset=0) => createTacticalBattleFromGame({...state,selectedTacticalCompanions:party},stageId,seedFor(state,stageId)+seedOffset);
+  const createSession = (seedOffset=0) => {
+    const characterBuilds=beginRunLoadout(buildState);
+    return createTacticalBattleFromGame({
+      ...state,
+      selectedTacticalCompanions:party,
+      v12Builds:{...state.v12Builds,characterBuilds},
+    },stageId,seedFor(state,stageId)+seedOffset);
+  };
 
   const start = () => {
+    requestV12Build({type:'party',party:buildState.loadout.party,leader:buildState.loadout.leader});
+    requestV12Build({type:'begin-run'});
     onSetParty(party);
+    setEditor(null);
     setSession(createSession());
     setOpen(true);
     onPhaseChange?.('active');
-  };
-
-  const focusPartyPicker = () => {
-    document.querySelector<HTMLButtonElement>('#v12-tactical-party-picker button')?.focus();
   };
 
   const toggleAuto = () => {
@@ -116,14 +129,17 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     const actionKinds:ExpeditionActionCounts = { attack:metrics.rounds,dodge:0,charge:0 };
     const expeditionScore = tacticalExpeditionFinishScore(stage.target,result);
     onExpeditionFinish(stageId,expeditionScore,result==='victory'?2:6,result==='victory'?1:5,actionKinds);
+    requestV12Build({type:'end-run'});
   };
 
   const retry = () => {
+    requestV12Build({type:'begin-run'});
     setSession(createSession(1));
     onPhaseChange?.('active');
   };
 
   const exit = () => {
+    requestV12Build({type:'end-run'});
     onPhaseChange?.('setup');
     closeTacticalFlow(()=>setSession(null),()=>setOpen(false),onExitToHome);
   };
@@ -152,7 +168,23 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
       <strong>{stage.name} · 전술전</strong>
       <span>Leader + 파티 2명 · 의상 + 장비 3슬롯 · Bond 성장</span>
       {hiddenInteraction?<span role="status">탐험가의 나침반이 숨은 원정 상호작용을 감지했습니다.</span>:null}
-      <V12LoadoutPanel state={buildState} onStartRun={start} onEditParty={focusPartyPicker}/>
+      <V12LoadoutPanel
+        state={buildState}
+        onStartRun={start}
+        onEditParty={() => setEditor('party')}
+        onEditOutfit={() => setEditor('outfit')}
+        onEditEquipment={slot => setEditor(slot)}
+      />
+      {editor?<V12BuildEditor
+        kind={editor}
+        loadout={buildState.loadout}
+        unlockedOutfitIds={unlockedOutfitIds}
+        ownedEquipmentIds={buildState.ownedEquipment}
+        onSelectLeader={leader=>requestV12Build({type:'party',party:buildState.loadout.party,leader})}
+        onSelectOutfit={outfitId=>requestV12Build({type:'outfit',outfitId})}
+        onSelectEquipment={equipmentId=>requestV12Build({type:'equipment',equipmentId})}
+        onClose={()=>setEditor(null)}
+      />:null}
       <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
         {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
       </div>
