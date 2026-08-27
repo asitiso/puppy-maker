@@ -19,7 +19,7 @@ export type ResolvedActorVisual={
   src?:string;
 };
 
-const knownRunaPoses=new Set<RunaPose>(['idle','talk','surprised','training-ready','tired']);
+const knownRunaPoses=new Set<RunaPose>(['idle','talk','surprised','training-ready','tired','happy','worried','sit']);
 const companionIds=new Set<SceneActorId>(['bear','owl','wolf','cat']);
 
 export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLayer[]{
