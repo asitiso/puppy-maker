@@ -1,8 +1,10 @@
+import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it,vi} from 'vitest';
 import {initialState} from './game';
 import {StoryEvent} from './components/StoryEvent';
-import css from './story-dialogue-stage.css?raw';
+
+const css=readFileSync(new URL('./story-dialogue-stage.css',import.meta.url),'utf8');
 
 describe('V13 animated story dialogue stage',()=>{
   it('stages Runa and a guest character on opposite sides without changing story choice data',()=>{
