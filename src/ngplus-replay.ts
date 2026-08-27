@@ -66,6 +66,7 @@ export function prepareNewPossibilityV3State(current:V3PersistentState):
     worldHistory:{currentFacts:[],inheritedFacts:[...legacy.legacyWorldFacts]},
     characterBonds:emptyCharacterBondsState(),
     legacy,
+    v12Builds:current.v12Builds,
   };
   return {
     started:true,
