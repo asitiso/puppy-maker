@@ -364,9 +364,16 @@ A scene family, not one flat map. It presents semantic nodes such as camp, path,
 
 ### 10.1 Season
 
-Season is derived from canonical month, not saved as a separate counter.
+Season is derived from canonical month, never persisted as a separate counter.
 
-The implementation plan must choose one fixed month-to-season mapping and cover it with tests. Once selected, V14 must derive season from month everywhere rather than persisting duplicated season state.
+The mapping is fixed for V14:
+
+- months 1-3 -> `spring`
+- months 4-6 -> `summer`
+- months 7-9 -> `autumn`
+- months 10-12 -> `winter`
+
+All V14 scene code must derive season through one shared helper so save/load and NG+ cannot drift from the canonical calendar.
 
 ### 10.2 Time of day
 
@@ -389,9 +396,7 @@ V14 uses:
 - snow
 - mist
 
-Weekly base weather is deterministic from canonical week data. Re-entering a location in the same week must not randomly produce contradictory base weather.
-
-Locations may transform the same weekly weather into a local presentation; for example, world rain can become rain+mist in the forest.
+Weekly base weather is deterministic from canonical `weekKey(year, month, week)` through one shared weather resolver. Re-entering a location in the same week must resolve the same base weather. Location presentation may transform that base weather (for example rain -> rain+mist in Forest), but may not reroll it independently on every visit or render.
 
 ### 10.4 World facts and progression
 
@@ -659,12 +664,9 @@ enter training scene
 
 Special training may insert a 10-30 second minigame before canonical commit.
 
-V14 foundation must not silently replace existing training balance. The first implementation should either:
+For V14, minigame performance is presentation-only: it may choose animation, dialogue, feedback grade, camera/effect intensity, or other non-durable presentation, but it does not change stats, rewards, mastery, or canonical training quality. Existing training resolution remains fully authoritative.
 
-- treat the minigame as presentation-only while existing resolution remains authoritative; or
-- use a narrowly bounded, explicitly tested quality modifier accepted by the existing training domain API.
-
-The implementation plan must choose one approach before coding the first minigame. Direct stat mutation from minigame UI is forbidden.
+Any future design that makes minigame performance modify canonical growth must be separately designed and tested against the existing Raising balance/API before implementation. Direct stat mutation from minigame UI is forbidden.
 
 ## 19. Outing interaction
 
@@ -773,22 +775,34 @@ Reload resolves a safe scene from canonical state.
 
 ### 23.2 Semantic Activity Checkpoint
 
-Long activities may persist a minimal semantic checkpoint.
+Long activities may persist a minimal semantic checkpoint. Checkpoint phases are adapter-owned literal unions, not arbitrary strings.
 
 Conceptual structure:
 
 ```ts
-type ActivityCheckpoint = {
-  activity: 'story' | 'expedition' | 'training';
-  activityId: string;
-  phase: string;
-  committedKey: string | null;
-};
+type ActivityCheckpoint =
+  | {
+      activity: 'story';
+      activityId: string;
+      phase: 'intro' | 'choice' | 'post_choice';
+      committedKey: string | null;
+    }
+  | {
+      activity: 'training';
+      activityId: string;
+      phase: 'intro' | 'pre_commit' | 'post_commit';
+      committedKey: string | null;
+    }
+  | {
+      activity: 'expedition';
+      activityId: string;
+      phase: 'entry' | 'node' | 'post_encounter' | 'post_reward';
+      semanticNodeId: string;
+      committedKey: string | null;
+    };
 ```
 
-`phase` represents a game-meaningful boundary such as `crossroads` or `post_guardian_02`, never an animation frame.
-
-The exact persisted schema must be versioned/sanitized using the same defensive style as existing game hydration.
+These phases represent game-meaningful boundaries, never animation frames. The persisted schema must be versioned/sanitized using the same defensive style as existing game hydration.
 
 ### 23.3 Reload behavior
 
@@ -910,7 +924,7 @@ V14 is one product update but should be implemented in ordered PR-sized slices u
 - Magic Classroom
 - Herb Garden
 - normal short training presentation
-- one bounded special-training minigame path after choosing the exact canonical quality-integration rule
+- one bounded special-training minigame whose performance affects presentation only in V14
 - result presentation from committed GrowthReport/state
 
 ### Slice D — Outing scenes
@@ -954,7 +968,7 @@ No slice may redefine canonical reward/stat logic in Scene Runtime.
 
 Cover at minimum:
 
-- month -> season derivation;
+- month -> season derivation using the fixed V14 mapping;
 - week -> deterministic weather;
 - Story override priority over weather/location defaults;
 - World Fact variant selection;
@@ -963,7 +977,7 @@ Cover at minimum:
 - actor pose fallback;
 - actor behavior priority;
 - interaction lifecycle and duplicate-tap lock;
-- checkpoint sanitization;
+- checkpoint sanitization including invalid literal phases;
 - committed vs uncommitted reload resolution.
 
 ### 29.2 Adapter tests
@@ -1013,7 +1027,7 @@ Requirements:
 - particle/weather effects should degrade gracefully on constrained devices and under reduced motion;
 - background layering should prefer lightweight compositing over duplicate full-size variants when possible.
 
-No hard numeric performance target is introduced in this spec; implementation should preserve responsive interaction on the existing supported mobile viewport/device class and should add regression checks where a measurable bottleneck appears.
+No hard numeric performance target is introduced in this spec. V14 must preserve responsive interaction on the existing supported mobile viewport/device class; any measurable regression discovered during implementation must be treated as a release blocker for the affected slice.
 
 ## 31. Acceptance criteria
 
@@ -1028,7 +1042,7 @@ V14 is considered product-complete only when all of the following are true:
 7. Forest, Village, and Lakeside reuse the existing canonical Outing logic and visibly stage their exploration/events/discoveries.
 8. Story choices continue through canonical Story actions, and resolved choices cannot be repeated after reload.
 9. Expedition battle completion cannot be duplicated by reload or rapid repeated interaction.
-10. Season is derived from canonical calendar state, not separately persisted.
+10. Season is derived from canonical calendar state using the fixed V14 month mapping, not separately persisted.
 11. Weekly weather is deterministic for a canonical game week and supports Story/World Fact override priority.
 12. At least representative World Facts can visibly add/change scene props or interactions.
 13. Missing visual assets fall back without blocking gameplay.
@@ -1044,9 +1058,10 @@ The following invariants are not negotiable during implementation unless this de
 
 - reducer/domain logic is authoritative;
 - Scene Runtime cannot directly award stats, items, currency, Bond, discoveries, progression, or battle results;
+- V14 minigames do not modify canonical growth/rewards;
 - gameplay commit occurs before result-only presentation;
 - animation frames/actor pixel coordinates are not durable game state;
-- long-flow persistence uses semantic checkpoints only;
+- long-flow persistence uses sanitized semantic checkpoints with adapter-owned literal phases only;
 - free joystick movement/pathfinding is outside V14 scope;
 - scene assets are layered/fallback-capable rather than combinatorially pre-rendered;
 - Home does not become a new monolithic scene engine;
