@@ -60,8 +60,8 @@ export default function V12LoadoutPanel({
             <p className="v12-loadout__step">1</p>
             <h3 id="v12-party-title">파티 편성</h3>
           </div>
-          <button type="button" onClick={onEditParty} disabled={locked} aria-disabled={locked}>
-            {locked ? '런 종료 후 변경 가능' : '편성 변경'}
+          <button type="button" onClick={onEditParty} disabled={locked || !onEditParty} aria-disabled={locked || !onEditParty}>
+            {locked ? '런 종료 후 변경 가능' : onEditParty ? '편성 변경' : '현재 편성'}
           </button>
         </div>
         <div className="v12-loadout__party" role="list" aria-label="현재 파티">
@@ -89,8 +89,8 @@ export default function V12LoadoutPanel({
             <p className="v12-loadout__step">2</p>
             <h3 id="v12-style-title">의상</h3>
           </div>
-          <button type="button" onClick={onEditOutfit} disabled={locked} aria-disabled={locked}>
-            {locked ? '런 종료 후 변경 가능' : '의상 변경'}
+          <button type="button" onClick={onEditOutfit} disabled={locked || !onEditOutfit} aria-disabled={locked || !onEditOutfit}>
+            {locked ? '런 종료 후 변경 가능' : onEditOutfit ? '의상 변경' : '현재 의상'}
           </button>
         </div>
         <div className="v12-loadout__outfit">
@@ -111,14 +111,15 @@ export default function V12LoadoutPanel({
             const itemId = state.loadout.equipment[slot]
             const item = itemId ? EQUIPMENT[itemId] : null
             const affinity = item ? canEquip(leader, item).affinity : null
+            const editable = Boolean(onEditEquipment) && !locked
             return (
               <button
                 type="button"
                 className="v12-loadout__slot"
                 key={slot}
                 onClick={() => onEditEquipment?.(slot)}
-                disabled={locked}
-                aria-disabled={locked}
+                disabled={!editable}
+                aria-disabled={!editable}
               >
                 <span className="v12-loadout__slot-label">{SLOT_LABEL[slot]}</span>
                 {item ? (
@@ -130,7 +131,7 @@ export default function V12LoadoutPanel({
                 ) : (
                   <>
                     <strong>비어 있음</strong>
-                    <span>장비를 선택하세요</span>
+                    <span>{editable ? '장비를 선택하세요' : '장비 설정 없음'}</span>
                   </>
                 )}
               </button>
