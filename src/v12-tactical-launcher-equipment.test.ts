@@ -17,7 +17,7 @@ describe('V12 tactical launcher equipment wiring',()=>{
     let builds=acquireEquipment(initialState.v12Builds.characterBuilds,'star_staff')
     builds=equipItem(builds,'star_staff')
     builds=beginRunLoadout(builds)
-    const drifted={...builds,loadout:{...builds.loadout,equipment:{...builds.loadout.equipment,weapon:'training_wand' as const}}}
+    const drifted={...builds,loadout:{...builds.loadout,equipment:{...builds.loadout.equipment,weapon:'training_blade' as const}}}
     const state={...initialState,v12Builds:{...initialState.v12Builds,characterBuilds:drifted}}
     const battle=createTacticalBattleFromGame(state,'forest_path',8)
     const runa=battle.units.find(unit=>unit.id==='runa') as typeof battle.units[number]&{v12EquipmentEffects?:Array<{kind:string}>}
