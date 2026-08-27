@@ -55,7 +55,9 @@ export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personal
 
 export function createTacticalBattleFromGame(state:TacticalLaunchState,stageId:ExpeditionStageId,seed:number) {
   const session=createTacticalExpeditionBattle(stageId,tacticalPartyForGame(state),tacticalLeaderProgression(state),seed);
-  return applyV12LoadoutToBattle(session,state.v12Builds.characterBuilds.loadout);
+  const builds=state.v12Builds.characterBuilds;
+  const loadout=builds.runLoadoutSnapshot ?? builds.loadout;
+  return applyV12LoadoutToBattle(session,loadout);
 }
 
 export function tacticalCompletionMetrics(session:BattleSession) {
