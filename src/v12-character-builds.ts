@@ -129,8 +129,8 @@ export function createDefaultV12State(): CharacterBuildState {
 }
 
 function normalizeUnlocked(input: unknown): PlayableCharacterId[] {
-  const raw = Array.isArray(input) ? unique(input.filter(isCharacterId)) : [...CHARACTER_IDS]
-  const result = raw.includes('runa') ? [...raw] : ['runa', ...raw]
+  const raw: PlayableCharacterId[] = Array.isArray(input) ? unique(input.filter(isCharacterId)) : [...CHARACTER_IDS]
+  const result: PlayableCharacterId[] = raw.includes('runa') ? [...raw] : ['runa', ...raw]
   for (const id of CHARACTER_IDS) {
     if (result.length >= 3) break
     if (!result.includes(id)) result.push(id)
