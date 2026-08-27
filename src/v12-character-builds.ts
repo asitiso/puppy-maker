@@ -1,4 +1,5 @@
 import { COMPANIONS, type CompanionId, type CompanionRole } from './tactical-companions'
+import { wardrobe } from './game/wardrobe'
 
 export type PlayableCharacterId = 'runa' | CompanionId
 export type CharacterResource = 'resolve' | 'guard' | 'insight' | 'momentum' | 'trick'
@@ -86,9 +87,13 @@ export type CharacterBuildState = {
 
 const CHARACTER_IDS = Object.keys(PLAYABLE_CHARACTERS) as PlayableCharacterId[]
 const EQUIPMENT_IDS = Object.keys(EQUIPMENT) as EquipmentId[]
+const WARDROBE_IDS = new Set(wardrobe.map((item) => item.id))
 const EMPTY_EQUIPMENT: EquipmentLoadout = { weapon: null, defenseSupport: null, accessory: null }
 const DEFAULT_PARTY: [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId] = ['runa', 'bear', 'owl']
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
 function isCharacterId(value: unknown): value is PlayableCharacterId {
   return typeof value === 'string' && CHARACTER_IDS.includes(value as PlayableCharacterId)
 }
@@ -115,9 +120,9 @@ export function canEquip(characterId: PlayableCharacterId, equipment: EquipmentD
 
 export function createDefaultV12State(): CharacterBuildState {
   return {
-    // Existing Tactical companions were already available before V12; legacy migration preserves that capability.
+    // Existing Tactical companions were already available before V12; migration preserves that capability.
     unlockedCharacters: [...CHARACTER_IDS],
-    ownedEquipment: [],
+    ownedEquipment: ['training_blade'],
     loadout: { party: [...DEFAULT_PARTY], leader: 'runa', outfitId: 'runa_classic', equipment: { ...EMPTY_EQUIPMENT } },
     runLoadoutSnapshot: null,
   }
@@ -125,71 +130,107 @@ export function createDefaultV12State(): CharacterBuildState {
 
 function normalizeUnlocked(input: unknown): PlayableCharacterId[] {
   const raw = Array.isArray(input) ? unique(input.filter(isCharacterId)) : [...CHARACTER_IDS]
-  const withRuna = raw.includes('runa') ? raw : ['runa', ...raw]
-  // A playable Tactical party always needs three legal members. Fill only the missing minimum from canonical legacy companions.
+  const result = raw.includes('runa') ? [...raw] : ['runa', ...raw]
   for (const id of CHARACTER_IDS) {
-    if (withRuna.length >= 3) break
-    if (!withRuna.includes(id)) withRuna.push(id)
+    if (result.length >= 3) break
+    if (!result.includes(id)) result.push(id)
   }
-  return withRuna
+  return result
 }
 
 function normalizeOwned(input: unknown): EquipmentId[] {
-  return Array.isArray(input) ? unique(input.filter(isEquipmentId)) : []
+  return Array.isArray(input) ? unique(input.filter(isEquipmentId)) : ['training_blade']
 }
 
-function sanitizeEquipmentLoadout(input: unknown, owned: readonly EquipmentId[]): EquipmentLoadout {
-  const value = input && typeof input === 'object' ? input as Partial<Record<EquipmentSlot, unknown>> : {}
+function fallbackParty(unlocked: readonly PlayableCharacterId[]): [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId] {
+  const ordered = unique([...DEFAULT_PARTY.filter((id) => unlocked.includes(id)), ...unlocked])
+  return ordered.slice(0, 3) as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId]
+}
+
+function sanitizeEquipmentLoadout(input: unknown, owned: readonly EquipmentId[], leader: PlayableCharacterId): EquipmentLoadout {
+  const value = isRecord(input) ? input : {}
   const ownedSet = new Set(owned)
   const result: EquipmentLoadout = { ...EMPTY_EQUIPMENT }
   for (const slot of ['weapon', 'defenseSupport', 'accessory'] as const) {
     const id = value[slot]
-    if (isEquipmentId(id) && ownedSet.has(id) && EQUIPMENT[id].slot === slot) result[slot] = id
+    if (!isEquipmentId(id) || !ownedSet.has(id)) continue
+    const equipment = EQUIPMENT[id]
+    if (equipment.slot !== slot || !canEquip(leader, equipment).allowed) continue
+    result[slot] = id
   }
   return result
 }
 
 function sanitizeLoadout(input: unknown, unlocked: readonly PlayableCharacterId[], owned: readonly EquipmentId[]): CharacterLoadout {
-  const source = input && typeof input === 'object' ? input as Record<string, unknown> : {}
+  const source = isRecord(input) ? input : {}
   const candidateParty = Array.isArray(source.party) ? source.party.filter(isCharacterId) : []
   const candidateLeader = isCharacterId(source.leader) ? source.leader : 'runa'
   const candidate: PartySelection = { party: candidateParty, leader: candidateLeader }
-  const valid = validateParty(candidate, unlocked)
-  const party = valid.ok ? candidateParty as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId] : DEFAULT_PARTY.map((id) => unlocked.includes(id) ? id : unlocked.find((candidateId) => !DEFAULT_PARTY.includes(candidateId)) ?? id) as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId]
-  const distinctParty = unique(party)
-  const fallbackParty = distinctParty.length === 3 ? distinctParty as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId] : unlocked.slice(0, 3) as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId]
-  const leader = fallbackParty.includes(candidateLeader) ? candidateLeader : fallbackParty[0]
-  const outfitId = typeof source.outfitId === 'string' && source.outfitId.trim() ? source.outfitId : 'runa_classic'
-  return { party: fallbackParty, leader, outfitId, equipment: sanitizeEquipmentLoadout(source.equipment, owned) }
+  const party = validateParty(candidate, unlocked).ok
+    ? candidateParty as [PlayableCharacterId, PlayableCharacterId, PlayableCharacterId]
+    : fallbackParty(unlocked)
+  const leader = party.includes(candidateLeader) ? candidateLeader : party[0]
+  const outfitId = typeof source.outfitId === 'string' && WARDROBE_IDS.has(source.outfitId) ? source.outfitId : 'runa_classic'
+  return { party, leader, outfitId, equipment: sanitizeEquipmentLoadout(source.equipment, owned, leader) }
+}
+
+function hasSnapshotShape(input: unknown): boolean {
+  if (!isRecord(input)) return false
+  if (!Array.isArray(input.party) || input.party.length !== 3 || !input.party.every(isCharacterId)) return false
+  if (!isCharacterId(input.leader) || typeof input.outfitId !== 'string' || !isRecord(input.equipment)) return false
+  return true
 }
 
 export function sanitizeV12State(input: unknown): CharacterBuildState {
-  const source = input && typeof input === 'object' ? input as Record<string, unknown> : {}
+  const source = isRecord(input) ? input : {}
   const unlockedCharacters = normalizeUnlocked(source.unlockedCharacters)
   const ownedEquipment = normalizeOwned(source.ownedEquipment)
   const loadout = sanitizeLoadout(source.loadout, unlockedCharacters, ownedEquipment)
-  // A malformed or stale snapshot must never keep a run locked. Valid run snapshots are created only through beginRunLoadout.
-  const snapshot = source.runLoadoutSnapshot && typeof source.runLoadoutSnapshot === 'object'
+  const runLoadoutSnapshot = hasSnapshotShape(source.runLoadoutSnapshot)
     ? sanitizeLoadout(source.runLoadoutSnapshot, unlockedCharacters, ownedEquipment)
     : null
-  const snapshotIsValid = snapshot && validateParty(snapshot, unlockedCharacters).ok
-  return { unlockedCharacters, ownedEquipment, loadout, runLoadoutSnapshot: snapshotIsValid ? snapshot : null }
+  return { unlockedCharacters, ownedEquipment, loadout, runLoadoutSnapshot }
+}
+
+export function acquireEquipment(state: CharacterBuildState, equipmentId: EquipmentId): CharacterBuildState {
+  if (!EQUIPMENT[equipmentId] || state.ownedEquipment.includes(equipmentId)) return state
+  return { ...state, ownedEquipment: [...state.ownedEquipment, equipmentId] }
+}
+
+export function setParty(
+  state: CharacterBuildState,
+  party: readonly PlayableCharacterId[],
+  leader: PlayableCharacterId,
+): CharacterBuildState {
+  if (state.runLoadoutSnapshot) return state
+  const validation = validateParty({ party, leader }, state.unlockedCharacters)
+  if (!validation.ok) return state
+  const nextParty = [...party] as CharacterLoadout['party']
+  const nextEquipment = sanitizeEquipmentLoadout(state.loadout.equipment, state.ownedEquipment, leader)
+  return { ...state, loadout: { ...state.loadout, party: nextParty, leader, equipment: nextEquipment } }
+}
+
+export function setOutfit(state: CharacterBuildState, outfitId: string): CharacterBuildState {
+  if (state.runLoadoutSnapshot || !WARDROBE_IDS.has(outfitId)) return state
+  return { ...state, loadout: { ...state.loadout, outfitId } }
 }
 
 export function equipItem(state: CharacterBuildState, equipmentId: EquipmentId): CharacterBuildState {
-  if (state.runLoadoutSnapshot) return state
+  if (state.runLoadoutSnapshot || !state.ownedEquipment.includes(equipmentId)) return state
   const equipment = EQUIPMENT[equipmentId]
-  if (!equipment || !state.ownedEquipment.includes(equipmentId) && equipmentId !== 'training_blade' && equipmentId !== 'star_staff') {
-    return state
-  }
+  if (!equipment || !canEquip(state.loadout.leader, equipment).allowed) return state
   const nextEquipment = { ...state.loadout.equipment, [equipment.slot]: equipmentId }
   return { ...state, loadout: { ...state.loadout, equipment: nextEquipment } }
 }
 
 export function beginRunLoadout(state: CharacterBuildState): CharacterBuildState {
   if (state.runLoadoutSnapshot) return state
-  const equipment = { ...state.loadout.equipment }
-  const snapshot: RunLoadoutSnapshot = Object.freeze({ ...state.loadout, party: [...state.loadout.party] as CharacterLoadout['party'], equipment: Object.freeze(equipment) })
+  const equipment = Object.freeze({ ...state.loadout.equipment })
+  const snapshot: RunLoadoutSnapshot = Object.freeze({
+    ...state.loadout,
+    party: Object.freeze([...state.loadout.party]) as unknown as CharacterLoadout['party'],
+    equipment,
+  })
   return { ...state, runLoadoutSnapshot: snapshot }
 }
 
