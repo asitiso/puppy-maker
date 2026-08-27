@@ -1,5 +1,7 @@
+import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
-import css from './layered-home.css?raw';
+
+const css=readFileSync(new URL('./layered-home.css',import.meta.url),'utf8');
 
 describe('V13 home character safe zone',()=>{
   it('reserves a central character lane and keeps HUD controls on edge lanes',()=>{
