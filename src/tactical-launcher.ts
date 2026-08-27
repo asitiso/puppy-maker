@@ -4,12 +4,15 @@ import type { CompanionId, LeaderCombatProgression } from './tactical-companions
 import type { TacticalEncounterId } from './tactical-encounters';
 import { createTacticalExpeditionBattle } from './tactical-expedition';
 import type { ExpeditionStageId } from './expedition-regions';
+import { applyV12LoadoutToBattle } from './v12-tactical-equipment-runtime';
+import type { V12PersistentBuildState } from './v12-persistent-builds';
 
 const fallbackParty:readonly [CompanionId,CompanionId] = ['bear','owl'];
 const companionIds:readonly CompanionId[] = ['bear','owl','wolf','cat'];
 
 type TacticalLaunchState = Pick<GameState,'stats'|'personality'> & {
   selectedTacticalCompanions:readonly CompanionId[];
+  v12Builds:V12PersistentBuildState;
 };
 
 function finiteNonNegative(value:number) {
@@ -51,7 +54,8 @@ export function tacticalLeaderProgression(state:Pick<GameState,'stats'|'personal
 }
 
 export function createTacticalBattleFromGame(state:TacticalLaunchState,stageId:ExpeditionStageId,seed:number) {
-  return createTacticalExpeditionBattle(stageId,tacticalPartyForGame(state),tacticalLeaderProgression(state),seed);
+  const session=createTacticalExpeditionBattle(stageId,tacticalPartyForGame(state),tacticalLeaderProgression(state),seed);
+  return applyV12LoadoutToBattle(session,state.v12Builds.characterBuilds.loadout);
 }
 
 export function tacticalCompletionMetrics(session:BattleSession) {
