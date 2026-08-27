@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import type { GameState } from './game';
 import type { CelestialGuardianId, ConvergenceIntensity } from './celestial-convergence';
 import type { GuardianBoonId } from './guardian-boons';
 import { convergenceUiSummary } from './convergence-ui';
+import InformationPanel from './InformationPanel';
 import './convergence.css';
 
 const intensityLabels:Record<ConvergenceIntensity,string> = { 1:'I', 2:'II', 3:'III' };
 const guardianMarks:Record<CelestialGuardianId,string> = {
   dawn_stag:'☀', moon_crane:'☾', storm_wolf:'ϟ', star_fox:'✦',
 };
+
+type ConvergenceView='all'|'available'|'cleared';
 
 export default function ConvergencePanel({
   state,
@@ -19,33 +23,58 @@ export default function ConvergencePanel({
   onBoon:(boonId:GuardianBoonId)=>void;
 }) {
   const summary = convergenceUiSummary(state);
+  const [convergenceView,setConvergenceView]=useState<ConvergenceView>('available');
+  const availableGuardians=summary.guardians.filter(guardian=>guardian.intensities.some(item=>item.available));
+  const clearedGuardians=summary.guardians.filter(guardian=>guardian.intensities.some(item=>item.clearCount>0));
+  const visibleGuardians=summary.guardians.filter(guardian=>{
+    if(convergenceView==='available') return guardian.intensities.some(item=>item.available);
+    if(convergenceView==='cleared') return guardian.intensities.some(item=>item.clearCount>0);
+    return true;
+  });
+
   return <article className="convergence-block">
     <div className="convergence-heading">
       <div><small>CELESTIAL CONVERGENCE</small><h3>천체 수호 합일전</h3><p>천상 균열 너머의 네 수호자와 공명해 최후의 별빛 기록을 완성해요.</p></div>
       <div className="convergence-currency"><span>GUARDIAN SIGIL</span><b>✧ {summary.sigils}</b></div>
     </div>
 
-    <div className="convergence-guardians">
-      {summary.guardians.map(guardian => <section key={guardian.id}>
-        <header>
-          <span className="convergence-mark">{guardianMarks[guardian.id]}</span>
-          <div><small>{guardian.callingAffinity.toUpperCase()} AFFINITY</small><b>{guardian.label}</b></div>
-          <strong>{guardian.power} P</strong>
-        </header>
-        <div className="convergence-intensities">
-          {guardian.intensities.map(item => <button
-            key={item.intensity}
-            disabled={!item.available}
-            className={item.grade ? `grade-${item.grade.toLowerCase()}` : ''}
-            onClick={() => onClear(guardian.id,item.intensity)}
-          >
-            <strong>{intensityLabels[item.intensity]}</strong>
-            <span>{item.grade ? `${item.grade} · ${item.bestPower}P` : item.available ? '도전' : '잠김'}</span>
-            {item.clearCount > 0 && <small>{item.clearCount}회 합일</small>}
-          </button>)}
-        </div>
-      </section>)}
-    </div>
+    <InformationPanel
+      summaryItems={[
+        {label:'도전 가능',value:availableGuardians.length},
+        {label:'합일 기록',value:clearedGuardians.length},
+        {label:'전체 수호자',value:summary.guardians.length},
+      ]}
+      filters={[
+        {id:'available',label:'도전 가능',count:availableGuardians.length},
+        {id:'cleared',label:'합일 완료',count:clearedGuardians.length},
+        {id:'all',label:'전체',count:summary.guardians.length},
+      ]}
+      activeFilter={convergenceView}
+      onFilterChange={id=>setConvergenceView(id as ConvergenceView)}
+      emptyMessage="이 상태에 해당하는 수호자가 아직 없어요."
+    >
+      {visibleGuardians.length?<div className="convergence-guardians">
+        {visibleGuardians.map(guardian => <section key={guardian.id}>
+          <header>
+            <span className="convergence-mark">{guardianMarks[guardian.id]}</span>
+            <div><small>{guardian.callingAffinity.toUpperCase()} AFFINITY</small><b>{guardian.label}</b></div>
+            <strong>{guardian.power} P</strong>
+          </header>
+          <div className="convergence-intensities">
+            {guardian.intensities.map(item => <button
+              key={item.intensity}
+              disabled={!item.available}
+              className={item.grade ? `grade-${item.grade.toLowerCase()}` : ''}
+              onClick={() => onClear(guardian.id,item.intensity)}
+            >
+              <strong>{intensityLabels[item.intensity]}</strong>
+              <span>{item.grade ? `${item.grade} · ${item.bestPower}P` : item.available ? '도전' : '잠김'}</span>
+              {item.clearCount > 0 && <small>{item.clearCount}회 합일</small>}
+            </button>)}
+          </div>
+        </section>)}
+      </div>:null}
+    </InformationPanel>
 
     <div className="convergence-columns">
       <section>
