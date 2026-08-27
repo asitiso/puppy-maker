@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import TacticalBattleScreen from './TacticalBattleScreen';
+import V12LoadoutPanel from './V12LoadoutPanel';
 import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
 import type { TacticalEncounterId } from './tactical-encounters';
@@ -12,6 +13,7 @@ import {
   tacticalEncounterForExpeditionStage,
   tacticalPartyForGame,
 } from './tactical-launcher';
+import type { CharacterBuildState, PlayableCharacterId } from './v12-character-builds';
 import './tactical-expedition-flow.css';
 
 export type TacticalPhase='setup'|'active'|'result';
@@ -56,6 +58,15 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     wolf:state.tacticalCompanionBonds.wolf.level,
     cat:state.tacticalCompanionBonds.cat.level,
   }),[state.tacticalCompanionBonds]);
+  const buildState = useMemo<CharacterBuildState>(()=>{
+    const persisted=state.v12Builds.characterBuilds;
+    const displayParty:[PlayableCharacterId,PlayableCharacterId,PlayableCharacterId]=['runa',party[0],party[1]];
+    const leader=displayParty.includes(persisted.loadout.leader)?persisted.loadout.leader:'runa';
+    return {
+      ...persisted,
+      loadout:{...persisted.loadout,party:displayParty,leader},
+    };
+  },[party,state.v12Builds.characterBuilds]);
 
   useEffect(()=>{
     onPhaseChangeRef.current=onPhaseChange;
@@ -79,6 +90,10 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     setSession(createSession());
     setOpen(true);
     onPhaseChange?.('active');
+  };
+
+  const focusPartyPicker = () => {
+    document.querySelector<HTMLButtonElement>('#v12-tactical-party-picker button')?.focus();
   };
 
   const toggleAuto = () => {
@@ -133,11 +148,11 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
     <div className="tactical-expedition-entry-content">
       <small>TACTICAL 3 VS 3</small>
       <strong>{stage.name} · 전술전</strong>
-      <span>루나 + 동료 2명 · Bond 성장</span>
-      <div className="tactical-party-picker">
+      <span>Leader + 파티 2명 · 의상 + 장비 3슬롯 · Bond 성장</span>
+      <V12LoadoutPanel state={buildState} onStartRun={start} onEditParty={focusPartyPicker}/>
+      <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
         {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
       </div>
-      <button className="tactical-start" onClick={start}>3v3 전투 시작</button>
     </div>
   </aside>;
 }
