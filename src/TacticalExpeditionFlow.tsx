@@ -176,13 +176,12 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
         onEditEquipment={slot => setEditor(slot)}
       />
       {editor?<V12BuildEditor
-        kind={editor}
-        loadout={buildState.loadout}
+        mode={editor}
+        state={buildState}
         unlockedOutfitIds={unlockedOutfitIds}
-        ownedEquipmentIds={buildState.ownedEquipment}
-        onSelectLeader={leader=>requestV12Build({type:'party',party:buildState.loadout.party,leader})}
-        onSelectOutfit={outfitId=>requestV12Build({type:'outfit',outfitId})}
-        onSelectEquipment={equipmentId=>requestV12Build({type:'equipment',equipmentId})}
+        onLeaderChange={leader=>requestV12Build({type:'party',party:buildState.loadout.party,leader})}
+        onOutfitChange={outfitId=>requestV12Build({type:'outfit',outfitId})}
+        onEquipmentChange={equipmentId=>requestV12Build({type:'equipment',equipmentId})}
         onClose={()=>setEditor(null)}
       />:null}
       <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
