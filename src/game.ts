@@ -61,6 +61,7 @@ import {
   type EquipmentId,
   type PlayableCharacterId,
 } from './v12-character-builds';
+import { unlockedWardrobe } from './game/wardrobe';
 
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
@@ -402,6 +403,7 @@ export function reducer(state:GameState,action:Action):GameState {
   }
 
   if(action.type==='SET_V12_OUTFIT'){
+    if(!unlockedWardrobe(state).includes(action.outfitId))return state;
     return withCharacterBuilds(state,setOutfit(state.v12Builds.characterBuilds,action.outfitId));
   }
 
