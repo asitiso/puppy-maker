@@ -26,12 +26,18 @@ export function emptyV3PersistentState():V3PersistentState{
   };
 }
 
+function hasLegacyV3Shape(source:Record<string,unknown>):boolean{
+  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
+}
+
 export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
   const source=isV3Record(raw)?raw:{};
   const legacySource=isV3Record(source.legacy)?source.legacy:{endingCollection:source.endingCollection};
   const sceneCheckpoint=Object.prototype.hasOwnProperty.call(source,'sceneCheckpoint')
     ? {sceneCheckpoint:sanitizeActivityCheckpoint(source.sceneCheckpoint)}
-    : {};
+    : hasLegacyV3Shape(source)
+      ? {}
+      : {sceneCheckpoint:null};
   return {
     campaignRun:hydrateCampaignRunState(source.campaignRun),
     worldHistory:hydrateWorldHistoryState(source.worldHistory),

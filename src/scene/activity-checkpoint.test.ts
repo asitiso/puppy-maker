@@ -20,14 +20,16 @@ describe('V14 semantic activity checkpoints',()=>{
     expect(reconcileActivityCheckpoint(checkpoint,true)).toEqual(checkpoint);
   });
 
-  it('hydrates only semantic checkpoint fields while preserving legacy field absence',()=>{
+  it('hydrates only semantic checkpoint fields while preserving shaped legacy V3 absence',()=>{
     const hydrated=hydrateV3PersistentState({
       sceneCheckpoint:{activity:'story',activityId:'lost_bird',phase:'choice',step:'choice:help',actorX:72,cameraOffset:14},
     });
     expect(hydrated.sceneCheckpoint).toEqual({activity:'story',activityId:'lost_bird',phase:'choice',step:'choice:help'});
     expect(hydrated.sceneCheckpoint).not.toHaveProperty('actorX');
     expect(hydrated.sceneCheckpoint).not.toHaveProperty('cameraOffset');
-    expect(hydrateV3PersistentState({}).sceneCheckpoint).toBeUndefined();
+    expect(hydrateV3PersistentState({}).sceneCheckpoint).toBeNull();
+    const {sceneCheckpoint:_ignored,...legacyV3}=emptyV3PersistentState();
+    expect(hydrateV3PersistentState(legacyV3)).not.toHaveProperty('sceneCheckpoint');
     expect(hydrateV3PersistentState({sceneCheckpoint:{activity:'expedition',activityId:'guardian-expedition',phase:'node',step:''}}).sceneCheckpoint).toBeNull();
   });
 
