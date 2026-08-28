@@ -28,12 +28,12 @@ function storyWeather(storyEventId:string|null|undefined,base:Weather):Weather{
 
 function contextualRunaReaction(request:SceneRequest,location:LocationId,worldFacts:readonly string[]):RunaReaction|null{
   if(location==='training_ground'&&request.activityId==='hunt')return {pose:'training-ready',motion:'approach',tag:'actor-reaction:training-ready'};
-  if(location==='magic_classroom'&&request.activityId==='magic')return {pose:'focus',motion:'bob',tag:'actor-reaction:focus'};
-  if(location==='herb_garden'&&request.activityId==='herb')return {pose:'inspect',motion:'approach',tag:'actor-reaction:inspect'};
-  if(worldFacts.some(fact=>hazardousWorldFacts.has(fact)))return {pose:'alert',motion:'turn',tag:'actor-reaction:alert'};
+  if(location==='magic_classroom'&&request.activityId==='magic')return {pose:'training-ready',motion:'bob',tag:'actor-reaction:focus'};
+  if(location==='herb_garden'&&request.activityId==='herb')return {pose:'surprised',motion:'approach',tag:'actor-reaction:inspect'};
+  if(worldFacts.some(fact=>hazardousWorldFacts.has(fact)))return {pose:'worried',motion:'turn',tag:'actor-reaction:alert'};
   if(request.actorState?.condition==='tired')return {pose:'tired',motion:'bob',tag:'actor-reaction:tired'};
   if(request.actorState?.condition==='happy'||request.actorState?.condition==='energetic')return {pose:'happy',motion:'hop',tag:'actor-reaction:happy'};
-  if((location==='forest'||location==='village'||location==='lakeside')&&request.actorState?.personality==='curious')return {pose:'curious',motion:'turn',tag:'actor-reaction:curious'};
+  if((location==='forest'||location==='village'||location==='lakeside')&&request.actorState?.personality==='curious')return {pose:'surprised',motion:'turn',tag:'actor-reaction:curious'};
   return null;
 }
 
