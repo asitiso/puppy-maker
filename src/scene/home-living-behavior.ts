@@ -34,7 +34,7 @@ export function resolveHomeAmbientBehavior(input:{
     return {anchorId:'bed',pose:'tired',motion:'idle',tag:'ambient:resting'};
   }
   if(condition==='focused'){
-    return {anchorId:'desk',pose:'focused',motion:'turn',tag:'ambient:focused'};
+    return {anchorId:'desk',pose:'training-ready',motion:'turn',tag:'ambient:focused'};
   }
 
   const anchors=['runa','desk','world_map'] as const;
@@ -47,7 +47,7 @@ export function resolveHomeAmbientBehavior(input:{
   const personality=input.personality?.trim().toLowerCase();
   return {
     anchorId:anchors[index],
-    pose:personality==='curious'?'curious':'idle',
+    pose:personality==='curious'?'surprised':'idle',
     motion:motions[index],
     tag:`ambient:${anchors[index]}`,
   };
