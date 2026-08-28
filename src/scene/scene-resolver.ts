@@ -7,6 +7,9 @@ import {weatherForWeek} from './scene-weather';
 
 const locationSet=new Set<string>(LOCATION_IDS);
 const companionAnchorByBias={near:'runa',watch:'world_map',forward:'door',prop:'bed'} as const;
+const hazardousWorldFacts=new Set(['rift_unstable','hollow_rift_entrenched']);
+
+type RunaReaction={pose:string;motion:string;tag:string};
 
 function isCompanionActorId(actorId:SceneActorId):actorId is 'bear'|'owl'|'wolf'|'cat'{
   return actorId==='bear'||actorId==='owl'||actorId==='wolf'||actorId==='cat';
@@ -21,6 +24,17 @@ function storyWeather(storyEventId:string|null|undefined,base:Weather):Weather{
   if(storyEventId==='winter_letter') return 'snow';
   if(storyEventId==='guardian_dream') return 'mist';
   return base;
+}
+
+function contextualRunaReaction(request:SceneRequest,location:LocationId,worldFacts:readonly string[]):RunaReaction|null{
+  if(location==='training_ground'&&request.activityId==='hunt')return {pose:'training-ready',motion:'approach',tag:'actor-reaction:training-ready'};
+  if(location==='magic_classroom'&&request.activityId==='magic')return {pose:'focus',motion:'bob',tag:'actor-reaction:focus'};
+  if(location==='herb_garden'&&request.activityId==='herb')return {pose:'inspect',motion:'approach',tag:'actor-reaction:inspect'};
+  if(worldFacts.some(fact=>hazardousWorldFacts.has(fact)))return {pose:'alert',motion:'turn',tag:'actor-reaction:alert'};
+  if(request.actorState?.condition==='tired')return {pose:'tired',motion:'bob',tag:'actor-reaction:tired'};
+  if(request.actorState?.condition==='happy'||request.actorState?.condition==='energetic')return {pose:'happy',motion:'hop',tag:'actor-reaction:happy'};
+  if((location==='forest'||location==='village'||location==='lakeside')&&request.actorState?.personality==='curious')return {pose:'curious',motion:'turn',tag:'actor-reaction:curious'};
+  return null;
 }
 
 export function resolveScene(request:SceneRequest):ResolvedScene{
@@ -43,6 +57,8 @@ export function resolveScene(request:SceneRequest):ResolvedScene{
     personality:request.actorState?.personality,
     year:request.year,month:request.month,week:request.week,
   }):null;
+  const runaReaction=location==='home'?null:contextualRunaReaction(request,location,worldFacts);
+  if(runaReaction)presentationTags.push(runaReaction.tag);
 
   const cast:ResolvedScene['cast']=definition.cast.map(actor=>{
     if(homeAmbient&&actor.actorId==='runa'){
@@ -68,9 +84,20 @@ export function resolveScene(request:SceneRequest):ResolvedScene{
         presentationTags:[ambient.tag],
       };
     }
+    if(actor.actorId==='runa'&&runaReaction){
+      return {
+        ...actor,
+        pose:runaReaction.pose,
+        motion:runaReaction.motion,
+        presentationTags:[
+          ...(request.actorState?.condition?[`condition:${request.actorState.condition}`]:[]),
+          runaReaction.tag,
+        ],
+      };
+    }
     return {
       ...actor,
-      pose:actor.actorId==='runa'&&request.actorState?.condition==='tired'?'tired':actor.pose??'idle',
+      pose:actor.pose??'idle',
       motion:actor.motion??'idle',
       presentationTags:request.actorState?.condition?[`condition:${request.actorState.condition}`]:[],
     };
