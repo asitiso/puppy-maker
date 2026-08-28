@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {resolveActorVisual,resolveSceneVisualLayers} from './scene-asset-registry';
+import {resolveActorVisual,resolveSceneFeedbackVisual,resolveSceneVisualLayers} from './scene-asset-registry';
 import {LOCATION_IDS} from './scene-types';
 
 describe('V14 layered scene asset registry',()=>{
@@ -36,6 +36,18 @@ describe('V14 layered scene asset registry',()=>{
     expect(new Set([
       srcFor('training_ground'),srcFor('magic_classroom'),srcFor('forest'),srcFor('village'),
     ]).size).toBe(4);
+  });
+
+  it('uses repository effect art for directed interaction and presentation feedback',()=>{
+    expect(resolveSceneFeedbackVisual('idle')).toBeNull();
+    expect(resolveSceneFeedbackVisual('approaching')).toBeNull();
+    expect(resolveSceneFeedbackVisual('acting')).toMatchObject({
+      src:'/assets/effects/interaction_sparkles.png',kind:'interaction',
+    });
+    expect(resolveSceneFeedbackVisual('committing')).toBeNull();
+    expect(resolveSceneFeedbackVisual('presenting')).toMatchObject({
+      src:'/assets/effects/success_burst.png',kind:'success',
+    });
   });
 
   it('falls missing Runa actions back to idle without mutating game state',()=>{
