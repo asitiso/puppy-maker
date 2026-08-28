@@ -20,6 +20,6 @@ describe('V14 pure scene resolver',()=>{
     const tired=resolveScene({year:1,month:3,week:2,location:'home',actorState:{condition:'tired'}});
     const focused=resolveScene({year:1,month:3,week:2,location:'home',actorState:{condition:'focused'}});
     expect(tired.cast.find(actor=>actor.actorId==='runa')).toMatchObject({anchorId:'bed',pose:'tired'});
-    expect(focused.cast.find(actor=>actor.actorId==='runa')).toMatchObject({anchorId:'desk',pose:'focused'});
+    expect(focused.cast.find(actor=>actor.actorId==='runa')).toMatchObject({anchorId:'desk',pose:'training-ready'});
   });
 });
