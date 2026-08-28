@@ -33,6 +33,14 @@ The following decisions are authoritative for this expansion.
 9. Scene expansion must improve mobile usability rather than trade usability for visual density.
 10. Optional visual failures must degrade safely without blocking gameplay.
 
+### 2.1 Relationship to the parent V14 design
+
+This document preserves every parent-design invariant unless a requirement is explicitly expanded here.
+
+The only material scope override is Training depth: the parent design's initial Slice C target of one representative bounded special-training minigame is superseded by this approved expansion. Hunt Training, Magic Class, and Herb Gathering are all first-class recurring minigame activities in the completed V14 product. Their performance still remains presentation-only and cannot directly modify canonical growth or rewards.
+
+The parent design remains authoritative for reducer ownership, deterministic scene resolution, Scene/Tactical boundaries, semantic checkpoint safety, save compatibility, reduced-motion behavior, and layered asset fallback.
+
 ## 3. Expansion scope
 
 The expansion is organized into seven player-facing systems and one shared QA program.
