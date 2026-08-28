@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {advanceSceneRuntime,beginSceneInteraction,claimSceneCommit,createSceneRuntime,selectSceneBehavior} from './scene-runtime';
+import {advanceSceneRuntime,beginSceneInteraction,claimSceneCommit,createSceneRuntime,interruptSceneRuntime,selectSceneBehavior} from './scene-runtime';
 
 describe('V14 scene runtime phases',()=>{
   it('runs one interaction through the canonical phase sequence',()=>{
@@ -26,6 +26,17 @@ describe('V14 scene runtime phases',()=>{
     const second=claimSceneCommit(first.state);
     expect(first.commit).toEqual({interactionId:'runa'});
     expect(second.commit).toBeNull();
+  });
+
+  it('allows interruption only before commit',()=>{
+    const approaching=beginSceneInteraction(createSceneRuntime(),'bed');
+    const acting=advanceSceneRuntime(approaching);
+    expect(interruptSceneRuntime(acting)).toEqual(createSceneRuntime());
+    const committing=advanceSceneRuntime(acting);
+    expect(interruptSceneRuntime(committing)).toEqual(committing);
+    const claimed=claimSceneCommit(committing).state;
+    const presenting=advanceSceneRuntime(claimed);
+    expect(interruptSceneRuntime(presenting)).toEqual(presenting);
   });
 
   it('uses Story > player > activity > state > autonomous > idle behavior priority',()=>{
