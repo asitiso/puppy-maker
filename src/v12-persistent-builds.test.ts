@@ -49,4 +49,27 @@ describe('V12 persistent character build state', () => {
     expect(once.modificationMaterials).toBe(7)
     expect(twice).toEqual(once)
   })
+
+  it('drops a persisted run snapshot when hydrating because tactical battle sessions are not resumable', () => {
+    const raw = {
+      characterBuilds: {
+        unlockedCharacters: ['runa', 'bear', 'owl'],
+        ownedEquipment: ['training_blade'],
+        loadout: {
+          party: ['runa', 'bear', 'owl'], leader: 'runa', outfitId: 'runa_classic',
+          equipment: { weapon: 'training_blade', defenseSupport: null, accessory: null },
+        },
+        runLoadoutSnapshot: {
+          party: ['runa', 'bear', 'owl'], leader: 'runa', outfitId: 'runa_classic',
+          equipment: { weapon: 'training_blade', defenseSupport: null, accessory: null },
+        },
+      },
+    }
+
+    const hydrated = hydrateV12PersistentBuildState(raw)
+
+    expect(hydrated.characterBuilds.runLoadoutSnapshot).toBeNull()
+    expect(hydrated.characterBuilds.loadout.party).toEqual(['runa', 'bear', 'owl'])
+    expect(hydrated.characterBuilds.loadout.equipment.weapon).toBe('training_blade')
+  })
 })
