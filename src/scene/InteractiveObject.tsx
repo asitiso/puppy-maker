@@ -19,6 +19,7 @@ export default function InteractiveObject({interaction,anchor,onInteraction}:Pro
     style={style}
     data-interaction-id={interaction.id}
     data-anchor-id={anchor.id}
+    data-mode={interaction.mode}
     data-hint={interaction.hint}
     aria-label={interaction.label}
     disabled={!interaction.enabled}
