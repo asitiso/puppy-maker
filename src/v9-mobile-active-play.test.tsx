@@ -4,6 +4,7 @@ import {describe,expect,it} from 'vitest';
 import {isGuardedActiveRoute,type MobileRoute} from './mobile-router';
 
 const appSource=readFileSync(new URL('./App.tsx',import.meta.url),'utf8');
+const trainingSource=readFileSync(new URL('./TrainingActivityMinigame.tsx',import.meta.url),'utf8');
 const rootSource=readFileSync(new URL('./Root.tsx',import.meta.url),'utf8');
 const cssSource=readFileSync(new URL('./mobile-v9.css',import.meta.url),'utf8');
 
@@ -19,10 +20,12 @@ describe('V9 training and choice active-play UX',()=>{
     expect(rootSource).toContain("const guardedAppPlay=gameState.screen==='training'||gameState.screen==='dialogue'");
   });
 
-  it('preserves the four existing App presentation boundaries instead of duplicating screen markup',()=>{
-    for(const className of ['diary-screen','training-screen','dialogue-screen','result-screen']){
+  it('preserves active-play presentation boundaries while allowing training to own its component',()=>{
+    for(const className of ['diary-screen','dialogue-screen','result-screen']){
       expect(appSource).toContain(className);
     }
+    expect(appSource).toContain('<TrainingActivityMinigame');
+    expect(trainingSource).toContain('training-screen');
     expect(appSource).toContain('className="choices"');
     expect(appSource).toContain('className="primary next-month"');
   });

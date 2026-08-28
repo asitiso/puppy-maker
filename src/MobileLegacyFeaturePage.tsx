@@ -20,6 +20,7 @@ import {monthlyFocusDefinitions} from './monthly-focus';
 import {monthlyMissionDefinitions} from './monthly-missions';
 import type {MobileFeatureId} from './mobile-router';
 import type {MobileVisualSlot} from './mobile-visual-assets';
+import OutingSceneFlow from './scene/OutingSceneFlow';
 import {storyChapterDefinitions} from './story-chapters';
 import './mobile-v9-feature.css';
 
@@ -80,6 +81,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const onBack=explicitBack??routerActions.onBack;
   const info=featureMeta[feature]??{eyebrow:'FEATURE',title:'기능',description:'선택한 기능을 확인해요.',backgroundSlot:'category.records.background' as const};
   const [feedback,setFeedback]=useState<string|null>(null);
+  const [outingScene,setOutingScene]=useState<OutingLocationId|null>(null);
   const eligible=new Set(eligibleAchievements(state));
   const availableMail=new Set(currentAvailableMail(state));
   const attendanceId=attendanceKey(state.year,state.month);
@@ -95,6 +97,32 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const currentTitle=careerTitleDefinitions.find(item=>item.id===titles[titles.length-1]);
   const talentLabels=talents.map(id=>talentDefinitions.find(item=>item.id===id)?.label).filter(Boolean);
   const highestMastery=Math.max(...Object.values(state.mastery).map(entry=>masteryLevel(entry.xp)));
+
+  if(feature==='outing'&&outingScene){
+    return <MobilePageShell
+      title={outingDefinitions[outingScene].name}
+      subtitle="장면에서 관심 가는 대상을 선택해 탐험해요."
+      backgroundSlot={info.backgroundSlot}
+      scrollKey={`feature:${feature}:${outingScene}`}
+      onBack={()=>setOutingScene(null)}
+      className="v8-feature-page v9-feature-page v14-outing-scene-page"
+    >
+      <OutingSceneFlow
+        location={outingScene}
+        year={state.year}
+        month={state.month}
+        week={state.week}
+        worldFacts={state.worldHistory.currentFacts}
+        inheritedWorldFacts={state.worldHistory.inheritedFacts}
+        onOuting={location=>{
+          onOuting(location);
+          setFeedback(`${outingDefinitions[location].name}으로 외출했어요.`);
+          setOutingScene(null);
+        }}
+        onExit={()=>setOutingScene(null)}
+      />
+    </MobilePageShell>;
+  }
 
   return <MobilePageShell
     title={info.title}
@@ -199,8 +227,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
           const level=explorationLevel(xp);
           const nextXp=explorationXpForNextLevel(xp);
           return <Row key={id} marker={visited?'✓':index+1} title={location.name} description={`탐험 Lv.${level} · ${nextXp===null?'MAX':`${xp} / ${nextXp} XP`} · ${location.description}`} status={visited?'탐험':'출발'} onClick={()=>{
-            onOuting(id);
-            setFeedback(`${location.name}으로 외출했어요.`);
+            setOutingScene(id);
           }}/>;
         })}
       </>}

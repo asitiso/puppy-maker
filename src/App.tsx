@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import {
   activities,
@@ -40,6 +40,7 @@ import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
+import TrainingActivityMinigame from './TrainingActivityMinigame';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -92,7 +93,7 @@ function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') =>
 function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const ids = Object.keys(activities) as ActivityId[];
   const synergies = scheduleSynergies(state.schedule);
-  return <section className="screen diary-screen">
+  return <section className="screen diary-screen schedule-screen">
     <div className="diary-bg"/>
     <div className="screen-title"><small>MONTHLY PLAN</small><h1>{state.month}월 성장 다이어리</h1></div>
     <div className="book"><div className="book-ring"/><div className="week-list">
@@ -108,18 +109,16 @@ function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: R
 }
 
 function Training({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
-  const [needle, setNeedle] = useState(0.1);
-  const [flash, setFlash] = useState('');
-  useEffect(() => { const id = setInterval(() => setNeedle(v => (v + .037) % 1), 40); return () => clearInterval(id); }, []);
-  const accuracy = useMemo(() => 1 - Math.min(1, Math.abs(.5 - needle) * 2), [needle]);
-  const hit = (kind: 'attack'|'dodge'|'charge') => { dispatch({type:'TRAIN',kind,accuracy}); setFlash(accuracy > .7 ? 'PERFECT!' : accuracy > .45 ? 'GOOD!' : 'MISS'); setTimeout(() => setFlash(''), 500); };
-  return <section className="screen training-screen">
-    <div className="forest-arena"><div className="moon-orb"/><div className="trees"/><div className="mist"/></div>
-    <div className="battle-hud"><div><small>COMBO</small><b>{state.combo}</b></div><div className="score"><span>SCORE</span><b>{state.trainingScore}</b></div><button onClick={() => dispatch({type:'FINISH_TRAINING', eventRoll: Math.random()})}>훈련 종료</button></div>
-    <div className="dummy"><span/><i/><b/></div><div className="fighter"><Pet mood="focus"/></div>
-    <div className="timing-ring"><div className="sweet-spot"/><i style={{transform:`rotate(${needle*360}deg)`}}/>{flash && <img className="training-burst" src="/assets/effects/success_burst.png" alt=""/>}<span>{flash}</span></div>
-    <div className="action-bar"><button className="attack" onClick={() => hit('attack')}><Icon name="sword"/><b>공격</b></button><button className="dodge" onClick={() => hit('dodge')}><span>◒</span><b>회피</b></button><button className="charge" onClick={() => hit('charge')}><Icon name="spark"/><b>기 모으기</b></button></div>
-  </section>;
+  return <TrainingActivityMinigame
+    schedule={state.schedule}
+    year={state.year}
+    month={state.month}
+    week={state.week}
+    score={state.trainingScore}
+    combo={state.combo}
+    onTrain={(kind,accuracy)=>dispatch({type:'TRAIN',kind,accuracy})}
+    onFinish={()=>dispatch({type:'FINISH_TRAINING',eventRoll:Math.random()})}
+  />;
 }
 
 const eventDialogue: Record<RandomEventId, string> = {
