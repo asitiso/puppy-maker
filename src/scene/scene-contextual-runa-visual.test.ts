@@ -15,6 +15,6 @@ describe('V14 contextual Runa visual reactions',()=>{
     const visual=resolveActorVisual('runa',actor?.pose);
     expect(visual.resolvedPose).toBe(actor?.pose);
     expect(visual.resolvedPose).not.toBe('idle');
-    expect(visual.src).toMatch(/^\/assets\/runa\/.+\.webp$/);
+    expect(visual.src).toMatch(/^\/assets\/runa\/.+\.png$/);
   });
 });
