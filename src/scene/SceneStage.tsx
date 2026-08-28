@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {type CSSProperties,useEffect} from 'react';
 import CharacterActor from './CharacterActor';
 import InteractiveObject from './InteractiveObject';
 import SceneDirector,{type SceneDirectorController} from './SceneDirector';
@@ -55,12 +55,19 @@ function SceneStageFrame({
     aria-label={`${scene.location} 장면`}
   >
     <div className="v14-scene-layers" aria-hidden="true">
-      {scene.backgroundLayers.map(layer=><i
-        key={layer.id}
-        className={`v14-scene-layer v14-scene-layer--${layer.kind}`}
-        data-layer-token={layer.token}
-        style={{zIndex:layer.zIndex}}
-      />)}
+      {scene.backgroundLayers.map(layer=>{
+        const style={
+          zIndex:layer.zIndex,
+          '--scene-background-image':layer.src?`url("${layer.src}")`:undefined,
+        } as CSSProperties;
+        return <i
+          key={layer.id}
+          className={`v14-scene-layer v14-scene-layer--${layer.kind}`}
+          data-layer-token={layer.token}
+          data-layer-src={layer.src}
+          style={style}
+        />;
+      })}
     </div>
     <div className="v14-scene-cast">
       {scene.cast.map(actor=>{

@@ -24,10 +24,21 @@ export type ResolvedActorVisual={
 const knownRunaPoses=new Set<RunaPose>(['idle','talk','surprised','training-ready','tired','happy','worried','sit']);
 const companionIds=new Set<SceneActorId>(['bear','owl','wolf','cat']);
 const companionOrder=['bear','owl','wolf','cat'] as const;
+const locationBackgroundSrc:Record<LocationId,string>={
+  home:'/assets/home/home_bg_layer.webp',
+  training_ground:'/assets/training/fight_training_bg.webp',
+  magic_classroom:'/assets/training/magic_training_bg.webp',
+  herb_garden:'/assets/training/focus_training_bg.webp',
+  forest:'/assets/outing/forest_walk_bg.webp',
+  village:'/assets/outing/village_bg.webp',
+  lakeside:'/assets/outing/park_bg.webp',
+  old_shrine:'/assets/event/special_event_bg.webp',
+  expedition_field:'/assets/outing/forest_walk_bg.webp',
+};
 
 export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLayer[]{
   const layers:SceneVisualLayer[]=[
-    {id:`base:${input.location}`,kind:'base',token:`location:${input.location}`,zIndex:0},
+    {id:`base:${input.location}`,kind:'base',token:`location:${input.location}`,src:locationBackgroundSrc[input.location],zIndex:0},
     {id:`season:${input.season}`,kind:'season',token:`season:${input.season}`,optional:true,zIndex:10},
     {id:`lighting:${input.timeOfDay}`,kind:'lighting',token:`lighting:${input.timeOfDay}`,optional:true,zIndex:20},
     {id:`weather:${input.weather}`,kind:'weather',token:`weather:${input.weather}`,optional:true,zIndex:30},

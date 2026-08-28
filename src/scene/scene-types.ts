@@ -84,6 +84,7 @@ export interface SceneVisualLayer{
   id:string;
   kind:'base'|'season'|'lighting'|'weather'|'world-fact'|'story'|'prop';
   token:string;
+  src?:string;
   optional?:boolean;
   zIndex?:number;
 }
