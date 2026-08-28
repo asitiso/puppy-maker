@@ -4,6 +4,19 @@
 .v14-scene-layer{position:absolute;inset:0;pointer-events:none}
 .v14-scene-layer--base{background-color:#18202c;background-image:var(--scene-background-image,linear-gradient(180deg,rgba(37,45,62,.14),rgba(20,24,34,.08)));background-size:cover;background-position:center;background-repeat:no-repeat}
 .v14-scene-layer--season,.v14-scene-layer--lighting,.v14-scene-layer--weather,.v14-scene-layer--world-fact,.v14-scene-layer--story{mix-blend-mode:soft-light}
+.v14-scene-layer[data-layer-token="season:spring"]{background:radial-gradient(circle at 22% 18%,rgba(255,197,215,.32),transparent 28%),linear-gradient(180deg,rgba(174,229,174,.24),transparent 58%)}
+.v14-scene-layer[data-layer-token="season:summer"]{background:radial-gradient(circle at 78% 14%,rgba(255,220,118,.34),transparent 30%),linear-gradient(180deg,rgba(95,190,110,.2),transparent 60%)}
+.v14-scene-layer[data-layer-token="season:autumn"]{background:radial-gradient(circle at 28% 18%,rgba(231,151,67,.38),transparent 31%),linear-gradient(180deg,rgba(197,99,47,.24),transparent 62%)}
+.v14-scene-layer[data-layer-token="season:winter"]{background:linear-gradient(180deg,rgba(207,232,255,.34),rgba(240,248,255,.16) 56%,transparent)}
+.v14-scene-layer[data-layer-token="lighting:dawn"]{background:linear-gradient(145deg,rgba(255,218,176,.36),rgba(255,238,204,.08) 48%,transparent 70%)}
+.v14-scene-layer[data-layer-token="lighting:day"]{background:linear-gradient(180deg,rgba(255,249,213,.2),rgba(255,255,255,.04) 62%)}
+.v14-scene-layer[data-layer-token="lighting:sunset"]{background:linear-gradient(155deg,rgba(255,167,122,.36),rgba(107,77,139,.24))}
+.v14-scene-layer[data-layer-token="lighting:night"]{background:linear-gradient(180deg,rgba(22,42,86,.5),rgba(18,27,62,.34));mix-blend-mode:multiply}
+.v14-scene-layer[data-layer-token="weather:clear"]{background:radial-gradient(circle at 78% 14%,rgba(255,242,176,.5),transparent 28%);opacity:.34}
+.v14-scene-layer[data-layer-token="weather:cloudy"]{background:radial-gradient(ellipse at 28% 16%,rgba(228,236,242,.55),transparent 36%),linear-gradient(180deg,rgba(132,147,161,.3),transparent 52%);opacity:.42}
+.v14-scene-layer[data-layer-token="weather:rain"]{background-image:repeating-linear-gradient(115deg,transparent 0 15px,rgba(116,157,202,.56) 15px 17px);opacity:.42}
+.v14-scene-layer[data-layer-token="weather:snow"]{background-image:radial-gradient(circle,rgba(255,255,255,.8) 0 2px,transparent 3px);background-size:38px 38px;opacity:.54}
+.v14-scene-layer[data-layer-token="weather:mist"]{background:linear-gradient(180deg,rgba(224,235,239,.3),rgba(210,224,229,.5) 48%,rgba(238,245,247,.18));filter:blur(.4px);opacity:.48}
 .v14-scene-layer--world-fact{opacity:.28}
 .v14-scene-layer[data-layer-token^="world-fact:"]{background:radial-gradient(circle at 72% 24%,rgba(255,226,154,.34),transparent 38%)}
 .v14-scene-layer[data-layer-token="world-fact:festival_saved"],.v14-scene-layer[data-layer-token="world-fact:regional_alliance"]{background:radial-gradient(circle at 64% 22%,rgba(255,220,144,.42),transparent 42%)}
