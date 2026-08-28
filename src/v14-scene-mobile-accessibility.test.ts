@@ -4,7 +4,7 @@ import {describe,expect,it} from 'vitest';
 
 const css=readFileSync(new URL('./scene/scene.css',import.meta.url),'utf8');
 const objectSource=readFileSync(new URL('./scene/InteractiveObject.tsx',import.meta.url),'utf8');
-const mapSource=readFileSync(new URL('./WorldMapScene.tsx',import.meta.url),'utf8');
+const mapSource=readFileSync(new URL('./scene/WorldMapScene.tsx',import.meta.url),'utf8');
 
 describe('V14 scene mobile and accessibility QA',()=>{
   it('covers 360, 390 and 430-class phones with compact height handling',()=>{
