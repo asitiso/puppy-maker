@@ -11,7 +11,8 @@ describe('V14 anchored living scene stage',()=>{
     const scene=resolveScene({year:1,month:4,week:1,location:'home'});
     const html=renderToStaticMarkup(<SceneStage scene={scene} onInteraction={vi.fn()}/>);
     expect(html).toContain('v14-scene-stage');
-    expect(html).toContain('data-anchor-id="runa"');
+    expect(html).toContain('data-actor-id="runa"');
+    expect(html).toMatch(/data-actor-id="runa"[^>]*data-anchor-id="(?:runa|desk|world_map)"/);
     expect(html).toContain('data-interaction-id="bed"');
     expect(html).toContain('aria-label="잠깐 쉬기"');
   });
