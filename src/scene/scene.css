@@ -3,6 +3,13 @@
 .v14-scene-layer{position:absolute;inset:0;pointer-events:none}
 .v14-scene-layer--base{background:linear-gradient(180deg,rgba(37,45,62,.14),rgba(20,24,34,.08))}
 .v14-scene-layer--season,.v14-scene-layer--lighting,.v14-scene-layer--weather,.v14-scene-layer--world-fact,.v14-scene-layer--story{mix-blend-mode:soft-light}
+.v14-scene-layer--world-fact{opacity:.28}
+.v14-scene-layer[data-layer-token^="world-fact:"]{background:radial-gradient(circle at 72% 24%,rgba(255,226,154,.34),transparent 38%)}
+.v14-scene-layer[data-layer-token="world-fact:festival_saved"],.v14-scene-layer[data-layer-token="world-fact:regional_alliance"]{background:radial-gradient(circle at 64% 22%,rgba(255,220,144,.42),transparent 42%)}
+.v14-scene-layer[data-layer-token="world-fact:festival_heavy_losses"],.v14-scene-layer[data-layer-token="world-fact:rift_unstable"],.v14-scene-layer[data-layer-token="world-fact:hollow_rift_entrenched"]{background:linear-gradient(180deg,rgba(72,40,92,.26),rgba(24,20,42,.34))}
+.v14-scene-layer[data-layer-token="world-fact:ancient_route_opened"],.v14-scene-layer[data-layer-token="world-fact:true_path_world_rewoven"]{background:radial-gradient(circle at 28% 64%,rgba(120,220,180,.3),transparent 38%)}
+.v14-scene-layer[data-layer-token^="inherited-world-fact:"]{opacity:.18;background:repeating-linear-gradient(135deg,rgba(196,209,255,.16) 0 2px,transparent 2px 13px)}
+.v14-scene-layer--prop[data-layer-token^="bond:"]{opacity:.2;background:radial-gradient(circle at 30% 72%,rgba(255,199,190,.38),transparent 24%)}
 .v14-scene-actor,.v14-scene-object{position:absolute;left:var(--scene-x);top:var(--scene-y);transform:translate(-50%,-50%)}
 .v14-scene-actor{z-index:30;margin:0;pointer-events:none;max-width:34%;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25));transition:transform .22s ease,filter .22s ease}
 .v14-scene-actor img{display:block;width:100%;height:auto;max-height:48vh;object-fit:contain}
