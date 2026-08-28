@@ -46,6 +46,10 @@ import WeeklyPlannerCard from './WeeklyPlannerCard';
 import type { WeeklyFocusId } from './weekly-life';
 import MobileSceneBackground from './MobileSceneBackground';
 import MobileCharacterArt from './MobileCharacterArt';
+import SceneStage from './scene/SceneStage';
+import {resolveScene} from './scene/scene-resolver';
+import type {ResolvedSceneInteraction} from './scene/scene-types';
+import './scene/scene.css';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
   return <img className="lh-frame" src={src} alt={alt} draggable={false} />;
@@ -184,6 +188,16 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const panelEyebrow = isQuestPanel ? 'ACHIEVEMENTS' : isBondPanel ? 'BOND & COLLECTION' : isBagPanel ? 'GIFTS' : isOutingPanel ? 'ADVENTURE' : isMissionPanel ? 'MONTHLY CHALLENGES' : isEventPanel ? 'STORY ARCHIVE' : isAttendancePanel ? 'MONTHLY CHECK-IN' : isMailPanel ? 'MILESTONE MAIL' : staticPanel?.eyebrow ?? '';
   const runGuidance = getRunGuidance(state);
   const guidedActions = hubGuidedActionStack(state);
+  const homeScene=resolveScene({
+    location:'home',
+    year:state.year,
+    month:state.month,
+    week:state.week,
+    campaignId:state.campaignRun.activeCampaign,
+    worldFacts:state.worldHistory.currentFacts,
+    inheritedWorldFacts:state.worldHistory.inheritedFacts,
+    actorState:{condition:state.condition},
+  });
 
   const handleMove = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -203,6 +217,18 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     if (id === 'bond') setPetted(true);
     setActivePanel(id);
   }, [onMenuNavigate, onSchedule]);
+
+  const handleHomeSceneInteraction=(interaction:ResolvedSceneInteraction)=>{
+    switch(interaction.id){
+      case 'runa':return openMenu('bond');
+      case 'bed':return onWeeklyFocus?onWeeklyFocus('rest'):plannerRef.current?.querySelector<HTMLButtonElement>('[data-weekly-focus="rest"]')?.focus();
+      case 'desk':return onSchedule();
+      case 'wardrobe':
+      case 'bag':return openMenu('bag');
+      case 'door':
+      case 'world_map':return openMenu('outing');
+    }
+  };
 
   const closePanel = useCallback(() => {
     setActivePanel(null);
@@ -251,6 +277,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
       <div className="lh-window-light" /><div className="lh-fire-light" /><div className="lh-floor-glow" />
     </div>
     <div className="layered-vignette" /><div className="layered-particles" />
+    <div className="lh-living-scene"><SceneStage scene={homeScene} onInteraction={handleHomeSceneInteraction}/></div>
 
     <button className="lh-character" onClick={() => setPetted(true)} aria-label="루나와 교감">
       <span className="lh-character-rim" /><MobileCharacterArt slot="home.hero" className="v9-home-hero"/>
