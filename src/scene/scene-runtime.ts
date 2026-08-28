@@ -34,6 +34,11 @@ export function advanceSceneRuntime(state:SceneRuntimeState):SceneRuntimeState{
   }
 }
 
+export function interruptSceneRuntime(state:SceneRuntimeState):SceneRuntimeState{
+  if(state.phase==='committing'||state.phase==='presenting') return state;
+  return createSceneRuntime();
+}
+
 export function claimSceneCommit(state:SceneRuntimeState):{
   state:SceneRuntimeState;
   commit:{interactionId:string}|null;
