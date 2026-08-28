@@ -2,6 +2,7 @@ import {type CSSProperties,useEffect} from 'react';
 import CharacterActor from './CharacterActor';
 import InteractiveObject from './InteractiveObject';
 import SceneDirector,{type SceneDirectorController} from './SceneDirector';
+import {resolveSceneFeedbackVisual} from './scene-asset-registry';
 import type {SceneRuntimePhase} from './scene-runtime';
 import type {ResolvedScene,ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 import './scene.css';
@@ -46,6 +47,8 @@ function SceneStageFrame({
 }:SceneStageFrameProps){
   const anchors=new Map<string,SceneAnchor>(scene.anchors.map(anchor=>[anchor.id,anchor]));
   const resolvedRunaAnchor=scene.cast.find(actor=>actor.actorId==='runa')?.anchorId;
+  const feedbackVisual=resolveSceneFeedbackVisual(runtimePhase);
+  const feedbackAnchor=runtimeActorAnchorId?anchors.get(runtimeActorAnchorId):undefined;
   return <section
     className="v14-scene-stage"
     data-location={scene.location}
@@ -78,6 +81,19 @@ function SceneStageFrame({
         return anchor?<CharacterActor key={actor.actorId} actor={directed} anchor={anchor} runtimePhase={runtimePhase}/>:null;
       })}
     </div>
+    {feedbackVisual&&feedbackAnchor?<img
+      className={`v14-scene-feedback is-${feedbackVisual.kind}`}
+      src={feedbackVisual.src}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      data-feedback-kind={feedbackVisual.kind}
+      data-feedback-src={feedbackVisual.src}
+      style={{
+        '--scene-x':`${feedbackAnchor.x}%`,
+        '--scene-y':`${feedbackAnchor.y}%`,
+      } as CSSProperties}
+    />:null}
     <div className="v14-scene-interactions">
       {scene.interactions.map(interaction=>{
         const anchorId=interaction.id==='runa'?(runtimeActorAnchorId??resolvedRunaAnchor??interaction.anchorId):interaction.anchorId;
