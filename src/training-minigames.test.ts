@@ -24,7 +24,7 @@ describe('activity-specific training minigames',()=>{
 
     const herb0=herbOrderForRound(10401,0);
     const herb1=herbOrderForRound(10401,1);
-    expect(new Set(herb0)).toHaveLength(3);
+    expect(new Set(herb0).size).toBe(3);
     expect(herb0).not.toEqual(herb1);
     expect(herbOrderForRound(10401,0)).toEqual(herb0);
   });
