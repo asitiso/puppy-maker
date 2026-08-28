@@ -1,5 +1,8 @@
+import {useEffect} from 'react';
 import CharacterActor from './CharacterActor';
 import InteractiveObject from './InteractiveObject';
+import SceneDirector,{type SceneDirectorController} from './SceneDirector';
+import type {SceneRuntimePhase} from './scene-runtime';
 import type {ResolvedScene,ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 import './scene.css';
 
@@ -8,13 +11,47 @@ type Props={
   onInteraction:(interaction:ResolvedSceneInteraction)=>void;
 };
 
-export default function SceneStage({scene,onInteraction}:Props){
+type SceneStageFrameProps=Props&{
+  runtimeActorAnchorId?:string;
+  runtimeActorPose?:string;
+  runtimeActorMotion?:string;
+  runtimePhase?:SceneRuntimePhase;
+};
+
+function poseForInteraction(interaction:ResolvedSceneInteraction|undefined,phase:SceneRuntimePhase):string|undefined{
+  if(phase==='idle'||phase==='approaching') return undefined;
+  if(phase==='presenting') return 'happy';
+  switch(interaction?.mode){
+    case 'dialogue': return 'talk';
+    case 'rest': return 'sit';
+    case 'training':
+    case 'minigame': return 'training-ready';
+    case 'inspect':
+    case 'collect':
+    case 'explore':
+    case 'choice': return 'surprised';
+    default: return 'idle';
+  }
+}
+
+function motionForPhase(phase:SceneRuntimePhase):string|undefined{
+  if(phase==='approaching') return 'approach';
+  if(phase==='acting') return 'turn';
+  if(phase==='presenting') return 'bob';
+  return undefined;
+}
+
+function SceneStageFrame({
+  scene,onInteraction,runtimeActorAnchorId,runtimeActorPose,runtimeActorMotion,runtimePhase='idle',
+}:SceneStageFrameProps){
   const anchors=new Map<string,SceneAnchor>(scene.anchors.map(anchor=>[anchor.id,anchor]));
+  const resolvedRunaAnchor=scene.cast.find(actor=>actor.actorId==='runa')?.anchorId;
   return <section
     className="v14-scene-stage"
     data-location={scene.location}
     data-season={scene.season}
     data-weather={scene.weather}
+    data-runtime-phase={runtimePhase}
     aria-label={`${scene.location} 장면`}
   >
     <div className="v14-scene-layers" aria-hidden="true">
@@ -27,15 +64,50 @@ export default function SceneStage({scene,onInteraction}:Props){
     </div>
     <div className="v14-scene-cast">
       {scene.cast.map(actor=>{
-        const anchor=anchors.get(actor.anchorId);
-        return anchor?<CharacterActor key={`${actor.actorId}:${actor.anchorId}`} actor={actor} anchor={anchor}/>:null;
+        const directed=actor.actorId==='runa'&&runtimeActorAnchorId
+          ?{...actor,anchorId:runtimeActorAnchorId,pose:runtimeActorPose??actor.pose,motion:runtimeActorMotion??actor.motion}
+          :actor;
+        const anchor=anchors.get(directed.anchorId);
+        return anchor?<CharacterActor key={actor.actorId} actor={directed} anchor={anchor} runtimePhase={runtimePhase}/>:null;
       })}
     </div>
     <div className="v14-scene-interactions">
       {scene.interactions.map(interaction=>{
-        const anchor=anchors.get(interaction.anchorId);
+        const anchorId=interaction.id==='runa'?(runtimeActorAnchorId??resolvedRunaAnchor??interaction.anchorId):interaction.anchorId;
+        const anchor=anchors.get(anchorId);
         return anchor?<InteractiveObject key={interaction.id} interaction={interaction} anchor={anchor} onInteraction={onInteraction}/>:null;
       })}
     </div>
   </section>;
+}
+
+function DirectedSceneStage({scene,controller}:{scene:ResolvedScene;controller:SceneDirectorController}){
+  const interaction=scene.interactions.find(item=>item.id===controller.runtime.activeInteractionId);
+  const phase=controller.runtime.phase;
+  const runtimeActorAnchorId=phase==='idle'?undefined:interaction?.anchorId;
+  const runtimeActorPose=poseForInteraction(interaction,phase);
+  const runtimeActorMotion=motionForPhase(phase);
+
+  useEffect(()=>{
+    if(phase==='idle') return;
+    if(phase==='committing'&&!controller.runtime.commitClaimed) return;
+    const delay=phase==='approaching'?220:phase==='acting'?180:phase==='committing'?40:220;
+    const timer=globalThis.setTimeout(controller.advance,delay);
+    return ()=>globalThis.clearTimeout(timer);
+  },[controller.advance,controller.runtime.commitClaimed,phase]);
+
+  return <SceneStageFrame
+    scene={scene}
+    onInteraction={interaction=>controller.start(interaction.id)}
+    runtimeActorAnchorId={runtimeActorAnchorId}
+    runtimeActorPose={runtimeActorPose}
+    runtimeActorMotion={runtimeActorMotion}
+    runtimePhase={phase}
+  />;
+}
+
+export default function SceneStage({scene,onInteraction}:Props){
+  return <SceneDirector scene={scene} onCommit={onInteraction}>
+    {controller=><DirectedSceneStage scene={scene} controller={controller}/>} 
+  </SceneDirector>;
 }

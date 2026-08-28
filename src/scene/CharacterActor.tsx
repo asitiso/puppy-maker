@@ -1,6 +1,7 @@
 import type {CSSProperties} from 'react';
 import {resolveActorVisual} from './scene-asset-registry';
 import type {ResolvedSceneActor,SceneAnchor,SceneActorId} from './scene-types';
+import type {SceneRuntimePhase} from './scene-runtime';
 
 const ACTOR_LABELS:Partial<Record<SceneActorId,string>>={
   runa:'루나',bear:'곰',owl:'올빼미',wolf:'늑대',cat:'고양이',
@@ -9,9 +10,10 @@ const ACTOR_LABELS:Partial<Record<SceneActorId,string>>={
 type Props={
   actor:ResolvedSceneActor;
   anchor:SceneAnchor;
+  runtimePhase?:SceneRuntimePhase;
 };
 
-export default function CharacterActor({actor,anchor}:Props){
+export default function CharacterActor({actor,anchor,runtimePhase='idle'}:Props){
   const visual=resolveActorVisual(actor.actorId,actor.pose);
   const style={
     '--scene-x':`${anchor.x}%`,
@@ -25,6 +27,7 @@ export default function CharacterActor({actor,anchor}:Props){
     data-anchor-id={anchor.id}
     data-pose={visual.resolvedPose}
     data-motion={actor.motion}
+    data-runtime-phase={runtimePhase}
     aria-label={label}
   >
     {visual.src?<img src={visual.src} alt={label} draggable={false}/>:<span aria-hidden="true">{label}</span>}
