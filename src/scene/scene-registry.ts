@@ -50,9 +50,9 @@ export const SCENE_REGISTRY:Record<LocationId,SceneDefinition>={
     interaction('altar','수호 제단에 다가가기','dialogue'),interaction('inscription','오래된 글 읽기','inspect'),interaction('guardian-light','빛의 흔적 살펴보기','explore'),interaction('exit','돌아가기','travel'),
   ]),
   expedition_field:scene('expedition_field','day',[
-    anchor('runa',27,72),anchor('camp',22,55),anchor('path',52,63),anchor('crossroads',68,58),anchor('ruin',80,46),anchor('rift',88,31),anchor('encounter',73,69),anchor('return',8,60),
+    anchor('runa',27,72),anchor('camp',22,55),anchor('path',52,63),anchor('crossroads',68,58),anchor('ruin',80,46),anchor('rift',88,31),anchor('treasure',61,43),anchor('encounter',73,69),anchor('return',8,60),
   ],[
-    interaction('camp','야영지 정비','rest'),interaction('path','앞으로 탐험','explore'),interaction('crossroads','갈림길 선택','choice'),interaction('ruin','유적 조사','explore'),interaction('rift','균열 조사','explore'),interaction('encounter','위협과 대치','battle'),interaction('return','원정 종료','travel'),
+    interaction('camp','야영지 정비','rest'),interaction('path','앞으로 탐험','explore'),interaction('crossroads','갈림길 선택','choice'),interaction('ruin','유적 조사','explore'),interaction('rift','균열 조사','explore'),interaction('treasure','발견물 확인','reward'),interaction('encounter','위협과 대치','battle'),interaction('return','원정 종료','travel'),
   ]),
 };
 
