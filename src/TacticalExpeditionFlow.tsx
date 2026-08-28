@@ -165,29 +165,31 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   return <aside className="tactical-expedition-entry" aria-label="3대3 전술전">
     <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
     <div className="tactical-expedition-entry-content">
-      <small>TACTICAL 3 VS 3</small>
-      <strong>{stage.name} · 전술전</strong>
-      <span>Leader + 파티 2명 · 의상 + 장비 3슬롯 · Bond 성장</span>
-      {hiddenInteraction?<span role="status">탐험가의 나침반이 숨은 원정 상호작용을 감지했습니다.</span>:null}
-      <V12LoadoutPanel
-        state={buildState}
-        onStartRun={start}
-        showPrimaryAction={false}
-        onEditParty={() => setEditor('party')}
-        onEditOutfit={() => setEditor('outfit')}
-        onEditEquipment={slot => setEditor(slot)}
-      />
-      {editor?<V12BuildEditor
-        mode={editor}
-        state={buildState}
-        unlockedOutfitIds={unlockedOutfitIds}
-        onLeaderChange={leader=>requestV12Build({type:'party',party:buildState.loadout.party,leader})}
-        onOutfitChange={outfitId=>requestV12Build({type:'outfit',outfitId})}
-        onEquipmentChange={equipmentId=>requestV12Build({type:'equipment',equipmentId})}
-        onClose={()=>setEditor(null)}
-      />:null}
-      <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
-        {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} type="button" className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
+      <div className="tactical-expedition-entry-scroll">
+        <small>TACTICAL 3 VS 3</small>
+        <strong>{stage.name} · 전술전</strong>
+        <span>Leader + 파티 2명 · 의상 + 장비 3슬롯 · Bond 성장</span>
+        {hiddenInteraction?<span role="status">탐험가의 나침반이 숨은 원정 상호작용을 감지했습니다.</span>:null}
+        <V12LoadoutPanel
+          state={buildState}
+          onStartRun={start}
+          showPrimaryAction={false}
+          onEditParty={() => setEditor('party')}
+          onEditOutfit={() => setEditor('outfit')}
+          onEditEquipment={slot => setEditor(slot)}
+        />
+        {editor?<V12BuildEditor
+          mode={editor}
+          state={buildState}
+          unlockedOutfitIds={unlockedOutfitIds}
+          onLeaderChange={leader=>requestV12Build({type:'party',party:buildState.loadout.party,leader})}
+          onOutfitChange={outfitId=>requestV12Build({type:'outfit',outfitId})}
+          onEquipmentChange={equipmentId=>requestV12Build({type:'equipment',equipmentId})}
+          onClose={()=>setEditor(null)}
+        />:null}
+        <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
+          {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} type="button" className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
+        </div>
       </div>
       <div className="tactical-setup-actions">
         <button type="button" className="tactical-start" onClick={start} disabled={Boolean(buildState.runLoadoutSnapshot)} aria-disabled={Boolean(buildState.runLoadoutSnapshot)}>
