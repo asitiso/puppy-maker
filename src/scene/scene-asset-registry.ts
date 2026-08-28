@@ -8,6 +8,8 @@ type VisualLayerInput={
   timeOfDay:TimeOfDay;
   weather:Weather;
   worldFacts?:readonly string[];
+  inheritedWorldFacts?:readonly string[];
+  bondByActor?:Partial<Record<'bear'|'owl'|'wolf'|'cat',number>>;
   storyToken?:string|null;
 };
 
@@ -21,6 +23,7 @@ export type ResolvedActorVisual={
 
 const knownRunaPoses=new Set<RunaPose>(['idle','talk','surprised','training-ready','tired','happy','worried','sit']);
 const companionIds=new Set<SceneActorId>(['bear','owl','wolf','cat']);
+const companionOrder=['bear','owl','wolf','cat'] as const;
 
 export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLayer[]{
   const layers:SceneVisualLayer[]=[
@@ -32,6 +35,18 @@ export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLaye
   for(const fact of input.worldFacts??[]){
     if(typeof fact==='string'&&fact.length>0){
       layers.push({id:`world-fact:${fact}`,kind:'world-fact',token:`world-fact:${fact}`,optional:true,zIndex:40});
+    }
+  }
+  for(const fact of input.inheritedWorldFacts??[]){
+    if(typeof fact==='string'&&fact.length>0){
+      layers.push({id:`inherited-world-fact:${fact}`,kind:'world-fact',token:`inherited-world-fact:${fact}`,optional:true,zIndex:41});
+    }
+  }
+  for(const actorId of companionOrder){
+    const raw=input.bondByActor?.[actorId];
+    if(typeof raw==='number'&&Number.isFinite(raw)&&raw>0){
+      const bond=Math.max(0,Math.round(raw));
+      layers.push({id:`bond:${actorId}:${bond}`,kind:'prop',token:`bond:${actorId}:${bond}`,optional:true,zIndex:45});
     }
   }
   if(input.storyToken){
