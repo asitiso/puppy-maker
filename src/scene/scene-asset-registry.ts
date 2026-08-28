@@ -1,5 +1,6 @@
 import {getMobileVisualAsset,type MobileVisualSlot} from '../mobile-visual-assets';
 import {runaPoseAsset,type RunaPose} from '../runa-presentation';
+import type {SceneRuntimePhase} from './scene-runtime';
 import type {LocationId,SceneActorId,SceneVisualLayer,Season,TimeOfDay,Weather} from './scene-types';
 
 type VisualLayerInput={
@@ -19,6 +20,11 @@ export type ResolvedActorVisual={
   resolvedPose:string;
   slot:MobileVisualSlot;
   src?:string;
+};
+
+export type SceneFeedbackVisual={
+  kind:'interaction'|'success';
+  src:string;
 };
 
 const knownRunaPoses=new Set<RunaPose>(['idle','talk','surprised','training-ready','tired','happy','worried','sit']);
@@ -64,6 +70,16 @@ export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLaye
     layers.push({id:`story:${input.storyToken}`,kind:'story',token:`story:${input.storyToken}`,optional:true,zIndex:50});
   }
   return layers;
+}
+
+export function resolveSceneFeedbackVisual(phase:SceneRuntimePhase):SceneFeedbackVisual|null{
+  if(phase==='acting'){
+    return {kind:'interaction',src:'/assets/effects/interaction_sparkles.png'};
+  }
+  if(phase==='presenting'){
+    return {kind:'success',src:'/assets/effects/success_burst.png'};
+  }
+  return null;
 }
 
 function companionSlot(actorId:'bear'|'owl'|'wolf'|'cat',requestedPose:string):MobileVisualSlot{
