@@ -1,5 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {ActivityId} from './game';
+import SceneStage from './scene/SceneStage';
+import {primaryTrainingInteraction,trainingSceneForActivity} from './scene/training-scenes';
 import {buildTrainingActivityQueue,challengeForRound,herbOrderForRound,magicPatternForRound,type HerbToken,type MagicRune,type TrainingActionKind,type TrainingPresentationGrade} from './training-minigames';
 import './training-minigames.css';
 
@@ -14,6 +16,7 @@ type Props={
   onFinish:()=>void;
 };
 
+const activityLabels={hunt:'사냥 훈련',magic:'마법 수업',herb:'약초 채집'} as const;
 const huntActions:readonly {id:TrainingActionKind;label:string;symbol:string}[]=[
   {id:'attack',label:'공격',symbol:'⚔'},
   {id:'dodge',label:'회피',symbol:'◒'},
@@ -36,6 +39,7 @@ export default function TrainingActivityMinigame({schedule,year,month,week,score
   const queue=useMemo(()=>buildTrainingActivityQueue(schedule),[schedule]);
   const [stageIndex,setStageIndex]=useState(0);
   const [round,setRound]=useState(0);
+  const [sceneReady,setSceneReady]=useState(false);
   const [needle,setNeedle]=useState(.08);
   const [feedback,setFeedback]=useState('');
   const [presentationGrade,setPresentationGrade]=useState<TrainingPresentationGrade>('clean');
@@ -46,23 +50,25 @@ export default function TrainingActivityMinigame({schedule,year,month,week,score
   const activity=queue[stageIndex];
   const complete=stageIndex>=queue.length;
 
+  useEffect(()=>{setSceneReady(false);setFeedback('');},[stageIndex]);
+
   useEffect(()=>{
-    if(activity!=='hunt')return;
+    if(!sceneReady||activity!=='hunt')return;
     const challenge=challengeForRound('hunt',seed,round);
     const speed=.022+challenge.difficulty*.025;
     const id=window.setInterval(()=>setNeedle(value=>(value+speed)%1),32);
     return ()=>window.clearInterval(id);
-  },[activity,round,seed]);
+  },[activity,round,sceneReady,seed]);
 
   useEffect(()=>{
     setMagicInput([]);
     setMagicMistakes(0);
-    if(activity!=='magic')return;
+    if(!sceneReady||activity!=='magic')return;
     setShowMagicPattern(true);
     const previewMs=challengeForRound('magic',seed,round).previewMs;
     const id=window.setTimeout(()=>setShowMagicPattern(false),previewMs);
     return ()=>window.clearTimeout(id);
-  },[activity,round,seed]);
+  },[activity,round,sceneReady,seed]);
 
   const advanceRound=(kind:TrainingActionKind,accuracy:number,message:string)=>{
     const safeAccuracy=Math.max(0,Math.min(1,accuracy));
@@ -81,6 +87,19 @@ export default function TrainingActivityMinigame({schedule,year,month,week,score
         <p>{queue.length?'사냥·마법·채집 실습을 마쳤어요. 최종 성장 판정은 기존 훈련 규칙이 처리합니다.':'이번 일정은 휴식 중심이에요. 결과를 확인해 주세요.'}</p>
         <button type="button" onClick={onFinish}>결과 확인</button>
       </div>
+    </section>;
+  }
+
+  if(!sceneReady){
+    const scene=trainingSceneForActivity(activity,{year,month,week});
+    const primary=primaryTrainingInteraction(activity);
+    const primaryLabel=scene.interactions.find(item=>item.id===primary)?.label??'훈련 시작';
+    return <section className="screen training-screen training-scene-entry" aria-label={`${activityLabels[activity]} 장소`}>
+      <SceneStage scene={scene} onInteraction={interaction=>{
+        if(interaction.id===primary){setSceneReady(true);setFeedback('');}
+        else setFeedback(`${primaryLabel}을 선택하면 실습을 시작해요.`);
+      }}/>
+      <div className="training-scene-entry__guide" aria-live="polite"><small>SCENE PRACTICE · {stageIndex+1}/{queue.length}</small><strong>{activityLabels[activity]}</strong><span>{feedback||`루나를 ${primaryLabel} 위치로 이동시켜 실습을 시작하세요.`}</span></div>
     </section>;
   }
 
