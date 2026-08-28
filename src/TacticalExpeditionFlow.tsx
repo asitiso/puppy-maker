@@ -6,6 +6,7 @@ import type { BattleResult, BattleSession } from './tactical-battle';
 import { COMPANIONS, type CompanionId } from './tactical-companions';
 import type { TacticalEncounterId } from './tactical-encounters';
 import { tacticalExpeditionFinishScore } from './tactical-expedition';
+import { shouldRecoverOrphanedRunSnapshot } from './tactical-expedition-recovery';
 import { expeditionStageDefinitions, nextExpeditionStage, type ExpeditionStageId } from './expedition-regions';
 import type { ExpeditionActionCounts, GameState } from './game';
 import { unlockedWardrobe } from './game/wardrobe';
@@ -84,6 +85,15 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   useEffect(()=>{
     if(expeditionOpen&&!open)onPhaseChangeRef.current?.('setup');
   },[expeditionOpen,open]);
+
+  useEffect(()=>{
+    if(!shouldRecoverOrphanedRunSnapshot({
+      expeditionOpen,
+      hasSession:Boolean(session),
+      hasRunSnapshot:Boolean(buildState.runLoadoutSnapshot),
+    }))return;
+    requestV12Build({type:'end-run'});
+  },[expeditionOpen,session,buildState.runLoadoutSnapshot]);
 
   if (!expeditionOpen) return null;
 
