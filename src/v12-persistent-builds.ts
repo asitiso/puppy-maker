@@ -41,8 +41,14 @@ export function emptyV12PersistentBuildState(): V12PersistentBuildState {
 
 export function hydrateV12PersistentBuildState(input: unknown): V12PersistentBuildState {
   const source = isRecord(input) ? input : {}
+  const hydratedBuilds = sanitizeV12State(source.characterBuilds)
+  const characterBuilds = hydratedBuilds.runLoadoutSnapshot
+    ? { ...hydratedBuilds, runLoadoutSnapshot: null }
+    : hydratedBuilds
   return {
-    characterBuilds: sanitizeV12State(source.characterBuilds),
+    // Tactical battle sessions are intentionally transient. A persisted snapshot would restore only
+    // the editing lock after reload, leaving no resumable battle session and permanently disabling Start.
+    characterBuilds,
     characterUnlocks: sanitizeCharacterUnlockState(source.characterUnlocks),
     equipmentInstances: sanitizeEquipmentInstances(source.equipmentInstances),
     modificationMaterials: safeMaterials(source.modificationMaterials),
