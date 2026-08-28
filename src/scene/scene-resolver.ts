@@ -25,6 +25,7 @@ export function resolveScene(request:SceneRequest):ResolvedScene{
   const weather=storyWeather(request.storyEventId,weeklyWeather);
   const timeOfDay=request.timeOfDay??definition.defaultTime;
   const worldFacts=[...(request.worldFacts??[])].filter((value):value is string=>typeof value==='string'&&value.length>0).sort();
+  const inheritedWorldFacts=[...(request.inheritedWorldFacts??[])].filter((value):value is string=>typeof value==='string'&&value.length>0).sort();
   const presentationTags:string[]=[];
   if(request.campaignId) presentationTags.push(`campaign:${request.campaignId}`);
   for(const fact of worldFacts) presentationTags.push(`world-fact:${fact}`);
@@ -41,7 +42,13 @@ export function resolveScene(request:SceneRequest):ResolvedScene{
     const hint:ResolvedSceneInteraction['hint']=item.required?'required':item.newlyAvailable?'new':'none';
     return {...item,enabled:item.enabled!==false,hint};
   });
-  const backgroundLayers=resolveSceneVisualLayers({location,season,timeOfDay,weather,worldFacts,storyToken:request.storyEventId});
+  const backgroundLayers=resolveSceneVisualLayers({
+    location,season,timeOfDay,weather,worldFacts,inheritedWorldFacts,
+    bondByActor:request.actorState?.bondByActor,storyToken:request.storyEventId,
+  });
+  for(const layer of backgroundLayers){
+    if(layer.token.startsWith('inherited-world-fact:')||layer.token.startsWith('bond:')) presentationTags.push(layer.token);
+  }
   return {
     id:definition.id,location,season,timeOfDay,weather,anchors:definition.anchors,backgroundLayers,cast,interactions,
     beats:definition.beats??[],presentationTags,
