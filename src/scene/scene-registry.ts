@@ -15,14 +15,14 @@ export const SCENE_REGISTRY:Record<LocationId,SceneDefinition>={
     interaction('wardrobe','옷장 열기','inspect'),interaction('bag','가방 열기','inspect'),interaction('door','밖으로 나가기','travel'),interaction('world_map','월드맵 보기','travel'),
   ]),
   training_ground:scene('training_ground','day',[
-    anchor('runa',28,70),anchor('training_dummy',68,62),anchor('weapon_rack',82,45),anchor('instructor',51,52),anchor('exit',8,57),
+    anchor('runa',28,70),anchor('dummy',68,62),anchor('rack',82,45),anchor('instructor',51,52),anchor('exit',8,57),
   ],[
-    interaction('training_dummy','훈련 인형 사용','training'),interaction('weapon_rack','장비 살펴보기','inspect'),interaction('instructor','교관과 훈련하기','training'),interaction('exit','돌아가기','travel'),
+    interaction('dummy','훈련 인형 사용','training'),interaction('rack','장비 살펴보기','inspect'),interaction('instructor','교관과 훈련하기','training'),interaction('exit','돌아가기','travel'),
   ]),
   magic_classroom:scene('magic_classroom','day',[
-    anchor('runa',30,70),anchor('magic_circle',58,68),anchor('books',78,42),anchor('practice_target',70,61),anchor('instructor',45,50),anchor('exit',8,57),
+    anchor('runa',30,70),anchor('circle',58,68),anchor('books',78,42),anchor('practice_target',70,61),anchor('instructor',45,50),anchor('exit',8,57),
   ],[
-    interaction('magic_circle','마법진 연습','minigame'),interaction('books','마법책 읽기','inspect'),interaction('practice_target','주문 연습','training'),interaction('instructor','수업 듣기','training'),interaction('exit','돌아가기','travel'),
+    interaction('circle','마법진 연습','minigame'),interaction('books','마법책 읽기','inspect'),interaction('practice_target','주문 연습','training'),interaction('instructor','수업 듣기','training'),interaction('exit','돌아가기','travel'),
   ]),
   herb_garden:scene('herb_garden','day',[
     anchor('runa',31,71),anchor('herb_patch',64,70),anchor('pots',79,62),anchor('workbench',54,50),anchor('ingredient_rack',84,42),anchor('exit',8,57),
