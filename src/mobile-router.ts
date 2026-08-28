@@ -99,6 +99,7 @@ function playState(category:MobileCategoryId,screen:MobilePlayScreen):MobileNavi
 }
 
 export function isGuardedActiveRoute(route:MobileRoute):boolean{
+  if(route.kind==='feature'&&route.feature==='expedition')return true;
   return route.kind==='play'&&(['training','dialogue','tactical','choice_event'] as readonly MobilePlayScreen[]).includes(route.screen);
 }
 

@@ -17,10 +17,12 @@ describe('V13 tactical controls never overlap',()=>{
     expect(flow).toContain('className="tactical-start"');
   });
 
-  it('makes the setup card scroll-safe and reserves a sticky safe-area action lane',()=>{
+  it('makes only the setup body scroll while keeping the safe-area action lane always visible',()=>{
     expect(flowCss).toMatch(/\.tactical-expedition-entry\{[^}]*max-height:/);
-    expect(flowCss).toMatch(/\.tactical-expedition-entry-content\{[^}]*overflow-y:auto/);
-    expect(flowCss).toMatch(/\.tactical-setup-actions\{[^}]*position:sticky/);
+    expect(flowCss).toContain('grid-template-rows:minmax(0,1fr) auto');
+    expect(flowCss).toMatch(/\.tactical-expedition-entry-content\{[^}]*overflow:hidden/);
+    expect(flowCss).toMatch(/\.tactical-expedition-entry-scroll\{[^}]*overflow-y:auto/);
+    expect(flowCss).toMatch(/\.tactical-setup-actions\{[^}]*position:relative/);
     expect(flowCss).toContain('env(safe-area-inset-bottom)');
     expect(flowCss).toMatch(/\.tactical-start\{[^}]*min-height:(48|5\d)px/);
   });

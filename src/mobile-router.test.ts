@@ -59,9 +59,11 @@ describe('V8 mobile router',()=>{
     expect(mobileNavigationReducer(dirty,{type:'REPLACE',route:null})).toEqual(initialMobileNavigationState);
   });
 
-  it('guards only unfinished training and unresolved dialogue play routes',()=>{
+  it('guards unfinished play routes and guardian expedition setup from global navigation overlap',()=>{
     expect(isGuardedActiveRoute({kind:'play',category:'life',screen:'training'})).toBe(true);
     expect(isGuardedActiveRoute({kind:'play',category:'life',screen:'dialogue'})).toBe(true);
+    expect(isGuardedActiveRoute({kind:'play',category:'adventure',screen:'tactical'})).toBe(true);
+    expect(isGuardedActiveRoute({kind:'feature',category:'adventure',feature:'expedition'})).toBe(true);
     expect(isGuardedActiveRoute({kind:'play',category:'life',screen:'schedule'})).toBe(false);
     expect(isGuardedActiveRoute({kind:'play',category:'life',screen:'result'})).toBe(false);
     expect(isGuardedActiveRoute({kind:'category',category:'life'})).toBe(false);
