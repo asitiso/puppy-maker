@@ -11,8 +11,8 @@ describe('V14 outing scenes',()=>{
   });
 
   it('changes seasonal presentation at a calendar boundary without changing the location contract',()=>{
-    const spring=outingScene('village',{year:1,month:5,week:4});
-    const summer=outingScene('village',{year:1,month:6,week:1});
+    const spring=outingScene('village',{year:1,month:3,week:4});
+    const summer=outingScene('village',{year:1,month:4,week:1});
     expect(spring.location).toBe('village');
     expect(summer.location).toBe('village');
     expect(spring.season).not.toBe(summer.season);
