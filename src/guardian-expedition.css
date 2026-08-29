@@ -1,0 +1,378 @@
+.expedition-battle{
+  display:grid;
+  gap:12px;
+  min-height:0;
+}
+
+.expedition-battle>header{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+}
+
+.expedition-battle>header>div{
+  min-width:0;
+}
+
+.expedition-battle>header h2{
+  margin:2px 0 0;
+}
+
+.expedition-battlefield{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(94px,.58fr) minmax(0,1fr);
+  align-items:stretch;
+  min-height:310px;
+  overflow:hidden;
+  border:1px solid rgba(226,196,143,.35);
+  border-radius:22px;
+  background:
+    radial-gradient(ellipse at 50% 76%,rgba(224,180,102,.17),transparent 34%),
+    linear-gradient(180deg,rgba(35,52,64,.86),rgba(48,55,48,.88) 47%,rgba(51,43,34,.94));
+  box-shadow:inset 0 0 54px rgba(14,20,24,.28),0 14px 30px rgba(20,23,24,.2);
+}
+
+.expedition-battlefield::before{
+  content:"";
+  position:absolute;
+  inset:48% 5% 8%;
+  border:1px solid rgba(241,210,153,.2);
+  border-radius:50%;
+  background:repeating-linear-gradient(95deg,transparent 0 44px,rgba(248,220,168,.05) 44px 46px);
+  transform:perspective(260px) rotateX(58deg);
+  transform-origin:50% 100%;
+  pointer-events:none;
+}
+
+.expedition-battle .battle-faction{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  min-width:0;
+  padding:18px 14px 16px;
+}
+
+.expedition-battle .battle-faction>small{
+  position:absolute;
+  top:14px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  opacity:.7;
+}
+
+.expedition-battle .battle-faction.is-ally{
+  align-items:flex-start;
+  background:linear-gradient(90deg,rgba(79,126,156,.18),transparent 68%);
+}
+
+.expedition-battle .battle-faction.is-enemy{
+  align-items:flex-end;
+  text-align:right;
+  background:linear-gradient(270deg,rgba(166,82,68,.2),transparent 68%);
+}
+
+.expedition-battle .battle-faction.is-ally>small{left:14px}
+.expedition-battle .battle-faction.is-enemy>small{right:14px}
+
+.expedition-battle .expedition-runa{
+  width:min(100%,190px);
+  max-height:210px;
+  object-fit:contain;
+  object-position:center bottom;
+  filter:drop-shadow(0 10px 13px rgba(13,20,25,.35));
+}
+
+.expedition-battle .expedition-score,
+.expedition-battle .expedition-pressure,
+.expedition-battle .battle-target{
+  width:min(100%,210px);
+  border:1px solid rgba(255,236,199,.22);
+  border-radius:12px;
+  background:rgba(22,29,34,.66);
+  box-shadow:0 8px 18px rgba(13,16,17,.2);
+  backdrop-filter:blur(7px);
+}
+
+.expedition-battle .expedition-score,
+.expedition-battle .expedition-pressure{
+  display:grid;
+  gap:2px;
+  padding:9px 10px;
+}
+
+.expedition-battle .expedition-score strong,
+.expedition-battle .expedition-pressure b{
+  font-size:22px;
+  line-height:1;
+}
+
+.expedition-battle .expedition-score span,
+.expedition-battle .expedition-pressure span,
+.expedition-battle .battle-target span{
+  font-size:11px;
+  opacity:.74;
+}
+
+.expedition-battle .battle-target{
+  display:grid;
+  gap:3px;
+  margin-top:8px;
+  padding:10px;
+}
+
+.expedition-battle .battle-terrain{
+  position:relative;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  min-width:0;
+}
+
+.expedition-battle .battle-terrain::before,
+.expedition-battle .battle-terrain::after{
+  content:"";
+  position:absolute;
+  top:19%;
+  bottom:15%;
+  width:1px;
+  background:linear-gradient(180deg,transparent,rgba(255,220,159,.34),transparent);
+}
+
+.expedition-battle .battle-terrain::before{left:5%}
+.expedition-battle .battle-terrain::after{right:5%}
+
+.expedition-battle .battle-vs{
+  position:absolute;
+  top:17px;
+  display:grid;
+  place-items:center;
+  width:46px;
+  height:46px;
+  border:1px solid rgba(250,220,162,.54);
+  border-radius:50%;
+  background:rgba(30,35,36,.86);
+  color:#f7dfae;
+  font-weight:900;
+  font-size:13px;
+  letter-spacing:.08em;
+  box-shadow:0 6px 16px rgba(16,18,18,.28);
+}
+
+.expedition-battle .expedition-timing{
+  position:relative;
+  width:min(86px,82%);
+  aspect-ratio:1;
+  border:1px solid rgba(246,219,164,.48);
+  border-radius:50%;
+  background:
+    radial-gradient(circle,rgba(248,226,181,.16) 0 29%,transparent 30%),
+    conic-gradient(from -18deg,rgba(114,185,136,.5) 0 36deg,rgba(68,75,76,.44) 36deg 360deg);
+  box-shadow:0 0 24px rgba(230,183,101,.12),inset 0 0 18px rgba(15,18,18,.3);
+}
+
+.expedition-battle .expedition-timing .sweet{
+  position:absolute;
+  inset:12%;
+  border:1px dashed rgba(255,233,191,.38);
+  border-radius:50%;
+}
+
+.expedition-battle .expedition-timing em{
+  position:absolute;
+  left:calc(50% - 1px);
+  top:7%;
+  width:2px;
+  height:43%;
+  border-radius:999px;
+  background:#ffe7ae;
+  transform-origin:50% 100%;
+  box-shadow:0 0 8px rgba(255,226,166,.65);
+}
+
+.expedition-battle .expedition-timing img{
+  position:absolute;
+  inset:-28%;
+  width:156%;
+  height:156%;
+  object-fit:contain;
+  pointer-events:none;
+}
+
+.expedition-battle .expedition-timing>b{
+  position:absolute;
+  left:50%;
+  bottom:-25px;
+  transform:translateX(-50%);
+  white-space:nowrap;
+  font-size:11px;
+  color:#ffe7ae;
+}
+
+.expedition-battle .battle-command-deck{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:stretch;
+  gap:10px;
+  padding:10px;
+  border:1px solid rgba(215,187,138,.32);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(45,50,50,.96),rgba(30,34,35,.98));
+  box-shadow:0 9px 22px rgba(17,20,20,.22),inset 0 1px rgba(255,242,210,.06);
+}
+
+.expedition-battle .expedition-actions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.expedition-battle .expedition-actions button,
+.expedition-battle .battle-command-actions button,
+.expedition-battle>header button{
+  min-width:44px;
+  min-height:44px;
+}
+
+.expedition-battle .expedition-actions button{
+  display:grid;
+  align-content:center;
+  gap:2px;
+  padding:8px 10px;
+  border:1px solid rgba(235,209,162,.25);
+  border-radius:11px;
+  background:rgba(63,69,66,.88);
+}
+
+.expedition-battle .expedition-actions button b{font-size:13px}
+.expedition-battle .expedition-actions button span{font-size:10px;opacity:.7}
+
+.expedition-battle .battle-command-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.expedition-battle .battle-command-actions>span{
+  display:grid;
+  min-width:64px;
+  text-align:center;
+  font-size:10px;
+  opacity:.78;
+}
+
+.expedition-battle .battle-command-actions>span b{
+  font-size:18px;
+}
+
+.expedition-battle .expedition-finish{
+  min-width:122px;
+  padding:8px 12px;
+  border-radius:11px;
+}
+
+.expedition-battle button:focus-visible{
+  outline:3px solid rgba(255,225,166,.92);
+  outline-offset:3px;
+}
+
+@media(max-width:430px){
+  .expedition-battle{gap:8px}
+
+  .expedition-battle>header{
+    grid-template-columns:auto minmax(0,1fr);
+    gap:8px;
+  }
+
+  .expedition-battle>header>span{display:none}
+
+  .expedition-battlefield{
+    grid-template-columns:minmax(0,1fr) 68px minmax(0,1fr);
+    min-height:240px;
+    border-radius:16px;
+  }
+
+  .expedition-battle .battle-faction{
+    padding:13px 7px 10px;
+  }
+
+  .expedition-battle .battle-faction>small{
+    top:9px;
+    font-size:8px;
+  }
+
+  .expedition-battle .battle-faction.is-ally>small{left:7px}
+  .expedition-battle .battle-faction.is-enemy>small{right:7px}
+
+  .expedition-battle .expedition-runa{
+    width:min(100%,130px);
+    max-height:145px;
+  }
+
+  .expedition-battle .expedition-score,
+  .expedition-battle .expedition-pressure,
+  .expedition-battle .battle-target{
+    border-radius:9px;
+  }
+
+  .expedition-battle .expedition-score,
+  .expedition-battle .expedition-pressure{
+    padding:6px;
+  }
+
+  .expedition-battle .expedition-score strong,
+  .expedition-battle .expedition-pressure b{font-size:17px}
+
+  .expedition-battle .expedition-score span,
+  .expedition-battle .expedition-pressure span,
+  .expedition-battle .battle-target span{font-size:9px}
+
+  .expedition-battle .battle-target{padding:7px;font-size:10px}
+
+  .expedition-battle .battle-vs{
+    top:11px;
+    width:36px;
+    height:36px;
+    font-size:10px;
+  }
+
+  .expedition-battle .expedition-timing{width:58px}
+
+  .expedition-battle .battle-command-deck{
+    grid-template-columns:1fr;
+    gap:7px;
+    padding:7px;
+  }
+
+  .expedition-battle .expedition-actions{gap:5px}
+
+  .expedition-battle .expedition-actions button{
+    padding:7px 5px;
+  }
+
+  .expedition-battle .expedition-actions button span{display:none}
+
+  .expedition-battle .battle-command-actions{
+    justify-content:space-between;
+  }
+
+  .expedition-battle .expedition-finish{
+    flex:1;
+    min-width:0;
+  }
+}
+
+@media(max-height:640px){
+  .expedition-battlefield{min-height:195px}
+  .expedition-battle .expedition-runa{max-height:112px}
+  .expedition-battle .battle-faction>small,
+  .expedition-battle .battle-target{display:none}
+  .expedition-battle .expedition-score,
+  .expedition-battle .expedition-pressure{padding:5px 7px}
+  .expedition-battle .battle-vs{top:8px}
+  .expedition-battle .battle-command-deck{padding:6px}
+}

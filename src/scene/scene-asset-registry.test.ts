@@ -38,6 +38,13 @@ describe('V14 layered scene asset registry',()=>{
     ]).size).toBe(4);
   });
 
+  it('keeps expedition visually distinct from a generic forest outing',()=>{
+    const srcFor=(location:'forest'|'expedition_field')=>
+      resolveSceneVisualLayers({location,season:'spring',timeOfDay:'day',weather:'clear'})[0].src;
+    expect(srcFor('expedition_field')).not.toBe(srcFor('forest'));
+    expect(srcFor('expedition_field')).toContain('/assets/training/agility_training_bg.webp');
+  });
+
   it('uses repository effect art for directed interaction and presentation feedback',()=>{
     expect(resolveSceneFeedbackVisual('idle')).toBeNull();
     expect(resolveSceneFeedbackVisual('approaching')).toBeNull();

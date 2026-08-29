@@ -1,0 +1,224 @@
+.v14-scene-depth__plane[data-depth-token="battle-skyline"]{
+  background:
+    linear-gradient(167deg,transparent 0 43%,rgba(44,52,60,.28) 44% 55%,transparent 56%),
+    linear-gradient(193deg,transparent 0 39%,rgba(78,61,48,.24) 40% 57%,transparent 58%),
+    radial-gradient(ellipse at 72% 38%,rgba(224,153,92,.14),transparent 30%);
+}
+
+.v14-scene-depth__plane[data-depth-token="battle-center"]{
+  inset:43% 5% 8% 30%;
+  border:1px solid rgba(240,207,150,.16);
+  border-radius:48% 42% 36% 44%;
+  background:
+    linear-gradient(92deg,transparent 0 49%,rgba(255,222,162,.18) 49% 51%,transparent 51%),
+    repeating-linear-gradient(168deg,transparent 0 22px,rgba(232,201,145,.08) 22px 24px),
+    radial-gradient(ellipse at 52% 64%,rgba(82,62,45,.38),rgba(47,44,42,.14) 62%,transparent 63%);
+  box-shadow:inset 0 0 42px rgba(31,27,24,.22);
+}
+
+.v14-scene-depth__plane[data-depth-token="command-foreground"]{
+  inset:auto 0 0;
+  height:25%;
+  background:
+    linear-gradient(180deg,transparent 0 38%,rgba(25,31,37,.5) 39% 100%),
+    repeating-linear-gradient(90deg,transparent 0 14%,rgba(218,185,126,.08) 14% 14.6%);
+  clip-path:polygon(0 16%,25% 7%,52% 18%,76% 5%,100% 15%,100% 100%,0 100%);
+}
+
+.v14-scene-depth__plane[data-depth-token="record-table"]{
+  inset:auto 9% 4% 43%;
+  height:29%;
+  border-top:8px solid rgba(100,69,45,.52);
+  border-radius:14px 14px 4px 4px;
+  background:
+    linear-gradient(90deg,rgba(72,49,35,.38),rgba(128,86,52,.25) 50%,rgba(72,49,35,.38)),
+    linear-gradient(180deg,rgba(55,40,31,.3),transparent 42%);
+  box-shadow:0 16px 30px rgba(21,18,16,.25);
+}
+
+.v14-scene-depth__plane[data-depth-token="camp-foreground"]{
+  inset:auto 0 0;
+  height:30%;
+  background:
+    radial-gradient(ellipse at 22% 78%,rgba(111,77,46,.34),transparent 23%),
+    radial-gradient(circle at 71% 68%,rgba(255,173,82,.18),transparent 18%),
+    linear-gradient(180deg,transparent,rgba(39,33,28,.42));
+}
+
+.v14-scene-prop[data-prop-token="enemy-markers"]{
+  right:10%;
+  bottom:31%;
+  width:29%;
+  height:28%;
+  background:
+    radial-gradient(circle at 20% 60%,rgba(206,80,68,.72) 0 6%,rgba(255,211,166,.2) 7% 10%,transparent 11%),
+    radial-gradient(circle at 54% 34%,rgba(206,80,68,.72) 0 6%,rgba(255,211,166,.2) 7% 10%,transparent 11%),
+    radial-gradient(circle at 82% 66%,rgba(206,80,68,.72) 0 6%,rgba(255,211,166,.2) 7% 10%,transparent 11%);
+  filter:drop-shadow(0 4px 8px rgba(35,15,14,.36));
+}
+
+.v14-scene-prop[data-prop-token="battle-cover"]{
+  right:23%;
+  bottom:14%;
+  width:34%;
+  height:17%;
+  border-radius:50%;
+  background:
+    radial-gradient(ellipse at 18% 70%,rgba(80,74,66,.82) 0 17%,transparent 18%),
+    radial-gradient(ellipse at 48% 62%,rgba(100,90,75,.78) 0 22%,transparent 23%),
+    radial-gradient(ellipse at 78% 72%,rgba(68,67,62,.78) 0 18%,transparent 19%);
+  opacity:.76;
+}
+
+.v14-scene-prop[data-prop-token="command-lines"]{
+  left:31%;
+  right:8%;
+  bottom:5%;
+  height:21%;
+  border:1px solid rgba(239,205,141,.2);
+  border-top-color:rgba(255,226,169,.45);
+  border-radius:45% 45% 8px 8px;
+  background:repeating-linear-gradient(90deg,transparent 0 18%,rgba(255,222,157,.08) 18% 19%);
+  box-shadow:0 -7px 20px rgba(224,168,96,.08);
+}
+
+.v14-scene-prop[data-prop-token="record-scroll"]{
+  right:20%;
+  bottom:13%;
+  width:25%;
+  height:16%;
+  border:1px solid rgba(107,78,52,.46);
+  border-radius:5px 14px 14px 5px;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 19%,rgba(102,76,54,.13) 19% 22%),
+    linear-gradient(135deg,rgba(255,242,198,.92),rgba(218,190,139,.84));
+  box-shadow:0 5px 14px rgba(28,20,15,.28);
+  transform:rotate(-3deg);
+}
+
+.v14-scene-prop[data-prop-token="return-map"]{
+  left:43%;
+  bottom:11%;
+  width:19%;
+  height:13%;
+  border:1px solid rgba(72,92,68,.48);
+  border-radius:4px;
+  background:
+    radial-gradient(circle at 72% 34%,rgba(173,78,58,.58) 0 4%,transparent 5%),
+    linear-gradient(148deg,transparent 0 45%,rgba(75,110,77,.5) 46% 49%,transparent 50%),
+    linear-gradient(30deg,rgba(208,210,154,.9),rgba(161,177,126,.84));
+  box-shadow:0 4px 12px rgba(25,26,20,.24);
+  transform:rotate(4deg);
+}
+
+.v14-scene-prop[data-prop-token="spell-books"]{
+  right:8%;
+  bottom:10%;
+  width:24%;
+  height:13%;
+  border-bottom:5px solid rgba(66,37,87,.58);
+  border-radius:8px 3px 4px 8px;
+  background:
+    linear-gradient(180deg,rgba(96,63,137,.72) 0 22%,rgba(229,210,164,.7) 23% 40%,rgba(69,49,108,.76) 41% 62%,rgba(224,204,157,.68) 63% 78%,rgba(127,68,83,.72) 79% 100%);
+  box-shadow:4px 6px 12px rgba(31,20,43,.26);
+  transform:rotate(-5deg);
+}
+
+.v14-scene-prop[data-prop-token="plant-pots"]{
+  right:8%;
+  bottom:10%;
+  width:25%;
+  height:23%;
+  background:
+    radial-gradient(ellipse at 18% 26%,rgba(68,137,73,.72) 0 12%,transparent 13%),
+    radial-gradient(ellipse at 48% 18%,rgba(57,127,70,.72) 0 14%,transparent 15%),
+    radial-gradient(ellipse at 79% 28%,rgba(77,145,76,.7) 0 12%,transparent 13%),
+    linear-gradient(78deg,transparent 0 9%,rgba(142,85,55,.7) 10% 25%,transparent 26% 39%,rgba(128,78,51,.72) 40% 60%,transparent 61% 73%,rgba(151,91,55,.66) 74% 91%,transparent 92%);
+  clip-path:polygon(0 0,100% 0,96% 100%,5% 100%);
+}
+
+.v14-scene-prop[data-prop-token="offering-stones"]{
+  left:42%;
+  bottom:8%;
+  width:28%;
+  height:12%;
+  background:
+    radial-gradient(ellipse at 15% 70%,rgba(124,125,128,.68) 0 13%,transparent 14%),
+    radial-gradient(ellipse at 39% 54%,rgba(151,149,145,.62) 0 17%,transparent 18%),
+    radial-gradient(ellipse at 65% 69%,rgba(111,113,118,.68) 0 15%,transparent 16%),
+    radial-gradient(ellipse at 86% 58%,rgba(139,136,132,.6) 0 12%,transparent 13%);
+  filter:drop-shadow(0 4px 5px rgba(25,24,28,.28));
+}
+
+.v14-scene-prop[data-prop-token="wet-ground"]{
+  left:4%;
+  right:4%;
+  bottom:1%;
+  height:25%;
+  border-radius:50% 46% 14% 18%;
+  background:
+    radial-gradient(ellipse at 18% 66%,rgba(201,226,236,.25) 0 8%,rgba(60,92,103,.18) 9% 14%,transparent 15%),
+    radial-gradient(ellipse at 55% 77%,rgba(219,235,239,.2) 0 11%,rgba(57,83,94,.18) 12% 18%,transparent 19%),
+    radial-gradient(ellipse at 83% 55%,rgba(195,221,230,.2) 0 7%,rgba(54,80,92,.16) 8% 13%,transparent 14%),
+    linear-gradient(180deg,transparent 0 42%,rgba(67,90,98,.18) 43% 100%);
+  box-shadow:inset 0 -9px 22px rgba(39,58,67,.12);
+  opacity:.9;
+}
+
+.v14-scene-prop[data-prop-token="snow-cover"]{
+  left:-4%;
+  right:-4%;
+  bottom:-3%;
+  height:27%;
+  border-radius:50% 48% 0 0;
+  background:
+    radial-gradient(ellipse at 12% 54%,rgba(250,253,255,.95) 0 16%,transparent 17%),
+    radial-gradient(ellipse at 35% 42%,rgba(241,248,252,.94) 0 19%,transparent 20%),
+    radial-gradient(ellipse at 62% 55%,rgba(252,254,255,.96) 0 21%,transparent 22%),
+    radial-gradient(ellipse at 88% 45%,rgba(238,247,252,.94) 0 18%,transparent 19%),
+    linear-gradient(180deg,transparent 0 34%,rgba(229,240,247,.9) 35% 100%);
+  filter:drop-shadow(0 -4px 7px rgba(197,216,228,.22));
+  opacity:.94;
+}
+
+.v14-scene-stage[data-interaction-skin="expedition-tactical"] .v14-scene-object{
+  border-color:rgba(236,197,126,.62);
+  background:linear-gradient(180deg,rgba(44,54,63,.94),rgba(24,31,38,.94));
+  box-shadow:0 6px 18px rgba(16,21,26,.34),inset 0 0 0 1px rgba(255,233,188,.08);
+}
+
+.v14-scene-stage[data-interaction-skin="expedition-tactical"] .v14-scene-object:focus-visible{
+  outline:3px solid rgba(255,222,154,.88);
+  outline-offset:3px;
+}
+
+.v14-scene-stage[data-interaction-skin="expedition-preparation"] .v14-scene-object{
+  border-color:rgba(213,177,117,.5);
+  background:linear-gradient(180deg,rgba(87,68,48,.88),rgba(52,44,37,.9));
+}
+
+.v14-scene-stage[data-interaction-skin="expedition-debrief"] .v14-scene-object{
+  border-color:rgba(211,190,146,.5);
+  background:linear-gradient(180deg,rgba(76,62,48,.88),rgba(47,40,34,.9));
+}
+
+@media(max-width:430px){
+  .v14-scene-prop[data-compact-hidden="true"]{display:none}
+  .v14-scene-depth__plane[data-depth-token="battle-center"]{inset:44% 2% 9% 24%}
+  .v14-scene-prop[data-prop-token="enemy-markers"]{right:5%;bottom:32%;width:34%;height:25%}
+  .v14-scene-prop[data-prop-token="command-lines"]{left:25%;right:4%;height:18%}
+  .v14-scene-depth__plane[data-depth-token="record-table"]{left:34%;right:4%}
+  .v14-scene-prop[data-prop-token="record-scroll"]{right:10%;width:30%}
+  .v14-scene-prop[data-prop-token="return-map"]{left:38%;width:22%}
+  .v14-scene-prop[data-prop-token="wet-ground"],
+  .v14-scene-prop[data-prop-token="snow-cover"]{height:20%}
+}
+
+@media(max-height:640px){
+  .v14-scene-prop[data-prop-token="battle-cover"],
+  .v14-scene-prop[data-prop-token="return-map"]{display:none}
+  .v14-scene-depth__plane[data-depth-token="command-foreground"],
+  .v14-scene-depth__plane[data-depth-token="camp-foreground"]{height:20%}
+  .v14-scene-prop[data-prop-token="wet-ground"],
+  .v14-scene-prop[data-prop-token="snow-cover"]{height:17%}
+}
