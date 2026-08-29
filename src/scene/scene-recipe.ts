@@ -41,6 +41,7 @@ export type SceneRecipeInput={
   season?:Season;
   weather?:Weather;
   worldFacts?:readonly string[];
+  presentationTags?:readonly string[];
 };
 
 export type ResolvedSceneRecipe=Omit<SceneRecipe,'props'>&{props:readonly string[]};
@@ -118,7 +119,58 @@ function stateProps(input:SceneRecipeInput):string[]{
   return props;
 }
 
+function tagValue(tags:readonly string[]|undefined,prefix:string):string|undefined{
+  return tags?.find(tag=>tag.startsWith(prefix))?.slice(prefix.length);
+}
+
+function resolveExpeditionRecipe(base:SceneRecipe,tags:readonly string[]|undefined):SceneRecipe{
+  const phase=tagValue(tags,'expedition:');
+  const node=tagValue(tags,'node:');
+
+  if(phase==='reward'||phase==='done'||node==='return'){
+    return {
+      ...base,
+      composition:'expedition-debrief',
+      depth:{background:'expedition-skyline',midground:'record-table',foreground:'camp-foreground'},
+      props:['record-scroll','return-map'],
+      interactionSkin:'expedition-debrief',
+      lighting:'expedition-return-glow',
+      ambient:'camp-embers',
+      compact:{...base.compact,simplifyProps:['return-map']},
+    };
+  }
+
+  if(phase==='encounter'||node==='encounter'||node?.startsWith('combat_zone_')){
+    return {
+      ...base,
+      composition:'expedition-battlefield',
+      camera:{...base.camera,focalPoint:[58,52],zoom:.96},
+      actor:{...base.actor,x:24,y:72,scale:.8},
+      depth:{background:'battle-skyline',midground:'battle-center',foreground:'command-foreground'},
+      props:['enemy-markers','battle-cover','command-lines'],
+      interactionSkin:'expedition-tactical',
+      chrome:{material:'field-metal',position:'bottom'},
+      lighting:'battle-contrast',
+      ambient:'battle-dust',
+      compact:{...base.compact,focalPoint:[60,54],simplifyProps:['battle-cover']},
+    };
+  }
+
+  if(phase==='node'&&node==='camp'){
+    return {
+      ...base,
+      composition:'expedition-camp',
+      props:['camp-tent','route-map','field-gear'],
+      interactionSkin:'expedition-preparation',
+      ambient:'camp-embers',
+    };
+  }
+
+  return base;
+}
+
 export function resolveSceneRecipe(input:SceneRecipeInput):ResolvedSceneRecipe{
   const base=SCENE_RECIPES[input.location];
-  return {...base,props:[...base.props,...stateProps(input)]};
+  const presented=input.location==='expedition_field'?resolveExpeditionRecipe(base,input.presentationTags):base;
+  return {...presented,props:[...presented.props,...stateProps(input)]};
 }
