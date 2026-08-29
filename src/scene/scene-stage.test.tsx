@@ -5,6 +5,7 @@ import SceneStage from './SceneStage';
 import {resolveScene} from './scene-resolver';
 
 const css=readFileSync(new URL('./scene.css',import.meta.url),'utf8');
+const recipeCss=readFileSync(new URL('./scene-recipe.css',import.meta.url),'utf8');
 const stageSource=readFileSync(new URL('./SceneStage.tsx',import.meta.url),'utf8');
 
 describe('V14 anchored living scene stage',()=>{
@@ -43,6 +44,44 @@ describe('V14 anchored living scene stage',()=>{
     expect(css).toContain('.v14-scene-object[data-mode="travel"]');
     expect(css).toContain('.v14-scene-object[data-mode="battle"]');
     expect(css).toContain('.v14-scene-object[data-mode="reward"]');
+  });
+
+  it('applies expedition checkpoint presentation tags to the shared stage recipe',()=>{
+    const base=resolveScene({year:1,month:4,week:1,location:'expedition_field'});
+    const camp={...base,presentationTags:[...base.presentationTags,'expedition:node','node:camp']};
+    const encounter={...base,presentationTags:[...base.presentationTags,'expedition:encounter','node:combat_zone_one']};
+    const reward={...base,presentationTags:[...base.presentationTags,'expedition:reward','node:return']};
+
+    expect(renderToStaticMarkup(<SceneStage scene={camp} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-camp"');
+    expect(renderToStaticMarkup(<SceneStage scene={encounter} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-battlefield"');
+    expect(renderToStaticMarkup(<SceneStage scene={reward} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-debrief"');
+  });
+
+  it('marks recipe-selected decoration for compact mobile removal instead of duplicating a CSS token list',()=>{
+    const magic=renderToStaticMarkup(<SceneStage scene={resolveScene({year:1,month:4,week:1,location:'magic_classroom'})} onInteraction={vi.fn()}/>);
+    expect(magic).toMatch(/data-prop-token="spell-books"[^>]*data-compact-hidden="true"/);
+    expect(magic).toMatch(/data-prop-token="candles"[^>]*data-compact-hidden="true"/);
+    expect(stageSource).toContain('recipe.compact.simplifyProps.includes(prop)');
+    expect(recipeCss).toContain('.v14-scene-prop[data-compact-hidden="true"]');
+  });
+
+  it('gives expedition tactical and debrief recipes concrete depth and prop visuals',()=>{
+    for(const token of ['battle-skyline','battle-center','command-foreground','record-table','camp-foreground']){
+      expect(recipeCss).toContain(`data-depth-token="${token}"`);
+    }
+    for(const token of ['enemy-markers','battle-cover','command-lines','record-scroll','return-map']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
+    for(const token of ['spell-books','plant-pots','offering-stones']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
+    expect(recipeCss).toContain('data-interaction-skin="expedition-tactical"');
+  });
+
+  it('renders rain and snow as concrete foreground props instead of tint-only state',()=>{
+    for(const token of ['wet-ground','snow-cover']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
   });
 
   it('keeps mobile targets, safe area, focus visibility, and reduced-motion parity in shared CSS',()=>{
