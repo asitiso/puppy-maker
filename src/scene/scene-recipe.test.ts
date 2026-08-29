@@ -44,4 +44,22 @@ describe('V14 scene identity recipes',()=>{
     expect(SCENE_RECIPES.expedition_field.depth).not.toEqual(SCENE_RECIPES.forest.depth);
     expect(SCENE_RECIPES.expedition_field.interactionSkin).not.toBe(SCENE_RECIPES.forest.interactionSkin);
   });
+
+  it('maps semantic expedition checkpoints to preparation, exploration, tactical, and debrief presentation',()=>{
+    const preparation=resolveSceneRecipe({location:'expedition_field',presentationTags:['expedition:node','node:camp']});
+    const exploration=resolveSceneRecipe({location:'expedition_field',presentationTags:['expedition:node','node:ruin']});
+    const tactical=resolveSceneRecipe({location:'expedition_field',presentationTags:['expedition:encounter','node:encounter']});
+    const debrief=resolveSceneRecipe({location:'expedition_field',presentationTags:['expedition:reward','node:return']});
+
+    expect(preparation.composition).toBe('expedition-camp');
+    expect(preparation.props).toEqual(expect.arrayContaining(['camp-tent','route-map','field-gear']));
+    expect(exploration.composition).toBe('expedition-route');
+    expect(exploration.props).toContain('ruin-marker');
+    expect(tactical.composition).toBe('expedition-battlefield');
+    expect(tactical.depth.midground).toBe('battle-center');
+    expect(tactical.props).toEqual(expect.arrayContaining(['enemy-markers','battle-cover','command-lines']));
+    expect(tactical.interactionSkin).toBe('expedition-tactical');
+    expect(debrief.composition).toBe('expedition-debrief');
+    expect(debrief.props).toEqual(expect.arrayContaining(['record-scroll','return-map']));
+  });
 });
