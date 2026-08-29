@@ -13,7 +13,8 @@ import storyEvent from './components/StoryEvent.tsx?raw';
 const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const storyCss = css('./story-dialogue-stage.css');
 const expeditionCss = css('./expedition-ui.css');
-const archiveCss = css('./collection-archive.css');
+const polishCss = css('./v14-polish-pass-4.css');
+const mainSource = css('./main.tsx');
 
 it('global overlays share complete modal focus lifecycle', () => {
   expect(overlayFocus).toMatch(/event\.key === 'Escape'/);
@@ -47,12 +48,14 @@ it('keeps story decisions and expedition battle actions reachable on short mobil
   expect(expeditionCss).toContain('@media(max-height:650px)');
   expect(expeditionCss).toMatch(/@media\(max-height:650px\)\{[^}]*\.expedition-battle\{overflow:hidden\}/);
   expect(expeditionCss).toMatch(/@media\(max-height:650px\)[\s\S]*?\.expedition-battle-stage\{min-height:0/);
-  expect(expeditionCss).toContain('overscroll-behavior:contain');
+  expect(polishCss).toContain('.expedition-map,.expedition-battle,.expedition-result{overscroll-behavior:contain');
 });
 
 it('keeps the archive bounded and touch-safe at phone heights', () => {
-  expect(archiveCss).toContain('100dvh');
-  expect(archiveCss).toContain('overscroll-behavior:contain');
-  expect(archiveCss).toContain('min-height:44px');
-  expect(archiveCss).toContain('@media(max-height:650px)');
+  expect(mainSource).toContain("import './v14-polish-pass-4.css';");
+  expect(polishCss).toContain('100dvh');
+  expect(polishCss).toContain('overscroll-behavior:contain');
+  expect(polishCss).toContain('min-height:44px');
+  expect(polishCss).toContain('@media(max-height:650px)');
+  expect(polishCss).toContain('@media(prefers-reduced-motion:reduce)');
 });
