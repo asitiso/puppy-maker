@@ -14,7 +14,8 @@ describe('V14 build editor mobile regression guard',()=>{
   });
 
   it('provides a clear local back action and one dedicated scroll body',()=>{
-    expect(editorSource).toContain('aria-label="편성 화면으로 돌아가기"');
+    expect(editorSource).toContain("from './V14OverlayBackButton'");
+    expect(editorSource).toContain('ariaLabel="편성 화면으로 돌아가기"');
     expect(editorSource).toContain('v12-build-editor__body');
     expect(editorCss).toMatch(/\.v12-build-editor__body\{[^}]*overflow-y:auto/);
     expect(editorCss).toMatch(/\.v12-build-editor\{[^}]*overflow:hidden/);

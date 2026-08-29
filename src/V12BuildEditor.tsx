@@ -1,5 +1,8 @@
+import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { wardrobe } from './game/wardrobe'
+import V14OverlayBackButton from './V14OverlayBackButton'
+import { useOverlayFocusManagement } from './useOverlayFocusManagement'
 import {
   EQUIPMENT,
   PLAYABLE_CHARACTERS,
@@ -39,6 +42,25 @@ function equipmentIdentity(id: EquipmentId): string {
   }
 }
 
+function equipmentEffectDetail(id: EquipmentId): string {
+  const effect = EQUIPMENT[id].effect
+  switch (effect.kind) {
+    case 'chain_magic': return `연쇄 대상 ${effect.chainTargets}명`
+    case 'ally_intercept_counter': return `피해 ${Math.round(effect.interceptRatio * 100)}% 대신 받고 반격`
+    case 'hidden_expedition_interaction': return '원정의 숨은 상호작용 발견'
+    case 'coop_attack_boost': return `협동 공격 +${Math.round(effect.bonusRatio * 100)}%`
+    default: return '기본 공격 운용에 적합'
+  }
+}
+
+function equipmentCompatibilityWarning(state: CharacterBuildState, leader: PlayableCharacterId): string | null {
+  const removed = Object.values(state.loadout.equipment)
+    .filter((id): id is EquipmentId => Boolean(id))
+    .filter(id => !canEquip(leader, EQUIPMENT[id]).allowed)
+    .map(id => EQUIPMENT[id].name)
+  return removed.length ? `${removed.join(' · ')} 해제 예정` : null
+}
+
 export default function V12BuildEditor({
   mode,
   state,
@@ -50,12 +72,19 @@ export default function V12BuildEditor({
 }: V12BuildEditorProps) {
   const locked = Boolean(state.runLoadoutSnapshot)
   const title = mode === 'party' ? 'Leader 선택' : mode === 'outfit' ? '의상 선택' : `${SLOT_LABEL[mode]} 선택`
+  const dialogRef = useRef<HTMLElement>(null)
+  const initialFocusRef = useRef<HTMLButtonElement>(null)
+  useOverlayFocusManagement({ open: true, onClose, dialogRef, initialFocusRef })
 
-  const editor = <section className="v12-build-editor" role="dialog" aria-modal="true" aria-labelledby="v12-build-editor-title">
+  const editor = <section ref={dialogRef} className="v12-build-editor" role="dialog" aria-modal="true" aria-labelledby="v12-build-editor-title">
     <header className="v12-build-editor__header">
-      <button type="button" className="v12-build-editor__back" onClick={onClose} aria-label="편성 화면으로 돌아가기">
-        <span aria-hidden="true">←</span><span>편성으로</span>
-      </button>
+      <V14OverlayBackButton
+        buttonRef={initialFocusRef}
+        className="v12-build-editor__back"
+        onClick={onClose}
+        label="편성으로"
+        ariaLabel="편성 화면으로 돌아가기"
+      />
       <div className="v12-build-editor__title"><small>BUILD EDITOR</small><h3 id="v12-build-editor-title">{title}</h3></div>
     </header>
 
@@ -66,8 +95,10 @@ export default function V12BuildEditor({
         {state.loadout.party.map(id => {
           const character = PLAYABLE_CHARACTERS[id]
           const current = state.loadout.leader === id
+          const compatibilityWarning = current ? null : equipmentCompatibilityWarning(state, id)
           return <button key={id} type="button" role="listitem" disabled={locked || current} aria-current={current ? 'true' : undefined} onClick={() => onLeaderChange(id)} className={current ? 'is-current' : ''}>
             <strong>{character.name}</strong><span>{character.role}</span><small>{current ? '현재 Leader' : `${character.resource} 자원 · Leader로 선택`}</small>
+            {compatibilityWarning ? <em className="v12-build-editor__warning">⚠ {compatibilityWarning}</em> : null}
           </button>
         })}
       </div> : null}
@@ -89,6 +120,7 @@ export default function V12BuildEditor({
           const disabled = locked || current || !equip.allowed
           return <button key={id} type="button" role="listitem" disabled={disabled} aria-current={current ? 'true' : undefined} onClick={() => onEquipmentChange(id)} className={current ? 'is-current' : ''}>
             <strong>{item.name}</strong><span>{equipmentIdentity(id)}</span>
+            <em className="v12-build-editor__effect">{equipmentEffectDetail(id)}</em>
             <small>{!equip.allowed ? '장착 불가 · Signature 제한' : current ? '현재 장비' : equip.affinity === 'signature' ? '전용 장비 · 선택' : equip.affinity === 'preferred' ? '선호 장비 · 선택' : '공용 장비 · 선택'}</small>
           </button>
         })}

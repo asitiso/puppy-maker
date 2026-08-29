@@ -13,7 +13,7 @@ type OverlayFocusOptions = {
   open: boolean;
   onClose: () => void;
   dialogRef: RefObject<HTMLElement | null>;
-  launcherRef: RefObject<HTMLElement | null>;
+  launcherRef?: RefObject<HTMLElement | null>;
   initialFocusRef: RefObject<HTMLElement | null>;
 };
 
@@ -32,7 +32,7 @@ export function useOverlayFocusManagement({
 
     const restoreTarget = document.activeElement instanceof HTMLElement
       ? document.activeElement
-      : launcherRef.current;
+      : launcherRef?.current ?? null;
 
     initialFocusRef.current?.focus();
 
@@ -74,7 +74,7 @@ export function useOverlayFocusManagement({
       document.removeEventListener('keydown', onKeyDown);
       requestAnimationFrame(() => {
         if (restoreTarget?.isConnected) restoreTarget?.focus();
-        else launcherRef.current?.focus();
+        else if (launcherRef) launcherRef.current?.focus();
       });
     };
   }, [dialogRef, initialFocusRef, launcherRef, open]);

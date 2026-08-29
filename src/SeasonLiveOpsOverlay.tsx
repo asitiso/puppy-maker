@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
+import V14OverlayBackButton from './V14OverlayBackButton';
 import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 const seasonNames = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' } as const;
@@ -34,6 +35,7 @@ export default function SeasonLiveOpsOverlay({
   onPurchase:(offer:SeasonShopOfferId)=>void;
   onLegacyUnlock:(nodeId:SeasonLegacyNodeId)=>void;
 }) {
+  const titleId = useId();
   const launcherRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const initialFocusRef = useRef<HTMLButtonElement>(null);
@@ -57,12 +59,12 @@ export default function SeasonLiveOpsOverlay({
   }
 
   return <div className="season-live-backdrop" role="presentation" onClick={onClose}>
-    <section ref={dialogRef} className="season-live-panel" role="dialog" aria-modal="true" aria-label="시즌 여정" onClick={event => event.stopPropagation()}>
+    <section ref={dialogRef} className="season-live-panel" role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={event => event.stopPropagation()}>
       <img className="season-live-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="season-live-content">
         <header>
-          <div><small>SEASON JOURNEY</small><h2>{summary.season.label}</h2></div>
-          <button ref={initialFocusRef} onClick={onClose} aria-label="닫기">×</button>
+          <div><small>SEASON JOURNEY</small><h2 id={titleId}>{summary.season.label}</h2></div>
+          <V14OverlayBackButton buttonRef={initialFocusRef} onClick={onClose} label="이전 화면" ariaLabel="시즌 여정에서 이전 화면으로" />
         </header>
 
         <div className="season-mastery-card">
