@@ -8,6 +8,7 @@ import type {SceneRuntimePhase} from './scene-runtime';
 import type {ResolvedScene,ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 import './scene.css';
 import './scene-recipe.css';
+import './scene-interaction.css';
 
 type Props={
   scene:ResolvedScene;
