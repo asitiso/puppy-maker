@@ -10,9 +10,9 @@ const loadoutSource=readFileSync(new URL('./V12LoadoutPanel.tsx',import.meta.url
 describe('V14 polish pass 2 mobile play-flow contracts',()=>{
   it('explains Guardian Expedition readiness beside the persistent Start CTA',()=>{
     expect(tacticalSource).toContain('aria-live="polite"');
-    expect(tacticalSource).toContain('동료를 1명 이상 선택해야 원정을 시작할 수 있어요.');
-    expect(tacticalSource).toContain('출발 준비 완료');
-    expect(tacticalSource).toContain('인 파티');
+    expect(tacticalSource).toContain('출발 준비 완료 · 3인 파티');
+    expect(tacticalSource).toContain('런 진행 중에는 새 원정을 시작할 수 없어요.');
+    expect(tacticalSource).toContain('이 편성으로 원정 시작 · 3인');
   });
 
   it('uses one accessible live feedback contract across training activities',()=>{
