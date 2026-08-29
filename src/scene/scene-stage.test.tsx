@@ -45,6 +45,24 @@ describe('V14 anchored living scene stage',()=>{
     expect(css).toContain('.v14-scene-object[data-mode="reward"]');
   });
 
+  it('applies expedition checkpoint presentation tags to the shared stage recipe',()=>{
+    const base=resolveScene({year:1,month:4,week:1,location:'expedition_field'});
+    const camp={...base,presentationTags:[...base.presentationTags,'expedition:node','node:camp']};
+    const encounter={...base,presentationTags:[...base.presentationTags,'expedition:encounter','node:combat_zone_one']};
+    const reward={...base,presentationTags:[...base.presentationTags,'expedition:reward','node:return']};
+
+    expect(renderToStaticMarkup(<SceneStage scene={camp} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-camp"');
+    expect(renderToStaticMarkup(<SceneStage scene={encounter} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-battlefield"');
+    expect(renderToStaticMarkup(<SceneStage scene={reward} onInteraction={vi.fn()}/>)).toContain('data-composition="expedition-debrief"');
+  });
+
+  it('marks recipe-selected decoration for compact mobile removal instead of duplicating a CSS token list',()=>{
+    const magic=renderToStaticMarkup(<SceneStage scene={resolveScene({year:1,month:4,week:1,location:'magic_classroom'})} onInteraction={vi.fn()}/>);
+    expect(magic).toMatch(/data-prop-token="spell-books"[^>]*data-compact-hidden="true"/);
+    expect(magic).toMatch(/data-prop-token="candles"[^>]*data-compact-hidden="true"/);
+    expect(stageSource).toContain('recipe.compact.simplifyProps.includes(prop)');
+  });
+
   it('keeps mobile targets, safe area, focus visibility, and reduced-motion parity in shared CSS',()=>{
     expect(css).toContain('min-width:44px');
     expect(css).toContain('min-height:44px');
