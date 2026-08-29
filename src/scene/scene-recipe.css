@@ -150,6 +150,37 @@
   filter:drop-shadow(0 4px 5px rgba(25,24,28,.28));
 }
 
+.v14-scene-prop[data-prop-token="wet-ground"]{
+  left:4%;
+  right:4%;
+  bottom:1%;
+  height:25%;
+  border-radius:50% 46% 14% 18%;
+  background:
+    radial-gradient(ellipse at 18% 66%,rgba(201,226,236,.25) 0 8%,rgba(60,92,103,.18) 9% 14%,transparent 15%),
+    radial-gradient(ellipse at 55% 77%,rgba(219,235,239,.2) 0 11%,rgba(57,83,94,.18) 12% 18%,transparent 19%),
+    radial-gradient(ellipse at 83% 55%,rgba(195,221,230,.2) 0 7%,rgba(54,80,92,.16) 8% 13%,transparent 14%),
+    linear-gradient(180deg,transparent 0 42%,rgba(67,90,98,.18) 43% 100%);
+  box-shadow:inset 0 -9px 22px rgba(39,58,67,.12);
+  opacity:.9;
+}
+
+.v14-scene-prop[data-prop-token="snow-cover"]{
+  left:-4%;
+  right:-4%;
+  bottom:-3%;
+  height:27%;
+  border-radius:50% 48% 0 0;
+  background:
+    radial-gradient(ellipse at 12% 54%,rgba(250,253,255,.95) 0 16%,transparent 17%),
+    radial-gradient(ellipse at 35% 42%,rgba(241,248,252,.94) 0 19%,transparent 20%),
+    radial-gradient(ellipse at 62% 55%,rgba(252,254,255,.96) 0 21%,transparent 22%),
+    radial-gradient(ellipse at 88% 45%,rgba(238,247,252,.94) 0 18%,transparent 19%),
+    linear-gradient(180deg,transparent 0 34%,rgba(229,240,247,.9) 35% 100%);
+  filter:drop-shadow(0 -4px 7px rgba(197,216,228,.22));
+  opacity:.94;
+}
+
 .v14-scene-stage[data-interaction-skin="expedition-tactical"] .v14-scene-object{
   border-color:rgba(236,197,126,.62);
   background:linear-gradient(180deg,rgba(44,54,63,.94),rgba(24,31,38,.94));
@@ -179,6 +210,8 @@
   .v14-scene-depth__plane[data-depth-token="record-table"]{left:34%;right:4%}
   .v14-scene-prop[data-prop-token="record-scroll"]{right:10%;width:30%}
   .v14-scene-prop[data-prop-token="return-map"]{left:38%;width:22%}
+  .v14-scene-prop[data-prop-token="wet-ground"],
+  .v14-scene-prop[data-prop-token="snow-cover"]{height:20%}
 }
 
 @media(max-height:640px){
@@ -186,4 +219,6 @@
   .v14-scene-prop[data-prop-token="return-map"]{display:none}
   .v14-scene-depth__plane[data-depth-token="command-foreground"],
   .v14-scene-depth__plane[data-depth-token="camp-foreground"]{height:20%}
+  .v14-scene-prop[data-prop-token="wet-ground"],
+  .v14-scene-prop[data-prop-token="snow-cover"]{height:17%}
 }
