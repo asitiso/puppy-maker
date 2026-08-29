@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import './v14-overlay-back-button.css'
 
 type V14OverlayBackButtonProps = {
   onClick: () => void
@@ -15,10 +16,11 @@ export default function V14OverlayBackButton({
   label = '이전 화면',
   ariaLabel,
 }: V14OverlayBackButtonProps) {
+  const classes = ['v14-overlay-back', className].filter(Boolean).join(' ')
   return <button
     ref={buttonRef}
     type="button"
-    className={className}
+    className={classes}
     onClick={onClick}
     aria-label={ariaLabel ?? label}
   >
