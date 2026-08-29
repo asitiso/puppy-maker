@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
-import {INTERACTION_MODES,type ResolvedSceneInteraction} from './scene-interaction-presentation';
-import {resolveSceneInteractionPresentation} from './scene-interaction-presentation';
+import {INTERACTION_MODES,resolveSceneInteractionPresentation} from './scene-interaction-presentation';
+import type {ResolvedSceneInteraction} from './scene-types';
 
 const expectedIcons={
   dialogue:'speech',
