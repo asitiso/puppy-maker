@@ -33,4 +33,13 @@ describe('V14 environmental scene interaction object',()=>{
     expect(disabled).toContain('aria-disabled="true"');
     expect(disabled).toContain('data-emphasis="disabled"');
   });
+
+  it('aligns edge anchors inward so action labels do not clip outside the scene',()=>{
+    const left=renderToStaticMarkup(<InteractiveObject interaction={interaction()} anchor={{id:'exit',x:8,y:60}} onInteraction={vi.fn()}/>);
+    const center=renderToStaticMarkup(<InteractiveObject interaction={interaction()} anchor={anchor} onInteraction={vi.fn()}/>);
+    const right=renderToStaticMarkup(<InteractiveObject interaction={interaction()} anchor={{id:'rift',x:88,y:31}} onInteraction={vi.fn()}/>);
+    expect(left).toContain('data-edge="left"');
+    expect(center).toContain('data-edge="center"');
+    expect(right).toContain('data-edge="right"');
+  });
 });
