@@ -39,11 +39,13 @@ export function StoryEvent({state,dispatch}:{state:GameState;dispatch:React.Disp
      </figure>
    </div>
    <div className="story-dialogue-panel">
-     <header><small>MONTHLY STORY</small><strong>{speakerName}</strong></header>
-     <h1>{event.title}</h1>
-     <p>{event.body}</p>
-     <div className="story-dialogue-turn" role="status" aria-live="polite"><strong>{speakerName}</strong><span>{speakerLine}</span></div>
-     <button type="button" className="story-dialogue-advance" onClick={()=>setSpeaker(current=>current===0?1:0)}>{speaker===0?`${guest.name}의 말 듣기`:'루나의 말 보기'}</button>
+     <div className="story-dialogue-body">
+       <header><small>MONTHLY STORY</small><strong>{speakerName}</strong></header>
+       <h1>{event.title}</h1>
+       <p>{event.body}</p>
+       <div className="story-dialogue-turn" role="status" aria-live="polite"><strong>{speakerName}</strong><span>{speakerLine}</span></div>
+       <button type="button" className="story-dialogue-advance" onClick={()=>setSpeaker(current=>current===0?1:0)}>{speaker===0?`${guest.name}의 말 듣기`:'루나의 말 보기'}</button>
+     </div>
      <div className="story-event-choices">{event.choices.map(choice=><button key={choice.id} onClick={()=>dispatch({type:'EVENT_CHOICE',eventId:event.id,choiceId:choice.id})}>{choice.label}</button>)}</div>
    </div>
  </section>;
