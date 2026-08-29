@@ -30,9 +30,10 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).not.toContain('const primaryTask = unclaimedMail.length > 0');
   });
 
-  it('suppresses unsupported weather copy instead of presenting it as game state', () => {
-    expect(home).toContain('☀ 맑음');
-    expect(homeCss).toContain('.lh-weather span{display:none}');
+  it('presents the weather resolved by the scene instead of hard-coded home copy', () => {
+    expect(home).toContain('weatherLabels[homeScene.weather]');
+    expect(home).not.toContain('<span>☀ 맑음</span>');
+    expect(homeCss).toContain('.lh-weather span{display:block');
   });
 
   it('uses a dynamic viewport override without removing the existing vh fallback', () => {
