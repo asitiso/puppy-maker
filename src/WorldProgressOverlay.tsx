@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { GameState } from './game';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 import { worldUiSummary } from './world-ui';
 
 export default function WorldProgressOverlay({
@@ -14,17 +15,15 @@ export default function WorldProgressOverlay({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(open);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
   const summary = worldUiSummary(state);
   const setOpen = (next:boolean) => {
     if (controlledOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
   };
-
-  useEffect(() => {
-    if (wasOpen.current && !open) launcherRef.current?.focus();
-    wasOpen.current = open;
-  }, [open]);
+  const closeOverlay = () => setOpen(false);
+  useOverlayFocusManagement({ open, onClose:closeOverlay, dialogRef, launcherRef, initialFocusRef });
 
   if (!open) {
     return <button ref={launcherRef} className="world-progress-card" onClick={() => setOpen(true)} aria-label={`${summary.homeCard.title}, ${summary.homeCard.seasonLabel}, ${summary.homeCard.contractLabel}`}>
@@ -38,11 +37,11 @@ export default function WorldProgressOverlay({
     </button>;
   }
 
-  return <div className="world-progress-backdrop" role="dialog" aria-modal="true" aria-label="월드 진행">
+  return <div ref={dialogRef} className="world-progress-backdrop" role="dialog" aria-modal="true" aria-label="월드 진행">
     <section className="world-progress-panel">
       <img className="world-progress-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="world-progress-content">
-        <button className="world-progress-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
+        <button ref={initialFocusRef} className="world-progress-close" onClick={closeOverlay} aria-label="닫기">×</button>
         <small>WORLD PROGRESS</small>
         <h2>월드 진행</h2>
 

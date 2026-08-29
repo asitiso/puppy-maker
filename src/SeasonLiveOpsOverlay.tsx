@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import type { GameState } from './game';
 import { liveOpsUiSummary } from './live-ops-ui';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 const seasonNames = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' } as const;
 const milestoneNames = {
@@ -34,7 +35,10 @@ export default function SeasonLiveOpsOverlay({
   onLegacyUnlock:(nodeId:SeasonLegacyNodeId)=>void;
 }) {
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(open);
+  const dialogRef = useRef<HTMLElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
+  useOverlayFocusManagement({ open, onClose, dialogRef, launcherRef, initialFocusRef });
+
   const summary = liveOpsUiSummary(state);
   const masteryProgress = summary.mastery.nextThreshold
     ? `${summary.mastery.score}/${summary.mastery.nextThreshold}`
@@ -42,11 +46,6 @@ export default function SeasonLiveOpsOverlay({
   const lifetimeProgress = summary.lifetimeLegacy.milestone.nextThreshold
     ? `${summary.lifetimeLegacy.points}/${summary.lifetimeLegacy.milestone.nextThreshold}`
     : `${summary.lifetimeLegacy.points} MAX`;
-
-  useEffect(() => {
-    if (wasOpen.current && !open) launcherRef.current?.focus();
-    wasOpen.current = open;
-  }, [open]);
 
   if (!open) {
     return <button ref={launcherRef} className="season-live-entry" onClick={onOpen} aria-label="시즌 여정 열기">
@@ -58,12 +57,12 @@ export default function SeasonLiveOpsOverlay({
   }
 
   return <div className="season-live-backdrop" role="presentation" onClick={onClose}>
-    <section className="season-live-panel" role="dialog" aria-modal="true" aria-label="시즌 여정" onClick={event => event.stopPropagation()}>
+    <section ref={dialogRef} className="season-live-panel" role="dialog" aria-modal="true" aria-label="시즌 여정" onClick={event => event.stopPropagation()}>
       <img className="season-live-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="season-live-content">
         <header>
           <div><small>SEASON JOURNEY</small><h2>{summary.season.label}</h2></div>
-          <button onClick={onClose} aria-label="닫기">×</button>
+          <button ref={initialFocusRef} onClick={onClose} aria-label="닫기">×</button>
         </header>
 
         <div className="season-mastery-card">

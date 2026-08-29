@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { giftDefinitions } from './adventure';
 import { bondSceneDefinitions } from './bond-scenes';
 import { callingMasteryLevel } from './calling-mastery';
@@ -9,6 +9,7 @@ import { canPurchaseGrowthTrait, growthTraitDefinitions } from './growth-traits'
 import { callingSwitchKey, guardianCallingDefinitions } from './guardian-callings';
 import { guardianRankDefinitions } from './guardian-rank';
 import { personalityArchetype, runaPreferences } from './runa-personality';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 export type RaisingIdentityOverlayProps = {
   state: GameState;
@@ -28,7 +29,10 @@ const rankOrder = ['trainee','junior','guardian','veteran','starlight'] as const
 export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, onCalling, onTrait }: RaisingIdentityOverlayProps) {
   const [tab, setTab] = useState<'calling'|'traits'|'bond'>('calling');
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(open);
+  const dialogRef = useRef<HTMLElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
+  useOverlayFocusManagement({ open, onClose, dialogRef, launcherRef, initialFocusRef });
+
   const guardian = currentGuardianStatus(state);
   const rankReady = rankOrder.indexOf(guardian.rank) >= rankOrder.indexOf('guardian');
   const archetype = personalityArchetype(state.personality);
@@ -39,11 +43,6 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   const switchLocked = state.callingLastSwitchKey === callingSwitchKey(state.year, state.month);
   const canSwitch = rankReady && !switchLocked;
 
-  useEffect(() => {
-    if (wasOpen.current && !open) launcherRef.current?.focus();
-    wasOpen.current = open;
-  }, [open]);
-
   if (!open) {
     return <button ref={launcherRef} className="raising-home-card" onClick={onOpen} aria-label="루나 성장 정체성 열기">
       <img src="/ui/info_card_frame.png" alt="" draggable={false}/>
@@ -52,11 +51,11 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   }
 
   return <div className="raising-overlay">
-    <section className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성">
+    <section ref={dialogRef} className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성">
       <img className="raising-panel-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="raising-content">
         <header>
-          <button onClick={onClose}>‹ 홈</button>
+          <button ref={initialFocusRef} onClick={onClose}>‹ 홈</button>
           <div><small>RUNA RAISING IDENTITY</small><h1>루나의 성장 방향</h1></div>
           <span><b>{state.growthPoints}</b> GROWTH PT</span>
         </header>
