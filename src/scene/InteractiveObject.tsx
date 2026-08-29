@@ -1,4 +1,5 @@
 import type {CSSProperties} from 'react';
+import {resolveSceneInteractionPresentation} from './scene-interaction-presentation';
 import type {ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 
 type Props={
@@ -12,6 +13,7 @@ export default function InteractiveObject({interaction,anchor,onInteraction}:Pro
     '--scene-x':`${anchor.x}%`,
     '--scene-y':`${anchor.y}%`,
   } as CSSProperties;
+  const presentation=resolveSceneInteractionPresentation(interaction);
   const hinted=interaction.hint!=='none';
   return <button
     type="button"
@@ -21,11 +23,15 @@ export default function InteractiveObject({interaction,anchor,onInteraction}:Pro
     data-anchor-id={anchor.id}
     data-mode={interaction.mode}
     data-hint={interaction.hint}
+    data-family={presentation.family}
+    data-emphasis={presentation.emphasis}
     aria-label={interaction.label}
     disabled={!interaction.enabled}
     aria-disabled={!interaction.enabled}
     onClick={()=>onInteraction(interaction)}
   >
-    <span>{interaction.label}</span>
+    <i className="v14-scene-object__marker" data-icon-token={presentation.iconToken} aria-hidden="true"/>
+    <span className="v14-scene-object__label">{interaction.label}</span>
+    {presentation.hintLabel?<small className="v14-scene-object__badge" aria-hidden="true">{presentation.hintLabel}</small>:null}
   </button>;
 }
