@@ -136,6 +136,52 @@
 .v14-scene-stage[data-interaction-skin="expedition-tactical"] .v14-scene-object__marker,
 .v14-scene-stage[data-interaction-skin="expedition-debrief"] .v14-scene-object__marker{border-radius:7px;background:linear-gradient(180deg,rgba(74,63,50,.97),rgba(37,37,37,.98));box-shadow:0 4px 0 rgba(28,28,27,.38),0 8px 16px rgba(0,0,0,.3)}
 
+.v14-scene-action-feedback{
+  position:absolute;
+  left:50%;
+  bottom:max(13%,calc(env(safe-area-inset-bottom) + 18px));
+  z-index:52;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:max-content;
+  max-width:min(86%,420px);
+  min-height:34px;
+  padding:7px 12px;
+  transform:translateX(-50%);
+  border:1px solid rgba(213,226,241,.58);
+  border-radius:999px;
+  background:rgba(14,22,34,.9);
+  box-shadow:0 7px 20px rgba(0,0,0,.32);
+  color:#f5f8fc;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.25;
+  text-align:center;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+  pointer-events:none;
+  backdrop-filter:blur(8px);
+}
+.v14-scene-action-feedback__indicator{
+  flex:0 0 auto;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#b9d8f4;
+  box-shadow:0 0 0 3px rgba(132,184,228,.16);
+}
+.v14-scene-action-feedback[data-feedback-tone="success"]{
+  border-color:rgba(171,229,187,.68);
+  background:rgba(20,52,39,.92);
+  color:#effff3;
+}
+.v14-scene-action-feedback[data-feedback-tone="success"] .v14-scene-action-feedback__indicator{
+  background:#9ce0af;
+  box-shadow:0 0 0 3px rgba(102,196,129,.18);
+}
+
 .lh-living-scene .v14-scene-object__label{font-size:10px;max-width:118px;padding:4px 6px}
 
 @keyframes v14-scene-affordance-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.11)}}
@@ -149,12 +195,14 @@
   .v14-scene-object__marker::before{font-size:18px}
   .v14-scene-object__label{top:calc(100% + 3px);max-width:min(34vw,132px);padding:4px 6px;font-size:10px}
   .v14-scene-object__badge{right:-8px;top:-7px;min-width:24px;padding:2px 4px;font-size:8px}
+  .v14-scene-action-feedback{bottom:max(11%,calc(env(safe-area-inset-bottom) + 14px));max-width:88%;min-height:32px;padding:6px 10px;font-size:11px}
   .lh-living-scene .v14-scene-object__label{max-width:94px;font-size:9px}
 }
 
 @media(max-height:640px){
   .v14-scene-object__label{top:calc(100% + 2px);max-width:122px;padding:3px 5px;font-size:9px}
   .v14-scene-object__badge{top:-6px}
+  .v14-scene-action-feedback{bottom:max(9%,calc(env(safe-area-inset-bottom) + 10px));max-width:82%;min-height:28px;padding:5px 9px;font-size:10px}
 }
 
 @media(prefers-reduced-motion:reduce){

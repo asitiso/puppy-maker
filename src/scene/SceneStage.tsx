@@ -2,6 +2,7 @@ import {type CSSProperties,useEffect} from 'react';
 import CharacterActor from './CharacterActor';
 import InteractiveObject from './InteractiveObject';
 import SceneDirector,{type SceneDirectorController} from './SceneDirector';
+import {sceneActionFeedback,type SceneActionFeedback} from './scene-action-feedback';
 import {resolveSceneFeedbackVisual} from './scene-asset-registry';
 import {resolveSceneRecipe} from './scene-recipe';
 import type {SceneRuntimePhase} from './scene-runtime';
@@ -20,6 +21,7 @@ type SceneStageFrameProps=Props&{
   runtimeActorPose?:string;
   runtimeActorMotion?:string;
   runtimePhase?:SceneRuntimePhase;
+  actionFeedback?:SceneActionFeedback|null;
 };
 
 function poseForInteraction(interaction:ResolvedSceneInteraction|undefined,phase:SceneRuntimePhase):string|undefined{
@@ -52,7 +54,7 @@ function currentWorldFacts(scene:ResolvedScene):string[]{
 }
 
 function SceneStageFrame({
-  scene,onInteraction,runtimeActorAnchorId,runtimeActorPose,runtimeActorMotion,runtimePhase='idle',
+  scene,onInteraction,runtimeActorAnchorId,runtimeActorPose,runtimeActorMotion,runtimePhase='idle',actionFeedback,
 }:SceneStageFrameProps){
   const anchors=new Map<string,SceneAnchor>(scene.anchors.map(anchor=>[anchor.id,anchor]));
   const resolvedRunaAnchor=scene.cast.find(actor=>actor.actorId==='runa')?.anchorId;
@@ -136,6 +138,17 @@ function SceneStageFrame({
         '--scene-y':`${feedbackAnchor.y}%`,
       } as CSSProperties}
     />:null}
+    {actionFeedback?<div
+      className="v14-scene-action-feedback"
+      data-feedback-tone={actionFeedback.tone}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-busy={actionFeedback.busy}
+    >
+      <i className="v14-scene-action-feedback__indicator" aria-hidden="true"/>
+      <span>{actionFeedback.message}</span>
+    </div>:null}
     <div className="v14-scene-interactions">
       {scene.interactions.map(interaction=>{
         const anchorId=interaction.id==='runa'?(runtimeActorAnchorId??resolvedRunaAnchor??interaction.anchorId):interaction.anchorId;
@@ -152,6 +165,7 @@ function DirectedSceneStage({scene,controller}:{scene:ResolvedScene;controller:S
   const runtimeActorAnchorId=phase==='idle'?undefined:interaction?.anchorId;
   const runtimeActorPose=poseForInteraction(interaction,phase);
   const runtimeActorMotion=motionForPhase(phase);
+  const actionFeedback=sceneActionFeedback(interaction,phase);
 
   useEffect(()=>{
     if(phase==='idle') return;
@@ -168,6 +182,7 @@ function DirectedSceneStage({scene,controller}:{scene:ResolvedScene;controller:S
     runtimeActorPose={runtimeActorPose}
     runtimeActorMotion={runtimeActorMotion}
     runtimePhase={phase}
+    actionFeedback={actionFeedback}
   />;
 }
 
