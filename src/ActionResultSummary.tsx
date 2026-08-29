@@ -12,7 +12,7 @@ type Props={
 };
 
 export default function ActionResultSummary({title,message,changes=[],totals=[],continuationLabel,onContinue}:Props){
-  return <section className="v10-result-summary" aria-label={title}>
+  return <section className="v10-result-summary" aria-label={title} role="status" aria-live="polite" aria-atomic="true">
     <header><small>RESULT</small><h2>{title}</h2>{message&&<p>{message}</p>}</header>
     {changes.length>0&&<dl className="v10-result-change-list">
       {changes.map(item=><div key={`${item.label}:${item.value}`}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}

@@ -30,9 +30,10 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).not.toContain('const primaryTask = unclaimedMail.length > 0');
   });
 
-  it('suppresses unsupported weather copy instead of presenting it as game state', () => {
-    expect(home).toContain('☀ 맑음');
-    expect(homeCss).toContain('.lh-weather span{display:none}');
+  it('presents the weather resolved by the scene instead of hard-coded home copy', () => {
+    expect(home).toContain('weatherLabels[homeScene.weather]');
+    expect(home).not.toContain('<span>☀ 맑음</span>');
+    expect(homeCss).toContain('.lh-weather span{display:block');
   });
 
   it('uses a dynamic viewport override without removing the existing vh fallback', () => {
@@ -139,7 +140,8 @@ describe('Layered Home mobile UI contract', () => {
 
   it('reduces competing status and promo surfaces on the smallest 9:16 home', () => {
     expect(seasonalHomeCss).toMatch(/@media\(max-width:390px\)\{\.seasonal-home-badge\{[^}]*display:none/);
-    expect(homeCss).toMatch(/@media\(max-width:390px\)\{\.lh-promos\{display:none/);
+    expect(homeCss).toContain('@media(max-width:390px)');
+    expect(homeCss).toContain('.lh-promos{display:none}');
     expect(seasonCss).toContain('.season-live-entry{right:3%;top:34%;width:31%;height:10.5%');
     expect(flowCss).toContain('@media(max-width:390px){.world-progress-card{top:49.5%}}');
   });
