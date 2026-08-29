@@ -32,7 +32,10 @@ it('explains existing loadout consequences before a Build Editor choice is appli
   expect(buildEditor).toContain('equipmentCompatibilityWarning');
   expect(buildEditor).toContain('해제 예정');
   expect(buildEditor).toContain('equipmentEffectDetail');
-  expect(buildEditor).toContain('연쇄 대상 2명');
-  expect(buildEditor).toContain('피해 35% 대신 받고 반격');
-  expect(buildEditor).toContain('협동 공격 +15%');
+  expect(buildEditor).toContain('effect.chainTargets');
+  expect(buildEditor).toContain('effect.interceptRatio');
+  expect(buildEditor).toContain('effect.bonusRatio');
+  expect(buildEditor).toContain('연쇄 대상');
+  expect(buildEditor).toContain('대신 받고 반격');
+  expect(buildEditor).toContain('협동 공격 +');
 });
