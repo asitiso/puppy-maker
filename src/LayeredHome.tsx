@@ -49,6 +49,7 @@ import MobileCharacterArt from './MobileCharacterArt';
 import SceneStage from './scene/SceneStage';
 import {resolveScene} from './scene/scene-resolver';
 import type {ResolvedSceneInteraction,Weather} from './scene/scene-types';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement'
 import './scene/scene.css';
 
 function Frame({ src, alt = '' }: { src: string; alt?: string }) {
@@ -140,7 +141,9 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const [bagView, setBagView] = useState<BagView>('all');
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const panelLauncherRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const panelCloseRef = useRef<HTMLButtonElement | null>(null);
+  const outingTransitionRef = useRef(false);
   const plannerRef = useRef<HTMLDivElement | null>(null);
   const staticPanel = activePanel ? getHomePanel(activePanel) : null;
   const stamina = Math.max(0, 100 - state.stats.fatigue);
@@ -230,10 +233,19 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
   const closePanel = useCallback(() => {
     setActivePanel(null);
     setActiveNav(-1);
-    panelLauncherRef.current?.focus();
   }, []);
 
+  useOverlayFocusManagement({
+    open: Boolean(activePanel && hasPanel),
+    onClose: closePanel,
+    dialogRef: panelRef,
+    launcherRef: panelLauncherRef,
+    initialFocusRef: panelCloseRef,
+  });
+
   const startOuting = (id: OutingLocationId) => {
+    if (outingTransitionRef.current) return;
+    outingTransitionRef.current = true;
     closePanel();
     onOuting(id);
   };
@@ -256,15 +268,8 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
 
   useEffect(() => onMenuReady?.((id: HomeMenuId) => openMenu(id)), [openMenu, onMenuReady]);
   useEffect(() => {
-    if (!activePanel) return;
-    panelCloseRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault(); closePanel();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activePanel, closePanel]);
+    if (activePanel === 'outing') outingTransitionRef.current = false;
+  }, [activePanel]);
 
   return <section className="layered-home" onPointerMove={handleMove} onPointerLeave={() => setTilt({ x: 0, y: 0 })} style={{ '--px': tilt.x, '--py': tilt.y } as React.CSSProperties}>
     <div className="lh-scene-layer"><MobileSceneBackground slot="home.background" className="v9-home-background"/><div className="lh-window-light" /><div className="lh-fire-light" /><div className="lh-floor-glow" /></div>
@@ -285,7 +290,7 @@ export default function LayeredHome({ state, onSchedule, onClaimAchievement, onO
     <nav className="lh-bottom-nav">{nav.map(([icon, label, id], index) => <button key={id} className={activeNav === index ? 'is-active' : ''} onClick={() => openMenu(id, index)} aria-pressed={activeNav === index} aria-current={activeNav === index ? 'page' : undefined}><Frame src={activeNav === index ? '/ui/bottom_nav_button_active_frame.png' : '/ui/bottom_nav_button_frame.png'} /><span><GameIcon name={icon} /></span><b>{label}</b></button>)}</nav>
 
     {activePanel && hasPanel && <div className="lh-panel-backdrop" onClick={closePanel}>
-      <section className="lh-panel" role="dialog" aria-modal="true" aria-label={panelTitle} onClick={event => event.stopPropagation()}>
+      <section ref={panelRef} className="lh-panel" role="dialog" aria-modal="true" aria-label={panelTitle} onClick={event => event.stopPropagation()}>
         <header className="lh-panel-header"><div><small>{panelEyebrow}</small><h2>{panelTitle}</h2></div><button ref={panelCloseRef} className="lh-panel-close" onClick={closePanel} aria-label="홈으로 돌아가기">← 이전 화면</button></header>
         <div className="lh-panel-body">
         {isQuestPanel ? <InformationPanel summaryItems={[{ label:'수령 가능', value:readyAchievementCount },{ label:'진행 중', value:activeAchievementCount },{ label:'완료', value:doneAchievementCount }]} filters={[{id:'all',label:'전체',count:achievementRows.length},{id:'ready',label:'수령 가능',count:readyAchievementCount},{id:'active',label:'진행',count:activeAchievementCount},{id:'done',label:'완료',count:doneAchievementCount}]} activeFilter={questView} onFilterChange={id => setQuestView(id as QuestView)} emptyMessage="해당 상태의 업적이 없어요.">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { currentAdvancedTalents, masteryLevel, type ExpeditionActionCounts, type ExpeditionCraftingRecipeId, type ExpeditionRelicId, type ExpeditionStageId, type GameState } from './game';
 import { applyExpeditionAction, EXPEDITION_ACTION_LIMIT, finishExpeditionBattle, startExpeditionBattle, type ExpeditionActionKind, type ExpeditionBattleState } from './expedition-combat';
 import { canCraft, craftingRecipes } from './expedition-crafting';
@@ -11,6 +11,8 @@ import { callingMasteryLevel } from './calling-mastery';
 import { expeditionIdentityModifiers } from './raising-expedition-effects';
 import { worldResultSummary, worldUiSummary } from './world-ui';
 import InformationPanel from './InformationPanel';
+import V14OverlayBackButton from './V14OverlayBackButton';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 export type GuardianExpeditionOverlayProps = {
   state: GameState;
@@ -98,18 +100,16 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
   const [view, setView] = useState<View>('map');
   const [stageView, setStageView] = useState<StageView>('all');
   const [activeStage, setActiveStage] = useState<ExpeditionStageId>(() => nextExpeditionStage(state.expeditionRecords) ?? 'forest_path');
+  const titleId = useId();
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(open);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
+  useOverlayFocusManagement({ open, onClose, dialogRef, launcherRef, initialFocusRef });
   const cleared = expeditionStageDefinitions.filter(stage => isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const bosses = expeditionStageDefinitions.filter(stage => stage.boss && isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const available = expeditionStageDefinitions.filter(stage => isExpeditionStageUnlocked(stage.id, state.expeditionRecords) && !isExpeditionStageCleared(state.expeditionRecords[stage.id])).length;
   const recommended = nextExpeditionStage(state.expeditionRecords);
   const world = worldUiSummary(state);
-
-  useEffect(() => {
-    if (wasOpen.current && !open) launcherRef.current?.focus();
-    wasOpen.current = open;
-  }, [open]);
 
   if (!open) {
     return <button ref={launcherRef} className="expedition-home-card" onClick={onOpen} aria-label={`수호자 원정 ${cleared} / 9 클리어`}>
@@ -124,8 +124,10 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     setView('result');
   };
 
+  const dialogTitle = <span id={titleId} className="expedition-dialog-title">수호자 원정</span>;
+
   if (view === 'battle') {
-    return <div className="expedition-overlay"><Battle state={state} stageId={activeStage} onFinish={finishBattle} onCancel={() => setView('map')} /></div>;
+    return <div ref={dialogRef} className="expedition-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId}>{dialogTitle}<Battle state={state} stageId={activeStage} onFinish={finishBattle} onCancel={() => setView('map')} /></div>;
   }
 
   if (view === 'result') {
@@ -135,7 +137,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     const calling = state.activeCalling ? guardianCallingDefinitions.find(item => item.id === state.activeCalling) : null;
     const mastery = state.activeCalling ? callingMasteryLevel(state.callingMastery[state.activeCalling]) : null;
     const worldResult = worldResultSummary(state);
-    return <div className="expedition-overlay"><section className="expedition-result">
+    return <div ref={dialogRef} className="expedition-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId}>{dialogTitle}<section className="expedition-result">
       <img className="expedition-result-burst" src="/assets/effects/success_burst.png" alt=""/>
       <small>EXPEDITION RECORD</small><h2>{stage.name}</h2>
       <strong className={`expedition-grade grade-${result?.grade ?? 'C'}`}>{result?.grade ?? '...'}</strong>
@@ -165,8 +167,8 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
     </section></div>;
   }
 
-  return <div className="expedition-overlay"><section className="expedition-map">
-    <header><button onClick={onClose}>‹ 홈</button><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
+  return <div ref={dialogRef} className="expedition-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId}>{dialogTitle}<section className="expedition-map">
+    <header><V14OverlayBackButton buttonRef={initialFocusRef} onClick={onClose} label="이전 화면" ariaLabel="수호자 원정에서 이전 화면으로" /><div><small>GUARDIAN EXPEDITION</small><h1>수호자 원정</h1></div><span>{cleared}/9 · 보스 {bosses}/3</span></header>
     <div className="expedition-world-event"><b>{world.expeditionMap.eventStrip}</b><span>{world.event.bonusLabel}</span></div>
     <div className="expedition-materials">{Object.entries(state.expeditionMaterials).map(([id, value]) => <span key={id}><b>{materialLabels[id as keyof typeof materialLabels]}</b>{value}</span>)}</div>
     <InformationPanel
