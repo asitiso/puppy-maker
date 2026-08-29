@@ -7,6 +7,7 @@ import {buildCombinationUltimateViews,buildTacticalBattleView} from './tactical-
 import {resolveCombinationUltimate} from './tactical-ultimate';
 import type {TacticalActionId} from './tactical-actions';
 import ActionResultSummary from './ActionResultSummary';
+import {useOverlayFocusManagement} from './useOverlayFocusManagement';
 import './tactical-battle.css';
 
 export type TacticalBattleScreenProps={
@@ -32,12 +33,21 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
   const [selectedUltimate,setSelectedUltimate]=useState<CompanionId|null>(null);
   const [log,setLog]=useState<string[]>([]);
   const completedRef=useRef<BattleResult|null>(null);
+  const resultDialogRef=useRef<HTMLDivElement>(null);
+  const resultPrimaryRef=useRef<HTMLButtonElement>(null);
   useEffect(()=>{setCurrent(session);setSelectedAction(null);setSelectedUltimate(null);setLog([]);completedRef.current=null},[session]);
   const v=useMemo(()=>buildTacticalBattleView(current,auto,speed,selectedAction),[current,auto,speed,selectedAction]);
   const ultimateViews=useMemo(()=>buildCombinationUltimateViews(current,party,bondLevels),[current,party,bondLevels]);
   const selectedUltimateView=selectedUltimate?ultimateViews.find(view=>view.companionId===selectedUltimate)??null:null;
   const validTargetIds=selectedUltimateView?.targetIds??v.validTargetIds;
   const activeRaw=current.units.find(unit=>unit.id===v.activeActorId)??null;
+
+  useOverlayFocusManagement({
+    open:Boolean(v.result&&(onExit||onRetry)),
+    onClose:onExit??onRetry??(()=>{}),
+    dialogRef:resultDialogRef,
+    initialFocusRef:resultPrimaryRef,
+  });
 
   const commit=(next:BattleSession,message:string)=>{
     if(next===current)return;
@@ -117,13 +127,14 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
     <div className="tactical-log" role="status" aria-live="polite" aria-label="Battle log">{log.length?log.map((line,index)=><span key={`${line}-${index}`}>{line}</span>):<span>{activeRaw?.side==='ally'?'카드 1장을 선택하세요.':'적의 행동을 기다리는 중...'}</span>}</div>
     {ultimateViews.length?<div className="tactical-ultimates" aria-label="Bond Lv5 합동기">{ultimateViews.map(ultimate=><button key={ultimate.companionId} aria-pressed={selectedUltimate===ultimate.companionId} className={selectedUltimate===ultimate.companionId?'selected':''} disabled={!ultimate.available||activeRaw?.id!=='runa'||auto||Boolean(v.result)} onClick={()=>chooseUltimate(ultimate.companionId)}><b>{ultimate.label}</b><small>MP {ultimate.mpCost} · BOND 5</small></button>)}</div>:null}
     <footer className="tactical-hand" aria-label="4장 전술 카드">{v.hand.map((id,index)=>{const action=v.actions.find(item=>item.id===id);return <button key={`${id}-${index}`} aria-pressed={selectedAction===id} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}><b>{id.toUpperCase()}</b>{action?<small>AP {action.apCost}{action.mpCost?` · MP ${action.mpCost}`:''}</small>:<small>사용 불가</small>}</button>})}</footer>
-    {v.result?<div className="tactical-result" role="dialog" aria-modal="true" aria-label="전투 결과">
+    {v.result?<div ref={resultDialogRef} className="tactical-result" role="dialog" aria-modal="true" aria-label="전투 결과">
       {onExit||onRetry?<>
         <ActionResultSummary
           title={v.result==='victory'?'VICTORY':'DEFEAT'}
           message={`ROUND ${v.round}`}
           continuationLabel={onExit?'홈으로 돌아가기':'다시 도전'}
           onContinue={onExit??onRetry!}
+          buttonRef={resultPrimaryRef}
         />
         {onExit&&onRetry?<button className="tactical-result-retry" onClick={onRetry}>다시 도전</button>:null}
       </>:<><strong>{v.result==='victory'?'VICTORY':'DEFEAT'}</strong><span>ROUND {v.round}</span></>}
