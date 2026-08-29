@@ -108,24 +108,24 @@ export function TacticalBattleScreen({session,auto,speed,party=EMPTY_PARTY,bondL
   };
 
   return <section className="tactical-screen" aria-label="Tactical battle">
-    <header><strong>3 VS 3</strong><span>ROUND {v.round}</span><button onClick={onToggleAuto}>{v.autoLabel}</button><button onClick={onToggleSpeed}>{v.speedLabel}</button></header>
-    <div className="tactical-timeline">{v.timeline.map(id=><span key={id} className={id===v.activeActorId?'active':''}>{id}</span>)}</div>
+    <header><strong>3 VS 3</strong><span>ROUND {v.round}</span><button onClick={onToggleAuto} aria-pressed={auto}>{v.autoLabel}</button><button onClick={onToggleSpeed}>{v.speedLabel}</button></header>
+    <div className="tactical-timeline">{v.timeline.map(id=><span key={id} aria-current={id===v.activeActorId?'true':undefined} className={id===v.activeActorId?'active':''}>{id}</span>)}</div>
     <div className="tactical-field">
       <div className="tactical-team enemies">{v.enemies.map(u=>{const targetable=validTargetIds.includes(u.id);return <article key={u.id} role="button" tabIndex={targetable?0:-1} aria-disabled={!targetable} aria-label={`${u.id} ${u.alive?'target':'down'}`} onKeyDown={event=>targetKeyDown(event,u.id)} onClick={()=>chooseTarget(u.id)} className={`unit ${u.position} ${u.active?'active':''} ${targetable?'targetable':''} ${!u.alive?'down':''}`}><b>{u.id}</b><progress max={u.maxHp} value={u.hp}/><small>HP {u.hp}/{u.maxHp} · SH {u.shield}</small><small>AP {u.ap}/{u.maxAp} · MP {u.mp}/{u.maxMp}</small>{u.statuses.length?<em>{u.statuses.join(' · ')}</em>:null}</article>})}</div>
       <div className="tactical-team allies">{v.allies.map(u=>{const targetable=validTargetIds.includes(u.id);return <article key={u.id} role="button" tabIndex={targetable?0:-1} aria-disabled={!targetable} aria-label={`${u.id} ${u.alive?'target':'down'}`} onKeyDown={event=>targetKeyDown(event,u.id)} onClick={()=>chooseTarget(u.id)} className={`unit ${u.position} ${u.active?'active':''} ${targetable?'targetable':''} ${!u.alive?'down':''}`}><b>{u.id}</b><progress max={u.maxHp} value={u.hp}/><small>HP {u.hp}/{u.maxHp} · SH {u.shield}</small><small>AP {u.ap}/{u.maxAp} · MP {u.mp}/{u.maxMp}</small>{u.statuses.length?<em>{u.statuses.join(' · ')}</em>:null}</article>})}</div>
     </div>
     <div className="tactical-log" role="status" aria-live="polite" aria-label="Battle log">{log.length?log.map((line,index)=><span key={`${line}-${index}`}>{line}</span>):<span>{activeRaw?.side==='ally'?'카드 1장을 선택하세요.':'적의 행동을 기다리는 중...'}</span>}</div>
-    {ultimateViews.length?<div className="tactical-ultimates" aria-label="Bond Lv5 합동기">{ultimateViews.map(ultimate=><button key={ultimate.companionId} className={selectedUltimate===ultimate.companionId?'selected':''} disabled={!ultimate.available||activeRaw?.id!=='runa'||auto||Boolean(v.result)} onClick={()=>chooseUltimate(ultimate.companionId)}><b>{ultimate.label}</b><small>MP {ultimate.mpCost} · BOND 5</small></button>)}</div>:null}
-    <footer className="tactical-hand" aria-label="4장 전술 카드">{v.hand.map((id,index)=>{const action=v.actions.find(item=>item.id===id);return <button key={`${id}-${index}`} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}><b>{id.toUpperCase()}</b>{action?<small>AP {action.apCost}{action.mpCost?` · MP ${action.mpCost}`:''}</small>:<small>사용 불가</small>}</button>})}</footer>
-    {v.result?<div className="tactical-result" role="dialog" aria-label="전투 결과">
+    {ultimateViews.length?<div className="tactical-ultimates" aria-label="Bond Lv5 합동기">{ultimateViews.map(ultimate=><button key={ultimate.companionId} aria-pressed={selectedUltimate===ultimate.companionId} className={selectedUltimate===ultimate.companionId?'selected':''} disabled={!ultimate.available||activeRaw?.id!=='runa'||auto||Boolean(v.result)} onClick={()=>chooseUltimate(ultimate.companionId)}><b>{ultimate.label}</b><small>MP {ultimate.mpCost} · BOND 5</small></button>)}</div>:null}
+    <footer className="tactical-hand" aria-label="4장 전술 카드">{v.hand.map((id,index)=>{const action=v.actions.find(item=>item.id===id);return <button key={`${id}-${index}`} aria-pressed={selectedAction===id} className={selectedAction===id?'selected':''} disabled={!action||activeRaw?.side!=='ally'||auto||Boolean(v.result)} onClick={()=>chooseAction(id)}><b>{id.toUpperCase()}</b>{action?<small>AP {action.apCost}{action.mpCost?` · MP ${action.mpCost}`:''}</small>:<small>사용 불가</small>}</button>})}</footer>
+    {v.result?<div className="tactical-result" role="dialog" aria-modal="true" aria-label="전투 결과">
       {onExit||onRetry?<>
         <ActionResultSummary
           title={v.result==='victory'?'VICTORY':'DEFEAT'}
           message={`ROUND ${v.round}`}
-          continuationLabel={onExit?'EXIT':'RETRY'}
+          continuationLabel={onExit?'홈으로 돌아가기':'다시 도전'}
           onContinue={onExit??onRetry!}
         />
-        {onExit&&onRetry?<button className="tactical-result-retry" onClick={onRetry}>RETRY</button>:null}
+        {onExit&&onRetry?<button className="tactical-result-retry" onClick={onRetry}>다시 도전</button>:null}
       </>:<><strong>{v.result==='victory'?'VICTORY':'DEFEAT'}</strong><span>ROUND {v.round}</span></>}
     </div>:null}
   </section>
