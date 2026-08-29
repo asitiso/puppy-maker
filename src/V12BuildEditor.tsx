@@ -74,6 +74,12 @@ export default function V12BuildEditor({
   const title = mode === 'party' ? 'Leader 선택' : mode === 'outfit' ? '의상 선택' : `${SLOT_LABEL[mode]} 선택`
   const dialogRef = useRef<HTMLElement>(null)
   const initialFocusRef = useRef<HTMLButtonElement>(null)
+  const currentLeader = PLAYABLE_CHARACTERS[state.loadout.leader]
+  const currentOutfit = wardrobe.find(item => item.id === state.loadout.outfitId)
+  const currentEquipment = (Object.keys(SLOT_LABEL) as EquipmentSlot[]).map(slot => {
+    const id = state.loadout.equipment[slot]
+    return `${SLOT_LABEL[slot]} ${id ? EQUIPMENT[id].name : '없음'}`
+  }).join(' · ')
   useOverlayFocusManagement({ open: true, onClose, dialogRef, initialFocusRef })
 
   const editor = <section ref={dialogRef} className="v12-build-editor" role="dialog" aria-modal="true" aria-labelledby="v12-build-editor-title">
@@ -90,6 +96,12 @@ export default function V12BuildEditor({
 
     <div className="v12-build-editor__body">
       {locked ? <p className="v12-build-editor__locked" role="status">런 진행 중에는 편성을 변경할 수 없습니다.</p> : null}
+      <div className="v12-build-editor__current" aria-label="현재 편성">
+        <strong>현재 편성</strong>
+        <span>현재 Leader · {currentLeader.name}</span>
+        <span>현재 의상 · {currentOutfit?.name ?? state.loadout.outfitId}</span>
+        <span>현재 장비 · {currentEquipment}</span>
+      </div>
 
       {mode === 'party' ? <div className="v12-build-editor__grid" role="list" aria-label="Leader 후보">
         {state.loadout.party.map(id => {

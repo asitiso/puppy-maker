@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { annualHonor } from './annual-honors';
 import { annualRecordHeadline } from './annual-record-summary';
 import { collectionArchive } from './collection-archive';
@@ -11,6 +11,8 @@ import { guardianLegacy } from './guardian-legacy';
 import type { HomeMenuId } from './home-panels';
 import { legacyRelicDefinitions, unlockedLegacyRelics } from './legacy-relics';
 import { ambitionStreak, ambitionStreakHonor, ambitionStreakHonors } from './yearly-ambition-streak';
+import V14OverlayBackButton from './V14OverlayBackButton';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 const emptyExpeditionArchive = {
   expeditionStages:0,
@@ -41,11 +43,18 @@ export default function CollectionArchiveOverlay({
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [archiveView, setArchiveView] = useState<ArchiveView>('progress');
+  const titleId = useId();
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (next:boolean) => {
     if (controlledOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
   };
+  const closeOverlay = () => setOpen(false);
+  useOverlayFocusManagement({ open, onClose:closeOverlay, dialogRef, launcherRef, initialFocusRef });
+
   const unlockedRelics = new Set(unlockedLegacyRelics(state.annualRecords));
   const streak = ambitionStreak(state.annualRecords, state.yearlyAmbitions);
   const unlockedAmbitionHonors = ambitionStreakHonors.filter(honor => streak >= honor.required);
@@ -85,28 +94,29 @@ export default function CollectionArchiveOverlay({
 
   const followRecommendation = () => {
     if (recommendation.action === 'expedition') {
-      setOpen(false);
+      closeOverlay();
       onExpedition?.();
       return;
     }
     if (!homeRoute) return;
-    setOpen(false);
+    closeOverlay();
     onNavigate?.(homeRoute);
   };
 
   return <>
     <button
+      ref={launcherRef}
       className="collection-archive-trigger"
       onClick={() => setOpen(true)}
       aria-label={`성장 도감 ${archive.percent}% 완성 · ${archiveStatus.label}`}
     />
-    {open && <div className="collection-archive-backdrop" onClick={() => setOpen(false)}>
-      <section className="collection-archive-panel" role="dialog" aria-modal="true" aria-label="성장 도감" onClick={event => event.stopPropagation()}>
+    {open && <div className="collection-archive-backdrop" role="presentation" onClick={closeOverlay}>
+      <section ref={dialogRef} className="collection-archive-panel" role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={event => event.stopPropagation()}>
         <img className="collection-archive-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false} />
         <div className="collection-archive-content">
-          <button className="collection-archive-close" onClick={() => setOpen(false)} aria-label="닫기">×</button>
+          <V14OverlayBackButton buttonRef={initialFocusRef} className="collection-archive-close" onClick={closeOverlay} label="이전 화면" ariaLabel="성장 도감에서 이전 화면으로" />
           <small>GROWTH ARCHIVE · 100 SLOTS</small>
-          <h2>성장 도감</h2>
+          <h2 id={titleId}>성장 도감</h2>
           <div className={`archive-rank-card archive-rank-${archiveStatus.id}`}>
             <span>ARCHIVE RANK</span>
             <strong>{archiveStatus.label}</strong>

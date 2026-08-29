@@ -88,13 +88,18 @@ describe('Layered Home mobile UI contract', () => {
     expect(home).toContain('setActiveNav(-1);');
   });
 
-  it('supports a keyboard round trip for home panels', () => {
+  it('supports a keyboard round trip for home panels through the shared focus manager', () => {
     expect(home).toContain('panelLauncherRef');
     expect(home).toContain('panelCloseRef');
-    expect(home).toContain("event.key !== 'Escape'");
-    expect(home).toContain('panelCloseRef.current?.focus()');
-    expect(home).toContain('panelLauncherRef.current?.focus()');
+    expect(home).toContain('useOverlayFocusManagement({');
+    expect(home).toContain('dialogRef: panelRef');
+    expect(home).toContain('launcherRef: panelLauncherRef');
+    expect(home).toContain('initialFocusRef: panelCloseRef');
     expect(home).toContain('ref={panelCloseRef}');
+    expect(overlayFocus).toContain("event.key === 'Escape'");
+    expect(overlayFocus).toContain("event.key !== 'Tab'");
+    expect(overlayFocus).toContain('initialFocusRef.current?.focus()');
+    expect(overlayFocus).toContain('restoreTarget?.focus()');
   });
 
   it('keeps panel navigation visible while long content scrolls independently', () => {
@@ -117,13 +122,13 @@ describe('Layered Home mobile UI contract', () => {
   });
 
   it('restores focus to the launcher after closing each major hub overlay', () => {
-    for (const overlay of [raisingOverlay, worldOverlay, seasonOverlay, sanctuaryOverlay]) {
+    for (const overlay of [raisingOverlay, worldOverlay, seasonOverlay, sanctuaryOverlay, expeditionOverlay]) {
       expect(overlay).toContain('launcherRef');
       expect(overlay).toContain('useOverlayFocusManagement');
     }
+    expect(home).toContain('launcherRef: panelLauncherRef');
     expect(overlayFocus).toContain('launcherRef.current?.focus()');
     expect(overlayFocus).toContain('restoreTarget?.focus()');
-    expect(expeditionOverlay).toContain('launcherRef.current?.focus()');
   });
 
   it('keeps major overlay chrome inside safe areas with usable close targets', () => {
