@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { GameState } from './game';
 import AstralRiftPanel from './AstralRiftPanel';
 import ConvergencePanel from './ConvergencePanel';
@@ -12,6 +13,7 @@ import { canBuildSanctuaryMasterwork, sanctuaryMasterworks, type SanctuaryMaster
 import type { SanctuarySpecializationId, SanctuarySpecializationSynergyId } from './sanctuary-specializations';
 import { sanctuaryUiSummary } from './sanctuary-ui';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
+import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 const materialLabels = { star_bark:'별빛 나무껍질', arcane_shard:'비전 파편', wind_pearl:'바람 진주' } as const;
 const synergyLabels:Record<SanctuarySpecializationSynergyId,{ label:string; description:string }> = {
@@ -49,6 +51,11 @@ export default function SanctuaryOverlay({
   onConvergenceClear:(guardianId:CelestialGuardianId,intensity:ConvergenceIntensity)=>void;
   onGuardianBoon:(boonId:GuardianBoonId)=>void;
 }) {
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
+  useOverlayFocusManagement({ open, onClose, dialogRef, launcherRef, initialFocusRef });
+
   const summary = sanctuaryUiSummary(state);
   const contractSummary = sanctuaryContractUiSummary(state);
   const astralSummary = sanctuaryAstralUiSummary(state);
@@ -68,19 +75,19 @@ export default function SanctuaryOverlay({
     ? `${ascension.score}/${ascension.rank.nextThreshold}`
     : `${ascension.score} MAX`;
   if (!open) {
-    return <button className="sanctuary-entry" onClick={onOpen} aria-label="별빛 성소 열기">
+    return <button ref={launcherRef} className="sanctuary-entry" onClick={onOpen} aria-label="별빛 성소 열기">
       <small>STARLIGHT SANCTUARY</small>
       <strong>별빛 성소</strong>
       <span>{grand.label} · {ascension.rank.label}</span>
     </button>;
   }
   return <div className="sanctuary-backdrop" role="presentation" onClick={onClose}>
-    <section className="sanctuary-panel" role="dialog" aria-modal="true" aria-label="별빛 성소" onClick={event => event.stopPropagation()}>
+    <section ref={dialogRef} className="sanctuary-panel" role="dialog" aria-modal="true" aria-label="별빛 성소" onClick={event => event.stopPropagation()}>
       <img className="sanctuary-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="sanctuary-content">
         <header>
           <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork → 천상 승천으로 성역을 완성해요.</p></div>
-          <button onClick={onClose} aria-label="닫기">×</button>
+          <button ref={initialFocusRef} onClick={onClose} aria-label="닫기">×</button>
         </header>
 
         <div className="sanctuary-grand-card">

@@ -5,7 +5,9 @@ import home from './LayeredHome.tsx?raw';
 import seasonOverlay from './SeasonLiveOpsOverlay.tsx?raw';
 import worldOverlay from './WorldProgressOverlay.tsx?raw';
 import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
+import sanctuaryOverlay from './SanctuaryOverlay.tsx?raw';
 import expeditionOverlay from './GuardianExpeditionOverlay.tsx?raw';
+import overlayFocus from './useOverlayFocusManagement.ts?raw';
 
 const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const globalCss = css('./styles.css');
@@ -115,10 +117,13 @@ describe('Layered Home mobile UI contract', () => {
   });
 
   it('restores focus to the launcher after closing each major hub overlay', () => {
-    for (const overlay of [raisingOverlay, worldOverlay, seasonOverlay, expeditionOverlay]) {
+    for (const overlay of [raisingOverlay, worldOverlay, seasonOverlay, sanctuaryOverlay]) {
       expect(overlay).toContain('launcherRef');
-      expect(overlay).toContain('launcherRef.current?.focus()');
+      expect(overlay).toContain('useOverlayFocusManagement');
     }
+    expect(overlayFocus).toContain('launcherRef.current?.focus()');
+    expect(overlayFocus).toContain('restoreTarget?.focus()');
+    expect(expeditionOverlay).toContain('launcherRef.current?.focus()');
   });
 
   it('keeps major overlay chrome inside safe areas with usable close targets', () => {
