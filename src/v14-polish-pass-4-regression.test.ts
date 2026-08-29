@@ -1,24 +1,17 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { expect, it } from 'vitest';
-
-const root = process.cwd();
-const source = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
+import overlayFocus from './useOverlayFocusManagement.ts?raw';
+import sanctuaryOverlay from './SanctuaryOverlay.tsx?raw';
+import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
+import seasonOverlay from './SeasonLiveOpsOverlay.tsx?raw';
+import worldOverlay from './WorldProgressOverlay.tsx?raw';
 
 it('global overlays share complete modal focus lifecycle', () => {
-  const hook = source('src/useOverlayFocusManagement.ts');
-  expect(hook).toMatch(/event\.key === 'Escape'/);
-  expect(hook).toMatch(/event\.key !== 'Tab'/);
-  expect(hook).toMatch(/initialFocusRef\.current\?\.focus\(\)/);
-  expect(hook).toMatch(/restoreTarget\?\.focus\(\)/);
+  expect(overlayFocus).toMatch(/event\.key === 'Escape'/);
+  expect(overlayFocus).toMatch(/event\.key !== 'Tab'/);
+  expect(overlayFocus).toMatch(/initialFocusRef\.current\?\.focus\(\)/);
+  expect(overlayFocus).toMatch(/restoreTarget\?\.focus\(\)/);
 
-  for (const file of [
-    'src/SanctuaryOverlay.tsx',
-    'src/RaisingIdentityOverlay.tsx',
-    'src/SeasonLiveOpsOverlay.tsx',
-    'src/WorldProgressOverlay.tsx',
-  ]) {
-    const overlay = source(file);
+  for (const overlay of [sanctuaryOverlay, raisingOverlay, seasonOverlay, worldOverlay]) {
     expect(overlay).toMatch(/useOverlayFocusManagement/);
     expect(overlay).toMatch(/dialogRef/);
     expect(overlay).toMatch(/initialFocusRef/);
