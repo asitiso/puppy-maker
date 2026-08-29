@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { giftDefinitions } from './adventure';
 import { bondSceneDefinitions } from './bond-scenes';
 import { callingMasteryLevel } from './calling-mastery';
@@ -9,6 +9,7 @@ import { canPurchaseGrowthTrait, growthTraitDefinitions } from './growth-traits'
 import { callingSwitchKey, guardianCallingDefinitions } from './guardian-callings';
 import { guardianRankDefinitions } from './guardian-rank';
 import { personalityArchetype, runaPreferences } from './runa-personality';
+import V14OverlayBackButton from './V14OverlayBackButton';
 import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 export type RaisingIdentityOverlayProps = {
@@ -28,6 +29,7 @@ const rankOrder = ['trainee','junior','guardian','veteran','starlight'] as const
 
 export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, onCalling, onTrait }: RaisingIdentityOverlayProps) {
   const [tab, setTab] = useState<'calling'|'traits'|'bond'>('calling');
+  const titleId = useId();
   const launcherRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const initialFocusRef = useRef<HTMLButtonElement>(null);
@@ -51,12 +53,12 @@ export default function RaisingIdentityOverlay({ state, open, onOpen, onClose, o
   }
 
   return <div className="raising-overlay">
-    <section ref={dialogRef} className="raising-panel" role="dialog" aria-modal="true" aria-label="루나 성장 정체성">
+    <section ref={dialogRef} className="raising-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <img className="raising-panel-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="raising-content">
         <header>
-          <button ref={initialFocusRef} onClick={onClose}>‹ 홈</button>
-          <div><small>RUNA RAISING IDENTITY</small><h1>루나의 성장 방향</h1></div>
+          <V14OverlayBackButton buttonRef={initialFocusRef} onClick={onClose} label="이전 화면" ariaLabel="육성 화면에서 이전 화면으로" />
+          <div><small>RUNA RAISING IDENTITY</small><h1 id={titleId}>루나의 성장 방향</h1></div>
           <span><b>{state.growthPoints}</b> GROWTH PT</span>
         </header>
 
