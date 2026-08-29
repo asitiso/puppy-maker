@@ -3,9 +3,11 @@ import CharacterActor from './CharacterActor';
 import InteractiveObject from './InteractiveObject';
 import SceneDirector,{type SceneDirectorController} from './SceneDirector';
 import {resolveSceneFeedbackVisual} from './scene-asset-registry';
+import {resolveSceneRecipe} from './scene-recipe';
 import type {SceneRuntimePhase} from './scene-runtime';
 import type {ResolvedScene,ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 import './scene.css';
+import './scene-recipe.css';
 
 type Props={
   scene:ResolvedScene;
@@ -42,19 +44,47 @@ function motionForPhase(phase:SceneRuntimePhase):string|undefined{
   return undefined;
 }
 
+function currentWorldFacts(scene:ResolvedScene):string[]{
+  return scene.presentationTags
+    .filter(tag=>tag.startsWith('world-fact:'))
+    .map(tag=>tag.slice('world-fact:'.length));
+}
+
 function SceneStageFrame({
   scene,onInteraction,runtimeActorAnchorId,runtimeActorPose,runtimeActorMotion,runtimePhase='idle',
 }:SceneStageFrameProps){
   const anchors=new Map<string,SceneAnchor>(scene.anchors.map(anchor=>[anchor.id,anchor]));
   const resolvedRunaAnchor=scene.cast.find(actor=>actor.actorId==='runa')?.anchorId;
+  const recipe=resolveSceneRecipe({
+    location:scene.location,
+    season:scene.season,
+    weather:scene.weather,
+    worldFacts:currentWorldFacts(scene),
+    presentationTags:scene.presentationTags,
+  });
+  const recipeRunaAnchor:SceneAnchor={id:'recipe:runa',x:recipe.actor.x,y:recipe.actor.y,facing:recipe.actor.facing};
   const feedbackVisual=resolveSceneFeedbackVisual(runtimePhase);
   const feedbackAnchor=runtimeActorAnchorId?anchors.get(runtimeActorAnchorId):undefined;
+  const stageStyle={
+    '--scene-actor-max-width':`${Math.round(34*recipe.actor.scale)}%`,
+    '--scene-actor-max-width-compact':`${Math.round(42*recipe.compact.actorScale)}%`,
+    '--scene-focal-x':`${recipe.camera.focalPoint[0]}%`,
+    '--scene-focal-y':`${recipe.camera.focalPoint[1]}%`,
+    '--scene-horizon':`${recipe.camera.horizon}%`,
+    '--scene-camera-zoom':recipe.camera.zoom,
+  } as CSSProperties;
   return <section
     className="v14-scene-stage"
     data-location={scene.location}
     data-season={scene.season}
     data-weather={scene.weather}
     data-runtime-phase={runtimePhase}
+    data-composition={recipe.composition}
+    data-interaction-skin={recipe.interactionSkin}
+    data-chrome-material={recipe.chrome.material}
+    data-lighting-profile={recipe.lighting}
+    data-ambient-profile={recipe.ambient}
+    style={stageStyle}
     aria-label={`${scene.location} 장면`}
   >
     <div className="v14-scene-layers" aria-hidden="true">
@@ -72,12 +102,23 @@ function SceneStageFrame({
         />;
       })}
     </div>
+    <div className="v14-scene-depth" aria-hidden="true">
+      <i className="v14-scene-depth__plane is-background" data-depth-token={recipe.depth.background}/>
+      <i className="v14-scene-depth__plane is-midground" data-depth-token={recipe.depth.midground}/>
+      <i className="v14-scene-depth__plane is-foreground" data-depth-token={recipe.depth.foreground}/>
+      {recipe.props.map(prop=><i
+        key={prop}
+        className="v14-scene-prop"
+        data-prop-token={prop}
+        data-compact-hidden={recipe.compact.simplifyProps.includes(prop)?'true':undefined}
+      />)}
+    </div>
     <div className="v14-scene-cast">
       {scene.cast.map(actor=>{
         const directed=actor.actorId==='runa'&&runtimeActorAnchorId
           ?{...actor,anchorId:runtimeActorAnchorId,pose:runtimeActorPose??actor.pose,motion:runtimeActorMotion??actor.motion}
           :actor;
-        const anchor=anchors.get(directed.anchorId);
+        const anchor=directed.actorId==='runa'&&directed.anchorId==='runa'?recipeRunaAnchor:anchors.get(directed.anchorId);
         return anchor?<CharacterActor key={actor.actorId} actor={directed} anchor={anchor} runtimePhase={runtimePhase}/>:null;
       })}
     </div>

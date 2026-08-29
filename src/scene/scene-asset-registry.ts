@@ -39,7 +39,7 @@ const locationBackgroundSrc:Record<LocationId,string>={
   village:'/assets/outing/village_bg.webp',
   lakeside:'/assets/outing/park_bg.webp',
   old_shrine:'/assets/event/special_event_bg.webp',
-  expedition_field:'/assets/outing/forest_walk_bg.webp',
+  expedition_field:'/assets/training/agility_training_bg.webp',
 };
 
 export function resolveSceneVisualLayers(input:VisualLayerInput):SceneVisualLayer[]{
