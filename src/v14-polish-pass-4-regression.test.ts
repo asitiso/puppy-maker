@@ -9,6 +9,10 @@ import worldOverlay from './WorldProgressOverlay.tsx?raw';
 import guardianOverlay from './GuardianExpeditionOverlay.tsx?raw';
 import archiveOverlay from './CollectionArchiveOverlay.tsx?raw';
 import storyEvent from './components/StoryEvent.tsx?raw';
+import layeredHome from './LayeredHome.tsx?raw';
+import tacticalBattle from './TacticalBattleScreen.tsx?raw';
+import actionResult from './ActionResultSummary.tsx?raw';
+import buildEditor from './V12BuildEditor.tsx?raw';
 
 const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const storyCss = css('./story-dialogue-stage.css');
@@ -58,4 +62,32 @@ it('keeps the archive bounded and touch-safe at phone heights', () => {
   expect(polishCss).toContain('min-height:44px');
   expect(polishCss).toContain('@media(max-height:650px)');
   expect(polishCss).toContain('@media(prefers-reduced-motion:reduce)');
+});
+
+it('keeps home panels focus-contained and outing handoff idempotent', () => {
+  expect(layeredHome).toContain("import { useOverlayFocusManagement } from './useOverlayFocusManagement'");
+  expect(layeredHome).toContain('useOverlayFocusManagement({');
+  expect(layeredHome).toContain('dialogRef: panelRef');
+  expect(layeredHome).toContain('launcherRef: panelLauncherRef');
+  expect(layeredHome).toContain('initialFocusRef: panelCloseRef');
+  expect(layeredHome).toMatch(/const outingTransitionRef = useRef\(false\)/);
+  expect(layeredHome).toMatch(/if \(outingTransitionRef\.current\) return;/);
+  expect(layeredHome).toMatch(/outingTransitionRef\.current = true;/);
+});
+
+it('gives the tactical result modal the same focus lifecycle as other overlays', () => {
+  expect(tacticalBattle).toContain("import {useOverlayFocusManagement} from './useOverlayFocusManagement';");
+  expect(tacticalBattle).toContain('resultDialogRef');
+  expect(tacticalBattle).toContain('resultPrimaryRef');
+  expect(tacticalBattle).toContain('useOverlayFocusManagement({');
+  expect(actionResult).toContain('buttonRef?:');
+  expect(actionResult).toContain('ref={buttonRef}');
+});
+
+it('anchors build choices with an explicit current-build summary', () => {
+  expect(buildEditor).toContain('v12-build-editor__current');
+  expect(buildEditor).toContain('현재 편성');
+  expect(buildEditor).toContain('현재 Leader');
+  expect(buildEditor).toContain('현재 의상');
+  expect(buildEditor).toContain('현재 장비');
 });
