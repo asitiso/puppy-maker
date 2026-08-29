@@ -6,11 +6,14 @@ import sanctuaryOverlay from './SanctuaryOverlay.tsx?raw';
 import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
 import seasonOverlay from './SeasonLiveOpsOverlay.tsx?raw';
 import worldOverlay from './WorldProgressOverlay.tsx?raw';
+import guardianOverlay from './GuardianExpeditionOverlay.tsx?raw';
+import archiveOverlay from './CollectionArchiveOverlay.tsx?raw';
 import storyEvent from './components/StoryEvent.tsx?raw';
 
 const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const storyCss = css('./story-dialogue-stage.css');
 const expeditionCss = css('./expedition-ui.css');
+const archiveCss = css('./collection-archive.css');
 
 it('global overlays share complete modal focus lifecycle', () => {
   expect(overlayFocus).toMatch(/event\.key === 'Escape'/);
@@ -18,10 +21,20 @@ it('global overlays share complete modal focus lifecycle', () => {
   expect(overlayFocus).toMatch(/initialFocusRef\.current\?\.focus\(\)/);
   expect(overlayFocus).toMatch(/restoreTarget\?\.focus\(\)/);
 
-  for (const overlay of [sanctuaryOverlay, raisingOverlay, seasonOverlay, worldOverlay]) {
+  for (const overlay of [sanctuaryOverlay, raisingOverlay, seasonOverlay, worldOverlay, guardianOverlay, archiveOverlay]) {
     expect(overlay).toMatch(/useOverlayFocusManagement/);
     expect(overlay).toMatch(/dialogRef/);
     expect(overlay).toMatch(/initialFocusRef/);
+    expect(overlay).toContain('role="dialog"');
+    expect(overlay).toContain('aria-modal="true"');
+  }
+});
+
+it('gives expedition and story archive labelled local-back dialog navigation', () => {
+  for (const overlay of [guardianOverlay, archiveOverlay]) {
+    expect(overlay).toContain('aria-labelledby={titleId}');
+    expect(overlay).toContain('<V14OverlayBackButton');
+    expect(overlay).toContain('launcherRef');
   }
 });
 
@@ -34,4 +47,12 @@ it('keeps story decisions and expedition battle actions reachable on short mobil
   expect(expeditionCss).toContain('@media(max-height:650px)');
   expect(expeditionCss).toMatch(/@media\(max-height:650px\)\{[^}]*\.expedition-battle\{overflow:hidden\}/);
   expect(expeditionCss).toMatch(/@media\(max-height:650px\)[\s\S]*?\.expedition-battle-stage\{min-height:0/);
+  expect(expeditionCss).toContain('overscroll-behavior:contain');
+});
+
+it('keeps the archive bounded and touch-safe at phone heights', () => {
+  expect(archiveCss).toContain('100dvh');
+  expect(archiveCss).toContain('overscroll-behavior:contain');
+  expect(archiveCss).toContain('min-height:44px');
+  expect(archiveCss).toContain('@media(max-height:650px)');
 });
