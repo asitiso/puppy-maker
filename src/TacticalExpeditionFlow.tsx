@@ -77,6 +77,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   },[party,state.v12Builds.characterBuilds]);
   const unlockedOutfitIds = useMemo(()=>unlockedWardrobe(state),[state]);
   const hiddenInteraction=hasHiddenExpeditionInteraction(buildState.runLoadoutSnapshot ?? buildState.loadout);
+  const runLocked=Boolean(buildState.runLoadoutSnapshot);
 
   useEffect(()=>{
     onPhaseChangeRef.current=onPhaseChange;
@@ -112,7 +113,7 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
   };
 
   const start = () => {
-    if(buildState.runLoadoutSnapshot)return;
+    if(runLocked)return;
     requestV12Build({type:'party',party:buildState.loadout.party,leader:buildState.loadout.leader});
     requestV12Build({type:'begin-run'});
     onSetParty(party);
@@ -198,12 +199,15 @@ export default function TacticalExpeditionFlow({state,expeditionOpen,onSetParty,
           onClose={()=>setEditor(null)}
         />:null}
         <div id="v12-tactical-party-picker" className="tactical-party-picker" aria-label="전술 동료 편성">
-          {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} type="button" className={party.includes(id)?'selected':''} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
+          {(Object.keys(COMPANIONS) as CompanionId[]).map(id=><button key={id} type="button" className={party.includes(id)?'selected':''} aria-pressed={party.includes(id)} onClick={()=>chooseCompanion(id)}>{companionLabels[id]}<em>Bond Lv.{state.tacticalCompanionBonds[id].level}</em></button>)}
         </div>
       </div>
       <div className="tactical-setup-actions">
-        <button type="button" className="tactical-start" onClick={start} disabled={Boolean(buildState.runLoadoutSnapshot)} aria-disabled={Boolean(buildState.runLoadoutSnapshot)}>
-          {buildState.runLoadoutSnapshot?'런 진행 중':'이 편성으로 원정 시작'}
+        <p className={`tactical-start-status ${runLocked?'is-locked':'is-ready'}`} role="status" aria-live="polite">
+          {runLocked?'런 진행 중에는 새 원정을 시작할 수 없어요.':'출발 준비 완료 · 3인 파티'}
+        </p>
+        <button type="button" className="tactical-start" onClick={start} disabled={runLocked} aria-disabled={runLocked}>
+          {runLocked?'런 진행 중':'이 편성으로 원정 시작 · 3인'}
         </button>
       </div>
     </div>

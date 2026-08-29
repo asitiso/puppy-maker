@@ -66,8 +66,8 @@ export default function V12BuildEditor({
         {state.loadout.party.map(id => {
           const character = PLAYABLE_CHARACTERS[id]
           const current = state.loadout.leader === id
-          return <button key={id} type="button" role="listitem" disabled={locked} onClick={() => onLeaderChange(id)} className={current ? 'is-current' : ''}>
-            <strong>{character.name}</strong><span>{character.role}</span><small>{current ? '현재 Leader' : `${character.resource} 자원`}</small>
+          return <button key={id} type="button" role="listitem" disabled={locked || current} aria-current={current ? 'true' : undefined} onClick={() => onLeaderChange(id)} className={current ? 'is-current' : ''}>
+            <strong>{character.name}</strong><span>{character.role}</span><small>{current ? '현재 Leader' : `${character.resource} 자원 · Leader로 선택`}</small>
           </button>
         })}
       </div> : null}
@@ -75,7 +75,7 @@ export default function V12BuildEditor({
       {mode === 'outfit' ? <div className="v12-build-editor__grid" role="list" aria-label="해금 의상">
         {wardrobe.filter(item => unlockedOutfitIds.includes(item.id)).map(item => {
           const current = state.loadout.outfitId === item.id
-          return <button key={item.id} type="button" role="listitem" disabled={locked || current} onClick={() => onOutfitChange(item.id)} className={current ? 'is-current' : ''}>
+          return <button key={item.id} type="button" role="listitem" disabled={locked || current} aria-current={current ? 'true' : undefined} onClick={() => onOutfitChange(item.id)} className={current ? 'is-current' : ''}>
             <strong>{item.name}</strong><span>{item.description}</span><small>{current ? '현재 의상' : '선택'}</small>
           </button>
         })}
@@ -87,9 +87,9 @@ export default function V12BuildEditor({
           const equip = canEquip(state.loadout.leader, item)
           const current = state.loadout.equipment[mode] === id
           const disabled = locked || current || !equip.allowed
-          return <button key={id} type="button" role="listitem" disabled={disabled} onClick={() => onEquipmentChange(id)} className={current ? 'is-current' : ''}>
+          return <button key={id} type="button" role="listitem" disabled={disabled} aria-current={current ? 'true' : undefined} onClick={() => onEquipmentChange(id)} className={current ? 'is-current' : ''}>
             <strong>{item.name}</strong><span>{equipmentIdentity(id)}</span>
-            <small>{!equip.allowed ? '장착 불가 · Signature 제한' : current ? '현재 장비' : equip.affinity === 'signature' ? '전용 장비' : equip.affinity === 'preferred' ? '선호 장비' : '공용 장비'}</small>
+            <small>{!equip.allowed ? '장착 불가 · Signature 제한' : current ? '현재 장비' : equip.affinity === 'signature' ? '전용 장비 · 선택' : equip.affinity === 'preferred' ? '선호 장비 · 선택' : '공용 장비 · 선택'}</small>
           </button>
         })}
         {state.ownedEquipment.every(id => EQUIPMENT[id].slot !== mode) ? <p>보유 장비 없음</p> : null}
