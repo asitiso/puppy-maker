@@ -78,6 +78,12 @@ describe('V14 anchored living scene stage',()=>{
     expect(recipeCss).toContain('data-interaction-skin="expedition-tactical"');
   });
 
+  it('renders rain and snow as concrete foreground props instead of tint-only state',()=>{
+    for(const token of ['wet-ground','snow-cover']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
+  });
+
   it('keeps mobile targets, safe area, focus visibility, and reduced-motion parity in shared CSS',()=>{
     expect(css).toContain('min-width:44px');
     expect(css).toContain('min-height:44px');
