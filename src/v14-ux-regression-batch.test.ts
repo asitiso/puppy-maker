@@ -26,12 +26,13 @@ describe('reported V14 mobile UX regressions',()=>{
     expect(tacticalCss).toMatch(/\.tactical-setup-actions\{[^}]*position:relative/);
   });
 
-  it('turns Character Build editing into a focused overlay with its own exit',()=>{
+  it('turns Character Build editing into a focused overlay with one bounded content scroller',()=>{
     const rule=buildCss.match(/\.v12-build-editor\{[^}]+\}/)?.[0]??'';
     expect(rule).toContain('position:fixed');
     expect(rule).toContain('inset:');
     expect(rule).toContain('z-index:');
-    expect(rule).toContain('overflow-y:auto');
+    expect(rule).toContain('overflow:hidden');
+    expect(buildCss).toMatch(/\.v12-build-editor__body\{[^}]*overflow-y:auto/);
   });
 
   it('routes scheduled training through activity-specific minigames',()=>{
