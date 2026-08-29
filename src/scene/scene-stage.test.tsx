@@ -5,6 +5,7 @@ import SceneStage from './SceneStage';
 import {resolveScene} from './scene-resolver';
 
 const css=readFileSync(new URL('./scene.css',import.meta.url),'utf8');
+const recipeCss=readFileSync(new URL('./scene-recipe.css',import.meta.url),'utf8');
 const stageSource=readFileSync(new URL('./SceneStage.tsx',import.meta.url),'utf8');
 
 describe('V14 anchored living scene stage',()=>{
@@ -61,6 +62,20 @@ describe('V14 anchored living scene stage',()=>{
     expect(magic).toMatch(/data-prop-token="spell-books"[^>]*data-compact-hidden="true"/);
     expect(magic).toMatch(/data-prop-token="candles"[^>]*data-compact-hidden="true"/);
     expect(stageSource).toContain('recipe.compact.simplifyProps.includes(prop)');
+    expect(recipeCss).toContain('.v14-scene-prop[data-compact-hidden="true"]');
+  });
+
+  it('gives expedition tactical and debrief recipes concrete depth and prop visuals',()=>{
+    for(const token of ['battle-skyline','battle-center','command-foreground','record-table','camp-foreground']){
+      expect(recipeCss).toContain(`data-depth-token="${token}"`);
+    }
+    for(const token of ['enemy-markers','battle-cover','command-lines','record-scroll','return-map']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
+    for(const token of ['spell-books','plant-pots','offering-stones']){
+      expect(recipeCss).toContain(`data-prop-token="${token}"`);
+    }
+    expect(recipeCss).toContain('data-interaction-skin="expedition-tactical"');
   });
 
   it('keeps mobile targets, safe area, focus visibility, and reduced-motion parity in shared CSS',()=>{
