@@ -1,12 +1,16 @@
 import { expect, it } from 'vitest';
+// @ts-ignore -- Vitest executes this contract test in Node; keep Node types out of app dependencies.
+import { readFileSync } from 'node:fs';
 import overlayFocus from './useOverlayFocusManagement.ts?raw';
 import sanctuaryOverlay from './SanctuaryOverlay.tsx?raw';
 import raisingOverlay from './RaisingIdentityOverlay.tsx?raw';
 import seasonOverlay from './SeasonLiveOpsOverlay.tsx?raw';
 import worldOverlay from './WorldProgressOverlay.tsx?raw';
 import storyEvent from './components/StoryEvent.tsx?raw';
-import storyCss from './story-dialogue-stage.css?raw';
-import expeditionCss from './expedition-ui.css?raw';
+
+const css = (path:string) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const storyCss = css('./story-dialogue-stage.css');
+const expeditionCss = css('./expedition-ui.css');
 
 it('global overlays share complete modal focus lifecycle', () => {
   expect(overlayFocus).toMatch(/event\.key === 'Escape'/);
