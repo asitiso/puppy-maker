@@ -34,7 +34,8 @@ describe('V10 action result feedback',()=>{
   it('routes Tactical terminal feedback through the shared result summary while preserving retry',()=>{
     expect(tacticalSource).toContain("from './ActionResultSummary'");
     expect(tacticalSource).toContain('<ActionResultSummary');
-    expect(tacticalSource).toContain('RETRY');
+    expect(tacticalSource).toContain("continuationLabel={onExit?'홈으로 돌아가기':'다시 도전'}");
+    expect(tacticalSource).toContain('>다시 도전</button>');
     expect(tacticalSource).toContain('onRetry');
     expect(tacticalSource).toContain('onExit');
   });
