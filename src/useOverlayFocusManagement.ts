@@ -73,8 +73,8 @@ export function useOverlayFocusManagement({
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       requestAnimationFrame(() => {
-        if (restoreTarget?.isConnected) restoreTarget.focus();
-        else launcherRef?.current?.focus();
+        if (restoreTarget?.isConnected) restoreTarget?.focus();
+        else if (launcherRef) launcherRef.current?.focus();
       });
     };
   }, [dialogRef, initialFocusRef, launcherRef, open]);
