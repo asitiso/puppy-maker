@@ -54,7 +54,13 @@ function SceneStageFrame({
 }:SceneStageFrameProps){
   const anchors=new Map<string,SceneAnchor>(scene.anchors.map(anchor=>[anchor.id,anchor]));
   const resolvedRunaAnchor=scene.cast.find(actor=>actor.actorId==='runa')?.anchorId;
-  const recipe=resolveSceneRecipe({location:scene.location,season:scene.season,weather:scene.weather,worldFacts:currentWorldFacts(scene)});
+  const recipe=resolveSceneRecipe({
+    location:scene.location,
+    season:scene.season,
+    weather:scene.weather,
+    worldFacts:currentWorldFacts(scene),
+    presentationTags:scene.presentationTags,
+  });
   const recipeRunaAnchor:SceneAnchor={id:'recipe:runa',x:recipe.actor.x,y:recipe.actor.y,facing:recipe.actor.facing};
   const feedbackVisual=resolveSceneFeedbackVisual(runtimePhase);
   const feedbackAnchor=runtimeActorAnchorId?anchors.get(runtimeActorAnchorId):undefined;
@@ -99,7 +105,12 @@ function SceneStageFrame({
       <i className="v14-scene-depth__plane is-background" data-depth-token={recipe.depth.background}/>
       <i className="v14-scene-depth__plane is-midground" data-depth-token={recipe.depth.midground}/>
       <i className="v14-scene-depth__plane is-foreground" data-depth-token={recipe.depth.foreground}/>
-      {recipe.props.map(prop=><i key={prop} className="v14-scene-prop" data-prop-token={prop}/>) }
+      {recipe.props.map(prop=><i
+        key={prop}
+        className="v14-scene-prop"
+        data-prop-token={prop}
+        data-compact-hidden={recipe.compact.simplifyProps.includes(prop)?'true':undefined}
+      />)}
     </div>
     <div className="v14-scene-cast">
       {scene.cast.map(actor=>{
