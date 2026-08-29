@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import type { GameState } from './game';
 import AstralRiftPanel from './AstralRiftPanel';
 import ConvergencePanel from './ConvergencePanel';
@@ -13,6 +13,7 @@ import { canBuildSanctuaryMasterwork, sanctuaryMasterworks, type SanctuaryMaster
 import type { SanctuarySpecializationId, SanctuarySpecializationSynergyId } from './sanctuary-specializations';
 import { sanctuaryUiSummary } from './sanctuary-ui';
 import type { SanctuaryFacilityId } from './starlight-sanctuary';
+import V14OverlayBackButton from './V14OverlayBackButton';
 import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 
 const materialLabels = { star_bark:'별빛 나무껍질', arcane_shard:'비전 파편', wind_pearl:'바람 진주' } as const;
@@ -51,6 +52,7 @@ export default function SanctuaryOverlay({
   onConvergenceClear:(guardianId:CelestialGuardianId,intensity:ConvergenceIntensity)=>void;
   onGuardianBoon:(boonId:GuardianBoonId)=>void;
 }) {
+  const titleId = useId();
   const launcherRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const initialFocusRef = useRef<HTMLButtonElement>(null);
@@ -82,12 +84,12 @@ export default function SanctuaryOverlay({
     </button>;
   }
   return <div className="sanctuary-backdrop" role="presentation" onClick={onClose}>
-    <section ref={dialogRef} className="sanctuary-panel" role="dialog" aria-modal="true" aria-label="별빛 성소" onClick={event => event.stopPropagation()}>
+    <section ref={dialogRef} className="sanctuary-panel" role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={event => event.stopPropagation()}>
       <img className="sanctuary-frame" src="/ui/popup_panel_frame.png" alt="" />
       <div className="sanctuary-content">
         <header>
-          <div><small>STARLIGHT SANCTUARY</small><h2>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork → 천상 승천으로 성역을 완성해요.</p></div>
-          <button ref={initialFocusRef} onClick={onClose} aria-label="닫기">×</button>
+          <div><small>STARLIGHT SANCTUARY</small><h2 id={titleId}>별빛 성소</h2><p>시설 성장 → 영구 전문화 → Masterwork → 천상 승천으로 성역을 완성해요.</p></div>
+          <V14OverlayBackButton buttonRef={initialFocusRef} onClick={onClose} label="이전 화면" ariaLabel="성역 화면에서 이전 화면으로" />
         </header>
 
         <div className="sanctuary-grand-card">

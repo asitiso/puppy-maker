@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { GameState } from './game';
+import V14OverlayBackButton from './V14OverlayBackButton';
 import { useOverlayFocusManagement } from './useOverlayFocusManagement';
 import { worldUiSummary } from './world-ui';
 
@@ -13,6 +14,7 @@ export default function WorldProgressOverlay({
   onOpenChange?: (open:boolean) => void;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const titleId = useId();
   const open = controlledOpen ?? internalOpen;
   const launcherRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -37,13 +39,13 @@ export default function WorldProgressOverlay({
     </button>;
   }
 
-  return <div ref={dialogRef} className="world-progress-backdrop" role="dialog" aria-modal="true" aria-label="월드 진행">
+  return <div ref={dialogRef} className="world-progress-backdrop" role="dialog" aria-modal="true" aria-labelledby={titleId}>
     <section className="world-progress-panel">
       <img className="world-progress-frame" src="/ui/popup_panel_frame.png" alt="" draggable={false}/>
       <div className="world-progress-content">
-        <button ref={initialFocusRef} className="world-progress-close" onClick={closeOverlay} aria-label="닫기">×</button>
+        <V14OverlayBackButton buttonRef={initialFocusRef} className="world-progress-close" onClick={closeOverlay} label="이전 화면" ariaLabel="월드 진행에서 이전 화면으로" />
         <small>WORLD PROGRESS</small>
-        <h2>월드 진행</h2>
+        <h2 id={titleId}>월드 진행</h2>
 
         <article className="world-event-card">
           <small>MONTHLY WORLD EVENT</small>
