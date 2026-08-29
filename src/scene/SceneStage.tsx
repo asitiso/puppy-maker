@@ -7,6 +7,7 @@ import {resolveSceneRecipe} from './scene-recipe';
 import type {SceneRuntimePhase} from './scene-runtime';
 import type {ResolvedScene,ResolvedSceneInteraction,SceneAnchor} from './scene-types';
 import './scene.css';
+import './scene-recipe.css';
 
 type Props={
   scene:ResolvedScene;
