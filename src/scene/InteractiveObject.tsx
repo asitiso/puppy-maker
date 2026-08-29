@@ -8,6 +8,12 @@ type Props={
   onInteraction:(interaction:ResolvedSceneInteraction)=>void;
 };
 
+function edgeForAnchor(anchor:SceneAnchor):'left'|'center'|'right'{
+  if(anchor.x<=18)return 'left';
+  if(anchor.x>=82)return 'right';
+  return 'center';
+}
+
 export default function InteractiveObject({interaction,anchor,onInteraction}:Props){
   const style={
     '--scene-x':`${anchor.x}%`,
@@ -25,6 +31,7 @@ export default function InteractiveObject({interaction,anchor,onInteraction}:Pro
     data-hint={interaction.hint}
     data-family={presentation.family}
     data-emphasis={presentation.emphasis}
+    data-edge={edgeForAnchor(anchor)}
     aria-label={interaction.label}
     disabled={!interaction.enabled}
     aria-disabled={!interaction.enabled}
