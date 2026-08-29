@@ -204,7 +204,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
       <div className="expedition-regions">{expeditionRegionDefinitions.map(region => {
         const visibleStages = region.stages.filter(stageId => {
           const unlocked = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
-          const stageCleared = isExpeditionStageCleared(state.expeditionRecords[stage.id]);
+          const stageCleared = isExpeditionStageCleared(state.expeditionRecords[stageId]);
           if (stageView === 'available') return unlocked && !stageCleared;
           if (stageView === 'cleared') return stageCleared;
           return true;
