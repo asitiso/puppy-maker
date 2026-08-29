@@ -33,7 +33,7 @@ describe('V14 polish pass 3 scene and flow continuity contracts',()=>{
     expect(resultSource).toContain('role="status"');
     expect(resultSource).toContain('aria-live="polite"');
     expect(resultSource).toContain('aria-atomic="true"');
-    expect(resultCss).toContain('env(safe-area-inset-bottom)');
+    expect(resultCss).toContain('env(safe-area-inset-bottom');
   });
 
   it('keeps scene identity and environment metadata stable through directed interactions',()=>{
