@@ -13,6 +13,7 @@ import { worldResultSummary, worldUiSummary } from './world-ui';
 import InformationPanel from './InformationPanel';
 import V14OverlayBackButton from './V14OverlayBackButton';
 import { useOverlayFocusManagement } from './useOverlayFocusManagement';
+import './guardian-expedition.css';
 
 export type GuardianExpeditionOverlayProps = {
   state: GameState;
@@ -81,18 +82,33 @@ function Battle({ state, stageId, onFinish, onCancel }: {
   return <section className="expedition-battle">
     <header><button onClick={onCancel}>‹ 원정 지도</button><div><small>{stage.boss ? 'REGION BOSS' : 'EXPEDITION TRIAL'}</small><h2>{stage.name}</h2></div><span>목표 {stage.target}</span></header>
     {calling && <div className="expedition-calling-strip"><b>{calling.label}</b><span>전문 행동 · {calling.activity === 'hunt' ? '공격' : calling.activity === 'magic' ? '기 모으기' : calling.activity === 'rest' ? '회피' : '발견/재료 수집'}</span></div>}
-    <div className="expedition-battle-stage">
-      <div className="expedition-pressure"><small>PRESSURE</small><b>{stage.pressure}</b><span>회피로 원정 부담을 줄이세요.</span></div>
-      <img className="expedition-runa" src="/assets/runa/runa_training_ready.png" alt="훈련 준비 중인 루나" />
-      <div className="expedition-score"><small>SCORE</small><strong>{battle.score}</strong><span>공격 {battle.actionKinds.attack} · 회피 {battle.actionKinds.dodge} · 기 {battle.actionKinds.charge}</span></div>
-      <div className="expedition-timing"><i className="sweet"/><em style={{ transform: `rotate(${needle * 360}deg)` }}/>{flash && <img src="/assets/effects/success_burst.png" alt=""/>}<b>{flash}</b></div>
+    <div className="expedition-battlefield">
+      <div className="battle-faction is-ally">
+        <small>GUARDIAN</small>
+        <img className="expedition-runa" src="/assets/runa/runa_training_ready.png" alt="훈련 준비 중인 루나" />
+        <div className="expedition-score"><small>SCORE</small><strong>{battle.score}</strong><span>공격 {battle.actionKinds.attack} · 회피 {battle.actionKinds.dodge} · 기 {battle.actionKinds.charge}</span></div>
+      </div>
+      <div className="battle-terrain">
+        <div className="battle-vs" aria-hidden="true">VS</div>
+        <div className="expedition-timing"><i className="sweet"/><em style={{ transform: `rotate(${needle * 360}deg)` }}/>{flash && <img src="/assets/effects/success_burst.png" alt=""/>}<b>{flash}</b></div>
+      </div>
+      <div className="battle-faction is-enemy">
+        <small>{stage.boss ? 'REGION BOSS' : 'FIELD THREAT'}</small>
+        <div className="expedition-pressure"><small>PRESSURE</small><b>{stage.pressure}</b><span>회피로 원정 부담을 줄이세요.</span></div>
+        <div className="battle-target"><b>{stage.name}</b><span>목표 점수 {stage.target}</span></div>
+      </div>
     </div>
-    <div className="expedition-actions">
-      <button disabled={actionLimitReached} onClick={() => act('attack')}><b>공격</b><span>근력 · 사냥 숙련</span></button>
-      <button disabled={actionLimitReached} onClick={() => act('dodge')}><b>회피</b><span>침착함 · 휴식 숙련</span></button>
-      <button disabled={actionLimitReached} onClick={() => act('charge')}><b>기 모으기</b><span>마력 · 마법 숙련</span></button>
+    <div className="battle-command-deck">
+      <div className="expedition-actions">
+        <button disabled={actionLimitReached} onClick={() => act('attack')}><b>공격</b><span>근력 · 사냥 숙련</span></button>
+        <button disabled={actionLimitReached} onClick={() => act('dodge')}><b>회피</b><span>침착함 · 휴식 숙련</span></button>
+        <button disabled={actionLimitReached} onClick={() => act('charge')}><b>기 모으기</b><span>마력 · 마법 숙련</span></button>
+      </div>
+      <div className="battle-command-actions">
+        <span><b>{battle.actionCount}</b> / {EXPEDITION_ACTION_LIMIT} 행동</span>
+        <button className="expedition-finish" disabled={battle.actionCount < EXPEDITION_ACTION_LIMIT} onClick={() => onFinish(battle)}>원정 결과 확인</button>
+      </div>
     </div>
-    <button className="expedition-finish" disabled={battle.actionCount < EXPEDITION_ACTION_LIMIT} onClick={() => onFinish(battle)}>원정 결과 확인</button>
   </section>;
 }
 
@@ -188,7 +204,7 @@ export default function GuardianExpeditionOverlay({ state, open, onOpen, onClose
       <div className="expedition-regions">{expeditionRegionDefinitions.map(region => {
         const visibleStages = region.stages.filter(stageId => {
           const unlocked = isExpeditionStageUnlocked(stageId, state.expeditionRecords);
-          const stageCleared = isExpeditionStageCleared(state.expeditionRecords[stageId]);
+          const stageCleared = isExpeditionStageCleared(state.expeditionRecords[stage.id]);
           if (stageView === 'available') return unlocked && !stageCleared;
           if (stageView === 'cleared') return stageCleared;
           return true;
