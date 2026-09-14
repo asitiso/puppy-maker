@@ -181,12 +181,6 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
           style={{left:interaction.position.x,top:interaction.position.y}}
           aria-hidden="true"
         >{interaction.label}</span>)}
-        {unlockedInteractables.filter(interaction=>interaction.nameplate).map(interaction=><span
-          key={`${interaction.id}:nameplate`}
-          className="mobile-exploration__nameplate"
-          style={{left:interaction.position.x,top:interaction.position.y}}
-          aria-hidden="true"
-        >{interaction.nameplate}</span>)}
         <img className="mobile-exploration__player" data-moving={moving||undefined} data-facing={facing} src={playerArtSrc} alt="" draggable={false} style={playerStyle}/>
       </div>
     </div>
