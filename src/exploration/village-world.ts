@@ -1,6 +1,9 @@
-import type {ExplorationStoryFrame,ExplorationWorldDefinition} from './exploration-types';
+import type {CharacterId} from '../campaign-model';
+import {livingNpcLabels,weeklyNpcPresence,type LivingNpcContext} from '../living-npcs';
+import type {ExplorationInteractable,ExplorationStoryFrame,ExplorationWorldDefinition,Vec2} from './exploration-types';
 
 const villageAsset=(name:string)=>`/assets/exploration/village/${name}`;
+const npcAsset=(id:CharacterId,kind:'world'|'story')=>villageAsset(`npcs/${id}-${kind}.svg`);
 const sharedFrame='/assets/exploration/forest/story-frame.svg';
 
 export const villageWorld:ExplorationWorldDefinition={
@@ -57,3 +60,66 @@ export const villageStoryFrames:Record<string,ExplorationStoryFrame>={
     artSrc:villageAsset('quiet-alley.svg'),frameSrc:sharedFrame,actionLabel:'골목을 살펴보기',progression:false,
   },
 };
+
+const npcSlots:readonly Vec2[]=[
+  {x:1210,y:1110},
+  {x:1555,y:865},
+  {x:700,y:1080},
+];
+
+function npcDialogue(id:CharacterId,context:LivingNpcContext):string{
+  switch(id){
+    case 'mira':return '광장 소리를 듣고 있었어. 오늘은 사람들이 지나가는 길이 조금 달라. 자주 멈추는 곳을 눈여겨봐.';
+    case 'kael':return '지도보다 발밑을 봐. 자주 밟힌 돌은 늘 누군가의 목적지를 말해 주거든.';
+    case 'rex':return '순찰은 끝났지만 동쪽 골목이 신경 쓰인다. 지나가면 주변을 한번 살펴봐.';
+    case 'selene':return '분수 주변의 마력이 평소보다 얇게 흔들려. 작은 변화가 먼저 보이는 날이 있어.';
+    case 'noa':return '장터 소문은 절반만 믿어. 그래도 오늘 공연 얘기는 진짜인 것 같아. 종소리가 들리면 따라가 봐.';
+    case 'eiden':return '수련생들이 남긴 발자국이 광장까지 이어졌어. 생각보다 마을이 부산하네.';
+    case 'lyra':return context.runNumber>1||context.inheritedFactCount>0
+      ?'이 길, 전에 걸었던 것 같아. 기억은 흐릿한데 모퉁이를 돌면 누가 서 있을지까지 떠오르려고 해.'
+      :'이 마을은 이상하게 익숙해. 아직 오지 않은 기억이 먼저 기다리는 것 같아.';
+    case 'veyr':return context.activeRoute==='hollow'
+      ?'밝은 거리에도 그림자는 있어. 사람들이 피하는 길이 있다면 그쪽부터 봐.'
+      :'마을의 소란은 좋은 가림막이지. 조용한 길이 오히려 더 많은 걸 말할 때가 있어.';
+  }
+}
+
+export function villageExplorationForContext(context:LivingNpcContext):{
+  world:ExplorationWorldDefinition;
+  storyFrames:Record<string,ExplorationStoryFrame>;
+}{
+  const npcIds=weeklyNpcPresence(context);
+  const npcInteractions:ExplorationInteractable[]=npcIds.map((id,index)=>{
+    const label=livingNpcLabels[id];
+    return {
+      id:`village-npc:${id}`,
+      label:`${label}와 이야기하기`,
+      nameplate:label,
+      kind:'story',
+      repeatable:true,
+      position:npcSlots[index]??npcSlots[0],
+      radius:125,
+      storyFrameId:`village-npc-story:${id}`,
+      artSrc:npcAsset(id,'world'),
+    };
+  });
+  const npcFrames=Object.fromEntries(npcIds.map(id=>{
+    const label=livingNpcLabels[id];
+    const frame:ExplorationStoryFrame={
+      id:`village-npc-story:${id}`,
+      eyebrow:'VILLAGE ENCOUNTER',
+      title:`${label}와 마주치다`,
+      speaker:label,
+      text:npcDialogue(id,context),
+      artSrc:npcAsset(id,'story'),
+      frameSrc:sharedFrame,
+      actionLabel:'대화 마치기',
+      progression:false,
+    };
+    return [frame.id,frame] as const;
+  }));
+  return {
+    world:{...villageWorld,interactables:[...villageWorld.interactables,...npcInteractions]},
+    storyFrames:{...villageStoryFrames,...npcFrames},
+  };
+}
