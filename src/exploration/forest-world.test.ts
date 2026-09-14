@@ -15,10 +15,10 @@ describe('forest mobile RPG world',()=>{
     expect(forestWorld.obstacles.length).toBeGreaterThanOrEqual(8);
   });
 
-  it('contains progression, optional discovery, and exit interactions',()=>{
+  it('contains a discoverable clue chain, optional discovery, and exit interaction',()=>{
     const byId=new Map(forestWorld.interactables.map(item=>[item.id,item]));
-    expect(byId.get('glowing-tracks')).toMatchObject({kind:'story',storyFrameId:'forest-tracks'});
     expect(byId.get('ancient-tree')).toMatchObject({kind:'story',storyFrameId:'forest-tree'});
+    expect(byId.get('glowing-tracks')).toMatchObject({kind:'story',storyFrameId:'forest-tracks',requiresCompleted:['ancient-tree']});
     expect(byId.get('forest-exit')).toMatchObject({kind:'exit'});
     expect(forestStoryFrames['forest-tracks'].progression).toBe(true);
     expect(forestStoryFrames['forest-tree'].progression).toBe(false);
