@@ -10,9 +10,9 @@ describe('mobile RPG outing transition',()=>{
     expect(outingTargets('lakeside').map(item=>item.interactionId)).toEqual(['water','fish','rest','wind-crystal']);
   });
 
-  it('routes every outing into direct-movement mobile RPG exploration',()=>{
+  it('routes every outing into direct-movement mobile RPG exploration with its first discoverable clue',()=>{
     for(const [location,label,clue] of [
-      ['forest','별빛 숲','빛나는 흔적'],
+      ['forest','별빛 숲','오래된 나무'],
       ['village','마법 마을','광장'],
       ['lakeside','바람 호숫가','물가'],
     ] as const){
