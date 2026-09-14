@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 260" role="img" aria-label="빛나는 발자국">
+  <defs>
+    <radialGradient id="a"><stop stop-color="#fff6b2"/><stop offset=".35" stop-color="#ccefa0"/><stop offset="1" stop-color="#85c690" stop-opacity="0"/></radialGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <ellipse cx="180" cy="140" rx="155" ry="95" fill="url(#a)" opacity=".38" filter="url(#g)"/>
+  <g transform="rotate(-24 180 130)" fill="#f7f3b0" stroke="#fffbd1" stroke-width="3">
+    <g transform="translate(55 135)"><ellipse rx="18" ry="25"/><circle cx="-18" cy="-23" r="7"/><circle cx="-5" cy="-31" r="7"/><circle cx="10" cy="-30" r="7"/><circle cx="22" cy="-20" r="7"/></g>
+    <g transform="translate(135 102) scale(.86)"><ellipse rx="18" ry="25"/><circle cx="-18" cy="-23" r="7"/><circle cx="-5" cy="-31" r="7"/><circle cx="10" cy="-30" r="7"/><circle cx="22" cy="-20" r="7"/></g>
+    <g transform="translate(222 72) scale(.72)"><ellipse rx="18" ry="25"/><circle cx="-18" cy="-23" r="7"/><circle cx="-5" cy="-31" r="7"/><circle cx="10" cy="-30" r="7"/><circle cx="22" cy="-20" r="7"/></g>
+  </g>
+  <g fill="#e9f5ad"><circle cx="73" cy="66" r="4"/><circle cx="174" cy="185" r="3"/><circle cx="283" cy="115" r="5"/><path d="M305 48l5 11 12 4-12 4-5 12-4-12-12-4 12-4z"/></g>
+</svg>
