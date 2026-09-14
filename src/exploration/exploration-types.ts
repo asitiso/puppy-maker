@@ -17,7 +17,7 @@ export type ExplorationLayer={
   parallax?:number;
 };
 
-export type ExplorationInteractableKind='story'|'inspect'|'exit';
+export type ExplorationInteractableKind='story'|'inspect'|'exit'|'portal';
 
 export type ExplorationInteractable={
   id:string;
@@ -27,6 +27,7 @@ export type ExplorationInteractable={
   radius:number;
   storyFrameId?:string;
   artSrc?:string;
+  destinationId?:string;
   enabled?:boolean;
   requiresCompleted?:readonly string[];
 };

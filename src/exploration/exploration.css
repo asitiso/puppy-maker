@@ -23,6 +23,8 @@
 .mobile-exploration__player[data-moving="true"]{filter:drop-shadow(0 12px 8px rgba(5,22,20,.48))}
 .mobile-exploration__landmark{position:absolute;z-index:10;transform:translate(-50%,-72%);object-fit:contain;pointer-events:none;filter:drop-shadow(0 9px 11px rgba(4,20,18,.34));transition:opacity .22s ease,filter .22s ease}
 .mobile-exploration__landmark[data-completed="true"]{opacity:.5;filter:saturate(.55) brightness(.82) drop-shadow(0 5px 7px rgba(4,20,18,.24))}
+.mobile-exploration__landmark[data-kind="portal"]{z-index:11;width:250px;max-height:240px;animation:exploration-portal-breathe 2.8s ease-in-out infinite;filter:drop-shadow(0 12px 18px rgba(7,18,18,.38)) drop-shadow(0 0 18px rgba(235,225,156,.16))}
+.mobile-exploration__portal-label{position:absolute;z-index:13;max-width:230px;padding:6px 10px;transform:translate(-50%,18px);border:1px solid rgba(249,236,170,.42);border-radius:999px;background:rgba(11,34,31,.86);box-shadow:0 6px 18px rgba(0,0,0,.28);color:#fff2bd;font:900 12px/1.2 system-ui,sans-serif;text-align:center;white-space:nowrap;pointer-events:none;backdrop-filter:blur(7px)}
 .mobile-exploration__landmark[data-interaction="glowing-tracks"]{width:180px;transform:translate(-50%,-50%);animation:exploration-clue-glow 2.2s ease-in-out infinite}
 .mobile-exploration__landmark[data-interaction="glowing-tracks"][data-completed="true"]{animation:none}
 .mobile-exploration__landmark[data-interaction="ancient-tree"]{width:230px}
@@ -52,8 +54,11 @@
 .exploration-story-frame__copy p{margin:9px 0 14px;color:#f3f1df;font-size:14px;font-weight:650;line-height:1.48;word-break:keep-all}
 .exploration-story-frame__continue{width:100%;min-width:52px;min-height:52px;border:1px solid #e2c873;border-radius:14px;background:linear-gradient(180deg,#ead991,#b69250);box-shadow:0 4px 0 #6c5232;color:#2d2a23;font:900 14px/1 system-ui,sans-serif}
 @keyframes exploration-clue-glow{0%,100%{filter:drop-shadow(0 4px 8px rgba(224,242,151,.18)) brightness(1)}50%{filter:drop-shadow(0 4px 16px rgba(236,247,166,.48)) brightness(1.13)}}
+@keyframes exploration-portal-breathe{0%,100%{transform:translate(-50%,-72%) scale(1);filter:drop-shadow(0 12px 18px rgba(7,18,18,.38)) drop-shadow(0 0 15px rgba(235,225,156,.12))}50%{transform:translate(-50%,-72%) scale(1.025);filter:drop-shadow(0 14px 19px rgba(7,18,18,.4)) drop-shadow(0 0 26px rgba(235,225,156,.28))}}
 @media (max-width:430px){
   .mobile-exploration__player{width:68px;height:82px}
+  .mobile-exploration__landmark[data-kind="portal"]{width:225px}
+  .mobile-exploration__portal-label{max-width:205px;font-size:11px}
   .exploration-joystick{width:132px;height:132px;left:max(5px,env(safe-area-inset-left));bottom:max(5px,env(safe-area-inset-bottom))}
   .mobile-exploration__action{right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));min-width:68px;min-height:68px}
   .mobile-exploration__prompt{bottom:max(108px,calc(env(safe-area-inset-bottom) + 94px));font-size:10px}
@@ -66,10 +71,11 @@
   .exploration-joystick{width:118px;height:118px;bottom:max(3px,env(safe-area-inset-bottom))}.exploration-joystick__ring{inset:12px}.exploration-joystick__knob{width:52px;height:52px;margin:-26px 0 0 -26px}
   .mobile-exploration__action{min-width:64px;min-height:64px;bottom:max(12px,env(safe-area-inset-bottom))}
   .mobile-exploration__prompt{bottom:max(77px,calc(env(safe-area-inset-bottom) + 69px));font-size:9px}
+  .mobile-exploration__portal-label{padding:4px 8px;font-size:9px}
   .exploration-story-frame{grid-template-columns:minmax(0,1.18fr) minmax(230px,.82fr);grid-template-rows:1fr;width:min(90vw,840px);max-height:min(88dvh,430px)}
   .exploration-story-frame__visual{min-height:0}.exploration-story-frame__art{min-height:0;height:100%}.exploration-story-frame__copy{display:flex;flex-direction:column;justify-content:center;padding:14px 16px}.exploration-story-frame__copy h2{font-size:18px}.exploration-story-frame__copy p{font-size:12px;line-height:1.38;margin:8px 0 12px}
 }
 @media (prefers-reduced-motion:reduce){
-  .mobile-exploration__world,.mobile-exploration__player,.exploration-joystick__knob,.exploration-story-frame{transition:none!important;animation:none!important}
+  .mobile-exploration__world,.mobile-exploration__player,.mobile-exploration__landmark[data-kind="portal"],.exploration-joystick__knob,.exploration-story-frame{transition:none!important;animation:none!important}
   .mobile-exploration__landmark[data-interaction="glowing-tracks"]{animation:none}
 }

@@ -11,6 +11,7 @@ type Props={
   playerArtSrc:string;
   onProgress:()=>void;
   onExit:()=>void;
+  onPortal?:(destinationId:string)=>void;
 };
 
 const MOVEMENT_KEYS=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
@@ -22,7 +23,7 @@ function keyboardDirection(keys:ReadonlySet<string>):Vec2{
   return normalizeDirection({x,y});
 }
 
-export default function MobileExplorationScene({world,storyFrames,playerArtSrc,onProgress,onExit}:Props){
+export default function MobileExplorationScene({world,storyFrames,playerArtSrc,onProgress,onExit,onPortal}:Props){
   const viewportRef=useRef<HTMLElement|null>(null);
   const joystickRef=useRef<Vec2>({x:0,y:0});
   const pressedKeysRef=useRef(new Set<string>());
@@ -98,6 +99,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
   const openInteraction=useCallback(()=>{
     if(activeFrameRef.current||!nearby) return;
     if(nearby.kind==='exit'){onExit();return;}
+    if(nearby.kind==='portal'&&nearby.destinationId){onPortal?.(nearby.destinationId);return;}
     if(nearby.kind==='story'&&nearby.storyFrameId){
       const frame=storyFrames[nearby.storyFrameId];
       if(frame){
@@ -105,7 +107,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
         setActiveFrame(frame);
       }
     }
-  },[nearby,onExit,storyFrames]);
+  },[nearby,onExit,onPortal,storyFrames]);
 
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
     if(activeInteractionId) setCompleted(current=>new Set(current).add(activeInteractionId));
@@ -153,6 +155,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     :completed.size>0
       ?'새로 나타난 흔적이 있는지 주변을 살펴보세요.'
       :'직접 움직여 주변의 단서를 찾아보세요.';
+  const actionText=nearby?.kind==='portal'?'이동':nearby?'조사':'···';
 
   return <section ref={viewportRef} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
@@ -162,12 +165,19 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
           key={interaction.id}
           className="mobile-exploration__landmark"
           data-interaction={interaction.id}
+          data-kind={interaction.kind}
           data-completed={completed.has(interaction.id)||undefined}
           src={interaction.artSrc}
           alt=""
           draggable={false}
           style={{left:interaction.position.x,top:interaction.position.y}}
         />:interaction.kind==='exit'?<span key={interaction.id} className="mobile-exploration__exit-marker" style={{left:interaction.position.x,top:interaction.position.y}} aria-hidden="true">↩</span>:null)}
+        {unlockedInteractables.filter(interaction=>interaction.kind==='portal').map(interaction=><span
+          key={`${interaction.id}:label`}
+          className="mobile-exploration__portal-label"
+          style={{left:interaction.position.x,top:interaction.position.y}}
+          aria-hidden="true"
+        >{interaction.label}</span>)}
         <img className="mobile-exploration__player" data-moving={moving||undefined} data-facing={facing} src={playerArtSrc} alt="" draggable={false} style={playerStyle}/>
       </div>
     </div>
@@ -176,7 +186,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     <button type="button" className="mobile-exploration__exit" onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
     <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
-    <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{nearby?'조사':'···'}</button>
+    <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
     {activeFrame?<StoryFrameOverlay frame={activeFrame} onComplete={()=>finishStory(activeFrame)}/>:null}
   </section>;
 }
