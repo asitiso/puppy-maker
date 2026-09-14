@@ -11,13 +11,20 @@
   overscroll-behavior:none;
   isolation:isolate;
 }
+.v15-rpg-scene-page .v9-page-header{display:none}
+.v15-rpg-scene-page .v9-page-scroll{overflow:hidden}
+.v15-rpg-scene-page .v9-page-content{height:100%;min-height:0;padding:0}
+.v15-rpg-scene-page .mobile-exploration{height:100%;min-height:100%}
 .mobile-exploration__viewport{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 55% 35%,#315f4c 0,#173c34 52%,#0d2926 100%)}
 .mobile-exploration__world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .mobile-exploration__layer{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;-webkit-user-drag:none}
-.mobile-exploration__player{position:absolute;z-index:20;width:74px;height:88px;object-fit:contain;transform:translate(-50%,-68%);filter:drop-shadow(0 9px 8px rgba(5,22,20,.42));pointer-events:none;transition:filter .16s ease}
+.mobile-exploration__player{position:absolute;z-index:20;width:74px;height:88px;object-fit:contain;transform:translate(-50%,-68%);filter:drop-shadow(0 9px 8px rgba(5,22,20,.42));pointer-events:none;transition:filter .16s ease,transform .12s ease}
+.mobile-exploration__player[data-facing="left"]{transform:translate(-50%,-68%) scaleX(-1)}
 .mobile-exploration__player[data-moving="true"]{filter:drop-shadow(0 12px 8px rgba(5,22,20,.48))}
-.mobile-exploration__landmark{position:absolute;z-index:10;transform:translate(-50%,-72%);object-fit:contain;pointer-events:none;filter:drop-shadow(0 9px 11px rgba(4,20,18,.34))}
+.mobile-exploration__landmark{position:absolute;z-index:10;transform:translate(-50%,-72%);object-fit:contain;pointer-events:none;filter:drop-shadow(0 9px 11px rgba(4,20,18,.34));transition:opacity .22s ease,filter .22s ease}
+.mobile-exploration__landmark[data-completed="true"]{opacity:.5;filter:saturate(.55) brightness(.82) drop-shadow(0 5px 7px rgba(4,20,18,.24))}
 .mobile-exploration__landmark[data-interaction="glowing-tracks"]{width:180px;transform:translate(-50%,-50%);animation:exploration-clue-glow 2.2s ease-in-out infinite}
+.mobile-exploration__landmark[data-interaction="glowing-tracks"][data-completed="true"]{animation:none}
 .mobile-exploration__landmark[data-interaction="ancient-tree"]{width:230px}
 .mobile-exploration__exit-marker{position:absolute;z-index:12;display:grid;place-items:center;width:72px;height:72px;transform:translate(-50%,-50%);border:2px solid rgba(235,236,184,.64);border-radius:50%;background:rgba(26,57,48,.82);box-shadow:0 0 0 8px rgba(235,236,184,.08),0 12px 24px rgba(0,0,0,.26);font-size:27px;pointer-events:none}
 .mobile-exploration__hud{position:absolute;z-index:40;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));max-width:min(74vw,330px);padding:10px 13px 11px;border:1px solid rgba(236,232,184,.3);border-radius:16px;background:linear-gradient(135deg,rgba(13,39,35,.88),rgba(22,54,45,.72));box-shadow:0 8px 25px rgba(0,0,0,.23);backdrop-filter:blur(10px);pointer-events:none}
