@@ -9,6 +9,7 @@ describe('mobile RPG regional worlds',()=>{
     expect(villageWorld.height).toBeGreaterThanOrEqual(1400);
     expect(villageWorld.layers.map(layer=>layer.src).join(' ')).toContain('/assets/exploration/village/');
     expect(villageWorld.interactables.map(item=>item.id)).toEqual(expect.arrayContaining(['village-exit','village-square','street-performance','wand-repair','quiet-alley']));
+    expect(villageWorld.interactables.find(item=>item.id==='street-performance')?.requiresCompleted).toEqual(['village-square']);
     expect(villageStoryFrames['village-performance']?.progression).toBe(true);
     expect(villageStoryFrames['village-repair']?.progression).toBe(false);
   });
@@ -19,6 +20,7 @@ describe('mobile RPG regional worlds',()=>{
     expect(lakesideWorld.height).toBeGreaterThanOrEqual(1400);
     expect(lakesideWorld.layers.map(layer=>layer.src).join(' ')).toContain('/assets/exploration/lakeside/');
     expect(lakesideWorld.interactables.map(item=>item.id)).toEqual(expect.arrayContaining(['lakeside-exit','water-edge','silver-fish','resting-stone','wind-crystal']));
+    expect(lakesideWorld.interactables.find(item=>item.id==='silver-fish')?.requiresCompleted).toEqual(['water-edge']);
     expect(lakesideStoryFrames['lakeside-fish']?.progression).toBe(true);
     expect(lakesideStoryFrames['lakeside-crystal']?.progression).toBe(false);
   });
