@@ -28,6 +28,11 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('onProgress()');
   });
 
+  it('keeps living repeatable interactions available after their story frame closes',()=>{
+    expect(scene).toContain('interaction.repeatable');
+    expect(scene).toContain('!interaction.repeatable');
+  });
+
   it('reveals authored landmarks only when their prerequisite discoveries are complete',()=>{
     expect(scene).toContain('interactionIsUnlocked');
     expect(scene).toContain('unlockedInteractables');
