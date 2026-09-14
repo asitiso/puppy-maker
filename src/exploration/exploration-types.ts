@@ -28,6 +28,7 @@ export type ExplorationInteractable={
   storyFrameId?:string;
   artSrc?:string;
   destinationId?:string;
+  nameplate?:string;
   enabled?:boolean;
   repeatable?:boolean;
   requiresCompleted?:readonly string[];
