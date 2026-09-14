@@ -1,10 +1,13 @@
 import {useMemo,useRef,useState} from 'react';
 import type {OutingLocationId} from '../adventure';
+import MobileExplorationScene from '../exploration/MobileExplorationScene';
+import {forestStoryFrames,forestWorld} from '../exploration/forest-world';
 import SceneStage from './SceneStage';
 import {outingScene,outingTargets} from './outing-scenes';
 import type {SceneActorState} from './scene-types';
 
 const locationLabels:Record<OutingLocationId,string>={forest:'별빛 숲',village:'마법 마을',lakeside:'바람 호숫가'};
+const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
 
 type Props={
   location:OutingLocationId;
@@ -19,7 +22,7 @@ type Props={
   onExit?:()=>void;
 };
 
-export default function OutingSceneFlow({location,year,month,week,actorState,campaignId,worldFacts,inheritedWorldFacts,onOuting,onExit}:Props){
+function LegacyOutingSceneFlow({location,year,month,week,actorState,campaignId,worldFacts,inheritedWorldFacts,onOuting,onExit}:Props){
   const committedRef=useRef(false);
   const [hint,setHint]=useState('관심 가는 장소를 눌러 루나와 함께 조사해 보세요.');
   const scene=useMemo(()=>outingScene(location,{year,month,week,actorState,campaignId,worldFacts,inheritedWorldFacts}),[location,year,month,week,actorState,campaignId,worldFacts,inheritedWorldFacts]);
@@ -45,4 +48,17 @@ export default function OutingSceneFlow({location,year,month,week,actorState,cam
       <span>{hint}</span>
     </div>
   </section>;
+}
+
+export default function OutingSceneFlow(props:Props){
+  if(props.location==='forest'){
+    return <MobileExplorationScene
+      world={forestWorld}
+      storyFrames={forestStoryFrames}
+      playerArtSrc={runaExplorationArt}
+      onProgress={()=>props.onOuting('forest')}
+      onExit={props.onExit??(()=>{})}
+    />;
+  }
+  return <LegacyOutingSceneFlow {...props}/>;
 }
