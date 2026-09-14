@@ -39,21 +39,21 @@ export const villageStoryFrames:Record<string,ExplorationStoryFrame>={
   'village-square':{
     id:'village-square',eyebrow:'TOWN NOTICE',title:'광장에 모인 소문',speaker:'루나',
     text:'광장 게시판에는 오늘 밤 작은 마법 공연이 열린다는 쪽지가 겹겹이 붙어 있다. 멀리서 종소리와 박수 소리가 들린다.',
-    artSrc:villageAsset('story-square.svg'),frameSrc:sharedFrame,actionLabel:'소리를 따라가기',progression:false,
+    artSrc:villageAsset('village-square.svg'),frameSrc:sharedFrame,actionLabel:'소리를 따라가기',progression:false,
   },
   'village-performance':{
     id:'village-performance',eyebrow:'STORY DISCOVERY',title:'별가루 거리 공연',speaker:'루나',
     text:'공연자의 지팡이가 흔들리자 별가루가 골목 위로 흩어진다. 루나는 관객 사이에서 누군가 떨어뜨린 작은 부적을 발견했다.',
-    artSrc:villageAsset('story-performance.svg'),frameSrc:sharedFrame,actionLabel:'공연을 도와주기',progression:true,
+    artSrc:villageAsset('street-performance.svg'),frameSrc:sharedFrame,actionLabel:'공연을 도와주기',progression:true,
   },
   'village-repair':{
     id:'village-repair',eyebrow:'WORKSHOP MEMORY',title:'고장 난 지팡이',speaker:'수리공',
     text:'수리대 위의 지팡이는 불규칙하게 빛난다. 손잡이에 새겨진 오래된 문양이 루나가 다가서자 잠깐 선명해졌다.',
-    artSrc:villageAsset('story-repair.svg'),frameSrc:sharedFrame,actionLabel:'문양을 기억하기',progression:false,
+    artSrc:villageAsset('wand-repair.svg'),frameSrc:sharedFrame,actionLabel:'문양을 기억하기',progression:false,
   },
   'village-alley':{
     id:'village-alley',eyebrow:'HIDDEN CORNER',title:'등불 뒤의 골목',speaker:'루나',
     text:'사람 없는 골목 끝에서 작은 종이 한 번 울린다. 바람도 없는데 등불이 같은 방향으로 천천히 기울었다.',
-    artSrc:villageAsset('story-alley.svg'),frameSrc:sharedFrame,actionLabel:'골목을 살펴보기',progression:false,
+    artSrc:villageAsset('quiet-alley.svg'),frameSrc:sharedFrame,actionLabel:'골목을 살펴보기',progression:false,
   },
 };
