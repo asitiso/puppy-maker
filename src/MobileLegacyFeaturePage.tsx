@@ -126,6 +126,17 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
         year={state.year}
         month={state.month}
         week={state.week}
+        npcContext={{
+          activeCampaign:state.campaignRun.activeCampaign,
+          activeRoute:state.campaignRun.activeRoute,
+          week:state.week,
+          month:state.month,
+          runNumber:state.campaignRun.runNumber,
+          inheritedFactCount:state.worldHistory.inheritedFacts.length,
+          generation:state.lineage.generation,
+          legacyMarkers:state.generationalWorld.legacyMarkers,
+          completedProjects:state.generationalWorld.completedProjects,
+        }}
         worldFacts={state.worldHistory.currentFacts}
         inheritedWorldFacts={state.worldHistory.inheritedFacts}
         onOuting={outingLocation=>{
