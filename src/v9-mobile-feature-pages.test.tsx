@@ -33,6 +33,16 @@ describe('V9 ordinary feature pages',()=>{
     }
   });
 
+  it('opens outing directly into a walkable crossroads instead of a destination menu',()=>{
+    const html=render('outing');
+    expect(html).toContain('mobile-exploration');
+    expect(html).toContain('여행자 교차로');
+    expect(html).toContain('별빛 숲으로 들어가기');
+    expect(html).toContain('마법 마을로 들어가기');
+    expect(html).toContain('바람 호숫가로 내려가기');
+    expect(html).not.toContain('탐험 Lv.');
+  });
+
   it('shows explicit reasons for completed, locked and unavailable actions',()=>{
     const claimedAttendance={...initialState,claimedAttendanceMonths:[attendanceKey(initialState.year,initialState.month)]};
     expect(render('attendance',claimedAttendance)).toContain('수령 완료');
