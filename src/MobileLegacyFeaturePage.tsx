@@ -101,11 +101,11 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   if(feature==='outing'&&outingScene){
     return <MobilePageShell
       title={outingDefinitions[outingScene].name}
-      subtitle="장면에서 관심 가는 대상을 선택해 탐험해요."
+      subtitle={outingScene==='forest'?'직접 움직여 빛나는 흔적을 찾아보세요.':'장면에서 관심 가는 대상을 선택해 탐험해요.'}
       backgroundSlot={info.backgroundSlot}
       scrollKey={`feature:${feature}:${outingScene}`}
       onBack={()=>setOutingScene(null)}
-      className="v8-feature-page v9-feature-page v14-outing-scene-page"
+      className={`v8-feature-page v9-feature-page v14-outing-scene-page${outingScene==='forest'?' v15-rpg-scene-page':''}`}
     >
       <OutingSceneFlow
         location={outingScene}
@@ -117,7 +117,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
         onOuting={location=>{
           onOuting(location);
           setFeedback(`${outingDefinitions[location].name}으로 외출했어요.`);
-          setOutingScene(null);
+          if(location!=='forest')setOutingScene(null);
         }}
         onExit={()=>setOutingScene(null)}
       />
