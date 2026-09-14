@@ -6,7 +6,7 @@ const sharedFrame='/assets/exploration/forest/story-frame.svg';
 export const lakesideWorld:ExplorationWorldDefinition={
   id:'wind-lakeside',
   label:'바람 호숫가',
-  objective:'물가를 따라 걸으며 바람이 가리키는 흔적을 찾으세요.',
+  objective:'물가의 이상한 잔물결을 살펴보고 바람이 숨긴 다음 흔적을 찾으세요.',
   width:2300,
   height:1450,
   playerRadius:22,
@@ -28,7 +28,7 @@ export const lakesideWorld:ExplorationWorldDefinition={
   interactables:[
     {id:'lakeside-exit',label:'호숫가 입구로 돌아가기',kind:'exit',position:{x:250,y:1120},radius:105},
     {id:'water-edge',label:'물가의 잔물결 살펴보기',kind:'story',position:{x:760,y:560},radius:135,storyFrameId:'lakeside-water',artSrc:lakeAsset('water-edge.svg')},
-    {id:'silver-fish',label:'은빛 물고기 따라가기',kind:'story',position:{x:1520,y:540},radius:145,storyFrameId:'lakeside-fish',artSrc:lakeAsset('silver-fish.svg')},
+    {id:'silver-fish',label:'새로 나타난 은빛 물고기 따라가기',kind:'story',position:{x:1520,y:540},radius:145,storyFrameId:'lakeside-fish',artSrc:lakeAsset('silver-fish.svg'),requiresCompleted:['water-edge']},
     {id:'resting-stone',label:'바람 부는 쉼터에 앉기',kind:'story',position:{x:620,y:1010},radius:130,storyFrameId:'lakeside-rest',artSrc:lakeAsset('resting-stone.svg')},
     {id:'wind-crystal',label:'바람 결정 조사하기',kind:'story',position:{x:1860,y:930},radius:145,storyFrameId:'lakeside-crystal',artSrc:lakeAsset('wind-crystal.svg')},
   ],
@@ -37,12 +37,12 @@ export const lakesideWorld:ExplorationWorldDefinition={
 export const lakesideStoryFrames:Record<string,ExplorationStoryFrame>={
   'lakeside-water':{
     id:'lakeside-water',eyebrow:'SHORELINE',title:'물 위에 남은 선',speaker:'루나',
-    text:'잔잔하던 수면에 한 줄의 빛이 생겨 동쪽으로 미끄러진다. 루나는 물가를 따라 이어지는 반짝임을 놓치지 않는다.',
-    artSrc:lakeAsset('water-edge.svg'),frameSrc:sharedFrame,actionLabel:'빛을 따라가기',progression:false,
+    text:'잔잔하던 수면에 한 줄의 빛이 생겨 동쪽으로 미끄러진다. 빛이 사라진 자리에서 은빛 꼬리가 한 번 번쩍였다.',
+    artSrc:lakeAsset('water-edge.svg'),frameSrc:sharedFrame,actionLabel:'물결의 방향 기억하기',progression:false,
   },
   'lakeside-fish':{
     id:'lakeside-fish',eyebrow:'STORY DISCOVERY',title:'은빛 물고기의 길',speaker:'루나',
-    text:'은빛 물고기가 수면을 세 번 튀어 오르자 바람이 갑자기 방향을 바꾼다. 물결 사이에 숨겨져 있던 작은 길이 드러났다.',
+    text:'조금 전 물결 속에 숨었던 은빛 물고기가 다시 모습을 드러낸다. 수면을 세 번 튀어 오르자 바람이 방향을 바꾸고 작은 길이 드러났다.',
     artSrc:lakeAsset('silver-fish.svg'),frameSrc:sharedFrame,actionLabel:'새 길을 기억하기',progression:true,
   },
   'lakeside-rest':{
