@@ -28,6 +28,12 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('onProgress()');
   });
 
+  it('reveals authored landmarks only when their prerequisite discoveries are complete',()=>{
+    expect(scene).toContain('interactionIsUnlocked');
+    expect(scene).toContain('unlockedInteractables');
+    expect(scene).toContain('unlockedInteractables.map');
+  });
+
   it('renders authored landmarks at world coordinates and keeps an explicit exit path',()=>{
     expect(scene).toContain('interaction.artSrc');
     expect(scene).toContain('mobile-exploration__landmark');
