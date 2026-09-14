@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {cameraForPlayer,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
+import {cameraForPlayer,interactionIsUnlocked,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
 import type {ExplorationInteractable,ExplorationWorldDefinition} from './exploration-types';
 
 const world:ExplorationWorldDefinition={
@@ -43,5 +43,16 @@ describe('mobile exploration runtime',()=>{
     ];
     expect(nearestInteractable({x:100,y:100},items)?.id).toBe('tracks');
     expect(nearestInteractable({x:400,y:400},items)).toBeNull();
+  });
+
+  it('unlocks later discoveries only after every authored prerequisite is completed',()=>{
+    const first:ExplorationInteractable={id:'first',label:'First clue',kind:'story',position:{x:0,y:0},radius:60};
+    const second:ExplorationInteractable={id:'second',label:'Second clue',kind:'story',position:{x:0,y:0},radius:60,requiresCompleted:['first']};
+    const finale:ExplorationInteractable={id:'finale',label:'Final clue',kind:'story',position:{x:0,y:0},radius:60,requiresCompleted:['first','second']};
+    expect(interactionIsUnlocked(first,new Set())).toBe(true);
+    expect(interactionIsUnlocked(second,new Set())).toBe(false);
+    expect(interactionIsUnlocked(second,new Set(['first']))).toBe(true);
+    expect(interactionIsUnlocked(finale,new Set(['first']))).toBe(false);
+    expect(interactionIsUnlocked(finale,new Set(['first','second']))).toBe(true);
   });
 });
