@@ -52,6 +52,11 @@ export function cameraForPlayer(player:Vec2,world:WorldBounds,viewport:WorldBoun
   };
 }
 
+export function interactionIsUnlocked(item:ExplorationInteractable,completed:ReadonlySet<string>):boolean{
+  const requirements=item.requiresCompleted??[];
+  return requirements.every(id=>completed.has(id));
+}
+
 export function nearestInteractable(player:Vec2,items:readonly ExplorationInteractable[]):ExplorationInteractable|null{
   let nearest:ExplorationInteractable|null=null;
   let nearestDistance=Number.POSITIVE_INFINITY;
