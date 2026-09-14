@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" role="img" aria-label="별빛 숲 이야기 액자">
+  <defs><linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5b3d31"/><stop offset=".28" stop-color="#9a6c43"/><stop offset=".54" stop-color="#d1a15c"/><stop offset=".8" stop-color="#765038"/><stop offset="1" stop-color="#3d302d"/></linearGradient><linearGradient id="gold"><stop stop-color="#fff1a6"/><stop offset=".45" stop-color="#cda857"/><stop offset="1" stop-color="#7e653b"/></linearGradient></defs>
+  <rect x="20" y="20" width="960" height="620" rx="52" fill="none" stroke="#1d2422" stroke-width="28" opacity=".72"/>
+  <rect x="35" y="35" width="930" height="590" rx="45" fill="none" stroke="url(#wood)" stroke-width="42"/>
+  <rect x="61" y="61" width="878" height="538" rx="28" fill="none" stroke="url(#gold)" stroke-width="7"/>
+  <path d="M48 120q70-10 84-72M952 120q-70-10-84-72M48 540q70 10 84 72M952 540q-70 10-84 72" fill="none" stroke="#ead58a" stroke-width="9" stroke-linecap="round"/>
+  <g fill="#f5e3a0"><path d="M96 76l8 18 19 7-19 7-8 18-7-18-19-7 19-7z"/><path d="M904 76l8 18 19 7-19 7-8 18-7-18-19-7 19-7z"/><circle cx="500" cy="51" r="8"/><circle cx="500" cy="609" r="8"/></g>
+  <path d="M300 45q200 28 400 0M300 615q200-28 400 0" fill="none" stroke="#6e5535" stroke-width="5" opacity=".8"/>
+</svg>
