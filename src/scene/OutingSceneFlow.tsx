@@ -2,8 +2,9 @@ import type {OutingLocationId} from '../adventure';
 import MobileExplorationScene from '../exploration/MobileExplorationScene';
 import {forestStoryFrames,forestWorld} from '../exploration/forest-world';
 import {lakesideStoryFrames,lakesideWorld} from '../exploration/lakeside-world';
-import {villageStoryFrames,villageWorld} from '../exploration/village-world';
+import {villageExplorationForContext,villageStoryFrames,villageWorld} from '../exploration/village-world';
 import type {ExplorationStoryFrame,ExplorationWorldDefinition} from '../exploration/exploration-types';
+import type {LivingNpcContext} from '../living-npcs';
 import type {SceneActorState} from './scene-types';
 
 const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
@@ -24,6 +25,7 @@ type Props={
   week:number;
   actorState?:SceneActorState;
   campaignId?:string|null;
+  npcContext?:LivingNpcContext;
   worldFacts?:readonly string[];
   inheritedWorldFacts?:readonly string[];
   onOuting:(location:OutingLocationId)=>void;
@@ -31,7 +33,9 @@ type Props={
 };
 
 export default function OutingSceneFlow(props:Props){
-  const exploration=explorationByLocation[props.location];
+  const exploration=props.location==='village'&&props.npcContext
+    ?villageExplorationForContext(props.npcContext)
+    :explorationByLocation[props.location];
   return <MobileExplorationScene
     world={exploration.world}
     storyFrames={exploration.storyFrames}
