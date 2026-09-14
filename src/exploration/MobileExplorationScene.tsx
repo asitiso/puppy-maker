@@ -65,7 +65,10 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     [completed,world.interactables],
   );
   const availableInteractables=useMemo(
-    ()=>unlockedInteractables.map(interaction=>completed.has(interaction.id)?{...interaction,enabled:false}:interaction),
+    ()=>unlockedInteractables.map(interaction=>{
+      const shouldDisable=completed.has(interaction.id)&&!interaction.repeatable;
+      return shouldDisable?{...interaction,enabled:false}:interaction;
+    }),
     [completed,unlockedInteractables],
   );
   const nearby=useMemo(()=>nearestInteractable(position,availableInteractables),[availableInteractables,position]);
@@ -166,7 +169,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
           className="mobile-exploration__landmark"
           data-interaction={interaction.id}
           data-kind={interaction.kind}
-          data-completed={completed.has(interaction.id)||undefined}
+          data-completed={(completed.has(interaction.id)&&!interaction.repeatable)||undefined}
           src={interaction.artSrc}
           alt=""
           draggable={false}
@@ -178,6 +181,12 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
           style={{left:interaction.position.x,top:interaction.position.y}}
           aria-hidden="true"
         >{interaction.label}</span>)}
+        {unlockedInteractables.filter(interaction=>interaction.nameplate).map(interaction=><span
+          key={`${interaction.id}:nameplate`}
+          className="mobile-exploration__nameplate"
+          style={{left:interaction.position.x,top:interaction.position.y}}
+          aria-hidden="true"
+        >{interaction.nameplate}</span>)}
         <img className="mobile-exploration__player" data-moving={moving||undefined} data-facing={facing} src={playerArtSrc} alt="" draggable={false} style={playerStyle}/>
       </div>
     </div>
