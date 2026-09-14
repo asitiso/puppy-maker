@@ -1,7 +1,7 @@
 import {type CSSProperties,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import MobileJoystick from './MobileJoystick';
 import StoryFrameOverlay from './StoryFrameOverlay';
-import {cameraForPlayer,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
+import {cameraForPlayer,interactionIsUnlocked,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
 import type {ExplorationStoryFrame,ExplorationWorldDefinition,Vec2,WorldBounds} from './exploration-types';
 import './exploration.css';
 
@@ -38,7 +38,10 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
 
   useEffect(()=>{activeFrameRef.current=activeFrame;},[activeFrame]);
   useEffect(()=>{
+    pressedKeysRef.current.clear();
+    joystickRef.current={x:0,y:0};
     setPosition(world.start);
+    setMoving(false);
     setCompleted(new Set());
     setActiveFrame(null);
     setActiveInteractionId(null);
@@ -56,7 +59,14 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     return ()=>{observer?.disconnect();window.removeEventListener('resize',measure);};
   },[]);
 
-  const availableInteractables=useMemo(()=>world.interactables.map(interaction=>completed.has(interaction.id)?{...interaction,enabled:false}:interaction),[completed,world.interactables]);
+  const unlockedInteractables=useMemo(
+    ()=>world.interactables.filter(interaction=>interactionIsUnlocked(interaction,completed)),
+    [completed,world.interactables],
+  );
+  const availableInteractables=useMemo(
+    ()=>unlockedInteractables.map(interaction=>completed.has(interaction.id)?{...interaction,enabled:false}:interaction),
+    [completed,unlockedInteractables],
+  );
   const nearby=useMemo(()=>nearestInteractable(position,availableInteractables),[availableInteractables,position]);
   const camera=useMemo(()=>cameraForPlayer(position,world,viewport),[position,viewport,world]);
 
@@ -138,12 +148,17 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     transform:`translate3d(${-camera.x}px,${-camera.y}px,0)`,
   } as CSSProperties;
   const playerStyle={left:`${position.x}px`,top:`${position.y}px`} as CSSProperties;
+  const idlePrompt=committedRef.current
+    ?'핵심 흔적을 확인했어요. 주변을 더 탐험하거나 돌아갈 수 있어요.'
+    :completed.size>0
+      ?'새로 나타난 흔적이 있는지 주변을 살펴보세요.'
+      :'직접 움직여 주변의 단서를 찾아보세요.';
 
   return <section ref={viewportRef} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
       <div className="mobile-exploration__world" style={worldStyle}>
         {world.layers.map(layer=><img key={layer.id} className="mobile-exploration__layer" src={layer.src} alt="" draggable={false} style={{zIndex:layer.zIndex}}/>)}
-        {world.interactables.map(interaction=>interaction.artSrc?<img
+        {unlockedInteractables.map(interaction=>interaction.artSrc?<img
           key={interaction.id}
           className="mobile-exploration__landmark"
           data-interaction={interaction.id}
@@ -159,7 +174,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
 
     <div className="mobile-exploration__hud"><small>EXPLORATION</small><strong>{world.label}</strong><span>{world.objective}</span></div>
     <button type="button" className="mobile-exploration__exit" onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
-    <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:committedRef.current?'흔적을 확인했어요. 숲을 더 둘러볼 수 있어요.':'직접 움직여 빛나는 흔적을 찾아보세요.'}</div>
+    <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
     <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{nearby?'조사':'···'}</button>
     {activeFrame?<StoryFrameOverlay frame={activeFrame} onComplete={()=>finishStory(activeFrame)}/>:null}
