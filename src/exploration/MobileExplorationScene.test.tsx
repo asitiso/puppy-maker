@@ -34,6 +34,15 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('unlockedInteractables.map');
   });
 
+  it('can open another authored world through an in-world portal interaction',()=>{
+    expect(scene).toContain('onPortal?');
+    expect(scene).toContain("nearby.kind==='portal'");
+    expect(scene).toContain('nearby.destinationId');
+    expect(scene).toContain('onPortal?.(nearby.destinationId)');
+    expect(scene).toContain('data-kind={interaction.kind}');
+    expect(scene).toContain('mobile-exploration__portal-label');
+  });
+
   it('renders authored landmarks at world coordinates and keeps an explicit exit path',()=>{
     expect(scene).toContain('interaction.artSrc');
     expect(scene).toContain('mobile-exploration__landmark');
