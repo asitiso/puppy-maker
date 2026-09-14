@@ -29,6 +29,7 @@ export type ExplorationInteractable={
   artSrc?:string;
   destinationId?:string;
   enabled?:boolean;
+  repeatable?:boolean;
   requiresCompleted?:readonly string[];
 };
 
