@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 1400" role="img" aria-label="별빛 숲 나무와 수풀">
+  <defs>
+    <linearGradient id="trunk" x1="0" x2="1"><stop stop-color="#3a2a2a"/><stop offset=".48" stop-color="#6d4a35"/><stop offset="1" stop-color="#2c2425"/></linearGradient>
+    <radialGradient id="leaf"><stop stop-color="#4d8062"/><stop offset=".62" stop-color="#285948"/><stop offset="1" stop-color="#153b35"/></radialGradient>
+    <filter id="shadow"><feGaussianBlur stdDeviation="16"/></filter>
+  </defs>
+  <g opacity=".35" fill="#091f1d" filter="url(#shadow)">
+    <ellipse cx="250" cy="250" rx="300" ry="170"/><ellipse cx="850" cy="180" rx="330" ry="160"/><ellipse cx="1800" cy="220" rx="390" ry="170"/><ellipse cx="110" cy="650" rx="240" ry="250"/><ellipse cx="1970" cy="660" rx="260" ry="260"/><ellipse cx="1780" cy="1250" rx="360" ry="140"/>
+  </g>
+  <g>
+    <path d="M120 110V420h110V95zM760 20v330h125V0zM1710 35v360h130V15zM40 505v360h115V490zM1940 500v355h118V480zM1700 1100v285h120v-300z" fill="url(#trunk)"/>
+    <g fill="url(#leaf)" stroke="#6c9e6d" stroke-width="5" opacity=".98">
+      <circle cx="155" cy="100" r="165"/><circle cx="330" cy="155" r="145"/><circle cx="755" cy="80" r="170"/><circle cx="950" cy="115" r="145"/>
+      <circle cx="1680" cy="105" r="170"/><circle cx="1920" cy="150" r="185"/><circle cx="95" cy="560" r="175"/><circle cx="70" cy="760" r="160"/>
+      <circle cx="2020" cy="560" r="175"/><circle cx="2070" cy="760" r="170"/><circle cx="1660" cy="1180" r="170"/><circle cx="1920" cy="1210" r="180"/>
+    </g>
+  </g>
+  <g fill="#d9efa3" opacity=".7"><circle cx="380" cy="300" r="5"/><circle cx="1120" cy="230" r="4"/><circle cx="1540" cy="335" r="5"/><circle cx="285" cy="690" r="4"/><circle cx="1860" cy="910" r="5"/><circle cx="1440" cy="1180" r="4"/></g>
+  <g fill="#3c6d53"><path d="M310 870q65-110 132 0-58-35-132 0z"/><path d="M1220 1160q85-130 170 0-75-44-170 0z"/><path d="M1140 340q58-95 118 0-50-33-118 0z"/></g>
+</svg>
