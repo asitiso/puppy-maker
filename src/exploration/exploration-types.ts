@@ -26,7 +26,20 @@ export type ExplorationInteractable={
   position:Vec2;
   radius:number;
   storyFrameId?:string;
+  artSrc?:string;
   enabled?:boolean;
+};
+
+export type ExplorationStoryFrame={
+  id:string;
+  title:string;
+  eyebrow?:string;
+  speaker?:string;
+  text:string;
+  artSrc:string;
+  frameSrc:string;
+  actionLabel:string;
+  progression:boolean;
 };
 
 export type ExplorationWorldDefinition={
