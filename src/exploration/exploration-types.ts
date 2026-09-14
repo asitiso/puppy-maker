@@ -28,6 +28,7 @@ export type ExplorationInteractable={
   storyFrameId?:string;
   artSrc?:string;
   enabled?:boolean;
+  requiresCompleted?:readonly string[];
 };
 
 export type ExplorationStoryFrame={
