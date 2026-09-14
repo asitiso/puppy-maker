@@ -6,7 +6,7 @@ const sharedFrame='/assets/exploration/forest/story-frame.svg';
 export const villageWorld:ExplorationWorldDefinition={
   id:'magic-village',
   label:'마법 마을',
-  objective:'광장을 지나 사람들의 소리를 따라가 보세요.',
+  objective:'광장의 게시판에서 오늘 마을에서 벌어지는 일을 먼저 알아보세요.',
   width:2400,
   height:1500,
   playerRadius:22,
@@ -28,8 +28,8 @@ export const villageWorld:ExplorationWorldDefinition={
   ],
   interactables:[
     {id:'village-exit',label:'마을 입구로 돌아가기',kind:'exit',position:{x:1180,y:1390},radius:105},
-    {id:'village-square',label:'광장 표지판 읽기',kind:'story',position:{x:1310,y:850},radius:125,storyFrameId:'village-square',artSrc:villageAsset('village-square.svg')},
-    {id:'street-performance',label:'거리 공연 가까이 가기',kind:'story',position:{x:690,y:560},radius:145,storyFrameId:'village-performance',artSrc:villageAsset('street-performance.svg')},
+    {id:'village-square',label:'광장 게시판 읽기',kind:'story',position:{x:1310,y:850},radius:125,storyFrameId:'village-square',artSrc:villageAsset('village-square.svg')},
+    {id:'street-performance',label:'새로 시작된 거리 공연 찾아가기',kind:'story',position:{x:690,y:560},radius:145,storyFrameId:'village-performance',artSrc:villageAsset('street-performance.svg'),requiresCompleted:['village-square']},
     {id:'wand-repair',label:'수리점의 반짝임 조사하기',kind:'story',position:{x:1870,y:700},radius:145,storyFrameId:'village-repair',artSrc:villageAsset('wand-repair.svg')},
     {id:'quiet-alley',label:'조용한 골목 살펴보기',kind:'story',position:{x:2010,y:1020},radius:130,storyFrameId:'village-alley',artSrc:villageAsset('quiet-alley.svg')},
   ],
@@ -38,8 +38,8 @@ export const villageWorld:ExplorationWorldDefinition={
 export const villageStoryFrames:Record<string,ExplorationStoryFrame>={
   'village-square':{
     id:'village-square',eyebrow:'TOWN NOTICE',title:'광장에 모인 소문',speaker:'루나',
-    text:'광장 게시판에는 오늘 밤 작은 마법 공연이 열린다는 쪽지가 겹겹이 붙어 있다. 멀리서 종소리와 박수 소리가 들린다.',
-    artSrc:villageAsset('village-square.svg'),frameSrc:sharedFrame,actionLabel:'소리를 따라가기',progression:false,
+    text:'광장 게시판의 새 쪽지에 공연 장소가 표시되어 있다. 쪽지를 읽고 고개를 들자 조금 전까지 조용하던 서쪽 거리에서 종소리가 시작됐다.',
+    artSrc:villageAsset('village-square.svg'),frameSrc:sharedFrame,actionLabel:'공연 위치 확인하기',progression:false,
   },
   'village-performance':{
     id:'village-performance',eyebrow:'STORY DISCOVERY',title:'별가루 거리 공연',speaker:'루나',
