@@ -23,7 +23,7 @@ export default function StoryFrameOverlay({frame,onComplete}:Props){
         <h2 id={`exploration-story-title-${frame.id}`}>{frame.title}</h2>
         {frame.speaker?<b>{frame.speaker}</b>:null}
         <p id={`exploration-story-text-${frame.id}`}>{frame.text}</p>
-        <button type="button" className="exploration-story-frame__continue" onClick={onComplete}>{frame.actionLabel}</button>
+        <button type="button" className="exploration-story-frame__continue" autoFocus onClick={onComplete}>{frame.actionLabel}</button>
       </div>
     </section>
   </div>;
