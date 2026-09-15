@@ -5,7 +5,7 @@ const crossroadsAsset=(name:string)=>`/assets/exploration/crossroads/${name}`;
 export const outingCrossroadsWorld:ExplorationWorldDefinition={
   id:'outing-crossroads',
   label:'여행자 교차로',
-  objective:'세 갈래 길을 직접 걸어 원하는 지역의 표식을 찾아보세요.',
+  objective:'여섯 갈래 길을 직접 걸어 원하는 지역의 표식을 찾아보세요.',
   width:2400,
   height:1600,
   playerRadius:22,
@@ -34,15 +34,27 @@ export const outingCrossroadsWorld:ExplorationWorldDefinition={
     },
     {
       id:'crossroads-forest',label:'별빛 숲으로 들어가기',kind:'portal',destinationId:'forest',
-      position:{x:1200,y:250},radius:150,artSrc:crossroadsAsset('forest-gate.svg'),
+      position:{x:1200,y:250},radius:120,artSrc:crossroadsAsset('forest-gate.svg'),
     },
     {
       id:'crossroads-village',label:'마법 마을로 들어가기',kind:'portal',destinationId:'village',
-      position:{x:345,y:760},radius:150,artSrc:crossroadsAsset('village-gate.svg'),
+      position:{x:345,y:610},radius:120,artSrc:crossroadsAsset('village-gate.svg'),
     },
     {
       id:'crossroads-lakeside',label:'바람 호숫가로 내려가기',kind:'portal',destinationId:'lakeside',
-      position:{x:2050,y:835},radius:150,artSrc:crossroadsAsset('lakeside-gate.svg'),
+      position:{x:2050,y:610},radius:120,artSrc:crossroadsAsset('lakeside-gate.svg'),
+    },
+    {
+      id:'crossroads-old-shrine',label:'고대 신전으로 들어가기',kind:'portal',destinationId:'old_shrine',
+      position:{x:610,y:1090},radius:120,artSrc:crossroadsAsset('old-shrine-gate.svg'),
+    },
+    {
+      id:'crossroads-herb-hills',label:'약초 언덕으로 올라가기',kind:'portal',destinationId:'herb_hills',
+      position:{x:1200,y:840},radius:120,artSrc:crossroadsAsset('herb-hills-gate.svg'),
+    },
+    {
+      id:'crossroads-expedition-outpost',label:'원정 전초기지로 들어가기',kind:'portal',destinationId:'expedition_outpost',
+      position:{x:1790,y:1090},radius:120,artSrc:crossroadsAsset('expedition-outpost-gate.svg'),
     },
   ],
 };
