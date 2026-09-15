@@ -3,7 +3,6 @@ import type { GiftItemId, OutingLocationId } from './adventure';
 import {
   activities,
   initialState,
-  reducer,
   trainingGrade,
   type AchievementId,
   type ActivityId,
@@ -21,6 +20,7 @@ import {
   type SkillId,
   type YearlyAmbitionId,
 } from './game';
+import {appReducer} from './app-living-region-reducer';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
 import type { BattleResult } from './tactical-battle';
@@ -39,6 +39,7 @@ import type { WeeklyFocusId } from './weekly-life';
 import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
+import {livingRegionUpdateRequestEvent,type LivingRegionUpdateRequest} from './living-region-ui-events';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 import TrainingActivityMinigame from './TrainingActivityMinigame';
 
@@ -81,7 +82,7 @@ function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') =>
   return <section className="screen hub-screen">
     <div className="cabin-backdrop"><div className="window-light"/><div className="fireplace"><i/><i/><i/></div><div className="shelf"/><div className="sparkles"/></div>
     <Hud state={state}/>
-    <div className="side-stats">{([['체력', state.stats.strength], ['마력', state.stats.magic], ['호감', state.stats.affection], ['피로', state.stats.fatigue]] as const).map(([label, value]) => <div key={label}><span>{label}</span><b><i style={{ width: `${value}%` }}/></b></div>)}</div>
+    <div className="side-stats">{([['체력', state.stats.strength], ['마력', state.stats.magic], ['호감', state.stats.affection], ['피로', state.stats.fatigue]] as const).map(([label, value]) => <div key={label}><span className="stat-label">{label}</span><b><i style={{ width: `${value}%` }}/></b></div>)}</div>
     <button className="pet-stage" onClick={() => setPetted(true)} aria-label="루나 쓰다듬기"><Pet mood={petted ? 'shy' : 'happy'}/>{petted && <span className="heart-pop">♥</span>}</button>
     <div className="speech">{petted ? '헤헤… 주인님의 손은 따뜻해요!' : '오늘은 어떤 모험을 시작할까요?'}</div>
     <nav className="bottom-nav">{[
@@ -202,7 +203,7 @@ type AppProps = {
 };
 
 export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady, onWeeklyFocusReady, onWeeklyCompleteReady, onWeeklyAdvanceReady }: AppProps = {}) {
-  const [state, dispatch] = useReducer(reducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
+  const [state, dispatch] = useReducer(appReducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
   const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
@@ -256,6 +257,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     };
     window.addEventListener(v12BuildRequestEvent,handleV12Build);
     return ()=>window.removeEventListener(v12BuildRequestEvent,handleV12Build);
+  },[]);
+  useEffect(() => {
+    const handleLivingRegionUpdate=(event:Event)=>{
+      const request=(event as CustomEvent<LivingRegionUpdateRequest>).detail;
+      if(request)dispatch({type:'UPDATE_LIVING_REGION',regionId:request.regionId,update:request.update});
+    };
+    window.addEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
+    return ()=>window.removeEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
   },[]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
