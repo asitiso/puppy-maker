@@ -1,6 +1,7 @@
 import {type CSSProperties,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import MobileJoystick from './MobileJoystick';
 import StoryFrameOverlay from './StoryFrameOverlay';
+import {explorationKeyboardIntent,isMovementKey,keyboardDirection} from './exploration-keyboard';
 import {cameraForPlayer,interactionIsUnlocked,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
 import type {ExplorationStoryFrame,ExplorationWorldDefinition,Vec2,WorldBounds} from './exploration-types';
 import './exploration.css';
@@ -15,15 +16,6 @@ type Props={
   completedInteractionIds?:readonly string[];
   onInteractionComplete?:(interactionId:string)=>void;
 };
-
-const MOVEMENT_KEYS=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
-const ACTION_KEYS=new Set(['Space','KeyE']);
-
-function keyboardDirection(keys:ReadonlySet<string>):Vec2{
-  const x=(keys.has('ArrowRight')||keys.has('KeyD')?1:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?1:0);
-  const y=(keys.has('ArrowDown')||keys.has('KeyS')?1:0)-(keys.has('ArrowUp')||keys.has('KeyW')?1:0);
-  return normalizeDirection({x,y});
-}
 
 export default function MobileExplorationScene({
   world,storyFrames,playerArtSrc,onProgress,onExit,onPortal,
@@ -132,23 +124,24 @@ export default function MobileExplorationScene({
 
   useEffect(()=>{
     const keyDown=(event:KeyboardEvent)=>{
-      if(MOVEMENT_KEYS.has(event.code)){
+      const intent=explorationKeyboardIntent(event.code,event.repeat);
+      if(intent==='movement'){
         event.preventDefault();
         pressedKeysRef.current.add(event.code);
         return;
       }
-      if(ACTION_KEYS.has(event.code)&&!event.repeat){
+      if(intent==='action'){
         event.preventDefault();
         const frame=activeFrameRef.current;
         if(frame) finishStory(frame); else openInteraction();
         return;
       }
-      if(event.code==='Escape'&&!event.repeat){
+      if(intent==='exit'){
         event.preventDefault();
         if(activeFrameRef.current){setActiveFrame(null);setActiveInteractionId(null);}else onExit();
       }
     };
-    const keyUp=(event:KeyboardEvent)=>{if(MOVEMENT_KEYS.has(event.code)) pressedKeysRef.current.delete(event.code);};
+    const keyUp=(event:KeyboardEvent)=>{if(isMovementKey(event.code)) pressedKeysRef.current.delete(event.code);};
     const clear=()=>{pressedKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
     window.addEventListener('keydown',keyDown);
     window.addEventListener('keyup',keyUp);
