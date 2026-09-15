@@ -12,6 +12,8 @@ type Props={
   onProgress:()=>void;
   onExit:()=>void;
   onPortal?:(destinationId:string)=>void;
+  completedInteractionIds?:readonly string[];
+  onInteractionComplete?:(interactionId:string)=>void;
 };
 
 const MOVEMENT_KEYS=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
@@ -23,7 +25,10 @@ function keyboardDirection(keys:ReadonlySet<string>):Vec2{
   return normalizeDirection({x,y});
 }
 
-export default function MobileExplorationScene({world,storyFrames,playerArtSrc,onProgress,onExit,onPortal}:Props){
+export default function MobileExplorationScene({
+  world,storyFrames,playerArtSrc,onProgress,onExit,onPortal,
+  completedInteractionIds=[],onInteractionComplete,
+}:Props){
   const viewportRef=useRef<HTMLElement|null>(null);
   const joystickRef=useRef<Vec2>({x:0,y:0});
   const pressedKeysRef=useRef(new Set<string>());
@@ -35,7 +40,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
   const [facing,setFacing]=useState<'left'|'right'>('right');
   const [activeFrame,setActiveFrame]=useState<ExplorationStoryFrame|null>(null);
   const [activeInteractionId,setActiveInteractionId]=useState<string|null>(null);
-  const [completed,setCompleted]=useState<Set<string>>(()=>new Set());
+  const [completed,setCompleted]=useState<Set<string>>(()=>new Set(completedInteractionIds));
 
   useEffect(()=>{activeFrameRef.current=activeFrame;},[activeFrame]);
   useEffect(()=>{
@@ -43,7 +48,7 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     joystickRef.current={x:0,y:0};
     setPosition(world.start);
     setMoving(false);
-    setCompleted(new Set());
+    setCompleted(new Set(completedInteractionIds));
     setActiveFrame(null);
     setActiveInteractionId(null);
     committedRef.current=false;
@@ -113,14 +118,17 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
   },[nearby,onExit,onPortal,storyFrames]);
 
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
-    if(activeInteractionId) setCompleted(current=>new Set(current).add(activeInteractionId));
+    if(activeInteractionId){
+      setCompleted(current=>new Set(current).add(activeInteractionId));
+      onInteractionComplete?.(activeInteractionId);
+    }
     if(frame.progression&&!committedRef.current){
       committedRef.current=true;
       onProgress();
     }
     setActiveFrame(null);
     setActiveInteractionId(null);
-  },[activeInteractionId,onProgress]);
+  },[activeInteractionId,onInteractionComplete,onProgress]);
 
   useEffect(()=>{
     const keyDown=(event:KeyboardEvent)=>{
