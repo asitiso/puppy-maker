@@ -82,7 +82,7 @@ function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') =>
   return <section className="screen hub-screen">
     <div className="cabin-backdrop"><div className="window-light"/><div className="fireplace"><i/><i/><i/></div><div className="shelf"/><div className="sparkles"/></div>
     <Hud state={state}/>
-    <div className="side-stats">{([['체력', state.stats.strength], ['마력', state.stats.magic], ['호감', state.stats.affection], ['피로', state.stats.fatigue]] as const).map(([label, value]) => <div key={label}><span className="stat-label">{label}</span><b><i style={{ width: `${value}%` }}/></b></div>)}</div>
+    <div className="side-stats">{([['체력', state.stats.strength], ['마력', state.stats.magic], ['호감', state.stats.affection], ['피로', state.stats.fatigue]] as const).map(([label, value]) => <div key={label}><span>{label}</span><b><i style={{ width: `${value}%` }}/></b></div>)}</div>
     <button className="pet-stage" onClick={() => setPetted(true)} aria-label="루나 쓰다듬기"><Pet mood={petted ? 'shy' : 'happy'}/>{petted && <span className="heart-pop">♥</span>}</button>
     <div className="speech">{petted ? '헤헤… 주인님의 손은 따뜻해요!' : '오늘은 어떤 모험을 시작할까요?'}</div>
     <nav className="bottom-nav">{[
@@ -286,11 +286,11 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onGrowthTraitReady?.(purchaseGrowthTrait), [purchaseGrowthTrait, onGrowthTraitReady]);
   useEffect(() => onSeasonPurchaseReady?.(purchaseSeasonOffer), [purchaseSeasonOffer, onSeasonPurchaseReady]);
   useEffect(() => onSeasonLegacyUnlockReady?.(unlockSeasonLegacyNode), [unlockSeasonLegacyNode, onSeasonLegacyUnlockReady]);
-  useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary, onSanctuaryUpgradeReady]);
-  useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization, onSanctuarySpecializationReady]);
-  useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork, onSanctuaryMasterworkReady]);
-  useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift, onAstralRiftClearReady]);
-  useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic, onAstralRiftRelicReady]);
+  useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary,onSanctuaryUpgradeReady]);
+  useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization,onSanctuarySpecializationReady]);
+  useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork,onSanctuaryMasterworkReady]);
+  useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift,onAstralRiftClearReady]);
+  useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic,onAstralRiftRelicReady]);
   useEffect(() => onTacticalPartyReady?.(setTacticalParty), [setTacticalParty,onTacticalPartyReady]);
   useEffect(() => onTacticalPreferencesReady?.(setTacticalPreferences), [setTacticalPreferences,onTacticalPreferencesReady]);
   useEffect(() => onTacticalCompleteReady?.(completeTacticalBattle), [completeTacticalBattle,onTacticalCompleteReady]);
