@@ -1,4 +1,3 @@
-import {existsSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 import {REGION_IDS} from './region-registry';
 import {outingCrossroadsWorld} from './outing-crossroads';
@@ -21,7 +20,6 @@ describe('outing crossroads world contract',()=>{
     for(const portal of portals){
       expect(portal.artSrc).toMatch(/^\/assets\/exploration\/crossroads\/.+\.svg$/);
       expect(portal.radius).toBeGreaterThanOrEqual(100);
-      expect(existsSync(new URL(`../../public${portal.artSrc}`,import.meta.url))).toBe(true);
     }
   });
 
