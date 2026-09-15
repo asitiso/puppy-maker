@@ -4,23 +4,23 @@ import {describe,expect,it} from 'vitest';
 const page=readFileSync(new URL('./MobileLegacyFeaturePage.tsx',import.meta.url),'utf8');
 
 describe('V16 outing living-region routing contract',()=>{
-  it('routes Old Shrine from the crossroads without widening legacy OutingLocationId',()=>{
-    expect(page).toContain("type OutingSceneId='crossroads'|OutingLocationId|'old_shrine'");
-    expect(page).toContain("value==='old_shrine'");
+  it('routes completed living regions from the crossroads without widening legacy OutingLocationId',()=>{
+    expect(page).toContain("type OutingSceneId='crossroads'|OutingLocationId|'old_shrine'|'herb_hills'");
+    expect(page).toContain("value==='old_shrine'||value==='herb_hills'");
     expect(page).toContain('<LivingRegionSceneFlow');
-    expect(page).toContain('progress={state.livingRegions.old_shrine}');
-    expect(page).toContain("regionId='old_shrine'");
+    expect(page).toContain('regionId={livingLocation}');
+    expect(page).toContain('progress={state.livingRegions[livingLocation]}');
   });
 
   it('keeps legacy outing progression isolated from living-region progress',()=>{
     expect(page).toContain('<OutingSceneFlow');
     expect(page).toContain('onOuting={outingLocation=>{');
     expect(page).not.toContain("onOuting('old_shrine')");
+    expect(page).not.toContain("onOuting('herb_hills')");
   });
 
-  it('does not expose unfinished living regions as playable placeholder scenes',()=>{
+  it('does not expose Expedition Outpost before its playable slice exists',()=>{
     expect(page).not.toContain("type OutingSceneId='crossroads'|RegionId");
-    expect(page).not.toContain("regionId='herb_hills'");
     expect(page).not.toContain("regionId='expedition_outpost'");
   });
 });

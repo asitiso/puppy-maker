@@ -40,7 +40,7 @@ type Props={
   onMonthlyFocus:(focus:GameState['monthlyFocus'])=>void;
 };
 
-type OutingSceneId='crossroads'|OutingLocationId|'old_shrine';
+type OutingSceneId='crossroads'|OutingLocationId|'old_shrine'|'herb_hills';
 
 const relationshipLabels={acquaintance:'낯선 사이',familiar:'익숙한 사이',friend:'친구',close_friend:'가까운 친구',precious:'소중한 사람'} as const;
 const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
@@ -52,7 +52,7 @@ function isOutingLocation(value:string):value is OutingLocationId{
 }
 
 function isPlayableOutingDestination(value:string):value is Exclude<OutingSceneId,'crossroads'>{
-  return isOutingLocation(value)||value==='old_shrine';
+  return isOutingLocation(value)||value==='old_shrine'||value==='herb_hills';
 }
 
 type FeatureMeta={eyebrow:string;title:string;description:string;backgroundSlot:MobileVisualSlot};
@@ -109,7 +109,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   if(feature==='outing'){
     const location=outingScene==='crossroads'?null:outingScene;
     const legacyLocation=location!==null&&isOutingLocation(location)?location:null;
-    const livingLocation=location==='old_shrine'?location:null;
+    const livingLocation=location==='old_shrine'||location==='herb_hills'?location:null;
     const title=location===null
       ?outingCrossroadsWorld.label
       :legacyLocation!==null
@@ -156,9 +156,9 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
           setFeedback(`${outingDefinitions[outingLocation].name}으로 외출했어요.`);
         }}
         onExit={()=>setOutingScene('crossroads')}
-      />:livingLocation==='old_shrine'?<LivingRegionSceneFlow
-        regionId='old_shrine'
-        progress={state.livingRegions.old_shrine}
+      />:livingLocation!==null?<LivingRegionSceneFlow
+        regionId={livingLocation}
+        progress={state.livingRegions[livingLocation]}
         personality={state.personality}
         affection={state.stats.affection}
         worldFacts={state.worldHistory.currentFacts}
