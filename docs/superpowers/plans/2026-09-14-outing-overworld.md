@@ -1,5 +1,7 @@
 # Outing Overworld Implementation Plan
 
+> **Status: COMPLETE.** Implemented and verified on `work/v15-mobile-rpg-foundation`. Completion baseline: `f5318baddf246127958bfefc290164cb84cc54db`; CI #2420 passed both test and production build. Future agents should treat the checked tasks below as completed and continue from newer repository state rather than repeating this plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the outing destination menu with a direct-movement crossroads overworld where the player physically walks to the forest, village, or lakeside entrance.
@@ -32,11 +34,11 @@
 - Consumes: current `MobileLegacyFeaturePage`, `MobileExplorationScene`
 - Produces: failing tests requiring immediate overworld entry and portal handling
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Require `render('outing')` to contain the crossroads exploration shell and all three destination entrances, and require `MobileExplorationScene` to expose an `onPortal` path for `kind==='portal'` interactions.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run full CI `npm run test`; expected failure is the new no-menu/portal assertions while existing tests remain green.
 
@@ -51,15 +53,15 @@ Run full CI `npm run test`; expected failure is the new no-menu/portal assertion
 - Consumes: `ExplorationInteractable`
 - Produces: `kind:'portal'`, `destinationId?:string`, `onPortal?:(destinationId:string)=>void`
 
-- [ ] **Step 1: Extend the interaction type**
+- [x] **Step 1: Extend the interaction type**
 
 Add `portal` to `ExplorationInteractableKind` and `destinationId?: string` to `ExplorationInteractable`.
 
-- [ ] **Step 2: Route portal interaction**
+- [x] **Step 2: Route portal interaction**
 
 When the nearest interaction is a portal with a destination id, call `onPortal(destinationId)` without opening a story frame or committing outing progression.
 
-- [ ] **Step 3: Give portals distinct world feedback**
+- [x] **Step 3: Give portals distinct world feedback**
 
 Render portal landmarks with `data-kind="portal"`; add a restrained entrance glow that is disabled by `prefers-reduced-motion`.
 
@@ -77,11 +79,11 @@ Render portal landmarks with `data-kind="portal"`; add a restrained entrance glo
 - Produces: `outingCrossroadsWorld: ExplorationWorldDefinition`
 - Portals: `forest`, `village`, `lakeside`
 
-- [ ] **Step 1: Build a materially larger-than-screen crossroads**
+- [x] **Step 1: Build a materially larger-than-screen crossroads**
 
 Use a 2400×1600 authored world with a central starting plaza, branching routes, collision blocks, landscape silhouettes, and three spatially separated entrances.
 
-- [ ] **Step 2: Add original SVG entrance art**
+- [x] **Step 2: Add original SVG entrance art**
 
 Forest uses a mossy wooden arch, village uses warm stone/lantern architecture, and lakeside uses pale reeds/wind ribbons so destinations are readable before text.
 
@@ -97,15 +99,15 @@ Forest uses a mossy wooden arch, village uses warm stone/lantern architecture, a
 - Region exit returns to `crossroads`.
 - Top-level exit/back from crossroads invokes the router back action.
 
-- [ ] **Step 1: Enter crossroads immediately**
+- [x] **Step 1: Enter crossroads immediately**
 
 Initialize outing navigation to `crossroads` when `feature==='outing'`, eliminating the destination rows from normal outing entry.
 
-- [ ] **Step 2: Preserve canonical region mutation**
+- [x] **Step 2: Preserve canonical region mutation**
 
 Keep `onOuting(location)` exactly where region progression commits and do not call it while traversing the crossroads.
 
-- [ ] **Step 3: Return to world instead of menu**
+- [x] **Step 3: Return to world instead of menu**
 
 Region exit routes to `crossroads`; crossroads exit routes to the feature back action.
 
@@ -114,14 +116,21 @@ Region exit routes to `crossroads`; crossroads exit routes to the feature back a
 **Files:**
 - No production changes unless verification reveals a regression.
 
-- [ ] **Step 1: Targeted verification**
+- [x] **Step 1: Targeted verification**
 
 Run the changed exploration and mobile feature tests in CI.
 
-- [ ] **Step 2: Full verification**
+- [x] **Step 2: Full verification**
 
 Run `npm run test` and `npm run build` through the repository CI.
 
-- [ ] **Step 3: Inspect exact failures before any fix**
+- [x] **Step 3: Inspect exact failures before any fix**
 
 If a regression appears, identify the exact assertion and distinguish stale contract from production behavior before applying the minimum correction.
+
+## Completion Record
+
+- Crossroads no-menu entry, physical portals, regional return flow, original portal art, and reduced-motion behavior are implemented.
+- `src/exploration/outing-crossroads.test.ts` locks the world/portal/exit contract.
+- Completion baseline before this documentation update: `f5318baddf246127958bfefc290164cb84cc54db`.
+- GitHub Actions CI #2420: **PASS** (`npm run test` and `npm run build`).
