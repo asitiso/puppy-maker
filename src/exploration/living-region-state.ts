@@ -18,6 +18,14 @@ export type LivingRegionProgress = {
 
 export type LivingRegionState = Record<LivingRegionId,LivingRegionProgress>;
 
+export type LivingRegionUpdate =
+  | {kind:'enter'}
+  | {kind:'startMainQuest'}
+  | {kind:'resolveMainQuest'}
+  | {kind:'advancePostResolution'}
+  | {kind:'recordDiscovery';discoveryId:string}
+  | {kind:'recordInteraction';interactionId:string};
+
 function emptyLivingRegionProgress():LivingRegionProgress {
   return {phase:'unvisited',discoveries:[],completedInteractions:[]};
 }
@@ -130,4 +138,19 @@ export function recordLivingRegionInteraction(
   interactionId:string,
 ):LivingRegionState {
   return recordUniqueRegionValue(state,id,'completedInteractions',interactionId);
+}
+
+export function applyLivingRegionUpdate(
+  state:LivingRegionState,
+  id:LivingRegionId,
+  update:LivingRegionUpdate,
+):LivingRegionState {
+  switch(update.kind){
+    case 'enter':return enterLivingRegion(state,id);
+    case 'startMainQuest':return startLivingRegionMainQuest(state,id);
+    case 'resolveMainQuest':return resolveLivingRegionMainQuest(state,id);
+    case 'advancePostResolution':return advanceLivingRegionPostResolution(state,id);
+    case 'recordDiscovery':return recordLivingRegionDiscovery(state,id,update.discoveryId);
+    case 'recordInteraction':return recordLivingRegionInteraction(state,id,update.interactionId);
+  }
 }
