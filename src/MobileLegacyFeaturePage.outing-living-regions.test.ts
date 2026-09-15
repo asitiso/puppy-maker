@@ -4,9 +4,10 @@ import {describe,expect,it} from 'vitest';
 const page=readFileSync(new URL('./MobileLegacyFeaturePage.tsx',import.meta.url),'utf8');
 
 describe('V16 outing living-region routing contract',()=>{
-  it('routes all completed living regions from the crossroads without widening legacy OutingLocationId',()=>{
-    expect(page).toContain("type OutingSceneId='crossroads'|OutingLocationId|'old_shrine'|'herb_hills'|'expedition_outpost'");
-    expect(page).toContain("value==='old_shrine'||value==='herb_hills'||value==='expedition_outpost'");
+  it('routes every registered living region without widening legacy OutingLocationId',()=>{
+    expect(page).toContain("type OutingSceneId='crossroads'|OutingLocationId|LivingRegionId");
+    expect(page).toContain('LIVING_REGION_IDS.includes(value as LivingRegionId)');
+    expect(page).toContain('isOutingLocation(value)||isLivingRegion(value)');
     expect(page).toContain('<LivingRegionSceneFlow');
     expect(page).toContain('regionId={livingLocation}');
     expect(page).toContain('progress={state.livingRegions[livingLocation]}');
@@ -20,7 +21,7 @@ describe('V16 outing living-region routing contract',()=>{
     expect(page).not.toContain("onOuting('expedition_outpost')");
   });
 
-  it('keeps living-region routing explicit rather than widening every registry region into a playable scene',()=>{
+  it('uses only the living-region registry rather than every RegionId as a playable scene',()=>{
     expect(page).not.toContain("type OutingSceneId='crossroads'|RegionId");
   });
 });
