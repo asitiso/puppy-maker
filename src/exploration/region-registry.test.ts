@@ -4,6 +4,9 @@ import {
   LIVING_REGION_IDS,
   REGION_IDS,
   getRegionDefinition,
+  isLegacyRegionId,
+  isLivingRegionId,
+  isRegionId,
   regionRegistry,
 } from './region-registry';
 
@@ -48,6 +51,22 @@ describe('V16 region registry',()=>{
     }
     expect(interactionIds.size).toBe(REGION_IDS.length);
     expect(artSources.size).toBe(REGION_IDS.length);
+  });
+
+  it('provides canonical guards for routing boundaries',()=>{
+    for(const id of LEGACY_REGION_IDS){
+      expect(isRegionId(id)).toBe(true);
+      expect(isLegacyRegionId(id)).toBe(true);
+      expect(isLivingRegionId(id)).toBe(false);
+    }
+    for(const id of LIVING_REGION_IDS){
+      expect(isRegionId(id)).toBe(true);
+      expect(isLegacyRegionId(id)).toBe(false);
+      expect(isLivingRegionId(id)).toBe(true);
+    }
+    expect(isRegionId('unknown-region')).toBe(false);
+    expect(isLegacyRegionId('unknown-region')).toBe(false);
+    expect(isLivingRegionId('unknown-region')).toBe(false);
   });
 
   it('gives the three V16 living regions distinct authored identities',()=>{
