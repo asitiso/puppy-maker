@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 260" role="img" aria-label="탐험 중인 루나">
+  <defs><linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4c77a"/><stop offset=".55" stop-color="#d9874d"/><stop offset="1" stop-color="#b95e3f"/></linearGradient><radialGradient id="cape"><stop stop-color="#5d8b7b"/><stop offset="1" stop-color="#274f49"/></radialGradient></defs>
+  <ellipse cx="110" cy="231" rx="58" ry="16" fill="#0c2927" opacity=".42"/>
+  <path d="M62 98L37 25l62 39M158 98l25-73-62 39" fill="url(#fur)" stroke="#7e4639" stroke-width="7" stroke-linejoin="round"/>
+  <ellipse cx="110" cy="102" rx="70" ry="64" fill="url(#fur)" stroke="#8d4b3d" stroke-width="7"/>
+  <path d="M72 103q38 42 76 0-5 62-38 63t-38-63z" fill="#fff0d2"/>
+  <circle cx="84" cy="94" r="8" fill="#292b2c"/><circle cx="136" cy="94" r="8" fill="#292b2c"/><path d="M101 117q9 8 18 0" fill="none" stroke="#6c3b38" stroke-width="6" stroke-linecap="round"/>
+  <path d="M57 158q53-31 106 0l-20 70H77z" fill="url(#cape)" stroke="#1e4943" stroke-width="7"/>
+  <path d="M67 182q-32 18-22 46m108-46q32 18 22 46" fill="none" stroke="#d9874d" stroke-width="18" stroke-linecap="round"/>
+  <path d="M152 194q47 14 33 48-24 24-59-1 35 5 40-15 4-15-14-32z" fill="url(#fur)" stroke="#8d4b3d" stroke-width="6"/>
+  <circle cx="110" cy="169" r="10" fill="#e9eda0"/><path d="M110 157v24M98 169h24" stroke="#fff6bd" stroke-width="3"/>
+</svg>

@@ -1,11 +1,13 @@
 import {useState} from 'react';
 import {
-  discoveryIds,explorationLevel,explorationXpForNextLevel,giftDefinitions,giftItemIds,outingDefinitions,outingLocationIds,
-  type DiscoveryId,type ExplorationEventId,type GiftItemId,type OutingLocationId,
+  discoveryIds,giftDefinitions,giftItemIds,outingDefinitions,outingLocationIds,
+  type GiftItemId,type OutingLocationId,
 } from './adventure';
 import {attendanceKey,attendanceReward} from './attendance';
 import {talentDefinitions} from './advanced-talents';
 import {careerTitleDefinitions} from './career-records';
+import MobileExplorationScene from './exploration/MobileExplorationScene';
+import {outingCrossroadsWorld} from './exploration/outing-crossroads';
 import {
   achievementDefinitions,collectionProgress,currentAdvancedTalents,currentAvailableMail,currentCareerTitles,currentGuardianStatus,
   currentStoryChapters,eligibleAchievements,masteryLevel,relationshipRank,type AchievementId,type GameState,type MailRewardId,
@@ -36,16 +38,16 @@ type Props={
   onMonthlyFocus:(focus:GameState['monthlyFocus'])=>void;
 };
 
+type OutingSceneId='crossroads'|OutingLocationId;
+
 const relationshipLabels={acquaintance:'낯선 사이',familiar:'익숙한 사이',friend:'친구',close_friend:'가까운 친구',precious:'소중한 사람'} as const;
-const explorationEventLabels:Record<ExplorationEventId,string>={
-  glowing_tracks:'빛나는 발자국을 따라가 50G를 발견했어요.',ancient_tree:'오래된 나무의 선물로 별빛 쿠키를 얻었어요.',
-  street_performance:'마을 공연을 도와 50G를 받았어요.',wand_repair:'마법 지팡이를 고쳐주고 여우 부적을 받았어요.',
-  silver_fish:'은빛 물고기가 숨겨둔 50G를 발견했어요.',quiet_breeze:'고요한 바람 속에서 허브티를 발견했어요.',
-};
-const discoveryLabels:Record<DiscoveryId,string>={
-  moon_feather:'달빛 깃털',star_mushroom:'별무늬 버섯',tiny_bell:'작은 마법 종',old_spellbook:'낡은 주문서',
-  glass_shell:'유리빛 조개',wind_crystal:'바람 결정',
-};
+const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
+const noStoryFrames={};
+const noop=()=>{};
+
+function isOutingLocation(value:string):value is OutingLocationId{
+  return outingLocationIds.includes(value as OutingLocationId);
+}
 
 type FeatureMeta={eyebrow:string;title:string;description:string;backgroundSlot:MobileVisualSlot};
 const featureMeta:Partial<Record<MobileFeatureId,FeatureMeta>>={
@@ -81,7 +83,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const onBack=explicitBack??routerActions.onBack;
   const info=featureMeta[feature]??{eyebrow:'FEATURE',title:'기능',description:'선택한 기능을 확인해요.',backgroundSlot:'category.records.background' as const};
   const [feedback,setFeedback]=useState<string|null>(null);
-  const [outingScene,setOutingScene]=useState<OutingLocationId|null>(null);
+  const [outingScene,setOutingScene]=useState<OutingSceneId>('crossroads');
   const eligible=new Set(eligibleAchievements(state));
   const availableMail=new Set(currentAvailableMail(state));
   const attendanceId=attendanceKey(state.year,state.month);
@@ -98,29 +100,51 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const talentLabels=talents.map(id=>talentDefinitions.find(item=>item.id===id)?.label).filter(Boolean);
   const highestMastery=Math.max(...Object.values(state.mastery).map(entry=>masteryLevel(entry.xp)));
 
-  if(feature==='outing'&&outingScene){
+  if(feature==='outing'){
+    const location=outingScene==='crossroads'?null:outingScene;
+    const title=location===null?outingCrossroadsWorld.label:outingDefinitions[location].name;
+    const subtitle=location===null?'직접 길을 걸어 원하는 지역 입구를 찾아보세요.':'직접 움직여 주변의 단서를 찾아보세요.';
     return <MobilePageShell
-      title={outingDefinitions[outingScene].name}
-      subtitle="장면에서 관심 가는 대상을 선택해 탐험해요."
+      title={title}
+      subtitle={subtitle}
       backgroundSlot={info.backgroundSlot}
       scrollKey={`feature:${feature}:${outingScene}`}
-      onBack={()=>setOutingScene(null)}
-      className="v8-feature-page v9-feature-page v14-outing-scene-page"
+      onBack={location===null?onBack:()=>setOutingScene('crossroads')}
+      className="v8-feature-page v9-feature-page v14-outing-scene-page v15-rpg-scene-page"
     >
-      <OutingSceneFlow
-        location={outingScene}
+      {location===null?<MobileExplorationScene
+        world={outingCrossroadsWorld}
+        storyFrames={noStoryFrames}
+        playerArtSrc={runaExplorationArt}
+        onProgress={noop}
+        onExit={onBack}
+        onPortal={destinationId=>{
+          if(isOutingLocation(destinationId))setOutingScene(destinationId);
+        }}
+      />:<OutingSceneFlow
+        location={location}
         year={state.year}
         month={state.month}
         week={state.week}
+        npcContext={{
+          activeCampaign:state.campaignRun.activeCampaign,
+          activeRoute:state.campaignRun.activeRoute,
+          week:state.week,
+          month:state.month,
+          runNumber:state.campaignRun.runNumber,
+          inheritedFactCount:state.worldHistory.inheritedFacts.length,
+          generation:state.lineage.generation,
+          legacyMarkers:state.generationalWorld.legacyMarkers,
+          completedProjects:state.generationalWorld.completedProjects,
+        }}
         worldFacts={state.worldHistory.currentFacts}
         inheritedWorldFacts={state.worldHistory.inheritedFacts}
-        onOuting={location=>{
-          onOuting(location);
-          setFeedback(`${outingDefinitions[location].name}으로 외출했어요.`);
-          setOutingScene(null);
+        onOuting={outingLocation=>{
+          onOuting(outingLocation);
+          setFeedback(`${outingDefinitions[outingLocation].name}으로 외출했어요.`);
         }}
-        onExit={()=>setOutingScene(null)}
-      />
+        onExit={()=>setOutingScene('crossroads')}
+      />}
     </MobilePageShell>;
   }
 
@@ -216,20 +240,6 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
         <Row marker="4" title="외출 기억" status={`${state.visitedOutings.length} / ${outingLocationIds.length}`} disabled disabledReason="외출을 다녀오면 갱신돼요."/>
         <Row marker="5" title="숨겨진 발견물" status={`${state.discoveries.length} / ${discoveryIds.length}`} disabled disabledReason="탐험 중 발견하면 갱신돼요."/>
         <Row marker="6" title="최고 숙련도" status={`Lv.${highestMastery}`} disabled disabledReason="훈련으로 숙련도를 올리면 갱신돼요."/>
-      </>}
-
-      {feature==='outing'&&<>
-        {state.lastExploration&&<Row marker="★" title={`${outingDefinitions[state.lastExploration.location].name} 탐험 기록`} description={state.lastExploration.discovery?`숨겨진 발견 · ${discoveryLabels[state.lastExploration.discovery]}`:state.lastExploration.event?explorationEventLabels[state.lastExploration.event]:'이번에는 특별한 일 없이 평화롭게 다녀왔어요.'} status={state.lastExploration.discovery?'발견!':state.lastExploration.event?'사건':'기록'} disabled disabledReason="가장 최근 탐험 기록이에요."/>}
-        {outingLocationIds.map((id,index)=>{
-          const location=outingDefinitions[id];
-          const visited=state.visitedOutings.includes(id);
-          const xp=state.explorationXp[id];
-          const level=explorationLevel(xp);
-          const nextXp=explorationXpForNextLevel(xp);
-          return <Row key={id} marker={visited?'✓':index+1} title={location.name} description={`탐험 Lv.${level} · ${nextXp===null?'MAX':`${xp} / ${nextXp} XP`} · ${location.description}`} status={visited?'탐험':'출발'} onClick={()=>{
-            setOutingScene(id);
-          }}/>;
-        })}
       </>}
     </div>
   </MobilePageShell>;

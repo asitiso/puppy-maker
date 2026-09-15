@@ -35,7 +35,7 @@ describe('V8 routed legacy features',()=>{
   it('renders inventory, outing, bond and stories without modal trapping',()=>{
     expect(render('inventory')).toContain('능력과 보유품');
     expect(render('gifts')).toContain('선물');
-    expect(render('outing')).toContain('외출');
+    expect(render('outing')).toContain('여행자 교차로');
     expect(render('bond')).toContain('루나와의 교감');
     expect(render('stories')).toContain('루나 이야기');
     for(const feature of ['inventory','gifts','outing','bond','stories'] as const){
