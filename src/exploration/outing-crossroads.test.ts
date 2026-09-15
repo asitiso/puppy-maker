@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {REGION_IDS} from './region-registry';
+import {REGION_IDS,getRegionDefinition} from './region-registry';
 import {outingCrossroadsWorld} from './outing-crossroads';
 
 describe('outing crossroads world contract',()=>{
@@ -13,13 +13,26 @@ describe('outing crossroads world contract',()=>{
     expect(outingCrossroadsWorld.obstacles.length).toBeGreaterThan(0);
   });
 
-  it('exposes one physical portal for every canonical V16 region',()=>{
+  it('exposes one physical portal for every canonical V16 region in registry order',()=>{
     const portals=outingCrossroadsWorld.interactables.filter(item=>item.kind==='portal');
     expect(portals).toHaveLength(REGION_IDS.length);
-    expect(new Set(portals.map(item=>item.destinationId))).toEqual(new Set(REGION_IDS));
-    for(const portal of portals){
-      expect(portal.artSrc).toMatch(/^\/assets\/exploration\/crossroads\/.+\.svg$/);
-      expect(portal.radius).toBeGreaterThanOrEqual(100);
+    expect(portals.map(item=>item.destinationId)).toEqual([...REGION_IDS]);
+  });
+
+  it('materializes every portal from the authoritative registry metadata',()=>{
+    const portals=outingCrossroadsWorld.interactables.filter(item=>item.kind==='portal');
+    for(const id of REGION_IDS){
+      const expected=getRegionDefinition(id).crossroads;
+      const portal=portals.find(item=>item.destinationId===id);
+      expect(portal).toMatchObject({
+        id:expected.interactionId,
+        label:expected.label,
+        kind:'portal',
+        destinationId:id,
+        position:expected.position,
+        radius:expected.radius,
+        artSrc:expected.artSrc,
+      });
     }
   });
 
