@@ -22,4 +22,17 @@ describe('exploration keyboard input',()=>{
     expect(explorationKeyboardIntent('Escape',true)).toBe('none');
     expect(explorationKeyboardIntent('Enter',false)).toBe('none');
   });
+
+  it('defers action shortcuts to focused controls and typing targets without disabling movement on buttons',()=>{
+    const buttonTarget={closest:(selector:string)=>selector.includes('button')?{}:null};
+    const inputTarget={closest:(selector:string)=>selector.includes('input')?{}:null};
+    const intentWithTarget=explorationKeyboardIntent as unknown as (code:string,repeat:boolean,target:unknown)=>ReturnType<typeof explorationKeyboardIntent>;
+
+    expect(intentWithTarget('Space',false,buttonTarget)).toBe('none');
+    expect(intentWithTarget('KeyE',false,buttonTarget)).toBe('none');
+    expect(intentWithTarget('KeyW',false,buttonTarget)).toBe('movement');
+    expect(intentWithTarget('KeyW',false,inputTarget)).toBe('none');
+    expect(intentWithTarget('Space',false,inputTarget)).toBe('none');
+    expect(intentWithTarget('Escape',false,inputTarget)).toBe('exit');
+  });
 });
