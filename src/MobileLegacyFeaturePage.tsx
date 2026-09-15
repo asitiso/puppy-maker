@@ -93,7 +93,7 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const talents=currentAdvancedTalents(state);
   const titles=currentCareerTitles(state);
   const currentTitle=careerTitleDefinitions.find(item=>item.id===titles[titles.length-1]);
-  const talentLabels=talents.map(id=>talentDefinitions.find(item=>talentDefinitions.find(candidate=>candidate.id===id)?.label??'').filter(Boolean);
+  const talentLabels=talents.map(id=>talentDefinitions.find(item=>item.id===id)?.label).filter(Boolean);
   const highestMastery=Math.max(...Object.values(state.mastery).map(entry=>masteryLevel(entry.xp)));
 
   if(feature==='outing'){
