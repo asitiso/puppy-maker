@@ -28,6 +28,13 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('onProgress()');
   });
 
+  it('can restore persisted interaction completion and report newly completed interactions',()=>{
+    expect(scene).toContain('completedInteractionIds?:readonly string[]');
+    expect(scene).toContain('onInteractionComplete?:(interactionId:string)=>void');
+    expect(scene).toContain('new Set(completedInteractionIds)');
+    expect(scene).toContain('onInteractionComplete?.(activeInteractionId)');
+  });
+
   it('keeps living repeatable interactions available after their story frame closes',()=>{
     expect(scene).toContain('interaction.repeatable');
     expect(scene).toContain('!interaction.repeatable');
