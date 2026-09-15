@@ -12,13 +12,20 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('world.playerSpeed');
   });
 
-  it('unifies thumb and keyboard navigation without requiring menu selection',()=>{
+  it('unifies thumb and tested keyboard navigation without requiring menu selection',()=>{
     expect(scene).toContain('<MobileJoystick');
-    expect(scene).toContain("'ArrowUp'");
-    expect(scene).toContain("'KeyW'");
-    expect(scene).toContain("'Space'");
-    expect(scene).toContain("'KeyE'");
+    expect(scene).toContain('explorationKeyboardIntent');
+    expect(scene).toContain('keyboardDirection');
+    expect(scene).toContain('isMovementKey');
     expect(scene).toContain('mobile-exploration__action');
+  });
+
+  it('keeps keyboard exit and focus-loss cleanup wired to the shared exploration runtime',()=>{
+    expect(scene).toContain("intent==='exit'");
+    expect(scene).toContain('else onExit()');
+    expect(scene).toContain("window.addEventListener('blur',clear)");
+    expect(scene).toContain('pressedKeysRef.current.clear()');
+    expect(scene).toContain('joystickRef.current={x:0,y:0}');
   });
 
   it('uses illustrated frame stories and protects progression from double commits',()=>{
@@ -55,10 +62,11 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('mobile-exploration__portal-label');
   });
 
-  it('renders authored landmarks at world coordinates and keeps an explicit exit path',()=>{
+  it('renders authored landmarks at world coordinates and keeps an explicit touch exit path',()=>{
     expect(scene).toContain('interaction.artSrc');
     expect(scene).toContain('mobile-exploration__landmark');
     expect(scene).toContain('mobile-exploration__exit-marker');
     expect(scene).toContain('aria-label={`${world.label} 탐험 종료`}');
+    expect(scene).toContain('onClick={onExit}');
   });
 });
