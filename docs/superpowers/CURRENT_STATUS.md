@@ -4,29 +4,33 @@
 
 ## Active branch
 
-- Branch: `work/v15-mobile-rpg-foundation`
-- Pull request: #245 — V15 Mobile RPG foundation
-- Last verified implementation baseline: `f5318baddf246127958bfefc290164cb84cc54db`
-- Verification: GitHub Actions CI #2420 passed both tests and production build.
+- Branch: `work/v16-living-regions`
+- Pull request: #246 — V16 living regions foundation
+- Last verified implementation baseline: `b89fb16a487094ee80651524b67319708d72a596`
+- Verification: GitHub Actions CI #2457 passed both the full test suite and production build.
 
 ## Completed work
 
-- Mobile RPG exploration foundation is implemented: deterministic movement/collision/camera runtime, mobile joystick, framed story overlay, forest exploration, progression guards, and authored exploration art.
-- Village and lakeside have been moved onto the same exploration runtime.
-- Outing destination selection menu has been replaced by a 2400×1600 walkable crossroads overworld.
-- Crossroads contains physical portals for `forest`, `village`, and `lakeside` plus an in-world exit home.
-- Region exit returns to the crossroads instead of a destination menu.
-- Portal visual feedback respects `prefers-reduced-motion`.
-- `src/exploration/outing-crossroads.test.ts` locks the crossroads world/portal/exit contract.
+- V15 direct-movement exploration runtime remains canonical for all outing traversal.
+- The walkable crossroads now exposes six spatially distinct portals: `forest`, `village`, `lakeside`, `old_shrine`, `herb_hills`, and `expedition_outpost`.
+- V16 persistent living-region state is additive, sanitised, save-compatible, and supports `unvisited → active → mainQuestInProgress → mainQuestResolved → postResolution` plus discoveries and completed interactions.
+- Shared exploration can restore persisted interaction completion and report newly completed interactions without changing legacy `onOuting(location)` semantics.
+- `old_shrine` is the first complete V16 living region and is playable directly from the crossroads.
+- Old Shrine includes a 2400×1600 authored map, collisions, direct crossroads exit, three echo characters, three discoveries, a seal/rune/memory main quest, conditional dialogue, personality/world-fact sensitivity, resolution art changes, revisit dialogue, and persistent quest/discovery progress.
+- Old Shrine quest-state changes do not reset the player back to the region entrance.
+- Original Old Shrine SVG environment, landmark, NPC/echo, gate, rune, memory, and story-frame assets are committed under `public/assets/exploration/old-shrine/`.
+- Old Shrine routing is intentionally narrow: `herb_hills` and `expedition_outpost` portals are visible in the crossroads but are not yet exposed as unfinished placeholder scenes.
 
 ## Continuation rule
 
-1. Start from the latest branch HEAD and inspect PR #245 plus current CI before changing code.
-2. Do **not** repeat tasks in `2026-09-14-mobile-rpg-foundation.md` or `2026-09-14-outing-overworld.md`; those implementation scopes are complete even if an older historical checkbox remains unchecked.
-3. If HEAD CI is failing, fix that exact failure first and avoid starting a new feature.
-4. If HEAD CI is green and there is no newer approved implementation plan, stop at the verified baseline and report that a new design/plan is required rather than inventing scope.
-5. Preserve the existing `onOuting(location)` mutation path and existing save/progression semantics unless a newer approved design explicitly changes them.
+1. Start from the latest `work/v16-living-regions` HEAD and inspect PR #246 plus current CI before changing code.
+2. Do **not** repeat V15 foundation/overworld work, V16 foundation work, six-portal crossroads work, or the completed Old Shrine vertical slice.
+3. Treat `docs/superpowers/specs/2026-09-15-v16-world-expansion-living-regions-design.md` as the approved V16 scope unless a newer approved spec supersedes it.
+4. If HEAD CI is failing, fix that exact failure first and avoid starting another region until GREEN.
+5. If HEAD CI is green, continue the approved rollout in order: Herb Hills full vertical slice, then Expedition Outpost, then the cross-region/full regression gate.
+6. Preserve existing `onOuting(location)` progression behavior; living regions use their own additive persistence path.
+7. A new living region is not complete until it satisfies the region completeness contract: 2–3 authored characters, one local main quest, two or more conditional events, 2–3 discoveries, persistent visible change, revisit dialogue, personality/bond/world-fact sensitivity, original art, direct crossroads exit, and mobile/keyboard accessibility.
 
-## Latest documentation update
+## Next highest-priority work
 
-The Outing Overworld plan is marked complete in commit `58750f7bbd342d8c1e45f91b1c031086088548b5`. CI for documentation-only commits should still be inspected before using them as the next verified baseline.
+Implement the complete `herb_hills` vertical slice from the approved V16 design: gathering-focused traversal, 2–3 local NPCs, a small herb request quest, meaningful gathering points, rare-plant discovery, conditional events, a visibly improved post-resolution gathering state, revisit dialogue, persistent progress, original authored art, and crossroads routing only after the slice is complete enough to play.
