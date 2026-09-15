@@ -41,6 +41,13 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('disabled={!nearby||Boolean(activeFrame)}');
   });
 
+  it('clears held movement when a story frame opens so closing it cannot resume stale movement',()=>{
+    expect(scene).toContain('if(!activeFrame) return;');
+    expect(scene).toContain('pressedKeysRef.current.clear()');
+    expect(scene).toContain('joystickRef.current={x:0,y:0}');
+    expect(scene).toContain('setMoving(false)');
+  });
+
   it('restores keyboard focus to the exploration action after a story closes or is cancelled',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
