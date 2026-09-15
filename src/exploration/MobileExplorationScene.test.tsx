@@ -62,6 +62,10 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('mobile-exploration__portal-label');
   });
 
+  it('labels exit actions as returning instead of investigating',()=>{
+    expect(scene).toContain("nearby?.kind==='exit'?'돌아가기'");
+  });
+
   it('renders authored landmarks at world coordinates and keeps an explicit touch exit path',()=>{
     expect(scene).toContain('interaction.artSrc');
     expect(scene).toContain('mobile-exploration__landmark');
