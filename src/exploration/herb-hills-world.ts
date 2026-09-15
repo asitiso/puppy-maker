@@ -31,11 +31,11 @@ export function herbHillsExploration(progress:LivingRegionProgress,context:HerbH
     {id:'herb-exit',label:'여행자 교차로로 돌아가기',kind:'exit',position:{x:1200,y:1510},radius:115},
     {id:'herb-npc-mira',label:resolved?'미라와 다시 이야기하기':'채집가 미라에게 말 걸기',kind:'story',position:{x:730,y:1180},radius:120,storyFrameId:'herb-mira',artSrc:herbAsset('mira.svg'),repeatable:true},
     {id:'herb-npc-jun',label:'약초꾼 준에게 바람길 묻기',kind:'story',position:{x:1780,y:1040},radius:120,storyFrameId:'herb-jun',artSrc:herbAsset('jun.svg'),repeatable:true},
-    {id:'herb-npc-sora',label:'관리인 소라와 이야기하기',kind:'story',position:{x:520,y:470},radius:120,storyFrameId:'herb-sora',artSrc:herbAsset('sora.svg'),repeatable:true},
+    {id:'herb-npc-sora',label:'관리인 소라와 이야기하기',kind:'story',position:{x:520,y:650},radius:120,storyFrameId:'herb-sora',artSrc:herbAsset('sora.svg'),repeatable:true},
   ];
-  if(resolved){interactables.push({id:POST_RESOLUTION,label:'다시 가동된 약초 건조대 살펴보기',kind:'story',position:{x:880,y:390},radius:145,storyFrameId:'herb-revisit',artSrc:herbAsset('restored-rack.svg'),repeatable:true});}
+  if(resolved){interactables.push({id:POST_RESOLUTION,label:'다시 가동된 약초 건조대 살펴보기',kind:'story',position:{x:1030,y:390},radius:145,storyFrameId:'herb-revisit',artSrc:herbAsset('restored-rack.svg'),repeatable:true});}
   else interactables.push(
-    {id:QUEST_START,label:'미라의 약초 부탁 확인하기',kind:'story',position:{x:850,y:1120},radius:130,storyFrameId:'herb-request',artSrc:herbAsset('basket.svg')},
+    {id:QUEST_START,label:'미라의 약초 부탁 확인하기',kind:'story',position:{x:850,y:1240},radius:130,storyFrameId:'herb-request',artSrc:herbAsset('basket.svg')},
     {id:'herb-mint-patch',label:'돌담 아래 언덕민트 살펴보기',kind:'story',position:{x:390,y:830},radius:125,storyFrameId:'herb-mint',artSrc:herbAsset('herb-patch.svg'),requiresCompleted:[QUEST_START]},
     {id:'herb-sunleaf-patch',label:'남쪽 비탈 햇잎초 살펴보기',kind:'story',position:{x:1510,y:1240},radius:125,storyFrameId:'herb-sunleaf',artSrc:herbAsset('herb-patch.svg'),requiresCompleted:[QUEST_START]},
     {id:'herb-rare-bloom',label:'바람 능선의 은빛 꽃 기록하기',kind:'story',position:{x:1960,y:520},radius:135,storyFrameId:'herb-rare',artSrc:herbAsset('rare-bloom.svg'),requiresCompleted:['herb-mint-patch','herb-sunleaf-patch']},
