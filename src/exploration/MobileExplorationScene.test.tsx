@@ -41,6 +41,13 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('disabled={!nearby||Boolean(activeFrame)}');
   });
 
+  it('restores keyboard focus to the exploration action after a story closes or is cancelled',()=>{
+    expect(scene).toContain('actionButtonRef');
+    expect(scene).toContain('actionButtonRef.current?.focus()');
+    expect(scene).toContain('ref={actionButtonRef}');
+    expect(scene).toContain('closeStory');
+  });
+
   it('can restore persisted interaction completion and report newly completed interactions',()=>{
     expect(scene).toContain('completedInteractionIds?:readonly string[]');
     expect(scene).toContain('onInteractionComplete?:(interactionId:string)=>void');
