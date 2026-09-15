@@ -32,13 +32,13 @@ export function expeditionOutpostExploration(progress:LivingRegionProgress,conte
     {id:'outpost-exit',label:'여행자 교차로로 돌아가기',kind:'exit',position:{x:1180,y:1510},radius:115},
     {id:'outpost-npc-sena',label:resolved?'세나와 다시 이야기하기':'대장 세나에게 보고하기',kind:'story',position:{x:760,y:1180},radius:120,storyFrameId:'outpost-sena',artSrc:outpostAsset('sena.svg'),repeatable:true},
     {id:'outpost-npc-min',label:'정찰대원 민에게 흔적 묻기',kind:'story',position:{x:1750,y:1040},radius:120,storyFrameId:'outpost-min',artSrc:outpostAsset('min.svg'),repeatable:true},
-    {id:'outpost-npc-ara',label:'보급관 아라와 이야기하기',kind:'story',position:{x:560,y:470},radius:120,storyFrameId:'outpost-ara',artSrc:outpostAsset('ara.svg'),repeatable:true},
+    {id:'outpost-npc-ara',label:'보급관 아라와 이야기하기',kind:'story',position:{x:560,y:620},radius:120,storyFrameId:'outpost-ara',artSrc:outpostAsset('ara.svg'),repeatable:true},
   ];
   if(resolved){
     interactables.push({id:POST_RESOLUTION,label:'복구된 감시 불빛 살펴보기',kind:'story',position:{x:1320,y:350},radius:145,storyFrameId:'outpost-revisit',artSrc:outpostAsset('watchfire.svg'),repeatable:true});
   }else{
     interactables.push(
-      {id:QUEST_START,label:'세나의 순찰 브리핑 듣기',kind:'story',position:{x:900,y:1120},radius:130,storyFrameId:'outpost-briefing',artSrc:outpostAsset('field-kit.svg')},
+      {id:QUEST_START,label:'세나의 순찰 브리핑 듣기',kind:'story',position:{x:900,y:1270},radius:130,storyFrameId:'outpost-briefing',artSrc:outpostAsset('field-kit.svg')},
       {id:'outpost-broken-marker',label:'서쪽 경사면 순찰 표식 조사',kind:'story',position:{x:340,y:760},radius:125,storyFrameId:'outpost-marker',artSrc:outpostAsset('broken-marker.svg'),requiresCompleted:[QUEST_START]},
       {id:'outpost-beast-tracks',label:'북동 능선 발자국 기록',kind:'story',position:{x:1940,y:520},radius:135,storyFrameId:'outpost-tracks',artSrc:outpostAsset('tracks.svg'),requiresCompleted:[QUEST_START]},
       {id:'outpost-supply-seal',label:'보급 상자의 찢어진 봉인 확인',kind:'story',position:{x:1520,y:1210},radius:125,storyFrameId:'outpost-seal',artSrc:outpostAsset('supply-crate.svg'),requiresCompleted:['outpost-broken-marker','outpost-beast-tracks']},
