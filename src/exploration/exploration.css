@@ -70,7 +70,7 @@
   .mobile-exploration__exit{top:max(8px,env(safe-area-inset-top));min-width:52px;min-height:52px}
   .exploration-joystick{width:118px;height:118px;bottom:max(3px,env(safe-area-inset-bottom))}.exploration-joystick__ring{inset:12px}.exploration-joystick__knob{width:52px;height:52px;margin:-26px 0 0 -26px}
   .mobile-exploration__action{min-width:64px;min-height:64px;bottom:max(12px,env(safe-area-inset-bottom))}
-  .mobile-exploration__prompt{bottom:max(77px,calc(env(safe-area-inset-bottom) + 69px));font-size:9px}
+  .mobile-exploration__prompt{bottom:max(77px,calc(env(safe-area-inset-bottom) + 69px));max-width:min(46vw,350px);font-size:9px}
   .mobile-exploration__portal-label{padding:4px 8px;font-size:9px}
   .exploration-story-frame{grid-template-columns:minmax(0,1.18fr) minmax(230px,.82fr);grid-template-rows:1fr;width:min(90vw,840px);max-height:min(88dvh,430px)}
   .exploration-story-frame__visual{min-height:0}.exploration-story-frame__art{min-height:0;height:100%}.exploration-story-frame__copy{display:flex;flex-direction:column;justify-content:center;padding:14px 16px}.exploration-story-frame__copy h2{font-size:18px}.exploration-story-frame__copy p{font-size:12px;line-height:1.38;margin:8px 0 12px}
