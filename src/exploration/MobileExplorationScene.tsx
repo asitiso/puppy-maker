@@ -124,7 +124,7 @@ export default function MobileExplorationScene({
 
   useEffect(()=>{
     const keyDown=(event:KeyboardEvent)=>{
-      const intent=explorationKeyboardIntent(event.code,event.repeat);
+      const intent=explorationKeyboardIntent(event.code,event.repeat,event.target);
       if(intent==='movement'){
         event.preventDefault();
         pressedKeysRef.current.add(event.code);
