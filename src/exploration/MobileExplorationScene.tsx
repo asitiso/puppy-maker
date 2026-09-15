@@ -52,7 +52,7 @@ export default function MobileExplorationScene({
     setActiveFrame(null);
     setActiveInteractionId(null);
     committedRef.current=false;
-  },[world]);
+  },[world.id]);
 
   useEffect(()=>{
     const node=viewportRef.current;
