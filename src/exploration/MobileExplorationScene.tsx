@@ -159,7 +159,7 @@ export default function MobileExplorationScene({
     :completed.size>0
       ?'새로 나타난 흔적이 있는지 주변을 살펴보세요.'
       :'직접 움직여 주변의 단서를 찾아보세요.';
-  const actionText=nearby?.kind==='portal'?'이동':nearby?'조사':'···';
+  const actionText=nearby?.kind==='portal'?'이동':nearby?.kind==='exit'?'돌아가기':nearby?'조사':'···';
 
   return <section ref={viewportRef} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
