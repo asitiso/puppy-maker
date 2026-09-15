@@ -23,8 +23,7 @@ export function getOutingRoute(sceneId:OutingSceneId):OutingRoute{
   if(sceneId==='crossroads') return {kind:'crossroads'};
   if(isLegacyRegionId(sceneId)) return {kind:'legacy',regionId:sceneId};
   if(isLivingRegionId(sceneId)) return {kind:'living',regionId:sceneId};
-  const exhaustive:never=sceneId;
-  throw new Error(`Unknown outing scene: ${exhaustive}`);
+  throw new Error(`Unknown outing scene: ${sceneId}`);
 }
 
 export function getOutingSceneTitle(sceneId:OutingSceneId,crossroadsTitle:string):string{
