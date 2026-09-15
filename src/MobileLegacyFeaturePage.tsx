@@ -8,6 +8,7 @@ import {talentDefinitions} from './advanced-talents';
 import {careerTitleDefinitions} from './career-records';
 import MobileExplorationScene from './exploration/MobileExplorationScene';
 import {outingCrossroadsWorld} from './exploration/outing-crossroads';
+import {getRegionDefinition} from './exploration/region-registry';
 import {
   achievementDefinitions,collectionProgress,currentAdvancedTalents,currentAvailableMail,currentCareerTitles,currentGuardianStatus,
   currentStoryChapters,eligibleAchievements,masteryLevel,relationshipRank,type AchievementId,type GameState,type MailRewardId,
@@ -22,6 +23,7 @@ import {monthlyFocusDefinitions} from './monthly-focus';
 import {monthlyMissionDefinitions} from './monthly-missions';
 import type {MobileFeatureId} from './mobile-router';
 import type {MobileVisualSlot} from './mobile-visual-assets';
+import LivingRegionSceneFlow from './scene/LivingRegionSceneFlow';
 import OutingSceneFlow from './scene/OutingSceneFlow';
 import {storyChapterDefinitions} from './story-chapters';
 import './mobile-v9-feature.css';
@@ -38,7 +40,7 @@ type Props={
   onMonthlyFocus:(focus:GameState['monthlyFocus'])=>void;
 };
 
-type OutingSceneId='crossroads'|OutingLocationId;
+type OutingSceneId='crossroads'|OutingLocationId|'old_shrine';
 
 const relationshipLabels={acquaintance:'낯선 사이',familiar:'익숙한 사이',friend:'친구',close_friend:'가까운 친구',precious:'소중한 사람'} as const;
 const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
@@ -47,6 +49,10 @@ const noop=()=>{};
 
 function isOutingLocation(value:string):value is OutingLocationId{
   return outingLocationIds.includes(value as OutingLocationId);
+}
+
+function isPlayableOutingDestination(value:string):value is Exclude<OutingSceneId,'crossroads'>{
+  return isOutingLocation(value)||value==='old_shrine';
 }
 
 type FeatureMeta={eyebrow:string;title:string;description:string;backgroundSlot:MobileVisualSlot};
@@ -102,7 +108,13 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
 
   if(feature==='outing'){
     const location=outingScene==='crossroads'?null:outingScene;
-    const title=location===null?outingCrossroadsWorld.label:outingDefinitions[location].name;
+    const legacyLocation=location!==null&&isOutingLocation(location)?location:null;
+    const livingLocation=location==='old_shrine'?location:null;
+    const title=location===null
+      ?outingCrossroadsWorld.label
+      :legacyLocation!==null
+        ?outingDefinitions[legacyLocation].name
+        :getRegionDefinition(location).name;
     const subtitle=location===null?'직접 길을 걸어 원하는 지역 입구를 찾아보세요.':'직접 움직여 주변의 단서를 찾아보세요.';
     return <MobilePageShell
       title={title}
@@ -119,10 +131,10 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
         onProgress={noop}
         onExit={onBack}
         onPortal={destinationId=>{
-          if(isOutingLocation(destinationId))setOutingScene(destinationId);
+          if(isPlayableOutingDestination(destinationId))setOutingScene(destinationId);
         }}
-      />:<OutingSceneFlow
-        location={location}
+      />:legacyLocation!==null?<OutingSceneFlow
+        location={legacyLocation}
         year={state.year}
         month={state.month}
         week={state.week}
@@ -144,7 +156,15 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
           setFeedback(`${outingDefinitions[outingLocation].name}으로 외출했어요.`);
         }}
         onExit={()=>setOutingScene('crossroads')}
-      />}
+      />:livingLocation==='old_shrine'?<LivingRegionSceneFlow
+        regionId='old_shrine'
+        progress={state.livingRegions.old_shrine}
+        personality={state.personality}
+        affection={state.stats.affection}
+        worldFacts={state.worldHistory.currentFacts}
+        inheritedWorldFacts={state.worldHistory.inheritedFacts}
+        onExit={()=>setOutingScene('crossroads')}
+      />:null}
     </MobilePageShell>;
   }
 
