@@ -37,6 +37,12 @@ export default function MobileExplorationScene({
 
   useEffect(()=>{activeFrameRef.current=activeFrame;},[activeFrame]);
   useEffect(()=>{
+    if(!activeFrame) return;
+    pressedKeysRef.current.clear();
+    joystickRef.current={x:0,y:0};
+    setMoving(false);
+  },[activeFrame]);
+  useEffect(()=>{
     pressedKeysRef.current.clear();
     joystickRef.current={x:0,y:0};
     setPosition(world.start);
