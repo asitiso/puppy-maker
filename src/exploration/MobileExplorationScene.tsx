@@ -22,6 +22,7 @@ export default function MobileExplorationScene({
   completedInteractionIds=[],onInteractionComplete,
 }:Props){
   const viewportRef=useRef<HTMLElement|null>(null);
+  const actionButtonRef=useRef<HTMLButtonElement|null>(null);
   const joystickRef=useRef<Vec2>({x:0,y:0});
   const pressedKeysRef=useRef(new Set<string>());
   const activeFrameRef=useRef<ExplorationStoryFrame|null>(null);
@@ -109,6 +110,12 @@ export default function MobileExplorationScene({
     }
   },[nearby,onExit,onPortal,storyFrames]);
 
+  const closeStory=useCallback(()=>{
+    setActiveFrame(null);
+    setActiveInteractionId(null);
+    requestAnimationFrame(()=>actionButtonRef.current?.focus());
+  },[]);
+
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
     if(activeInteractionId){
       setCompleted(current=>new Set(current).add(activeInteractionId));
@@ -118,9 +125,8 @@ export default function MobileExplorationScene({
       committedRef.current=true;
       onProgress();
     }
-    setActiveFrame(null);
-    setActiveInteractionId(null);
-  },[activeInteractionId,onInteractionComplete,onProgress]);
+    closeStory();
+  },[activeInteractionId,closeStory,onInteractionComplete,onProgress]);
 
   useEffect(()=>{
     const keyDown=(event:KeyboardEvent)=>{
@@ -138,7 +144,7 @@ export default function MobileExplorationScene({
       }
       if(intent==='exit'){
         event.preventDefault();
-        if(activeFrameRef.current){setActiveFrame(null);setActiveInteractionId(null);}else onExit();
+        if(activeFrameRef.current) closeStory(); else onExit();
       }
     };
     const keyUp=(event:KeyboardEvent)=>{if(isMovementKey(event.code)) pressedKeysRef.current.delete(event.code);};
@@ -147,7 +153,7 @@ export default function MobileExplorationScene({
     window.addEventListener('keyup',keyUp);
     window.addEventListener('blur',clear);
     return ()=>{window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);};
-  },[finishStory,onExit,openInteraction]);
+  },[closeStory,finishStory,onExit,openInteraction]);
 
   const worldStyle={
     width:`${world.width}px`,height:`${world.height}px`,
@@ -190,7 +196,7 @@ export default function MobileExplorationScene({
     <button type="button" className="mobile-exploration__exit" disabled={Boolean(activeFrame)} onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
     <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
-    <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
+    <button ref={actionButtonRef} type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
     {activeFrame?<StoryFrameOverlay frame={activeFrame} onComplete={()=>finishStory(activeFrame)}/>:null}
   </section>;
 }
