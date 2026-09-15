@@ -1,4 +1,4 @@
-import {type CSSProperties,type PointerEvent,useCallback,useState} from 'react';
+import {type CSSProperties,type PointerEvent,useCallback,useEffect,useState} from 'react';
 import type {Vec2} from './exploration-types';
 
 const MAX_KNOB_TRAVEL=38;
@@ -15,6 +15,10 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
     setKnob({x:0,y:0});
     onDirection({x:0,y:0});
   },[onDirection]);
+
+  useEffect(()=>{
+    if(disabled) reset();
+  },[disabled,reset]);
 
   const update=useCallback((event:PointerEvent<HTMLDivElement>)=>{
     if(disabled) return;

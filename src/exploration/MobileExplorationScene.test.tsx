@@ -12,13 +12,20 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('world.playerSpeed');
   });
 
-  it('unifies thumb and keyboard navigation without requiring menu selection',()=>{
+  it('unifies thumb and tested keyboard navigation without requiring menu selection',()=>{
     expect(scene).toContain('<MobileJoystick');
-    expect(scene).toContain("'ArrowUp'");
-    expect(scene).toContain("'KeyW'");
-    expect(scene).toContain("'Space'");
-    expect(scene).toContain("'KeyE'");
+    expect(scene).toContain('explorationKeyboardIntent');
+    expect(scene).toContain('keyboardDirection');
+    expect(scene).toContain('isMovementKey');
     expect(scene).toContain('mobile-exploration__action');
+  });
+
+  it('keeps keyboard exit and focus-loss cleanup wired to the shared exploration runtime',()=>{
+    expect(scene).toContain("intent==='exit'");
+    expect(scene).toContain('else onExit()');
+    expect(scene).toContain("window.addEventListener('blur',clear)");
+    expect(scene).toContain('pressedKeysRef.current.clear()');
+    expect(scene).toContain('joystickRef.current={x:0,y:0}');
   });
 
   it('uses illustrated frame stories and protects progression from double commits',()=>{
@@ -26,6 +33,33 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('committedRef');
     expect(scene).toContain('frame.progression&&!committedRef.current');
     expect(scene).toContain('onProgress()');
+  });
+
+  it('keeps background exploration controls out of the modal story focus path',()=>{
+    expect(scene).toContain('className="mobile-exploration__exit" disabled={Boolean(activeFrame)}');
+    expect(scene).toContain('<MobileJoystick disabled={Boolean(activeFrame)}');
+    expect(scene).toContain('disabled={!nearby||Boolean(activeFrame)}');
+  });
+
+  it('clears held movement when a story frame opens so closing it cannot resume stale movement',()=>{
+    expect(scene).toContain('if(!activeFrame) return;');
+    expect(scene).toContain('pressedKeysRef.current.clear()');
+    expect(scene).toContain('joystickRef.current={x:0,y:0}');
+    expect(scene).toContain('setMoving(false)');
+  });
+
+  it('restores keyboard focus to the exploration action after a story closes or is cancelled',()=>{
+    expect(scene).toContain('actionButtonRef');
+    expect(scene).toContain('actionButtonRef.current?.focus()');
+    expect(scene).toContain('ref={actionButtonRef}');
+    expect(scene).toContain('closeStory');
+  });
+
+  it('can restore persisted interaction completion and report newly completed interactions',()=>{
+    expect(scene).toContain('completedInteractionIds?:readonly string[]');
+    expect(scene).toContain('onInteractionComplete?:(interactionId:string)=>void');
+    expect(scene).toContain('new Set(completedInteractionIds)');
+    expect(scene).toContain('onInteractionComplete?.(activeInteractionId)');
   });
 
   it('keeps living repeatable interactions available after their story frame closes',()=>{
@@ -48,10 +82,15 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('mobile-exploration__portal-label');
   });
 
-  it('renders authored landmarks at world coordinates and keeps an explicit exit path',()=>{
+  it('labels exit actions as returning instead of investigating',()=>{
+    expect(scene).toContain("nearby?.kind==='exit'?'돌아가기'");
+  });
+
+  it('renders authored landmarks at world coordinates and keeps an explicit touch exit path',()=>{
     expect(scene).toContain('interaction.artSrc');
     expect(scene).toContain('mobile-exploration__landmark');
     expect(scene).toContain('mobile-exploration__exit-marker');
     expect(scene).toContain('aria-label={`${world.label} 탐험 종료`}');
+    expect(scene).toContain('onClick={onExit}');
   });
 });

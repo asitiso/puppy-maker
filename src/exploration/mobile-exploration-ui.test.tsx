@@ -33,4 +33,9 @@ describe('mobile-first exploration controls',()=>{
     expect(css).toContain('@media (orientation:landscape) and (max-height:560px)');
     expect(css).toContain('@media (prefers-reduced-motion:reduce)');
   });
+
+  it('keeps the short-landscape prompt inside the center lane between thumb controls',()=>{
+    const css=source('exploration.css');
+    expect(css).toContain('.mobile-exploration__prompt{bottom:max(77px,calc(env(safe-area-inset-bottom) + 69px));max-width:min(46vw,350px);font-size:9px}');
+  });
 });

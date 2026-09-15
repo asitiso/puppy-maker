@@ -7,6 +7,7 @@ import {attendanceKey,attendanceReward} from './attendance';
 import {talentDefinitions} from './advanced-talents';
 import {careerTitleDefinitions} from './career-records';
 import MobileExplorationScene from './exploration/MobileExplorationScene';
+import {getOutingRoute,getOutingSceneTitle,parseOutingDestination,type OutingSceneId} from './exploration/outing-navigation';
 import {outingCrossroadsWorld} from './exploration/outing-crossroads';
 import {
   achievementDefinitions,collectionProgress,currentAdvancedTalents,currentAvailableMail,currentCareerTitles,currentGuardianStatus,
@@ -22,6 +23,7 @@ import {monthlyFocusDefinitions} from './monthly-focus';
 import {monthlyMissionDefinitions} from './monthly-missions';
 import type {MobileFeatureId} from './mobile-router';
 import type {MobileVisualSlot} from './mobile-visual-assets';
+import LivingRegionSceneFlow from './scene/LivingRegionSceneFlow';
 import OutingSceneFlow from './scene/OutingSceneFlow';
 import {storyChapterDefinitions} from './story-chapters';
 import './mobile-v9-feature.css';
@@ -38,16 +40,10 @@ type Props={
   onMonthlyFocus:(focus:GameState['monthlyFocus'])=>void;
 };
 
-type OutingSceneId='crossroads'|OutingLocationId;
-
 const relationshipLabels={acquaintance:'낯선 사이',familiar:'익숙한 사이',friend:'친구',close_friend:'가까운 친구',precious:'소중한 사람'} as const;
 const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
 const noStoryFrames={};
 const noop=()=>{};
-
-function isOutingLocation(value:string):value is OutingLocationId{
-  return outingLocationIds.includes(value as OutingLocationId);
-}
 
 type FeatureMeta={eyebrow:string;title:string;description:string;backgroundSlot:MobileVisualSlot};
 const featureMeta:Partial<Record<MobileFeatureId,FeatureMeta>>={
@@ -101,28 +97,30 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
   const highestMastery=Math.max(...Object.values(state.mastery).map(entry=>masteryLevel(entry.xp)));
 
   if(feature==='outing'){
-    const location=outingScene==='crossroads'?null:outingScene;
-    const title=location===null?outingCrossroadsWorld.label:outingDefinitions[location].name;
-    const subtitle=location===null?'직접 길을 걸어 원하는 지역 입구를 찾아보세요.':'직접 움직여 주변의 단서를 찾아보세요.';
+    const outingRoute=getOutingRoute(outingScene);
+    const atCrossroads=outingRoute.kind==='crossroads';
+    const title=getOutingSceneTitle(outingScene,outingCrossroadsWorld.label);
+    const subtitle=atCrossroads?'직접 길을 걸어 원하는 지역 입구를 찾아보세요.':'직접 움직여 주변의 단서를 찾아보세요.';
     return <MobilePageShell
       title={title}
       subtitle={subtitle}
       backgroundSlot={info.backgroundSlot}
       scrollKey={`feature:${feature}:${outingScene}`}
-      onBack={location===null?onBack:()=>setOutingScene('crossroads')}
+      onBack={atCrossroads?onBack:()=>setOutingScene('crossroads')}
       className="v8-feature-page v9-feature-page v14-outing-scene-page v15-rpg-scene-page"
     >
-      {location===null?<MobileExplorationScene
+      {outingRoute.kind==='crossroads'?<MobileExplorationScene
         world={outingCrossroadsWorld}
         storyFrames={noStoryFrames}
         playerArtSrc={runaExplorationArt}
         onProgress={noop}
         onExit={onBack}
         onPortal={destinationId=>{
-          if(isOutingLocation(destinationId))setOutingScene(destinationId);
+          const destination=parseOutingDestination(destinationId);
+          if(destination)setOutingScene(destination);
         }}
-      />:<OutingSceneFlow
-        location={location}
+      />:outingRoute.kind==='legacy'?<OutingSceneFlow
+        location={outingRoute.regionId}
         year={state.year}
         month={state.month}
         week={state.week}
@@ -143,6 +141,14 @@ export default function MobileLegacyFeaturePage({feature,state,onBack:explicitBa
           onOuting(outingLocation);
           setFeedback(`${outingDefinitions[outingLocation].name}으로 외출했어요.`);
         }}
+        onExit={()=>setOutingScene('crossroads')}
+      />:<LivingRegionSceneFlow
+        regionId={outingRoute.regionId}
+        progress={state.livingRegions[outingRoute.regionId]}
+        personality={state.personality}
+        affection={state.stats.affection}
+        worldFacts={state.worldHistory.currentFacts}
+        inheritedWorldFacts={state.worldHistory.inheritedFacts}
         onExit={()=>setOutingScene('crossroads')}
       />}
     </MobilePageShell>;
