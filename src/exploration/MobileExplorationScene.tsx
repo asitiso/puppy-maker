@@ -187,7 +187,7 @@ export default function MobileExplorationScene({
     </div>
 
     <div className="mobile-exploration__hud"><small>EXPLORATION</small><strong>{world.label}</strong><span>{world.objective}</span></div>
-    <button type="button" className="mobile-exploration__exit" onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
+    <button type="button" className="mobile-exploration__exit" disabled={Boolean(activeFrame)} onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
     <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
     <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
