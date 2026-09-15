@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {
   advanceLivingRegionPostResolution,
+  applyLivingRegionUpdate,
   emptyLivingRegionState,
   enterLivingRegion,
   hydrateLivingRegionState,
@@ -77,5 +78,22 @@ describe('V16 living region state',()=>{
     expect(withDiscovery.herb_hills.completedInteractions).toEqual([]);
     expect(withInteraction.herb_hills.completedInteractions).toEqual(['windmill']);
     expect(recordLivingRegionInteraction(withInteraction,'herb_hills','windmill')).toBe(withInteraction);
+  });
+
+  it('applies the narrow update protocol without bypassing forward-only transitions',()=>{
+    const initial=emptyLivingRegionState();
+    const active=applyLivingRegionUpdate(initial,'old_shrine',{kind:'enter'});
+    const started=applyLivingRegionUpdate(active,'old_shrine',{kind:'startMainQuest'});
+    const withDiscovery=applyLivingRegionUpdate(started,'old_shrine',{kind:'recordDiscovery',discoveryId:'memory_shard'});
+    const withInteraction=applyLivingRegionUpdate(withDiscovery,'old_shrine',{kind:'recordInteraction',interactionId:'rune_console'});
+    const resolved=applyLivingRegionUpdate(withInteraction,'old_shrine',{kind:'resolveMainQuest'});
+    const post=applyLivingRegionUpdate(resolved,'old_shrine',{kind:'advancePostResolution'});
+
+    expect(post.old_shrine).toEqual({
+      phase:'postResolution',
+      discoveries:['memory_shard'],
+      completedInteractions:['rune_console'],
+    });
+    expect(applyLivingRegionUpdate(post,'old_shrine',{kind:'startMainQuest'})).toBe(post);
   });
 });
