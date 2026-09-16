@@ -15,11 +15,15 @@ export function normalizeDirection(input:Vec2):Vec2{
 function collides(point:Vec2,world:ExplorationWorldDefinition):boolean{
   const radius=Math.max(0,finite(world.playerRadius));
   return world.obstacles.some(obstacle=>{
-    const left=finite(obstacle.x)-radius;
-    const right=finite(obstacle.x)+Math.max(0,finite(obstacle.width))+radius;
-    const top=finite(obstacle.y)-radius;
-    const bottom=finite(obstacle.y)+Math.max(0,finite(obstacle.height))+radius;
-    return point.x>=left&&point.x<=right&&point.y>=top&&point.y<=bottom;
+    const left=finite(obstacle.x);
+    const top=finite(obstacle.y);
+    const right=left+Math.max(0,finite(obstacle.width));
+    const bottom=top+Math.max(0,finite(obstacle.height));
+    const nearestX=clamp(finite(point.x),left,right);
+    const nearestY=clamp(finite(point.y),top,bottom);
+    const dx=finite(point.x)-nearestX;
+    const dy=finite(point.y)-nearestY;
+    return dx*dx+dy*dy<=radius*radius;
   });
 }
 

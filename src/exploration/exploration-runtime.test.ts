@@ -29,6 +29,23 @@ describe('mobile exploration runtime',()=>{
     expect(moveWithCollisions({x:150,y:120},{x:80,y:40},world)).toEqual({x:150,y:160});
   });
 
+  it('uses the player circle at obstacle corners instead of an invisible square collision envelope',()=>{
+    const cornerWorld={...world,obstacles:[{id:'crate',x:200,y:200,width:80,height:80}]};
+    const clearCorner=moveWithCollisions({x:180,y:180},{x:5,y:5},cornerWorld);
+    expect(clearCorner.x).toBe(185);
+    expect(clearCorner.y).toBe(185);
+
+    const blockedCorner=moveWithCollisions({x:180,y:180},{x:10,y:10},cornerWorld);
+    expect(blockedCorner.x).toBe(190);
+    expect(blockedCorner.y).toBe(180);
+  });
+
+  it('still blocks direct contact with obstacle faces while allowing close corner movement',()=>{
+    const obstacleWorld={...world,obstacles:[{id:'crate',x:200,y:200,width:80,height:80}]};
+    expect(moveWithCollisions({x:180,y:240},{x:10,y:0},obstacleWorld)).toEqual({x:180,y:240});
+    expect(moveWithCollisions({x:180,y:180},{x:5,y:0},obstacleWorld)).toEqual({x:185,y:180});
+  });
+
   it('cannot tunnel through authored obstacles during a long frame or large movement delta',()=>{
     const moved=moveWithCollisions({x:100,y:120},{x:220,y:0},world);
     expect(moved.x).toBeLessThan(164);
