@@ -33,12 +33,22 @@ function clampToWorld(point:Vec2,world:ExplorationWorldDefinition):Vec2{
   };
 }
 
-export function moveWithCollisions(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
-  const start=clampToWorld(position,world);
-  const nextX=clampToWorld({x:start.x+finite(delta.x),y:start.y},world);
-  const afterX=collides(nextX,world)?start:nextX;
+function moveCollisionStep(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
+  const nextX=clampToWorld({x:position.x+finite(delta.x),y:position.y},world);
+  const afterX=collides(nextX,world)?position:nextX;
   const nextY=clampToWorld({x:afterX.x,y:afterX.y+finite(delta.y)},world);
   return collides(nextY,world)?afterX:nextY;
+}
+
+export function moveWithCollisions(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
+  let current=clampToWorld(position,world);
+  const dx=finite(delta.x);
+  const dy=finite(delta.y);
+  const radius=Math.max(1,finite(world.playerRadius,1));
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/radius));
+  const step={x:dx/steps,y:dy/steps};
+  for(let index=0;index<steps;index+=1) current=moveCollisionStep(current,step,world);
+  return current;
 }
 
 export function cameraForPlayer(player:Vec2,world:WorldBounds,viewport:WorldBounds):Vec2{

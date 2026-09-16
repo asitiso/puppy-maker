@@ -29,6 +29,17 @@ describe('mobile exploration runtime',()=>{
     expect(moveWithCollisions({x:150,y:120},{x:80,y:40},world)).toEqual({x:150,y:160});
   });
 
+  it('cannot tunnel through authored obstacles during a long frame or large movement delta',()=>{
+    const moved=moveWithCollisions({x:100,y:120},{x:220,y:0},world);
+    expect(moved.x).toBeLessThan(164);
+    expect(moved.x).toBeGreaterThanOrEqual(100);
+    expect(moved.y).toBe(120);
+  });
+
+  it('still permits large unobstructed movement instead of slowing the player to one collision step',()=>{
+    expect(moveWithCollisions({x:400,y:400},{x:220,y:120},world)).toEqual({x:620,y:520});
+  });
+
   it('centers the camera on the player and clamps it at world edges',()=>{
     expect(cameraForPlayer({x:500,y:400},world,{width:390,height:844})).toEqual({x:305,y:0});
     expect(cameraForPlayer({x:990,y:790},world,{width:390,height:300})).toEqual({x:610,y:500});
