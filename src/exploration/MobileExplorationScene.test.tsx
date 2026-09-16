@@ -50,6 +50,12 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('setMoving(false)');
   });
 
+  it('does not queue movement keys pressed while a story modal owns exploration input',()=>{
+    expect(scene).toContain("if(intent==='movement')");
+    expect(scene).toContain('if(activeFrameRef.current) return;');
+    expect(scene.indexOf('if(activeFrameRef.current) return;')).toBeLessThan(scene.indexOf('pressedKeysRef.current.add(event.code)'));
+  });
+
   it('restores useful keyboard focus after story cancellation and completion',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
