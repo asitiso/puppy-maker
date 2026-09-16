@@ -1,3 +1,4 @@
+import type {KeyboardEvent} from 'react';
 import type {ExplorationStoryFrame} from './exploration-types';
 
 type Props={
@@ -6,6 +7,14 @@ type Props={
 };
 
 export default function StoryFrameOverlay({frame,onComplete}:Props){
+  const keepDialogFocus=(event:KeyboardEvent<HTMLElement>)=>{
+    if(event.key!=='Tab') return;
+    const continueButton=event.currentTarget.querySelector<HTMLButtonElement>('.exploration-story-frame__continue');
+    if(!continueButton) return;
+    event.preventDefault();
+    continueButton.focus();
+  };
+
   return <div className="exploration-story-backdrop">
     <section
       className="exploration-story-frame"
@@ -13,6 +22,7 @@ export default function StoryFrameOverlay({frame,onComplete}:Props){
       aria-modal="true"
       aria-labelledby={`exploration-story-title-${frame.id}`}
       aria-describedby={`exploration-story-text-${frame.id}`}
+      onKeyDown={keepDialogFocus}
     >
       <div className="exploration-story-frame__visual">
         <img className="exploration-story-frame__art" src={frame.artSrc} alt="" draggable={false}/>
