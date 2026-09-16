@@ -2,6 +2,7 @@ import {type CSSProperties,type PointerEvent,useCallback,useEffect,useRef,useSta
 import type {Vec2} from './exploration-types';
 
 const MAX_KNOB_TRAVEL=38;
+const DEAD_ZONE=.14;
 
 type Props={
   disabled?:boolean;
@@ -44,13 +45,19 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
     const rawX=event.clientX-centerX;
     const rawY=event.clientY-centerY;
     const radius=Math.max(1,Math.min(rect.width,rect.height)*.36);
-    const length=Math.hypot(rawX,rawY);
-    const scale=length>radius?radius/length:1;
-    const x=rawX*scale/radius;
-    const y=rawY*scale/radius;
+    const rawMagnitude=Math.hypot(rawX,rawY)/radius;
+    if(rawMagnitude<=DEAD_ZONE){
+      neutralize();
+      return;
+    }
+    const clampedMagnitude=Math.min(1,rawMagnitude);
+    const outputMagnitude=(clampedMagnitude-DEAD_ZONE)/(1-DEAD_ZONE);
+    const sourceLength=Math.max(1,Math.hypot(rawX,rawY));
+    const x=rawX/sourceLength*outputMagnitude;
+    const y=rawY/sourceLength*outputMagnitude;
     setKnob({x:x*MAX_KNOB_TRAVEL,y:y*MAX_KNOB_TRAVEL});
     onDirection({x,y});
-  },[disabled,onDirection]);
+  },[disabled,neutralize,onDirection]);
 
   const start=(event:PointerEvent<HTMLDivElement>)=>{
     if(disabled||activePointerRef.current!==null) return;

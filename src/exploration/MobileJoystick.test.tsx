@@ -31,4 +31,12 @@ describe('mobile joystick lifecycle contract',()=>{
     expect(joystick).toContain('if(activePointerRef.current===event.pointerId) reset()');
     expect(joystick).toContain('onLostPointerCapture={loseCapture}');
   });
+
+  it('keeps small thumb jitter neutral while preserving the full outer movement range',()=>{
+    expect(joystick).toContain('const DEAD_ZONE=.14');
+    expect(joystick).toContain('if(rawMagnitude<=DEAD_ZONE)');
+    expect(joystick).toContain('neutralize();');
+    expect(joystick).toContain('const clampedMagnitude=Math.min(1,rawMagnitude)');
+    expect(joystick).toContain('const outputMagnitude=(clampedMagnitude-DEAD_ZONE)/(1-DEAD_ZONE)');
+  });
 });
