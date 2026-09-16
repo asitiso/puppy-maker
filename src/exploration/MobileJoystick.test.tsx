@@ -10,6 +10,13 @@ describe('mobile joystick lifecycle contract',()=>{
     expect(joystick).toContain('[disabled,reset]');
   });
 
+  it('releases touch ownership when the app loses focus so the next touch can move immediately',()=>{
+    expect(joystick).toContain("window.addEventListener('blur',reset)");
+    expect(joystick).toContain("window.removeEventListener('blur',reset)");
+    expect(joystick).toContain("document.addEventListener('visibilitychange',resetWhenHidden)");
+    expect(joystick).toContain('if(document.hidden) reset()');
+  });
+
   it('keeps movement owned by the first active pointer until that pointer finishes',()=>{
     expect(joystick).toContain('const activePointerRef=useRef<number|null>(null)');
     expect(joystick).toContain('if(disabled||activePointerRef.current!==null) return');

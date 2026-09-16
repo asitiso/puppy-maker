@@ -26,6 +26,16 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
     if(disabled) reset();
   },[disabled,reset]);
 
+  useEffect(()=>{
+    const resetWhenHidden=()=>{if(document.hidden) reset();};
+    window.addEventListener('blur',reset);
+    document.addEventListener('visibilitychange',resetWhenHidden);
+    return ()=>{
+      window.removeEventListener('blur',reset);
+      document.removeEventListener('visibilitychange',resetWhenHidden);
+    };
+  },[reset]);
+
   const update=useCallback((event:PointerEvent<HTMLDivElement>)=>{
     if(disabled||activePointerRef.current!==event.pointerId) return;
     const rect=event.currentTarget.getBoundingClientRect();
