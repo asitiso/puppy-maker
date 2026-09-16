@@ -37,7 +37,9 @@ describe('mobile exploration runtime',()=>{
   });
 
   it('still permits large unobstructed movement instead of slowing the player to one collision step',()=>{
-    expect(moveWithCollisions({x:400,y:400},{x:220,y:120},world)).toEqual({x:620,y:520});
+    const moved=moveWithCollisions({x:400,y:400},{x:220,y:120},world);
+    expect(moved.x).toBeCloseTo(620,10);
+    expect(moved.y).toBeCloseTo(520,10);
   });
 
   it('centers the camera on the player and clamps it at world edges',()=>{
