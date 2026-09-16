@@ -2,7 +2,6 @@ import {normalizeDirection} from './exploration-runtime';
 import type {Vec2} from './exploration-types';
 
 const MOVEMENT_KEYS=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
-const ACTION_KEYS=new Set(['Space','KeyE']);
 const TYPING_TARGET_SELECTOR='input,textarea,select,[contenteditable="true"]';
 const CONTROL_TARGET_SELECTOR='button,a[href],[role="button"]';
 
