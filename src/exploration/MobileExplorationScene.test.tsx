@@ -24,6 +24,8 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain("intent==='exit'");
     expect(scene).toContain('else onExit()');
     expect(scene).toContain("window.addEventListener('blur',clear)");
+    expect(scene).toContain("document.addEventListener('visibilitychange',clearWhenHidden)");
+    expect(scene).toContain('document.hidden');
     expect(scene).toContain('pressedKeysRef.current.clear()');
     expect(scene).toContain('joystickRef.current={x:0,y:0}');
   });
