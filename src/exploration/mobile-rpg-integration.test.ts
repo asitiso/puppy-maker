@@ -20,7 +20,8 @@ describe('mobile RPG shell integration',()=>{
     expect(feature).not.toContain("if(location!=='forest')setOutingScene(null)");
     expect(feature).toContain("setFeedback(`${outingDefinitions[outingLocation].name}으로 외출했어요.`)");
     expect(feature).toContain('직접 움직여 주변의 단서를 찾아보세요.');
-    expect(feature).toContain("onExit={()=>setOutingScene('crossroads')}");
+    expect(feature).toContain('onExit={()=>returnToCrossroads(outingRoute.regionId)}');
+    expect(feature).toContain('world={outingCrossroadsWorldForReturn(crossroadsReturnRegion)}');
   });
 
   it('visually communicates facing, completed discoveries, and portals in the world itself',()=>{
