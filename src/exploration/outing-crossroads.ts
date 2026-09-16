@@ -1,5 +1,5 @@
 import type {ExplorationInteractable,ExplorationWorldDefinition} from './exploration-types';
-import {REGION_IDS,getRegionDefinition} from './region-registry';
+import {REGION_IDS,getRegionDefinition,type RegionId} from './region-registry';
 
 const crossroadsAsset=(name:string)=>`/assets/exploration/crossroads/${name}`;
 
@@ -49,3 +49,25 @@ export const outingCrossroadsWorld:ExplorationWorldDefinition={
     ...regionPortals,
   ],
 };
+
+const RETURN_PORTAL_CLEARANCE=48;
+
+export function outingCrossroadsWorldForReturn(regionId:RegionId|null):ExplorationWorldDefinition {
+  if(regionId===null)return outingCrossroadsWorld;
+
+  const portal=getRegionDefinition(regionId).crossroads;
+  const dx=outingCrossroadsWorld.start.x-portal.position.x;
+  const dy=outingCrossroadsWorld.start.y-portal.position.y;
+  const length=Math.hypot(dx,dy);
+  const returnDistance=portal.radius+outingCrossroadsWorld.playerRadius+RETURN_PORTAL_CLEARANCE;
+
+  if(length<=returnDistance)return outingCrossroadsWorld;
+
+  return {
+    ...outingCrossroadsWorld,
+    start:{
+      x:portal.position.x+(dx/length)*returnDistance,
+      y:portal.position.y+(dy/length)*returnDistance,
+    },
+  };
+}
