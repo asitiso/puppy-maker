@@ -24,7 +24,8 @@ export function explorationKeyboardIntent(code:string,repeat:boolean,target?:unk
   if(typingTarget) return 'none';
   if(isMovementKey(code)) return 'movement';
   if(repeat) return 'none';
-  if(ACTION_KEYS.has(code)) return targetMatches(target,CONTROL_TARGET_SELECTOR)?'none':'action';
+  if(code==='KeyE') return 'action';
+  if(code==='Space') return targetMatches(target,CONTROL_TARGET_SELECTOR)?'none':'action';
   return 'none';
 }
 
