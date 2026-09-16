@@ -142,6 +142,7 @@ export default function MobileExplorationScene({
       const intent=explorationKeyboardIntent(event.code,event.repeat,event.target);
       if(intent==='movement'){
         event.preventDefault();
+        if(activeFrameRef.current) return;
         pressedKeysRef.current.add(event.code);
         return;
       }
