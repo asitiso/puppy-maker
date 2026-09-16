@@ -155,10 +155,17 @@ export default function MobileExplorationScene({
     };
     const keyUp=(event:KeyboardEvent)=>{if(isMovementKey(event.code)) pressedKeysRef.current.delete(event.code);};
     const clear=()=>{pressedKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
+    const clearWhenHidden=()=>{if(document.hidden) clear();};
     window.addEventListener('keydown',keyDown);
     window.addEventListener('keyup',keyUp);
     window.addEventListener('blur',clear);
-    return ()=>{window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);};
+    document.addEventListener('visibilitychange',clearWhenHidden);
+    return ()=>{
+      window.removeEventListener('keydown',keyDown);
+      window.removeEventListener('keyup',keyUp);
+      window.removeEventListener('blur',clear);
+      document.removeEventListener('visibilitychange',clearWhenHidden);
+    };
   },[closeStory,finishStory,onExit,openInteraction]);
 
   const worldStyle={
