@@ -13,9 +13,11 @@ describe('MobileLegacyFeaturePage outing routing contract',()=>{
     expect(page).not.toContain('function isPlayableOutingDestination');
   });
 
-  it('returns from any region to the crossroads before leaving the outing feature',()=>{
-    expect(page).toContain("onBack={atCrossroads?onBack:()=>setOutingScene('crossroads')}");
-    expect(page).toContain("onExit={()=>setOutingScene('crossroads')}");
+  it('returns from any region to its crossroads portal before leaving the outing feature',()=>{
+    expect(page).toContain('const returnToCrossroads=(regionId:RegionId)=>{setCrossroadsReturnRegion(regionId);setOutingScene(\'crossroads\');};');
+    expect(page).toContain('onBack={atCrossroads?onBack:()=>returnToCrossroads(outingRoute.regionId)}');
+    expect(page).toContain('world={outingCrossroadsWorldForReturn(crossroadsReturnRegion)}');
+    expect(page).toContain('onExit={()=>returnToCrossroads(outingRoute.regionId)}');
   });
 
   it('preserves legacy outing progression while living regions use their additive scene flow',()=>{
