@@ -50,10 +50,12 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('setMoving(false)');
   });
 
-  it('restores keyboard focus to the exploration action after a story closes or is cancelled',()=>{
+  it('restores useful keyboard focus after story cancellation and completion',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
+    expect(scene).toContain('viewportRef.current?.focus()');
     expect(scene).toContain('ref={actionButtonRef}');
+    expect(scene).toContain('tabIndex={-1}');
     expect(scene).toContain('closeStory');
   });
 

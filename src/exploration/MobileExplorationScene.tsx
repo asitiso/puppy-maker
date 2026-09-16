@@ -116,10 +116,13 @@ export default function MobileExplorationScene({
     }
   },[nearby,onExit,onPortal,storyFrames]);
 
-  const closeStory=useCallback(()=>{
+  const closeStory=useCallback((focusAction=true)=>{
     setActiveFrame(null);
     setActiveInteractionId(null);
-    requestAnimationFrame(()=>actionButtonRef.current?.focus());
+    requestAnimationFrame(()=>{
+      if(focusAction&&!actionButtonRef.current?.disabled) actionButtonRef.current?.focus();
+      else viewportRef.current?.focus();
+    });
   },[]);
 
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
@@ -131,7 +134,7 @@ export default function MobileExplorationScene({
       committedRef.current=true;
       onProgress();
     }
-    closeStory();
+    closeStory(false);
   },[activeInteractionId,closeStory,onInteractionComplete,onProgress]);
 
   useEffect(()=>{
@@ -180,7 +183,7 @@ export default function MobileExplorationScene({
       :'직접 움직여 주변의 단서를 찾아보세요.';
   const actionText=nearby?.kind==='portal'?'이동':nearby?.kind==='exit'?'돌아가기':nearby?'조사':'···';
 
-  return <section ref={viewportRef} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
+  return <section ref={viewportRef} tabIndex={-1} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
       <div className="mobile-exploration__world" style={worldStyle}>
         {world.layers.map(layer=><img key={layer.id} className="mobile-exploration__layer" src={layer.src} alt="" draggable={false} style={{zIndex:layer.zIndex}}/>)}
