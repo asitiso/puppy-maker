@@ -1,6 +1,10 @@
 import {describe,expect,it} from 'vitest';
 import {REGION_IDS,getRegionDefinition} from './region-registry';
-import {outingCrossroadsWorld} from './outing-crossroads';
+import * as crossroads from './outing-crossroads';
+
+const {outingCrossroadsWorld}=crossroads;
+type ReturnWorldFactory=(regionId:typeof REGION_IDS[number]|null)=>typeof outingCrossroadsWorld;
+const returnWorldFactory=(crossroads as typeof crossroads&{outingCrossroadsWorldForReturn?:ReturnWorldFactory}).outingCrossroadsWorldForReturn;
 
 describe('outing crossroads world contract',()=>{
   it('is a materially larger walkable world with a safe start point',()=>{
@@ -51,5 +55,36 @@ describe('outing crossroads world contract',()=>{
   it('keeps an explicit in-world route back home instead of a destination menu',()=>{
     const exit=outingCrossroadsWorld.interactables.find(item=>item.kind==='exit');
     expect(exit?.label).toBe('집으로 돌아가기');
+  });
+
+  it('returns from each region near its own portal without spawning inside the portal or an obstacle',()=>{
+    expect(returnWorldFactory).toBeTypeOf('function');
+    expect(returnWorldFactory?.(null)).toBe(outingCrossroadsWorld);
+
+    for(const id of REGION_IDS){
+      const world=returnWorldFactory!(id);
+      const portal=getRegionDefinition(id).crossroads;
+      const distance=Math.hypot(world.start.x-portal.position.x,world.start.y-portal.position.y);
+      const baseDistance=Math.hypot(
+        outingCrossroadsWorld.start.x-portal.position.x,
+        outingCrossroadsWorld.start.y-portal.position.y,
+      );
+
+      expect(distance).toBeGreaterThan(portal.radius+world.playerRadius+20);
+      expect(distance).toBeLessThan(baseDistance);
+      expect(world.start.x).toBeGreaterThanOrEqual(world.playerRadius);
+      expect(world.start.x).toBeLessThanOrEqual(world.width-world.playerRadius);
+      expect(world.start.y).toBeGreaterThanOrEqual(world.playerRadius);
+      expect(world.start.y).toBeLessThanOrEqual(world.height-world.playerRadius);
+
+      for(const obstacle of world.obstacles){
+        const insideExpandedObstacle=
+          world.start.x>=obstacle.x-world.playerRadius&&
+          world.start.x<=obstacle.x+obstacle.width+world.playerRadius&&
+          world.start.y>=obstacle.y-world.playerRadius&&
+          world.start.y<=obstacle.y+obstacle.height+world.playerRadius;
+        expect(insideExpandedObstacle,`${id} return start overlaps ${obstacle.id}`).toBe(false);
+      }
+    }
   });
 });
