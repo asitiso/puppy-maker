@@ -13,13 +13,17 @@ describe('mobile-first exploration controls',()=>{
     expect(joystick).toContain('onDirection({x:0,y:0})');
   });
 
-  it('presents story as an illustrated frame instead of a prose panel',()=>{
+  it('presents story as an illustrated modal frame and keeps Tab focus inside its only action',()=>{
     const story=source('StoryFrameOverlay.tsx');
     expect(story).toContain('role="dialog"');
     expect(story).toContain('aria-modal="true"');
     expect(story).toContain('exploration-story-frame__art');
     expect(story).toContain('exploration-story-frame__ornament');
     expect(story).toContain('frame.actionLabel');
+    expect(story).toContain("if(event.key!=='Tab') return");
+    expect(story).toContain('event.preventDefault()');
+    expect(story).toContain('continueButton.focus()');
+    expect(story).toContain('onKeyDown={keepDialogFocus}');
   });
 
   it('reserves thumb-safe controls and adapts to short landscape screens',()=>{
