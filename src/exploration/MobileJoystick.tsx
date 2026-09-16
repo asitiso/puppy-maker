@@ -1,4 +1,4 @@
-import {type CSSProperties,type PointerEvent,useCallback,useEffect,useState} from 'react';
+import {type CSSProperties,type PointerEvent,useCallback,useEffect,useRef,useState} from 'react';
 import type {Vec2} from './exploration-types';
 
 const MAX_KNOB_TRAVEL=38;
@@ -10,18 +10,24 @@ type Props={
 
 export default function MobileJoystick({disabled=false,onDirection}:Props){
   const [knob,setKnob]=useState<Vec2>({x:0,y:0});
+  const activePointerRef=useRef<number|null>(null);
 
-  const reset=useCallback(()=>{
+  const neutralize=useCallback(()=>{
     setKnob({x:0,y:0});
     onDirection({x:0,y:0});
   },[onDirection]);
+
+  const reset=useCallback(()=>{
+    activePointerRef.current=null;
+    neutralize();
+  },[neutralize]);
 
   useEffect(()=>{
     if(disabled) reset();
   },[disabled,reset]);
 
   const update=useCallback((event:PointerEvent<HTMLDivElement>)=>{
-    if(disabled) return;
+    if(disabled||activePointerRef.current!==event.pointerId) return;
     const rect=event.currentTarget.getBoundingClientRect();
     const centerX=rect.left+rect.width/2;
     const centerY=rect.top+rect.height/2;
@@ -37,15 +43,22 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
   },[disabled,onDirection]);
 
   const start=(event:PointerEvent<HTMLDivElement>)=>{
-    if(disabled) return;
+    if(disabled||activePointerRef.current!==null) return;
     event.preventDefault();
+    activePointerRef.current=event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     update(event);
   };
 
   const finish=(event:PointerEvent<HTMLDivElement>)=>{
+    if(activePointerRef.current!==event.pointerId) return;
+    activePointerRef.current=null;
     if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    reset();
+    neutralize();
+  };
+
+  const loseCapture=(event:PointerEvent<HTMLDivElement>)=>{
+    if(activePointerRef.current===event.pointerId) reset();
   };
 
   const knobStyle={
@@ -60,10 +73,10 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
     aria-disabled={disabled}
     role="application"
     onPointerDown={start}
-    onPointerMove={event=>event.currentTarget.hasPointerCapture(event.pointerId)&&update(event)}
+    onPointerMove={event=>activePointerRef.current===event.pointerId&&update(event)}
     onPointerUp={finish}
     onPointerCancel={finish}
-    onLostPointerCapture={reset}
+    onLostPointerCapture={loseCapture}
   >
     <span className="exploration-joystick__ring" aria-hidden="true"/>
     <span className="exploration-joystick__knob" style={knobStyle} aria-hidden="true"><i/></span>
