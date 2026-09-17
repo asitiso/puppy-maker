@@ -12,6 +12,7 @@ type Props={
 export default function MobileJoystick({disabled=false,onDirection}:Props){
   const [knob,setKnob]=useState<Vec2>({x:0,y:0});
   const activePointerRef=useRef<number|null>(null);
+  const dragOriginRef=useRef<Vec2|null>(null);
 
   const neutralize=useCallback(()=>{
     setKnob({x:0,y:0});
@@ -20,6 +21,7 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
 
   const reset=useCallback(()=>{
     activePointerRef.current=null;
+    dragOriginRef.current=null;
     neutralize();
   },[neutralize]);
 
@@ -39,11 +41,11 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
 
   const update=useCallback((event:PointerEvent<HTMLDivElement>)=>{
     if(disabled||activePointerRef.current!==event.pointerId) return;
+    const origin=dragOriginRef.current;
+    if(!origin) return;
     const rect=event.currentTarget.getBoundingClientRect();
-    const centerX=rect.left+rect.width/2;
-    const centerY=rect.top+rect.height/2;
-    const rawX=event.clientX-centerX;
-    const rawY=event.clientY-centerY;
+    const rawX=event.clientX-origin.x;
+    const rawY=event.clientY-origin.y;
     const radius=Math.max(1,Math.min(rect.width,rect.height)*.36);
     const rawMagnitude=Math.hypot(rawX,rawY)/radius;
     if(rawMagnitude<=DEAD_ZONE){
@@ -63,13 +65,15 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
     if(disabled||activePointerRef.current!==null) return;
     event.preventDefault();
     activePointerRef.current=event.pointerId;
+    dragOriginRef.current={x:event.clientX,y:event.clientY};
     event.currentTarget.setPointerCapture(event.pointerId);
-    update(event);
+    neutralize();
   };
 
   const finish=(event:PointerEvent<HTMLDivElement>)=>{
     if(activePointerRef.current!==event.pointerId) return;
     activePointerRef.current=null;
+    dragOriginRef.current=null;
     if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     neutralize();
   };
