@@ -6,8 +6,8 @@
 
 - Branch: `work/v16-living-regions`
 - Pull request: #246 — V16 living regions foundation
-- Last verified implementation baseline: `4ff599b552972e127720569ae2c312e93bed70a7`
-- Verification: GitHub Actions CI #2512 passed full test + build on the current implementation HEAD; Vercel deployment also passed.
+- Last verified implementation baseline: `40518498d70832b07bc5af4a3c36cc8a1d22cbaf`
+- Verification: GitHub Actions CI #2538 passed full test + build on the current implementation HEAD; Vercel deployment also passed.
 - Approved scope: `docs/superpowers/specs/2026-09-15-v16-world-expansion-living-regions-design.md`
 - No newer approved design spec exists on this branch as of this baseline.
 
@@ -26,9 +26,15 @@
 - `exploration-keyboard.ts` centralizes tested arrows/WASD movement, Space/E interaction, and Escape exit behavior. Repeated action/exit commands are suppressed while movement remains repeatable.
 - `MobileExplorationScene` clears keyboard/joystick movement state on browser focus loss and preserves both touch exit and keyboard Escape return paths.
 - Focused native controls and typing targets keep their native keyboard behavior: Space/E no longer gets stolen by exploration actions on buttons/links, typing targets suppress exploration movement/actions, while ordinary focused controls still allow WASD movement.
-- Story-frame modal focus is isolated from background exploration controls: while a story frame is active, exit, joystick, and action controls cannot be activated.
+- Story-frame modal focus is isolated from background exploration controls: while a story frame is active, exit, joystick, and action controls cannot be activated; Tab focus is retained inside the story frame.
 - Closing or cancelling a story frame restores keyboard focus to the exploration controls so keyboard players can immediately resume traversal without restarting Tab navigation.
 - Entering a story frame clears held keyboard and joystick movement immediately; `MobileJoystick` also resets its knob/vector whenever controls become disabled, preventing stale touch direction from moving the player as soon as the story closes.
+- Exploration collision movement now substeps long frame deltas to prevent tunneling through thin obstacles while preserving full unobstructed travel distance.
+- Player collision uses circle-to-rectangle distance instead of a square approximation, removing invisible corner snagging while retaining wall and true-corner blocking.
+- Mobile joystick input has explicit pointer ownership: a second finger cannot steal, release, cancel, or lose capture for the active movement pointer.
+- Mobile joystick state recovers from browser/app focus loss and page hiding by clearing pointer ownership, movement vector, drag origin, and knob position.
+- Mobile joystick center control uses a 14% dead zone remapped over the remaining range, suppressing thumb jitter without sacrificing maximum movement speed.
+- Mobile joystick dragging is relative to the initial touch point, so players no longer need to land precisely on the visual center before beginning movement; touch-down itself remains neutral and release/cancel discards the temporary origin.
 - Cross-region persistence coverage performs real `pick → JSON.stringify → JSON.parse → hydrate` roundtrips for every living region across active, quest-in-progress, discovery, resolved, and post-resolution revisit states.
 - All three living regions retain discoveries and completed interaction IDs across reload and still expose their repeatable post-resolution revisit content.
 - Six-region accessibility integration coverage verifies one physical crossroads portal for every playable region and an explicit in-world exit for every legacy/living region, including all living-region persistence phases.
@@ -43,20 +49,20 @@
 ## Continuation rule
 
 1. Start from the latest `work/v16-living-regions` HEAD and inspect PR #246 plus current CI before changing code.
-2. Do **not** repeat V15 foundation/overworld work, completed V16 region slices, registry consolidation, routing hardening, keyboard hardening, focused-control handling, story-modal focus isolation/restoration, stale-movement neutralization, save/reload integration, or completed release-readiness fixes above.
+2. Do **not** repeat V15 foundation/overworld work, completed V16 region slices, registry consolidation, routing hardening, keyboard hardening, focused-control handling, story-modal focus isolation/restoration, stale-movement neutralization, collision tunneling/corner fixes, mobile pointer ownership/focus recovery/dead-zone/relative-drag work, save/reload integration, or completed release-readiness fixes above.
 3. Treat the V16 design as completed implementation scope unless a newer approved spec supersedes it.
 4. Preserve existing legacy `onOuting(location)` semantics and additive save compatibility.
 5. Keep `regionRegistry` authoritative for canonical region/crossroads metadata and `outing-navigation.ts` authoritative for player-facing outing scene classification.
 6. Keep living-region runtime builders separate from static metadata to avoid dependency cycles, and enforce registry/builder key completeness through tests.
-7. Preserve the tested keyboard/touch contract: arrows/WASD move, Space/E interact away from native controls, focused controls keep native action keys, Escape backs out, blur clears held movement, active story frames isolate background controls, story entry neutralizes held movement, and closing/cancelling a story restores exploration focus.
+7. Preserve the tested keyboard/touch contract: arrows/WASD move, Space/E interact away from native controls, focused controls keep native action keys, Escape backs out, blur clears held movement, active story frames isolate background controls, story entry neutralizes held movement, closing/cancelling a story restores exploration focus, and one active touch pointer exclusively owns joystick movement until release/cancel/focus loss.
 8. Prefer product-complete integration batches over minimum patches: close runtime behavior, persistence, routing, regression coverage, and handoff state together.
 9. Use focused tests while changing a subsystem, then run the full test/build gate at a meaningful integration boundary.
 
 ## Next highest-priority work
 
-V16 implementation, production-hardening, and current release-readiness fixes are GREEN through CI #2512. Before inventing V17 without an approved design, continue only evidence-driven release work:
+V16 implementation, production-hardening, and current release-readiness fixes are GREEN through CI #2538. Before inventing V17 without an approved design, continue only evidence-driven release work:
 
-- perform a true player-facing outing playthrough on representative mobile landscape sizes across crossroads + all six regions, looking only for reproducible interaction, camera, readability, or return-flow friction not already covered by the current contracts;
+- perform a true player-facing outing playthrough on representative mobile landscape sizes across crossroads + all six regions, looking only for reproducible interaction, camera, readability, return-flow, collision, or touch-control friction not already covered by the current contracts;
 - verify performance and accessibility behavior around expanded six-region traversal and story-frame overlays, fixing only concrete regressions;
 - add historical save fixtures only if an actual older-save incompatibility is reproduced; do not create synthetic fixture maintenance without a protected boundary;
 - after any additional release-readiness change, run the same RED → minimal fix → full test/build → CI gate and advance this baseline only after GREEN.
