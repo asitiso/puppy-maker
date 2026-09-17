@@ -39,4 +39,18 @@ describe('mobile joystick lifecycle contract',()=>{
     expect(joystick).toContain('const clampedMagnitude=Math.min(1,rawMagnitude)');
     expect(joystick).toContain('const outputMagnitude=(clampedMagnitude-DEAD_ZONE)/(1-DEAD_ZONE)');
   });
+
+  it('starts neutral wherever the thumb lands and measures movement from that touch point',()=>{
+    expect(joystick).toContain('const dragOriginRef=useRef<Vec2|null>(null)');
+    expect(joystick).toContain('dragOriginRef.current={x:event.clientX,y:event.clientY}');
+    expect(joystick).toContain('const origin=dragOriginRef.current');
+    expect(joystick).toContain('const rawX=event.clientX-origin.x');
+    expect(joystick).toContain('const rawY=event.clientY-origin.y');
+    expect(joystick).toContain('event.currentTarget.setPointerCapture(event.pointerId);\n    neutralize();');
+  });
+
+  it('forgets the drag origin on every ownership-ending path',()=>{
+    expect(joystick).toContain('activePointerRef.current=null;\n    dragOriginRef.current=null;\n    neutralize();');
+    expect(joystick).toContain('activePointerRef.current=null;\n    dragOriginRef.current=null;\n    if(event.currentTarget.hasPointerCapture(event.pointerId))');
+  });
 });
