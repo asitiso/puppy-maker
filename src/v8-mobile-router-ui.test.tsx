@@ -11,6 +11,10 @@ const growthNavigation:MobileNavigationState={
   current:{kind:'category',category:'growth'},
   stack:[{kind:'home'}],
 };
+const featureNavigation:MobileNavigationState={
+  current:{kind:'feature',category:'growth',feature:'achievements'},
+  stack:[{kind:'home'},{kind:'category',category:'growth'}],
+};
 const guardedNavigation:MobileNavigationState={
   current:{kind:'play',category:'life',screen:'training'},
   stack:[{kind:'home'},{kind:'category',category:'life'}],
@@ -32,11 +36,18 @@ function render(navigation:MobileNavigationState,guarded=false,pendingExit:null|
 }
 
 describe('V8 mobile router chrome',()=>{
-  it('keeps all six navigation categories visible in ordinary states',()=>{
-    const html=render(growthNavigation);
+  it('keeps global navigation available on feature screens',()=>{
+    const html=render(featureNavigation);
     for(const label of ['홈','생활','성장','모험','인연','기록'])expect(html).toContain(`>${label}<`);
     expect(html).toContain('v8-bottom-nav');
     expect(html).not.toContain('v8-play-guard');
+  });
+
+  it('gives category districts the same full-screen world surface as home',()=>{
+    const html=render(growthNavigation);
+    expect(html).toContain('is-world-route');
+    expect(html).not.toContain('v8-bottom-nav');
+    expect(html).not.toContain('v7-home-status');
   });
 
   it('gives the playable home world the full interaction surface instead of covering it with menu chrome',()=>{
@@ -69,7 +80,7 @@ describe('V8 mobile router chrome',()=>{
     expect(css).toMatch(/\.v8-route-body[^}]*min-height:\s*0[^}]*overflow-y:\s*auto[^}]*overscroll-behavior:\s*contain/s);
     expect(css).toContain('env(safe-area-inset-bottom)');
     expect(css).toContain('min-height:var(--ui-touch-min)');
-    expect(css).toContain('.v8-mobile-shell.is-world-home>.v8-route-body{overflow:hidden;padding:0;scrollbar-gutter:auto}');
+    expect(css).toContain('.v8-mobile-shell.is-world-route>.v8-route-body{overflow:hidden;padding:0;scrollbar-gutter:auto}');
     expect(css).toContain('@media(max-width:430px)');
     expect(css).toContain('@media(max-width:390px)');
     expect(css).toContain('@media(max-width:360px)');
