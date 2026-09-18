@@ -7,6 +7,7 @@ const appSource=readFileSync(new URL('./App.tsx',import.meta.url),'utf8');
 const trainingSource=readFileSync(new URL('./TrainingActivityMinigame.tsx',import.meta.url),'utf8');
 const rootSource=readFileSync(new URL('./Root.tsx',import.meta.url),'utf8');
 const cssSource=readFileSync(new URL('./mobile-v9.css',import.meta.url),'utf8');
+const activityCss=readFileSync(new URL('./rpg-activity-loop.css',import.meta.url),'utf8');
 
 const route=(screen:'schedule'|'training'|'dialogue'|'result'):MobileRoute=>({kind:'play',category:'life',screen});
 
@@ -20,13 +21,13 @@ describe('V9 training and choice active-play UX',()=>{
     expect(rootSource).toContain("const guardedAppPlay=gameState.screen==='training'||gameState.screen==='dialogue'");
   });
 
-  it('preserves active-play presentation boundaries while allowing training to own its component',()=>{
-    for(const className of ['diary-screen','dialogue-screen','result-screen']){
+  it('preserves active-play presentation boundaries while upgrading schedule dialogue and result presentation',()=>{
+    for(const className of ['rpg-schedule-board','rpg-after-action-dialogue','rpg-result-debrief']){
       expect(appSource).toContain(className);
     }
     expect(appSource).toContain('<TrainingActivityMinigame');
     expect(trainingSource).toContain('training-screen');
-    expect(appSource).toContain('className="choices"');
+    expect(appSource).toContain('rpg-dialogue-choices');
     expect(appSource).toContain('className="primary next-month"');
   });
 
@@ -41,6 +42,9 @@ describe('V9 training and choice active-play UX',()=>{
     expect(cssSource).toContain('overflow-y:auto');
     expect(cssSource).toContain('env(safe-area-inset-bottom)');
     expect(cssSource).toContain('min-height:52px');
+    expect(activityCss).toContain('.rpg-contract-layout');
+    expect(activityCss).toContain('.rpg-dialogue-choices');
+    expect(activityCss).toContain('.rpg-result-debrief');
   });
 
   it('preserves the authoritative reducer actions and exits through router navigation only',()=>{
