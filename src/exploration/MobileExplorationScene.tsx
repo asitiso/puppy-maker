@@ -15,11 +15,12 @@ type Props={
   onPortal?:(destinationId:string)=>void;
   completedInteractionIds?:readonly string[];
   onInteractionComplete?:(interactionId:string)=>void;
+  showExitButton?:boolean;
 };
 
 export default function MobileExplorationScene({
   world,storyFrames,playerArtSrc,onProgress,onExit,onPortal,
-  completedInteractionIds=[],onInteractionComplete,
+  completedInteractionIds=[],onInteractionComplete,showExitButton=true,
 }:Props){
   const viewportRef=useRef<HTMLElement|null>(null);
   const actionButtonRef=useRef<HTMLButtonElement|null>(null);
@@ -225,7 +226,7 @@ export default function MobileExplorationScene({
     </div>
 
     <div className="mobile-exploration__hud"><small>EXPLORATION</small><strong>{world.label}</strong><span>{world.objective}</span></div>
-    <button type="button" className="mobile-exploration__exit" disabled={Boolean(activeFrame)} onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
+    {showExitButton?<button type="button" className="mobile-exploration__exit" disabled={Boolean(activeFrame)} onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>:null}
     <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
     <button ref={actionButtonRef} type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
