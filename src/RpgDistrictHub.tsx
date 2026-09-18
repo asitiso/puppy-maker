@@ -15,24 +15,22 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
   const [activeCategory,setActiveCategory]=useState(category);
   useEffect(()=>setActiveCategory(category),[category]);
   const recommendation=mobileCategoryRecommendation(activeCategory,state);
-  const world=useMemo(()=>{
-    const base=rpgDistrictWorld(activeCategory);
-    return {
-      ...base,
-      objective:`${base.objective} 현재 추적: ${recommendation.label}`,
-      interactables:base.interactables.map(interaction=>{
-        const destination=parseDistrictDestination(interaction.destinationId??'');
-        return destination?.kind==='feature'&&destination.feature===recommendation.feature
-          ?{...interaction,label:`◆ 추천 · ${recommendation.label}`}
-          :interaction;
-      }),
-    };
-  },[activeCategory,recommendation.feature,recommendation.label]);
+  const world=useMemo(()=>rpgDistrictWorld(activeCategory),[activeCategory]);
+  const guidedWorld=useMemo(()=>({
+    ...world,
+    objective:`${world.objective} 현재 추적: ${recommendation.label}`,
+    interactables:world.interactables.map(interaction=>{
+      const destination=parseDistrictDestination(interaction.destinationId??'');
+      return destination?.kind==='feature'&&destination.feature===recommendation.feature
+        ?{...interaction,label:`◆ 추천 · ${recommendation.label}`}
+        :interaction;
+    }),
+  }),[world,recommendation.feature,recommendation.label]);
 
   return <section className="rpg-home-hub rpg-district-hub" aria-label={`${world.label} 월드 구역`}>
     <MobileExplorationScene
       key={activeCategory}
-      world={world}
+      world={guidedWorld}
       storyFrames={noStoryFrames}
       playerArtSrc={runaExplorationArt}
       onProgress={noop}
