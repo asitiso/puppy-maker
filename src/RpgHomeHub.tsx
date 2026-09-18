@@ -2,6 +2,7 @@ import type {GameState} from './game';
 import MobileExplorationScene from './exploration/MobileExplorationScene';
 import {HOME_HUB_DESTINATIONS,rpgHomeWorld} from './exploration/rpg-home-world';
 import type {MobileContentCategory,MobileFeatureId} from './mobile-router';
+import './rpg-home-hub.css';
 
 const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
 const noStoryFrames={};
