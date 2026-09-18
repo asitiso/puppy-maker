@@ -28,6 +28,9 @@ export default function RpgHomeHub({state,onCategory,onFeature}:Props){
     :'마을을 걸어 오늘 할 일을 선택하세요. 월드 게이트에서는 바로 지역 탐험을 시작할 수 있어요.';
   const world={...rpgHomeWorld,objective};
 
+  const stamina=Math.max(0,Math.min(100,100-state.stats.fatigue));
+  const magic=Math.max(0,Math.min(100,state.stats.magic));
+
   return <section className="rpg-home-hub" aria-label="별빛 마을 월드 허브">
     <MobileExplorationScene
       world={world}
@@ -39,9 +42,13 @@ export default function RpgHomeHub({state,onCategory,onFeature}:Props){
       showExitButton={false}
     />
     <aside className="rpg-home-hub__tracker" aria-label="현재 모험 상태">
-      <small>WORLD STATUS</small>
+      <small>PLAYER · LUNA</small>
       <strong>{state.year}년차 · {state.month}월 {state.week}주차</strong>
-      <span>체력 {Math.max(0,100-state.stats.fatigue)} · 마력 {state.stats.magic} · 호감 {state.stats.affection}</span>
+      <div className="rpg-home-hub__bars">
+        <span><b>HP</b><i><em style={{width:`${stamina}%`}}/></i><small>{stamina}</small></span>
+        <span><b>MP</b><i><em style={{width:`${magic}%`}}/></i><small>{magic}</small></span>
+      </div>
+      <p>{state.campaignRun.activeCampaign?`메인 퀘스트 · ${state.campaignRun.activeCampaign}`:'메인 퀘스트 · 자유 탐험'}</p>
     </aside>
   </section>;
 }
