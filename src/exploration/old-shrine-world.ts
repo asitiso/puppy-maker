@@ -128,7 +128,7 @@ export function oldShrineExploration(progress:LivingRegionProgress,context:OldSh
     objective:resolved
       ? postResolution?'다시 열린 신전을 돌아보며 달라진 에코와 성소를 확인하세요.':'열린 성소와 달라진 에코들을 확인해보세요.'
       : progress.phase==='mainQuestInProgress'?'신전의 기억 흔적을 모아 중심 룬의 봉인을 풀어보세요.':'봉인된 석문과 주변 에코를 살펴 신전의 기억을 깨워보세요.',
-    width:2400,height:1600,playerRadius:22,playerSpeed:232,start:{x:1200,y:1390},
+    width:2400,height:1600,playerRadius:22,playerSpeed:232,start:{x:1200,y:1320},
     layers:[
       {id:'ground',src:shrineAsset('shrine-ground.svg'),zIndex:0},
       {id:'ruins',src:shrineAsset('shrine-ruins.svg'),zIndex:3},
