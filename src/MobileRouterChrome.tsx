@@ -61,11 +61,13 @@ export default function MobileRouterChrome({
   const active=activeCategory(navigation);
   const appPlay=route.kind==='play'&&route.screen!=='tactical'&&route.screen!=='choice_event';
   const worldHome=route.kind==='home';
+  const worldRoute=route.kind==='home'||route.kind==='category';
   const shellClass=[
     'v8-mobile-shell',
     guarded?'is-guarded':'',
     route.kind==='home'?'is-home':'',
     worldHome?'is-world-home':'',
+    worldRoute?'is-world-route':'',
     appPlay?'is-app-play':'',
   ].filter(Boolean).join(' ');
   const complexMeta=route.kind==='feature'?complexFeatureMeta[route.feature]:undefined;
@@ -82,7 +84,7 @@ export default function MobileRouterChrome({
 
   return <MobileRouterActionsProvider onBack={onBack} onHome={onHome}>
     <div className={shellClass}>
-      {!guarded&&!worldHome&&<MobileHomeStatus
+      {!guarded&&!worldRoute&&<MobileHomeStatus
         state={state}
         notificationCount={notificationCount}
         onNotifications={onNotifications}
@@ -100,7 +102,7 @@ export default function MobileRouterChrome({
 
       <div className="v8-route-body">{routedChildren}</div>
 
-      {!guarded&&!worldHome&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
+      {!guarded&&!worldRoute&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
         {categories.map(item=><button
           key={item.id}
           type="button"
