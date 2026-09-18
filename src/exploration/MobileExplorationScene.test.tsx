@@ -52,8 +52,9 @@ describe('mobile exploration scene contract',()=>{
 
   it('does not queue movement keys pressed while a story modal owns exploration input',()=>{
     expect(scene).toContain("if(intent==='movement')");
-    expect(scene).toContain('if(activeFrameRef.current) return;');
-    expect(scene.indexOf('if(activeFrameRef.current) return;')).toBeLessThan(scene.indexOf('pressedKeysRef.current.add(event.code)'));
+    expect(scene).toContain('if(activeFrameRef.current){');
+    expect(scene).toContain('blockedMovementKeysRef.current.add(event.code)');
+    expect(scene.indexOf('blockedMovementKeysRef.current.add(event.code)')).toBeLessThan(scene.indexOf('pressedKeysRef.current.add(event.code)'));
   });
 
   it('requires a movement key held through a story modal to be released before movement resumes',()=>{
