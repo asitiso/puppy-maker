@@ -23,7 +23,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       interactables:base.interactables.map(interaction=>{
         const destination=parseDistrictDestination(interaction.destinationId??'');
         return destination?.kind==='feature'&&destination.feature===recommendation.feature
-          ?{...interaction,questTarget:true,nameplate:`추천 의뢰 · ${recommendation.label}`}
+          ?{...interaction,label:`◆ ${recommendation.label}`,questTarget:true,nameplate:`추천 의뢰 · ${recommendation.label}`}
           :interaction;
       }),
     };
