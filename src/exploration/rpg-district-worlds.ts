@@ -18,10 +18,11 @@ const specs:Record<MobileContentCategory,DistrictSpec>={
     objective:'생활관을 걸어 이번 주 일정, 월간 목표, 출석과 우편을 직접 확인하세요.',
     layer:'/assets/home/home_bg_layer.webp',
     portals:[
-      ['schedule','일정 게시판 · 이번 주 스케줄',520,820,'village-gate.svg'],
-      ['mission','의뢰 데스크 · 이번 달 목표',900,520,'herb-hills-gate.svg'],
-      ['attendance','출석 광장 · 월간 보상',1320,520,'lakeside-gate.svg'],
-      ['mail','우편소 · 도착한 편지',1700,820,'village-gate.svg'],
+      ['schedule','훈련 일정판 · 하루 스케줄',470,790,'village-gate.svg'],
+      ['weekly_planner','주간 작전판 · 이번 주 계획',1100,840,'expedition-outpost-gate.svg'],
+      ['mission','의뢰 데스크 · 이번 달 목표',800,460,'herb-hills-gate.svg'],
+      ['attendance','출석 광장 · 월간 보상',1400,460,'lakeside-gate.svg'],
+      ['mail','우편소 · 도착한 편지',1730,790,'village-gate.svg'],
     ],
   },
   growth:{
@@ -74,7 +75,7 @@ const specs:Record<MobileContentCategory,DistrictSpec>={
 };
 
 export const districtFeatureIds:Record<MobileContentCategory,readonly MobileFeatureId[]>={
-  life:['schedule','mission','attendance','mail'],
+  life:['schedule','weekly_planner','mission','attendance','mail'],
   growth:['raising','ambition','achievements','inventory','season','sanctuary'],
   adventure:['outing','expedition','world'],
   bond:['bond','gifts','stories'],
