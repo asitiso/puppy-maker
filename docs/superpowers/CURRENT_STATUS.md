@@ -6,8 +6,8 @@
 
 - Branch: `work/v16-living-regions`
 - Pull request: #246 — V16 living regions foundation
-- Last verified implementation baseline: `40518498d70832b07bc5af4a3c36cc8a1d22cbaf`
-- Verification: GitHub Actions CI #2538 passed full test + build on the current implementation HEAD; Vercel deployment also passed.
+- Last verified implementation baseline: `882c7a9549985af717c4143ebc83d4acf3c7841f`
+- Verification: GitHub Actions CI #35303507196 passed 576/576 test files, 2,258/2,258 tests, TypeScript, and the production Vite build.
 - Approved scope: `docs/superpowers/specs/2026-09-15-v16-world-expansion-living-regions-design.md`
 - No newer approved design spec exists on this branch as of this baseline.
 
@@ -35,6 +35,14 @@
 - Mobile joystick state recovers from browser/app focus loss and page hiding by clearing pointer ownership, movement vector, drag origin, and knob position.
 - Mobile joystick center control uses a 14% dead zone remapped over the remaining range, suppressing thumb jitter without sacrificing maximum movement speed.
 - Mobile joystick dragging is relative to the initial touch point, so players no longer need to land precisely on the visual center before beginning movement; touch-down itself remains neutral and release/cancel discards the temporary origin.
+- Active joystick dragging now disables knob easing while the pointer is held, removing visual lag without losing the smooth release-to-center transition.
+- Overlapping interaction zones prioritize unfinished one-time progression/discovery interactions over repeatable NPC chatter; Herb Hills, Expedition Outpost, and Village overlap cases are regression-covered.
+- Every outing-region initial spawn is outside its immediate return interaction, inside world bounds, and clear of authored collision geometry, preventing accidental instant exits on entry.
+- Story modal ownership is synchronized immediately rather than waiting for a React effect, and story completion is idempotent against rapid duplicate input.
+- Movement keys held or pressed through a story modal must be released before traversal resumes, preventing post-modal auto-repeat movement.
+- Extra-short landscape screens (≤380 px height) switch story frames to a compact copy-first layout so the completion action remains reachable.
+- Touch users now have an explicit 52 px story cancel control equivalent to keyboard Escape; the two modal actions share a proper circular Tab/Shift+Tab focus trap.
+- Living-region interaction completion now emits one atomic update batch for interaction history, discovery, and quest-phase transitions, preventing partially persisted quest states and reducing redundant render/save work.
 - Cross-region persistence coverage performs real `pick → JSON.stringify → JSON.parse → hydrate` roundtrips for every living region across active, quest-in-progress, discovery, resolved, and post-resolution revisit states.
 - All three living regions retain discoveries and completed interaction IDs across reload and still expose their repeatable post-resolution revisit content.
 - Six-region accessibility integration coverage verifies one physical crossroads portal for every playable region and an explicit in-world exit for every legacy/living region, including all living-region persistence phases.
@@ -54,13 +62,13 @@
 4. Preserve existing legacy `onOuting(location)` semantics and additive save compatibility.
 5. Keep `regionRegistry` authoritative for canonical region/crossroads metadata and `outing-navigation.ts` authoritative for player-facing outing scene classification.
 6. Keep living-region runtime builders separate from static metadata to avoid dependency cycles, and enforce registry/builder key completeness through tests.
-7. Preserve the tested keyboard/touch contract: arrows/WASD move, Space/E interact away from native controls, focused controls keep native action keys, Escape backs out, blur clears held movement, active story frames isolate background controls, story entry neutralizes held movement, closing/cancelling a story restores exploration focus, and one active touch pointer exclusively owns joystick movement until release/cancel/focus loss.
+7. Preserve the tested keyboard/touch contract: arrows/WASD move, Space/E interact away from native controls, focused controls keep native action keys, Escape backs out, blur clears held movement, active story frames isolate background controls, story entry neutralizes held movement, modal-held movement requires release before resuming, touch/Escape cancellation does not commit the interaction, closing/cancelling a story restores exploration focus, and one active touch pointer exclusively owns joystick movement until release/cancel/focus loss.
 8. Prefer product-complete integration batches over minimum patches: close runtime behavior, persistence, routing, regression coverage, and handoff state together.
 9. Use focused tests while changing a subsystem, then run the full test/build gate at a meaningful integration boundary.
 
 ## Next highest-priority work
 
-V16 implementation, production-hardening, and current release-readiness fixes are GREEN through CI #2538. Before inventing V17 without an approved design, continue only evidence-driven release work:
+V16 implementation, production-hardening, and current release-readiness fixes are GREEN through CI #35303507196. Before inventing V17 without an approved design, continue only evidence-driven release work:
 
 - perform a true player-facing outing playthrough on representative mobile landscape sizes across crossroads + all six regions, looking only for reproducible interaction, camera, readability, return-flow, collision, or touch-control friction not already covered by the current contracts;
 - verify performance and accessibility behavior around expanded six-region traversal and story-frame overlays, fixing only concrete regressions;
