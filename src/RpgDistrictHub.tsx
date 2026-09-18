@@ -60,7 +60,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     <aside className="rpg-home-hub__tracker rpg-district-hub__tracker" aria-label="월드 의뢰 추적">
       <div className="rpg-district-hub__npc"><b>{issuer.name}</b><span>{issuer.role}</span><i>완료 {completedCount}건</i></div>
       <small>WORLD QUEST · {priorityLabel}</small>
-      <strong>{trackedQuest?'수행 중':'의뢰 제안'} · {targetLabel}</strong>
+      <strong>{trackedQuest?'수행 중':'추천 의뢰'} · {targetLabel}</strong>
       <p>{trackedQuest?targetReason:issuer.greeting}</p>
       {!trackedQuest&&<span>{targetReason}</span>}
       <span>다음 길 · {routeHint} · {state.year}년차 {state.month}월 {state.week}주차</span>
