@@ -65,6 +65,13 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('blockedMovementKeysRef.current.delete(event.code)');
   });
 
+  it('synchronizes story modal ownership before React effects and ignores duplicate completion',()=>{
+    expect(scene).toContain('activeFrameRef.current=frame;\n        setActiveInteractionId(nearby.id);');
+    expect(scene).toContain('activeFrameRef.current=null;\n    setActiveFrame(null);');
+    expect(scene).toContain('if(activeFrameRef.current!==frame) return;');
+    expect(scene).toContain('activeFrameRef.current=null;\n    if(activeInteractionId)');
+  });
+
   it('restores useful keyboard focus after story cancellation and completion',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
