@@ -5,7 +5,9 @@ import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import RpgHomeHub from './RpgHomeHub';
-import MobileCategoryPage from './MobileCategoryPage';
+import RpgDistrictHub from './RpgDistrictHub';
+import RpgChronicleFeature from './RpgChronicleFeature';
+import RpgWeeklyPlannerFeature from './RpgWeeklyPlannerFeature';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import MobileRouterChrome from './MobileRouterChrome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
@@ -285,6 +287,7 @@ export default function Root() {
       onMail={handleMail}
       onMonthlyFocus={handleMonthlyFocus}
     />;
+    if(feature==='weekly_planner')return <RpgWeeklyPlannerFeature state={state} onBack={handleBack} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
     if(feature==='raising')return <RaisingIdentityOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onCalling={calling=>setGuardianCalling?.(calling)} onTrait={trait=>purchaseGrowthTrait?.(trait)}/>;
     if(feature==='ambition')return <YearlyAmbitionOverlay state={state} onSelect={handleYearlyAmbition} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='season')return <SeasonLiveOpsOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onPurchase={handleSeasonPurchase} onLegacyUnlock={handleSeasonLegacyUnlock}/>;
@@ -292,7 +295,7 @@ export default function Root() {
     if(feature==='world')return <WorldProgressOverlay state={state} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='archive')return <CollectionArchiveOverlay state={state} onNavigate={handleHomeMenuNavigate} onExpedition={()=>openFeature('expedition')} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='expedition')return renderExpedition(state);
-    if(feature==='lineage'||feature==='world_chronicle')return <MobileCategoryPage category="records" state={state} onOpenFeature={openFeature} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
+    if(feature==='lineage'||feature==='world_chronicle')return <RpgChronicleFeature feature={feature} state={state} onBack={handleBack}/>;
     return null;
   };
 
@@ -303,7 +306,7 @@ export default function Root() {
       <SeasonalHomeBadge month={state.month} stamps={state.seasonStamps}/>
       <YearEndCeremonyOverlay state={state}/>
     </>;
-    if(route.kind==='category')return <MobileCategoryPage category={route.category} state={state} onOpenFeature={openFeature} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
+    if(route.kind==='category')return <RpgDistrictHub category={route.category} state={state} onFeature={openFeature} onBack={handleBack}/>;
     if(route.kind==='feature')return renderFeature(state,route.feature);
     if(route.screen==='tactical')return renderExpedition(state);
     return null;

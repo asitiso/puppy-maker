@@ -29,6 +29,16 @@ describe('V8 mobile router',()=>{
     });
   });
 
+  it('opens the weekly planner facility from the life district and returns to that district',()=>{
+    const life=mobileNavigationReducer(initialMobileNavigationState,{type:'OPEN_CATEGORY',category:'life'});
+    const planner=mobileNavigationReducer(life,{type:'OPEN_FEATURE',category:'life',feature:'weekly_planner'});
+    expect(planner).toEqual({
+      current:{kind:'feature',category:'life',feature:'weekly_planner'},
+      stack:[{kind:'home'},{kind:'category',category:'life'}],
+    });
+    expect(mobileNavigationReducer(planner,{type:'BACK'})).toEqual(life);
+  });
+
   it('switches categories without building a long category stack',()=>{
     const life=mobileNavigationReducer(initialMobileNavigationState,{type:'OPEN_CATEGORY',category:'life'});
     const adventure=mobileNavigationReducer(life,{type:'OPEN_CATEGORY',category:'adventure'});

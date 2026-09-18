@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import app from './App.tsx?raw';
 import root from './Root.tsx?raw';
 import home from './LayeredHome.tsx?raw';
+import plannerFeature from './RpgWeeklyPlannerFeature.tsx?raw';
 
 const css=readFileSync(new URL('./weekly-planner.css',import.meta.url),'utf8');
 
@@ -20,16 +21,21 @@ describe('V4 Living Year home integration',()=>{
     for(const route of ['weekly_planner','advance_week','schedule','outing','bond','expedition','tactical','season']) expect(home).toContain(`'${route}'`);
   });
 
-  it('threads weekly actions from App reducer dispatch through Root into LayeredHome without storing callbacks as React updaters',()=>{
+  it('threads weekly actions from App reducer dispatch through the RPG planner facility without storing callbacks as React updaters',()=>{
     expect(app).toContain("type:'SELECT_WEEKLY_FOCUS'");
     expect(app).toContain("type:'COMPLETE_WEEKLY_FOCUS'");
     expect(app).toContain("type:'ADVANCE_WEEK'");
     expect(root).toContain('const captureWeeklyFocus');
     expect(root).toContain('setSelectWeeklyFocus(() => next)');
     expect(root).toContain('onWeeklyFocusReady={captureWeeklyFocus}');
+    expect(root).toContain("<RpgWeeklyPlannerFeature");
     expect(root).toContain('onWeeklyFocus={handleWeeklyFocus}');
     expect(root).toContain('onCompleteWeek={handleCompleteWeek}');
     expect(root).toContain('onAdvanceWeek={handleAdvanceWeek}');
+    expect(plannerFeature).toContain('<WeeklyPlannerCard');
+    expect(plannerFeature).toContain('onSelectFocus={onWeeklyFocus}');
+    expect(plannerFeature).toContain('onComplete={onCompleteWeek}');
+    expect(plannerFeature).toContain('onAdvance={onAdvanceWeek}');
   });
 
   it('keeps the planner mobile-safe, touch-sized, keyboard-visible and reduced-motion aware',()=>{

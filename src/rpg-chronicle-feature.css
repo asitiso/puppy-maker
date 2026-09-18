@@ -1,0 +1,8 @@
+.rpg-chronicle-feature .v9-page-content{padding:10px 10px calc(20px + env(safe-area-inset-bottom));display:grid;gap:12px}
+.rpg-chronicle-feature__hero{display:grid;gap:5px;padding:14px 15px;border:1px solid rgba(236,213,151,.48);border-radius:18px;background:linear-gradient(145deg,rgba(24,28,43,.9),rgba(56,43,62,.82));box-shadow:0 10px 24px rgba(0,0,0,.24);color:#fff4cf}
+.rpg-chronicle-feature__hero small{font-size:10px;font-weight:900;letter-spacing:.15em;color:#d9c58a}
+.rpg-chronicle-feature__hero strong{font-size:18px;letter-spacing:.04em}
+.rpg-chronicle-feature__hero p{margin:0;font-size:13px;line-height:1.45;color:#efe8d4}
+.rpg-chronicle-feature__ledger{min-width:0;border:1px solid rgba(224,204,150,.34);border-radius:18px;padding:10px;background:rgba(17,18,29,.64);backdrop-filter:blur(8px)}
+.rpg-chronicle-feature__ledger .lineage-chronicle,.rpg-chronicle-feature__ledger .world-chronicle{position:static!important;inset:auto!important;width:auto!important;max-width:none!important;margin:0!important;transform:none!important}
+@media(max-width:390px){.rpg-chronicle-feature__hero{padding:12px}.rpg-chronicle-feature__hero strong{font-size:16px}}

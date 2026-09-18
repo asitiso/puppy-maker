@@ -32,6 +32,7 @@ const meta:Record<MobileContentCategory,CategoryMeta>={
 
 const entries:Record<MobileFeatureId,EntryInfo>={
   schedule:{icon:'life',title:'스케줄',description:'훈련과 하루 일정을 선택해요.'},
+  weekly_planner:{icon:'life',title:'주간 작전판',description:'이번 주 집중 목표와 진행을 정리해요.'},
   mission:{icon:'life',title:'이번 달 목표',description:'월간 집중과 미션을 확인해요.'},
   attendance:{icon:'bell',title:'출석 보상',description:'이번 달 출석 보상을 받아요.'},
   mail:{icon:'records',title:'우편함',description:'도착한 편지와 보상을 확인해요.'},
@@ -53,7 +54,7 @@ const entries:Record<MobileFeatureId,EntryInfo>={
 };
 
 const featuresByCategory:Record<MobileContentCategory,MobileFeatureId[]>={
-  life:['schedule','mission','attendance','mail'],
+  life:['schedule','weekly_planner','mission','attendance','mail'],
   growth:['raising','ambition','achievements','inventory','season','sanctuary'],
   adventure:['outing','expedition','world'],
   bond:['bond','gifts','stories'],

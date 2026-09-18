@@ -8,11 +8,12 @@ const categories = readFileSync(new URL('./MobileCategorySheet.tsx', import.meta
 const legacyHome = readFileSync(new URL('./LayeredHome.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./layered-home-v7.css', import.meta.url), 'utf8');
 const tokens = readFileSync(new URL('./mobile-ui-tokens.css', import.meta.url), 'utf8');
+const districtWorlds = readFileSync(new URL('./exploration/rpg-district-worlds.ts', import.meta.url), 'utf8');
 
 describe('V7 mobile home information architecture compatibility', () => {
   it('keeps the V7 home principles while the V8 router owns the real entrypoint', () => {
     expect(root).toContain("import MobileRouterChrome from './MobileRouterChrome'");
-    expect(root).toContain("import MobileCategoryPage from './MobileCategoryPage'");
+    expect(root).toContain("import RpgDistrictHub from './RpgDistrictHub'");
     expect(root).toContain('<MobileRouterChrome');
     expect(root).not.toContain('<LayeredHomeV7');
   });
@@ -36,11 +37,13 @@ describe('V7 mobile home information architecture compatibility', () => {
     expect(css).toContain('display:none!important');
   });
 
-  it('moves weekly planning and chronicles behind semantic category disclosure', () => {
+  it('moves weekly planning and chronicles behind spatial district facilities', () => {
     expect(shell).not.toContain("from './WeeklyPlannerCard'");
-    expect(categories).toContain('<WeeklyPlannerCard');
-    expect(categories).toContain('<LineageChronicle');
-    expect(categories).toContain('<WorldChronicle');
+    expect(districtWorlds).toContain("'weekly_planner'");
+    expect(districtWorlds).toContain("'lineage'");
+    expect(districtWorlds).toContain("'world_chronicle'");
+    expect(root).toContain("import RpgWeeklyPlannerFeature from './RpgWeeklyPlannerFeature'");
+    expect(root).toContain("import RpgChronicleFeature from './RpgChronicleFeature'");
   });
 
   it('reserves readable mobile controls', () => {
