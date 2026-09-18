@@ -15,11 +15,13 @@ const frame:ExplorationStoryFrame={
 
 describe('StoryFrameOverlay accessibility',()=>{
   it('moves initial keyboard focus into the modal story frame',()=>{
-    const html=renderToStaticMarkup(<StoryFrameOverlay frame={frame} onComplete={vi.fn()}/>);
+    const html=renderToStaticMarkup(<StoryFrameOverlay frame={frame} onComplete={vi.fn()} onCancel={vi.fn()}/>);
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain('aria-labelledby="exploration-story-title-focus-contract"');
     expect(html).toContain('aria-describedby="exploration-story-text-focus-contract"');
     expect(html).toContain('autofocus=""');
+    expect(html).toContain('aria-label="스토리 닫기"');
+    expect(html).toContain('exploration-story-frame__close');
   });
 });
