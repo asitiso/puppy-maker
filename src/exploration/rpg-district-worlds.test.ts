@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import type {MobileContentCategory} from '../mobile-router';
-import {districtFeatureIds,parseDistrictDestination,parseDistrictFeature,rpgDistrictWorld} from './rpg-district-worlds';
+import {districtFeatureIds,districtForFeature,nextDistrictToward,parseDistrictDestination,parseDistrictFeature,rpgDistrictWorld} from './rpg-district-worlds';
 import {nearestInteractable} from './exploration-runtime';
 
 const categories:MobileContentCategory[]=['life','growth','adventure','bond','records'];
@@ -40,6 +40,16 @@ describe('RPG district worlds',()=>{
       for(const next of adjacency.get(current)??[])queue.push(next);
     }
     expect(visited).toEqual(new Set(categories));
+  });
+
+  it('routes global objectives through the shortest next district gate',()=>{
+    expect(nextDistrictToward('life','life')).toBeNull();
+    expect(nextDistrictToward('life','growth')).toBe('growth');
+    expect(nextDistrictToward('life','records')).toBe('records');
+    expect(nextDistrictToward('life','adventure')).toBe('growth');
+    expect(nextDistrictToward('adventure','records')).toBe('bond');
+    expect(districtForFeature('achievements')).toBe('growth');
+    expect(districtForFeature('world_chronicle')).toBe('records');
   });
 
   it('starts every district in neutral walkable space away from all portals',()=>{
