@@ -6,7 +6,7 @@ import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import RpgHomeHub from './RpgHomeHub';
 import RpgDistrictHub from './RpgDistrictHub';
-import MobileCategoryPage from './MobileCategoryPage';
+import RpgChronicleFeature from './RpgChronicleFeature';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import MobileRouterChrome from './MobileRouterChrome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
@@ -293,7 +293,7 @@ export default function Root() {
     if(feature==='world')return <WorldProgressOverlay state={state} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='archive')return <CollectionArchiveOverlay state={state} onNavigate={handleHomeMenuNavigate} onExpedition={()=>openFeature('expedition')} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='expedition')return renderExpedition(state);
-    if(feature==='lineage'||feature==='world_chronicle')return <MobileCategoryPage category="records" state={state} onOpenFeature={openFeature} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
+    if(feature==='lineage'||feature==='world_chronicle')return <RpgChronicleFeature feature={feature} state={state} onBack={handleBack}/>;
     return null;
   };
 
