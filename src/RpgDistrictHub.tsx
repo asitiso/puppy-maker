@@ -40,7 +40,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     />
     <aside className="rpg-home-hub__tracker rpg-district-hub__tracker" aria-label="월드 의뢰 추적">
       <small>WORLD GUIDE · {priorityLabel}</small>
-      <strong>{recommendation.label}</strong>
+      <strong>추천 의뢰 · {recommendation.label}</strong>
       <p>{recommendation.reason}</p>
       <span>다음 길 · {routeHint} · {state.year}년차 {state.month}월 {state.week}주차</span>
     </aside>
