@@ -26,6 +26,14 @@ export const initialFifthPathJourneyState: FifthPathJourneyState = {
   completed: false,
 };
 
+const journeyOrder: readonly FifthPathJourneyChoice[] = [
+  'true_path',
+  'follow_the_signal',
+  'rewrite_the_pattern',
+  'face_the_long_night',
+  'carry_the_memory',
+];
+
 const expectedChoice: Partial<Record<FifthPathJourneyStage, FifthPathJourneyChoice>> = {
   spring: 'true_path',
   summer: 'follow_the_signal',
@@ -37,6 +45,15 @@ const expectedChoice: Partial<Record<FifthPathJourneyStage, FifthPathJourneyChoi
 const nextStage: Partial<Record<FifthPathJourneyStage, FifthPathJourneyStage>> = {
   spring: 'summer', summer: 'autumn', autumn: 'winter', winter: 'true_ending',
 };
+
+const expectedStageByChoiceCount: readonly FifthPathJourneyStage[] = [
+  'spring',
+  'summer',
+  'autumn',
+  'winter',
+  'true_ending',
+  'true_ending',
+];
 
 export function fifthPathJourneyReducer(state: FifthPathJourneyState, action: FifthPathJourneyAction): FifthPathJourneyState {
   if (action.type === 'RESET') return initialFifthPathJourneyState;
@@ -76,16 +93,34 @@ export function serializeFifthPathJourney(state: FifthPathJourneyState): string 
   return JSON.stringify(state);
 }
 
+function hasCanonicalChoicePrefix(choices: readonly FifthPathJourneyChoice[]): boolean {
+  return choices.every((choice, index) => journeyOrder[index] === choice);
+}
+
+export function isFifthPathJourneyStateConsistent(state: FifthPathJourneyState): boolean {
+  if (!hasCanonicalChoicePrefix(state.choices)) return false;
+  if (state.stage === 'locked') {
+    return state.choices.length === 0 && !state.selected && state.winterOutcome === null && !state.completed;
+  }
+
+  if (state.stage !== expectedStageByChoiceCount[state.choices.length]) return false;
+  if (state.selected !== state.choices.includes('true_path')) return false;
+
+  const facedWinter = state.choices.includes('face_the_long_night');
+  if (facedWinter !== (state.winterOutcome !== null)) return false;
+  if (state.completed !== state.choices.includes('carry_the_memory')) return false;
+  return true;
+}
+
 export function parseFifthPathJourney(raw: string | null | undefined): FifthPathJourneyState {
   if (!raw) return initialFifthPathJourneyState;
   try {
     const value = JSON.parse(raw) as Partial<FifthPathJourneyState>;
     const stages: readonly FifthPathJourneyStage[] = ['locked','spring','summer','autumn','winter','true_ending'];
-    const choices: readonly FifthPathJourneyChoice[] = ['true_path','follow_the_signal','rewrite_the_pattern','face_the_long_night','carry_the_memory'];
-    if (value.version !== 1 || !stages.includes(value.stage as FifthPathJourneyStage) || !Array.isArray(value.choices) || value.choices.some(choice => !choices.includes(choice))) return initialFifthPathJourneyState;
+    if (value.version !== 1 || !stages.includes(value.stage as FifthPathJourneyStage) || !Array.isArray(value.choices) || value.choices.some(choice => !journeyOrder.includes(choice))) return initialFifthPathJourneyState;
     const outcome = value.winterOutcome;
     if (outcome !== null && outcome !== 'victory' && outcome !== 'costly_victory' && outcome !== 'defeat') return initialFifthPathJourneyState;
-    return {
+    const parsed: FifthPathJourneyState = {
       version: 1,
       stage: value.stage as FifthPathJourneyStage,
       selected: Boolean(value.selected),
@@ -93,6 +128,7 @@ export function parseFifthPathJourney(raw: string | null | undefined): FifthPath
       winterOutcome: outcome ?? null,
       completed: Boolean(value.completed),
     };
+    return isFifthPathJourneyStateConsistent(parsed) ? parsed : initialFifthPathJourneyState;
   } catch {
     return initialFifthPathJourneyState;
   }
