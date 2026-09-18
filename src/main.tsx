@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Root from './Root';
+import FifthPathJourneyFlow from './FifthPathJourneyFlow';
 import ProductionErrorBoundary from './ProductionErrorBoundary';
 import { installClientObservability } from './client-observability';
 import './styles.css';
@@ -16,6 +17,13 @@ installClientObservability();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ProductionErrorBoundary><Root /></ProductionErrorBoundary>
+    <ProductionErrorBoundary>
+      <Root />
+      <FifthPathJourneyFlow
+        winterOutcome="costly_victory"
+        worldSignals={['서로 다른 길의 선택들이 하나의 세계에 함께 흔적을 남겼어요.']}
+        bondSignals={['리라는 반복보다 함께 만든 선택을 기억하려 해요.']}
+      />
+    </ProductionErrorBoundary>
   </React.StrictMode>
 );
