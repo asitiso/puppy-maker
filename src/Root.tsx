@@ -7,6 +7,7 @@ import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import RpgHomeHub from './RpgHomeHub';
 import RpgDistrictHub from './RpgDistrictHub';
 import RpgChronicleFeature from './RpgChronicleFeature';
+import RpgWeeklyPlannerFeature from './RpgWeeklyPlannerFeature';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import MobileRouterChrome from './MobileRouterChrome';
 import RaisingIdentityOverlay from './RaisingIdentityOverlay';
@@ -286,6 +287,7 @@ export default function Root() {
       onMail={handleMail}
       onMonthlyFocus={handleMonthlyFocus}
     />;
+    if(feature==='weekly_planner')return <RpgWeeklyPlannerFeature state={state} onBack={handleBack} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
     if(feature==='raising')return <RaisingIdentityOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onCalling={calling=>setGuardianCalling?.(calling)} onTrait={trait=>purchaseGrowthTrait?.(trait)}/>;
     if(feature==='ambition')return <YearlyAmbitionOverlay state={state} onSelect={handleYearlyAmbition} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='season')return <SeasonLiveOpsOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onPurchase={handleSeasonPurchase} onLegacyUnlock={handleSeasonLegacyUnlock}/>;
