@@ -60,10 +60,12 @@ export default function MobileRouterChrome({
   const route=navigation.current;
   const active=activeCategory(navigation);
   const appPlay=route.kind==='play'&&route.screen!=='tactical'&&route.screen!=='choice_event';
+  const worldHome=route.kind==='home';
   const shellClass=[
     'v8-mobile-shell',
     guarded?'is-guarded':'',
     route.kind==='home'?'is-home':'',
+    worldHome?'is-world-home':'',
     appPlay?'is-app-play':'',
   ].filter(Boolean).join(' ');
   const complexMeta=route.kind==='feature'?complexFeatureMeta[route.feature]:undefined;
@@ -98,7 +100,7 @@ export default function MobileRouterChrome({
 
       <div className="v8-route-body">{routedChildren}</div>
 
-      {!guarded&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
+      {!guarded&&!worldHome&&<nav className="v8-bottom-nav" aria-label="주요 메뉴">
         {categories.map(item=><button
           key={item.id}
           type="button"
