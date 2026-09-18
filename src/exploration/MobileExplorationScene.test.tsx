@@ -56,6 +56,14 @@ describe('mobile exploration scene contract',()=>{
     expect(scene.indexOf('if(activeFrameRef.current) return;')).toBeLessThan(scene.indexOf('pressedKeysRef.current.add(event.code)'));
   });
 
+  it('requires a movement key held through a story modal to be released before movement resumes',()=>{
+    expect(scene).toContain('blockedMovementKeysRef');
+    expect(scene).toContain('blockedMovementKeysRef.current.add(code)');
+    expect(scene).toContain('blockedMovementKeysRef.current.add(event.code)');
+    expect(scene).toContain('if(blockedMovementKeysRef.current.has(event.code)) return;');
+    expect(scene).toContain('blockedMovementKeysRef.current.delete(event.code)');
+  });
+
   it('restores useful keyboard focus after story cancellation and completion',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
