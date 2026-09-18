@@ -42,6 +42,7 @@ import {publicProjectRequestEvent} from './public-project-ui-events';
 import {livingRegionUpdateRequestEvent,type LivingRegionUpdateRequest} from './living-region-ui-events';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 import TrainingActivityMinigame from './TrainingActivityMinigame';
+import './rpg-activity-loop.css';
 
 const iconPaths: Record<string, string> = {
   sword: 'M6 19l4-4m0 0 7-7 2-4-4 2-7 7m2 2 3 3m-7-1 3 3',
@@ -94,18 +95,56 @@ function Hub({ state, go }: { state: typeof initialState; go: (s: 'schedule') =>
 function Schedule({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const ids = Object.keys(activities) as ActivityId[];
   const synergies = scheduleSynergies(state.schedule);
-  return <section className="screen diary-screen schedule-screen">
-    <div className="diary-bg"/>
-    <div className="screen-title"><small>MONTHLY PLAN</small><h1>{state.month}월 성장 다이어리</h1></div>
-    <div className="book"><div className="book-ring"/><div className="week-list">
-      {state.schedule.map((id, index) => <div className="week-row" key={index}><span className="week-label">{index + 1}<small>WEEK</small></span><div className={`activity-card activity-${id}`}><span><Icon name={activities[id].icon}/></span><div><b>{activities[id].name}</b><small>{id === 'rest' ? '피로와 스트레스 회복' : id === 'herb' ? '골드와 지식 획득' : '핵심 능력치 성장'}</small></div></div><button className="cycle" onClick={() => dispatch({ type:'SET_SCHEDULE', index, activity: ids[(ids.indexOf(id)+1)%ids.length] })}>↻</button></div>)}
-    </div><div className="activity-palette">{ids.map(id => <button key={id} onClick={() => dispatch({ type:'SET_SCHEDULE', index: 0, activity:id })}><Icon name={activities[id].icon}/><span>{activities[id].name}</span></button>)}</div></div>
-    <div className="schedule-synergy-summary"><small>PLAN SYNERGY</small>{synergies.length ? synergies.map(id => {
+  const [selectedWeek,setSelectedWeek]=useState(0);
+  const selectedIndex=Math.max(0,Math.min(state.schedule.length-1,selectedWeek));
+  const selectedActivity=state.schedule[selectedIndex];
+  const activityDescription=(id:ActivityId)=>id === 'rest'
+    ? '회복 거점에서 피로와 스트레스를 정비'
+    : id === 'herb'
+      ? '약초 정원에서 채집과 지식 획득'
+      : id === 'magic'
+        ? '별빛 교실에서 마력과 룬 숙련'
+        : '수호자 훈련장에서 전투 감각 성장';
+  return <section className="screen schedule-screen rpg-schedule-board">
+    <div className="rpg-schedule-board__backdrop"/>
+    <header className="rpg-activity-header">
+      <small>GUILD ACTIVITY BOARD</small>
+      <h1>{state.month}월 활동 의뢰</h1>
+      <span>{state.year}년차 · {state.month}월 · 주차별 활동 루트를 편성하세요.</span>
+    </header>
+    <div className="rpg-contract-layout">
+      <section className="rpg-contract-list" aria-label="주차별 활동 의뢰">
+        {state.schedule.map((id,index)=><button
+          type="button"
+          key={index}
+          className={`rpg-contract${selectedIndex===index?' is-selected':''}`}
+          aria-pressed={selectedIndex===index}
+          onClick={()=>setSelectedWeek(index)}
+        >
+          <span className="rpg-contract__week">W{index+1}</span>
+          <span className="rpg-contract__icon"><Icon name={activities[id].icon}/></span>
+          <span className="rpg-contract__copy"><b>{activities[id].name}</b><small>{activityDescription(id)}</small></span>
+          <span className="rpg-contract__status">{selectedIndex===index?'편집 중':'대기'}</span>
+        </button>)}
+      </section>
+      <section className="rpg-contract-editor" aria-label={`${selectedIndex+1}주차 활동 변경`}>
+        <small>WEEK {selectedIndex+1} · ROUTE SELECT</small>
+        <strong>{selectedActivity?activities[selectedActivity].name:'활동 선택'}</strong>
+        <p>{selectedActivity?activityDescription(selectedActivity):'이번 주 활동을 선택하세요.'}</p>
+        <div className="rpg-activity-palette">{ids.map(id=><button
+          type="button"
+          key={id}
+          className={selectedActivity===id?'is-active':''}
+          aria-pressed={selectedActivity===id}
+          onClick={()=>dispatch({type:'SET_SCHEDULE',index:selectedIndex,activity:id})}
+        ><Icon name={activities[id].icon}/><span>{activities[id].name}</span></button>)}</div>
+      </section>
+    </div>
+    <div className="schedule-synergy-summary rpg-schedule-synergy"><small>PARTY ROUTE BONUS</small>{synergies.length ? synergies.map(id => {
       const synergy = scheduleSynergyDefinitions.find(item => item.id === id);
       return <span key={id}><b>{synergy?.label}</b>{synergy?.description}</span>;
-    }) : <span><b>기본 계획</b>활동 조합을 바꾸면 추가 성장 보너스가 생겨요.</span>}</div>
-    <Pet mood="focus"/>
-    <div className="planner-actions"><button className="secondary" onClick={() => dispatch({type:'AUTO_SCHEDULE'})}>자동 배치</button><button className="primary" onClick={() => dispatch({type:'GO',screen:'training'})}>일정 시작</button></div>
+    }) : <span><b>기본 루트</b>활동 조합을 바꾸면 추가 성장 보너스가 생겨요.</span>}</div>
+    <div className="planner-actions rpg-planner-actions"><button className="secondary" onClick={() => dispatch({type:'AUTO_SCHEDULE'})}>추천 루트 편성</button><button className="primary" onClick={() => dispatch({type:'GO',screen:'training'})}>활동 루트 출발</button></div>
   </section>;
 }
 
@@ -130,7 +169,20 @@ const eventDialogue: Record<RandomEventId, string> = {
 
 function Dialogue({ state, dispatch }: { state: typeof initialState; dispatch: React.Dispatch<any> }) {
   const discovery = state.lastGrowthReport?.randomEvent;
-  return <section className="screen dialogue-screen"><div className="story-forest"/><div className="story-pet"><Pet mood="shy"/></div><div className="dialogue-box"><div className="nameplate">RUNA · 루나</div><p>{discovery ? eventDialogue[discovery] : <>오늘 사냥 수업, 정말 재미있었어요!<br/>주인님과 함께라면 뭐든 할 수 있을 것 같아요.</>}</p><div className="choices"><button onClick={() => dispatch({type:'CHOOSE',choice:'hug'})}>따뜻하게 안아준다 <small>호감도 ↑ 스트레스 ↓</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'scold'})}>조금 더 엄하게 지도한다 <small>도덕성 ↑</small></button><button onClick={() => dispatch({type:'CHOOSE',choice:'snack'})}>별빛 간식을 건넨다 <small>100G · 스트레스 크게 ↓</small></button></div></div></section>;
+  return <section className="screen dialogue-screen rpg-after-action-dialogue">
+    <div className="story-forest"/>
+    <header className="rpg-dialogue-context"><small>AFTER ACTION EVENT</small><strong>{discovery?'훈련 중 발견한 변화':'훈련을 마친 루나'}</strong><span>선택에 따라 관계와 상태가 달라집니다.</span></header>
+    <div className="story-pet"><Pet mood="shy"/></div>
+    <div className="dialogue-box rpg-dialogue-box">
+      <div className="nameplate">RUNA · 루나</div>
+      <p>{discovery ? eventDialogue[discovery] : <>오늘 활동 루트, 정말 재미있었어요!<br/>다음에는 더 멀리 가보고 싶어요.</>}</p>
+      <div className="choices rpg-dialogue-choices">
+        <button onClick={() => dispatch({type:'CHOOSE',choice:'hug'})}><b>따뜻하게 안아준다</b><small>호감도 ↑ · 스트레스 ↓</small></button>
+        <button onClick={() => dispatch({type:'CHOOSE',choice:'scold'})}><b>다음 훈련을 점검한다</b><small>도덕성 ↑</small></button>
+        <button onClick={() => dispatch({type:'CHOOSE',choice:'snack'})}><b>별빛 간식을 건넨다</b><small>100G · 스트레스 크게 ↓</small></button>
+      </div>
+    </div>
+  </section>;
 }
 
 const statLabels: Record<string, string> = { strength: '근력', intelligence: '지식', magic: '마력', morality: '도덕성', affection: '호감도', stress: '스트레스', fatigue: '피로' };
@@ -155,9 +207,9 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
   const discoveryValue = report?.unlockedSkill ? skillLabels[report.unlockedSkill] : report?.randomEvent ? eventLabels[report.randomEvent] : memory ? memoryLabels[memory] : state.condition;
   const synergyLabels = state.lastScheduleSynergies.map(id => scheduleSynergyDefinitions.find(item => item.id === id)?.label).filter(Boolean);
   const focus = monthlyFocusDefinitions.find(item => item.id === state.monthlyFocus) ?? monthlyFocusDefinitions[0];
-  return <section className="screen result-screen">
-    <div className="result-rays"/><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 성장 기록</h1>
-    <p>{report ? `${report.quality} · 이번 달 루나의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
+  return <section className="screen result-screen rpg-result-debrief">
+    <div className="result-rays"/><header className="rpg-result-header"><small>QUEST DEBRIEF · MONTHLY REPORT</small><div className={`grade grade-${grade}`}>{grade}</div><h1>{state.month}월 활동 결과</h1></header>
+    <p>{report ? `${report.quality} · 이번 달 활동 루트의 변화가 기록됐어요.` : '루나는 이번 달에도 한 뼘 더 성장했어요.'}</p>
     <div className="result-card">
       <div><span>가장 큰 성장</span><b>{report?.topStat ? `${statLabels[report.topStat.key]} +${report.topStat.delta}` : `근력 ${state.stats.strength}`}</b></div>
       <div><span>훈련 숙련도</span><b>{topMastery ? `${activities[topMastery[0]].name} Lv.${topMastery[1]}` : `마력 ${state.stats.magic}`}</b></div>
@@ -166,8 +218,8 @@ function Result({ state, dispatch }: { state: typeof initialState; dispatch: Rea
       <div><span>월간 성장 방침</span><b>{focus.label}</b></div>
       <div><span>발동한 계획 시너지</span><b>{synergyLabels.length ? synergyLabels.join(' · ') : '없음'}</b></div>
     </div>
-    <div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt=""/><span>월간 보상</span><b>350 G</b></div>
-    <button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>다음 달 시작</button>
+    <div className="reward"><img className="reward-chest" src="/assets/reward/reward_chest_closed.png" alt=""/><span>활동 루트 보상</span><b>350 G</b></div>
+    <button className="primary next-month" onClick={() => dispatch({type:'NEXT_MONTH'})}>월드로 돌아가 다음 달 시작</button>
   </section>;
 }
 
