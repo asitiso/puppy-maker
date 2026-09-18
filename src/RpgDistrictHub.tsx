@@ -1,3 +1,4 @@
+import {useEffect,useState} from 'react';
 import type {GameState} from './game';
 import MobileExplorationScene from './exploration/MobileExplorationScene';
 import {parseDistrictDestination,rpgDistrictWorld} from './exploration/rpg-district-worlds';
@@ -9,15 +10,18 @@ const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
 const noStoryFrames={};
 const noop=()=>{};
 
-type Props={category:MobileContentCategory;state:GameState;onFeature:(feature:MobileFeatureId)=>void;onCategory:(category:MobileContentCategory)=>void;onBack:()=>void;};
+type Props={category:MobileContentCategory;state:GameState;onFeature:(feature:MobileFeatureId)=>void;onBack:()=>void;};
 
-export default function RpgDistrictHub({category,state,onFeature,onCategory,onBack}:Props){
-  const baseWorld=rpgDistrictWorld(category);
-  const recommendation=mobileCategoryRecommendation(category,state);
+export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
+  const [activeCategory,setActiveCategory]=useState(category);
+  useEffect(()=>setActiveCategory(category),[category]);
+  const baseWorld=rpgDistrictWorld(activeCategory);
+  const recommendation=mobileCategoryRecommendation(activeCategory,state);
   const world={...baseWorld,objective:`${baseWorld.objective} 추천 행동: ${recommendation.label}`};
 
   return <section className="rpg-home-hub rpg-district-hub" aria-label={`${world.label} 월드 구역`}>
     <MobileExplorationScene
+      key={activeCategory}
       world={world}
       storyFrames={noStoryFrames}
       playerArtSrc={runaExplorationArt}
@@ -26,7 +30,7 @@ export default function RpgDistrictHub({category,state,onFeature,onCategory,onBa
       onPortal={destinationId=>{
         const destination=parseDistrictDestination(destinationId);
         if(destination?.kind==='feature')onFeature(destination.feature);
-        else if(destination?.kind==='district')onCategory(destination.category);
+        else if(destination?.kind==='district')setActiveCategory(destination.category);
       }}
     />
     <aside className="rpg-home-hub__tracker rpg-district-hub__tracker" aria-label="구역 의뢰 추적">
