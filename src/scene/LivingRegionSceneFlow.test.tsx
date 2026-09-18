@@ -9,10 +9,11 @@ describe('V16 living region scene flow',()=>{
     expect(source).toContain('livingRegionExplorationBuilders[regionId](progress');
     expect(source).toContain('completedInteractionIds={progress.completedInteractions}');
     expect(source).toContain('onInteractionComplete={handleInteractionComplete}');
-    expect(source).toContain("onUpdate({kind:'recordInteraction',interactionId})");
-    expect(source).toContain("onUpdate({kind:'recordDiscovery',discoveryId})");
-    expect(source).toContain("onUpdate({kind:'startMainQuest'})");
-    expect(source).toContain("onUpdate({kind:'resolveMainQuest'})");
-    expect(source).toContain("onUpdate({kind:'advancePostResolution'})");
+    expect(source).toContain("const updates:LivingRegionUpdate[]=[{kind:'recordInteraction',interactionId}]");
+    expect(source).toContain("updates.push({kind:'recordDiscovery',discoveryId})");
+    expect(source).toContain("updates.push({kind:'startMainQuest'})");
+    expect(source).toContain("updates.push({kind:'resolveMainQuest'})");
+    expect(source).toContain("updates.push({kind:'advancePostResolution'})");
+    expect(source).toContain('requestLivingRegionUpdates(regionId,updates)');
   });
 });
