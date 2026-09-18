@@ -72,6 +72,11 @@ describe('mobile exploration scene contract',()=>{
     expect(scene).toContain('activeFrameRef.current=null;\n    if(activeInteractionId)');
   });
 
+  it('gives touch users the same non-committing story cancel path as Escape',()=>{
+    expect(scene).toContain('onCancel={()=>closeStory()}');
+    expect(scene).toContain("if(activeFrameRef.current) closeStory(); else onExit();");
+  });
+
   it('restores useful keyboard focus after story cancellation and completion',()=>{
     expect(scene).toContain('actionButtonRef');
     expect(scene).toContain('actionButtonRef.current?.focus()');
