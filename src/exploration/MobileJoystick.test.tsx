@@ -53,4 +53,11 @@ describe('mobile joystick lifecycle contract',()=>{
     expect(joystick).toContain('activePointerRef.current=null;\n    dragOriginRef.current=null;\n    neutralize();');
     expect(joystick).toContain('activePointerRef.current=null;\n    dragOriginRef.current=null;\n    if(event.currentTarget.hasPointerCapture(event.pointerId))');
   });
+
+  it('tracks the active thumb without visual easing lag while preserving release recentering',()=>{
+    expect(joystick).toContain('data-active={activePointerRef.current!==null||undefined}');
+    const css=readFileSync(new URL('./exploration.css',import.meta.url),'utf8');
+    expect(css).toContain('.exploration-joystick[data-active="true"] .exploration-joystick__knob{transition:none}');
+    expect(css).toContain('transition:transform .08s ease-out');
+  });
 });
