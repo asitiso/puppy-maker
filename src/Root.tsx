@@ -5,6 +5,7 @@ import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
 import RpgHomeHub from './RpgHomeHub';
+import RpgDistrictHub from './RpgDistrictHub';
 import MobileCategoryPage from './MobileCategoryPage';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import MobileRouterChrome from './MobileRouterChrome';
@@ -303,7 +304,7 @@ export default function Root() {
       <SeasonalHomeBadge month={state.month} stamps={state.seasonStamps}/>
       <YearEndCeremonyOverlay state={state}/>
     </>;
-    if(route.kind==='category')return <MobileCategoryPage category={route.category} state={state} onOpenFeature={openFeature} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
+    if(route.kind==='category')return <RpgDistrictHub category={route.category} state={state} onFeature={openFeature} onBack={handleBack}/>;
     if(route.kind==='feature')return renderFeature(state,route.feature);
     if(route.screen==='tactical')return renderExpedition(state);
     return null;
