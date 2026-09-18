@@ -15,7 +15,10 @@ describe('RPG home hub',()=>{
       '기록관 · 연대기와 업적',
     ]) expect(html).toContain(label);
     expect(html).toContain('별빛 마을 월드 허브');
-    expect(html).toContain('WORLD STATUS');
+    expect(html).toContain('PLAYER · LUNA');
+    expect(html).toContain('>HP<');
+    expect(html).toContain('>MP<');
+    expect(html).toContain('메인 퀘스트');
     expect(html).not.toContain('별빛 마을 탐험 종료');
   });
 });
