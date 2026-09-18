@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {ActivityId} from './game';
-import SceneStage from './scene/SceneStage';
-import {primaryTrainingInteraction,trainingSceneForActivity} from './scene/training-scenes';
+import MobileExplorationScene from './exploration/MobileExplorationScene';
+import {TRAINING_BEGIN_DESTINATION,trainingExplorationWorld} from './exploration/training-exploration-worlds';
 import {buildTrainingActivityQueue,challengeForRound,herbOrderForRound,magicPatternForRound,type HerbToken,type MagicRune,type TrainingActionKind,type TrainingPresentationGrade} from './training-minigames';
 import './training-minigames.css';
 
@@ -28,6 +28,9 @@ const herbClues:Record<HerbToken,readonly string[]>={
   '별이끼':['표면에 작은 별무늬가 퍼진 이끼','낮게 퍼진 초록 표면에 각진 무늬가 숨어 있어요','은빛 점보다 작고 각진 무늬가 촘촘히 이어져요'],
 };
 const magicButtons:readonly MagicRune[]=['✦','◇','✧','○'];
+const runaExplorationArt='/assets/exploration/forest/runa-topdown.svg';
+const noStoryFrames={};
+const noop=()=>{};
 
 function gradeForAccuracy(accuracy:number):TrainingPresentationGrade{
   if(accuracy>=.8)return 'clean';
@@ -96,15 +99,26 @@ export default function TrainingActivityMinigame({schedule,year,month,week,score
   }
 
   if(!sceneReady){
-    const scene=trainingSceneForActivity(activity,{year,month,week});
-    const primary=primaryTrainingInteraction(activity);
-    const primaryLabel=scene.interactions.find(item=>item.id===primary)?.label??'훈련 시작';
-    return <section className="screen training-screen training-scene-entry" aria-label={`${activityLabels[activity]} 장소`}>
-      <SceneStage scene={scene} onInteraction={interaction=>{
-        if(interaction.id===primary){setSceneReady(true);setFeedback('');}
-        else setFeedback(`${primaryLabel}을 선택하면 실습을 시작해요.`);
-      }}/>
-      <div className="training-scene-entry__guide" aria-live="polite"><small>SCENE PRACTICE · {stageIndex+1}/{queue.length}</small><strong>{activityLabels[activity]}</strong><span>{feedback||`루나를 ${primaryLabel} 위치로 이동시켜 실습을 시작하세요.`}</span></div>
+    const world=trainingExplorationWorld(activity);
+    return <section className="screen training-screen training-exploration-entry" aria-label={`${activityLabels[activity]} 인스턴스`}>
+      <MobileExplorationScene
+        world={world}
+        storyFrames={noStoryFrames}
+        playerArtSrc={runaExplorationArt}
+        onProgress={noop}
+        onExit={noop}
+        showExitButton={false}
+        onPortal={destinationId=>{
+          if(destinationId!==TRAINING_BEGIN_DESTINATION) return;
+          setSceneReady(true);
+          setFeedback('');
+        }}
+      />
+      <aside className="training-route-tracker" aria-label="훈련 루트 진행">
+        <small>TRAINING ROUTE</small>
+        <strong>{stageIndex+1}/{queue.length} · {activityLabels[activity]}</strong>
+        <span>목표 지점까지 직접 이동해 실습을 시작하세요.</span>
+      </aside>
     </section>;
   }
 
