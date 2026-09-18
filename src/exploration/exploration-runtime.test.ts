@@ -75,6 +75,15 @@ describe('mobile exploration runtime',()=>{
     expect(nearestInteractable({x:400,y:400},items)).toBeNull();
   });
 
+  it('prioritizes unfinished one-time progress over repeatable chatter inside overlapping ranges',()=>{
+    const items:ExplorationInteractable[]=[
+      {id:'npc-chat',label:'Chat',kind:'story',position:{x:105,y:100},radius:120,storyFrameId:'chat',repeatable:true},
+      {id:'quest-step',label:'Quest',kind:'story',position:{x:180,y:100},radius:130,storyFrameId:'quest'},
+    ];
+    expect(nearestInteractable({x:100,y:100},items)?.id).toBe('quest-step');
+    expect(nearestInteractable({x:100,y:100},[{...items[1],enabled:false},items[0]])?.id).toBe('npc-chat');
+  });
+
   it('unlocks later discoveries only after every authored prerequisite is completed',()=>{
     const first:ExplorationInteractable={id:'first',label:'First clue',kind:'story',position:{x:0,y:0},radius:60};
     const second:ExplorationInteractable={id:'second',label:'Second clue',kind:'story',position:{x:0,y:0},radius:60,requiresCompleted:['first']};
