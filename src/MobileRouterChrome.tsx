@@ -82,7 +82,7 @@ export default function MobileRouterChrome({
 
   return <MobileRouterActionsProvider onBack={onBack} onHome={onHome}>
     <div className={shellClass}>
-      {!guarded&&<MobileHomeStatus
+      {!guarded&&!worldHome&&<MobileHomeStatus
         state={state}
         notificationCount={notificationCount}
         onNotifications={onNotifications}
