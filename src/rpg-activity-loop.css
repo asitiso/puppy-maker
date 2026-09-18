@@ -1,0 +1,53 @@
+.rpg-schedule-board{position:relative;overflow:hidden;background:#102922;color:#f7f1d7}
+.rpg-schedule-board__backdrop{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,22,20,.5),rgba(8,19,18,.88)),url('/assets/outing/village_bg.webp') center/cover no-repeat;filter:saturate(.82)}
+.rpg-activity-header{position:absolute;z-index:4;left:max(4%,env(safe-area-inset-left));right:max(4%,env(safe-area-inset-right));top:3%;display:grid;gap:2px;padding:10px 13px;border:1px solid rgba(236,214,145,.42);border-radius:15px;background:linear-gradient(145deg,rgba(11,32,28,.92),rgba(29,49,39,.84));box-shadow:0 8px 20px rgba(0,0,0,.28);backdrop-filter:blur(8px)}
+.rpg-activity-header small{font-size:9px;font-weight:900;letter-spacing:.16em;color:#dec982}
+.rpg-activity-header h1{margin:0;font-size:20px;line-height:1.15;color:#fff3bf}
+.rpg-activity-header span{font-size:11px;color:#dce7d8}
+.rpg-contract-layout{position:absolute;z-index:4;left:4%;right:4%;top:20%;bottom:27%;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr);gap:10px}
+.rpg-contract-list{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));gap:7px;min-height:0}
+.rpg-contract{min-width:0;min-height:44px;display:grid;grid-template-columns:38px 42px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(226,213,164,.24);border-radius:14px;background:linear-gradient(145deg,rgba(13,36,31,.88),rgba(19,40,34,.78));color:#edf2df;text-align:left;box-shadow:0 6px 14px rgba(0,0,0,.2)}
+.rpg-contract.is-selected{border-color:rgba(255,226,132,.85);background:linear-gradient(145deg,rgba(38,57,39,.95),rgba(55,62,38,.9));box-shadow:0 0 0 2px rgba(245,217,124,.11),0 8px 18px rgba(0,0,0,.27)}
+.rpg-contract__week{font-size:13px;font-weight:950;letter-spacing:.08em;color:#efd787}
+.rpg-contract__icon{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(245,222,151,.3);border-radius:11px;background:rgba(255,255,255,.045)}
+.rpg-contract__icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}
+.rpg-contract__copy{min-width:0;display:grid;gap:2px}.rpg-contract__copy b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rpg-contract__copy small{font-size:9px;line-height:1.25;color:#bccbbd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rpg-contract__status{font-size:9px;font-weight:900;color:#ecd887}
+.rpg-contract-editor{min-width:0;display:flex;flex-direction:column;gap:7px;padding:12px;border:1px solid rgba(226,213,164,.3);border-radius:16px;background:linear-gradient(160deg,rgba(12,29,30,.94),rgba(25,37,45,.86));box-shadow:0 8px 20px rgba(0,0,0,.24)}
+.rpg-contract-editor>small{font-size:9px;font-weight:900;letter-spacing:.13em;color:#e6cf85}.rpg-contract-editor>strong{font-size:18px;color:#fff0b7}.rpg-contract-editor>p{margin:0;font-size:10px;line-height:1.35;color:#cfddd8}
+.rpg-activity-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:auto}
+.rpg-activity-palette button{min-height:48px;display:grid;grid-template-columns:24px minmax(0,1fr);gap:7px;align-items:center;padding:7px 8px;border:1px solid rgba(219,223,207,.2);border-radius:12px;background:rgba(255,255,255,.035);color:#dce7e3;font:inherit;font-size:11px;font-weight:850}
+.rpg-activity-palette button.is-active{border-color:#f5d980;background:linear-gradient(145deg,rgba(103,79,41,.46),rgba(55,61,43,.5));color:#fff1b7}.rpg-activity-palette svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8}
+.rpg-schedule-synergy{position:absolute!important;z-index:4;left:4%!important;right:4%!important;bottom:15%!important;top:auto!important;margin:0!important;max-height:10%;overflow:auto;border-color:rgba(224,207,139,.36)!important;background:rgba(13,31,31,.88)!important;color:#f1eed5!important}
+.rpg-planner-actions{left:4%!important;right:4%!important;bottom:3%!important;z-index:6!important}
+.rpg-planner-actions .secondary,.rpg-planner-actions .primary{min-height:50px;background-image:none;border:1px solid rgba(239,214,137,.55);color:#f9efc8;box-shadow:0 7px 18px rgba(0,0,0,.25)}
+.rpg-planner-actions .secondary{background:linear-gradient(180deg,rgba(52,66,61,.96),rgba(30,43,42,.96))}.rpg-planner-actions .primary{background:linear-gradient(180deg,#a77b34,#6c4926);color:#fff5cd}
+
+.rpg-after-action-dialogue .story-forest:after{background:linear-gradient(180deg,rgba(8,18,16,.18),rgba(9,22,20,.15) 34%,rgba(8,17,20,.58))}
+.rpg-dialogue-context{position:absolute;z-index:7;left:max(4%,env(safe-area-inset-left));right:max(4%,env(safe-area-inset-right));top:max(3%,env(safe-area-inset-top));display:grid;gap:2px;padding:9px 12px;border:1px solid rgba(235,213,141,.45);border-radius:14px;background:rgba(10,28,27,.86);box-shadow:0 7px 20px rgba(0,0,0,.24);color:#fff1be;backdrop-filter:blur(8px)}
+.rpg-dialogue-context small{font-size:9px;font-weight:950;letter-spacing:.16em;color:#dbc67f}.rpg-dialogue-context strong{font-size:15px}.rpg-dialogue-context span{font-size:10px;color:#d6e0d9}
+.rpg-after-action-dialogue .story-pet{top:11%;height:48%}
+.rpg-dialogue-box{left:3%!important;right:3%!important;bottom:3%!important;padding:30px 18px 14px!important;background:linear-gradient(145deg,rgba(246,239,215,.97),rgba(228,220,194,.96))!important;border:2px solid rgba(113,81,47,.58)!important;border-radius:18px!important;box-shadow:0 16px 34px rgba(0,0,0,.36)!important}
+.rpg-dialogue-box .nameplate{background:linear-gradient(180deg,#52664c,#31463d);border-color:#e9d18d}
+.rpg-dialogue-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.rpg-dialogue-choices button{min-height:56px;padding:8px 9px;background:linear-gradient(180deg,#fffef8,#e9e3d2);border-color:#9c8059}.rpg-dialogue-choices button b{display:block;font-size:11px}.rpg-dialogue-choices button small{font-size:9px;line-height:1.25}
+
+.rpg-result-debrief{padding:4% 5% 3%!important;justify-content:flex-start;background:linear-gradient(180deg,rgba(10,27,27,.2),rgba(8,19,22,.58)),url('/assets/result/training_result_bg.webp') center/cover no-repeat!important;color:#f7f1d5}
+.rpg-result-header{position:relative;display:grid;place-items:center;gap:3px;width:100%}.rpg-result-header>small{font-size:9px;font-weight:950;letter-spacing:.16em;color:#ecd78f}.rpg-result-debrief .grade{width:112px;height:112px;margin-top:2%!important;font-size:68px;border-width:5px}.rpg-result-debrief h1{margin:8px 0 0!important;font-size:22px}.rpg-result-debrief>p{margin:4px 0 8px;font-size:11px}
+.rpg-result-debrief .result-card{margin-top:4px;gap:6px}.rpg-result-debrief .result-card div{padding:9px 10px;border-color:rgba(233,217,151,.42);background:linear-gradient(145deg,rgba(23,38,38,.84),rgba(18,29,37,.8));text-align:left}.rpg-result-debrief .result-card span{font-size:9px;color:#cdded7}.rpg-result-debrief .result-card b{font-size:15px;color:#fff1ba}
+.rpg-result-debrief .reward{margin:9px 0;padding:8px 18px;background:rgba(14,33,33,.86)}.rpg-result-debrief .next-month{min-height:50px;margin-top:auto;background-image:none!important;border:1px solid rgba(244,215,126,.68);background:linear-gradient(180deg,#9e7637,#684926)!important;color:#fff4c9!important}
+
+@media(max-width:430px){
+  .rpg-contract-layout{left:3%;right:3%;top:18%;bottom:29%;grid-template-columns:1fr;grid-template-rows:minmax(0,1.25fr) minmax(0,.9fr);gap:7px}
+  .rpg-contract-list{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:5px}
+  .rpg-contract{grid-template-columns:29px 32px minmax(0,1fr);padding:6px;gap:5px}.rpg-contract__icon{width:30px;height:30px}.rpg-contract__status{display:none}.rpg-contract__copy b{font-size:11px}.rpg-contract__copy small{font-size:8px}
+  .rpg-contract-editor{padding:8px}.rpg-contract-editor>strong{font-size:14px}.rpg-contract-editor>p{display:none}.rpg-activity-palette{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.rpg-activity-palette button{grid-template-columns:1fr;place-items:center;gap:2px;min-height:44px;padding:4px;font-size:9px}.rpg-activity-palette svg{width:20px;height:20px}
+  .rpg-schedule-synergy{bottom:16%!important}.rpg-planner-actions{bottom:2%!important}
+  .rpg-dialogue-context{left:3%;right:3%;padding:7px 9px}.rpg-dialogue-context span{display:none}.rpg-after-action-dialogue .story-pet{top:10%;height:45%}.rpg-dialogue-box{left:2%!important;right:2%!important;padding:27px 12px 10px!important}.rpg-dialogue-box p{font-size:13px!important;line-height:1.45!important}.rpg-dialogue-choices{gap:4px}.rpg-dialogue-choices button{padding:6px;min-height:52px}.rpg-dialogue-choices button b{font-size:10px}.rpg-dialogue-choices button small{font-size:8px}
+  .rpg-result-debrief{padding:3% 4% 2%!important}.rpg-result-debrief .grade{width:92px;height:92px;font-size:58px}.rpg-result-debrief .result-card{grid-template-columns:1fr 1fr}.rpg-result-debrief .result-card b{font-size:13px}.rpg-result-debrief .reward{margin:6px 0}
+}
+@media(max-height:650px){
+  .rpg-activity-header{top:2%;padding:7px 10px}.rpg-activity-header h1{font-size:17px}.rpg-activity-header span{display:none}.rpg-contract-layout{top:17%;bottom:28%}.rpg-schedule-synergy{display:none}.rpg-contract-editor{gap:4px}.rpg-contract-editor>p{display:none}
+  .rpg-after-action-dialogue .story-pet{top:10%;height:40%}.rpg-dialogue-box p{margin:2px 0 6px;font-size:12px!important}.rpg-dialogue-choices button{min-height:46px}
+  .rpg-result-debrief .grade{width:82px;height:82px;font-size:50px}.rpg-result-debrief h1{font-size:18px}.rpg-result-debrief>p{display:none}.rpg-result-debrief .result-card div{padding:6px 8px}.rpg-result-debrief .reward{margin:5px 0}
+}
+@media(prefers-reduced-motion:reduce){.rpg-schedule-board *,.rpg-after-action-dialogue *,.rpg-result-debrief *{animation:none!important;transition:none!important}}
