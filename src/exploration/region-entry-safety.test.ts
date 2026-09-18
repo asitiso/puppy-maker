@@ -18,6 +18,13 @@ const context={
   inheritedWorldFacts:[] as string[],
 };
 
+
+function distanceToRect(point:{x:number;y:number},rect:{x:number;y:number;width:number;height:number}):number{
+  const x=Math.min(rect.x+rect.width,Math.max(rect.x,point.x));
+  const y=Math.min(rect.y+rect.height,Math.max(rect.y,point.y));
+  return Math.hypot(point.x-x,point.y-y);
+}
+
 const worlds:ExplorationWorldDefinition[]=[
   outingCrossroadsWorld,
   forestWorld,
@@ -36,6 +43,11 @@ describe('outing region entry safety',()=>{
       const distance=Math.hypot(world.start.x-exit!.position.x,world.start.y-exit!.position.y);
       expect(distance).toBeGreaterThan(exit!.radius+world.playerRadius);
       expect(nearestInteractable(world.start,world.interactables)?.kind).not.toBe('exit');
+      expect(world.start.x).toBeGreaterThanOrEqual(world.playerRadius);
+      expect(world.start.y).toBeGreaterThanOrEqual(world.playerRadius);
+      expect(world.start.x).toBeLessThanOrEqual(world.width-world.playerRadius);
+      expect(world.start.y).toBeLessThanOrEqual(world.height-world.playerRadius);
+      for(const obstacle of world.obstacles) expect(distanceToRect(world.start,obstacle)).toBeGreaterThan(world.playerRadius);
     });
   }
 });
