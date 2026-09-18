@@ -3,6 +3,7 @@ export type MobileContentCategory=Exclude<MobileCategoryId,'home'>;
 
 export type MobileFeatureId=
   |'schedule'
+  |'weekly_planner'
   |'mission'
   |'attendance'
   |'mail'
@@ -44,7 +45,7 @@ export type MobileNavigationAction=
 
 const categories:readonly MobileContentCategory[]=['life','growth','adventure','bond','records'];
 const features:readonly MobileFeatureId[]=[
-  'schedule','mission','attendance','mail','raising','ambition','achievements','inventory','season','sanctuary',
+  'schedule','weekly_planner','mission','attendance','mail','raising','ambition','achievements','inventory','season','sanctuary',
   'outing','expedition','world','bond','gifts','stories','archive','lineage','world_chronicle',
 ];
 const playScreens:readonly MobilePlayScreen[]=['schedule','training','dialogue','result','tactical','choice_event'];
@@ -53,7 +54,7 @@ const homeRoute:MobileRoute={kind:'home'};
 export const initialMobileNavigationState:MobileNavigationState={current:homeRoute,stack:[]};
 
 export const categoryForFeature:Record<MobileFeatureId,MobileContentCategory>={
-  schedule:'life',mission:'life',attendance:'life',mail:'life',
+  schedule:'life',weekly_planner:'life',mission:'life',attendance:'life',mail:'life',
   raising:'growth',ambition:'growth',achievements:'growth',inventory:'growth',season:'growth',sanctuary:'growth',
   outing:'adventure',expedition:'adventure',world:'adventure',
   bond:'bond',gifts:'bond',stories:'bond',
