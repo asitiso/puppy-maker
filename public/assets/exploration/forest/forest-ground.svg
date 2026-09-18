@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 1400" role="img" aria-label="별빛 숲 바닥">
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#183f38"/><stop offset=".52" stop-color="#245548"/><stop offset="1" stop-color="#16362f"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#cfefaa" stop-opacity=".34"/><stop offset="1" stop-color="#cfefaa" stop-opacity="0"/></radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="12"/></filter>
+    <pattern id="moss" width="92" height="92" patternUnits="userSpaceOnUse"><circle cx="14" cy="22" r="3" fill="#83a86c" opacity=".35"/><circle cx="72" cy="58" r="2" fill="#b1cc83" opacity=".25"/><path d="M29 78q10-18 19 0M35 75q4-14 8-23" fill="none" stroke="#729664" stroke-width="3" opacity=".25"/></pattern>
+  </defs>
+  <rect width="2200" height="1400" fill="url(#ground)"/>
+  <rect width="2200" height="1400" fill="url(#moss)"/>
+  <path d="M250 1260C390 1080 430 950 580 870S830 820 960 710s145-255 330-270 345 105 560 5" fill="none" stroke="#688064" stroke-width="180" opacity=".26" stroke-linecap="round"/>
+  <path d="M250 1260C390 1080 430 950 580 870S830 820 960 710s145-255 330-270 345 105 560 5" fill="none" stroke="#9ba47a" stroke-width="116" opacity=".18" stroke-linecap="round"/>
+  <ellipse cx="1420" cy="720" rx="340" ry="280" fill="url(#glow)" filter="url(#soft)"/>
+  <g fill="#b7db8c" opacity=".32">
+    <circle cx="530" cy="1040" r="8"/><circle cx="575" cy="1010" r="5"/><circle cx="1210" cy="520" r="6"/><circle cx="1320" cy="600" r="4"/><circle cx="1510" cy="780" r="7"/><circle cx="1590" cy="850" r="4"/>
+  </g>
+  <g stroke="#c5e4a1" stroke-width="4" stroke-linecap="round" opacity=".22">
+    <path d="M420 1180l-14-30m14 30 19-22M1160 860l-8-34m8 34 20-27M1650 660l-11-29m11 29 18-21"/>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1600" viewBox="0 0 2400 1600">
+<defs>
+  <linearGradient id="pine" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#3c795b"/><stop offset="1" stop-color="#1d4a3d"/></linearGradient>
+  <linearGradient id="rock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#798577"/><stop offset="1" stop-color="#4e625a"/></linearGradient>
+  <linearGradient id="water" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#86cac9" stop-opacity=".9"/><stop offset="1" stop-color="#447f87" stop-opacity=".75"/></linearGradient>
+</defs>
+<g opacity=".96">
+  <path d="M0 0h770v170l-70 30-80-50-90 70-95-48-90 55-90-45-100 55L0 195z" fill="#173f35" opacity=".64"/>
+  <path d="M1630 0h770v205l-90-42-88 56-92-62-96 67-88-58-110 64-95-70-111 38z" fill="#173f35" opacity=".64"/>
+  <g fill="url(#pine)">
+    <path d="M88 320l72-155 70 155h-42l49 100H80l48-100z"/><path d="M330 290l65-142 68 142h-38l44 92H320l42-92z"/>
+    <path d="M560 300l70-148 70 148h-42l48 100H548l48-100z"/><path d="M1830 305l66-145 68 145h-39l44 94h-150l43-94z"/>
+    <path d="M2070 315l73-158 72 158h-43l49 104h-160l48-104z"/><path d="M2280 300l62-136 58 130v118h-155l42-112z"/>
+  </g>
+  <g fill="url(#rock)" stroke="#a5ad96" stroke-width="5" opacity=".92">
+    <path d="M85 1025l120-70 138 34 72 111-78 92-170 18-112-74z"/><path d="M280 1220l122-55 114 50 36 116-92 70-145-15-76-78z"/>
+    <path d="M1980 1250l116-67 154 28 76 107-72 98-175 8-120-83z"/>
+  </g>
+  <path d="M2200 340c120 120 170 290 200 520v440c-76-98-122-222-132-370-12-177-38-340-68-590z" fill="url(#water)" opacity=".72"/>
+  <g fill="none" stroke="#d1ece7" stroke-width="7" opacity=".4"><path d="M2250 570c56 22 95 22 150 0"/><path d="M2222 700c74 28 119 28 178 0"/><path d="M2198 840c86 30 140 30 202 0"/></g>
+  <g stroke="#e6d69a" stroke-width="6" stroke-linecap="round"><path d="M760 1040h-110v-86"/><path d="M1640 1040h110v-86"/></g>
+  <g fill="#f0c86c"><circle cx="650" cy="945" r="13"/><circle cx="1750" cy="945" r="13"/></g>
+  <g fill="#d6cb8d" opacity=".55"><circle cx="910" cy="1250" r="11"/><circle cx="1490" cy="1245" r="11"/><circle cx="1055" cy="560" r="9"/><circle cx="1350" cy="555" r="9"/></g>
+</g>
+</svg>

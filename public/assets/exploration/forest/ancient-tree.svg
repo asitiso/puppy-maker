@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 520" role="img" aria-label="오래된 별빛 나무">
+  <defs><linearGradient id="b" x1="0" x2="1"><stop stop-color="#3b2b29"/><stop offset=".5" stop-color="#79513a"/><stop offset="1" stop-color="#2c2525"/></linearGradient><radialGradient id="c"><stop stop-color="#dff4a2"/><stop offset="1" stop-color="#4d8160"/></radialGradient></defs>
+  <path d="M145 500c28-88 18-173 36-244-50-16-77-47-99-93 47 22 80 24 112 13 0-67 12-115 23-151 20 53 25 103 26 152 36 8 68-4 105-35-16 50-43 88-92 111 18 83 4 166 36 247z" fill="url(#b)" stroke="#a47750" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M194 474c25-89 22-154 24-232M238 472c-17-87-9-149-7-222" fill="none" stroke="#c18a59" stroke-width="8" opacity=".45"/>
+  <g fill="url(#c)" stroke="#9dc27a" stroke-width="5"><circle cx="102" cy="150" r="76"/><circle cx="170" cy="86" r="92"/><circle cx="265" cy="92" r="98"/><circle cx="326" cy="166" r="72"/><circle cx="221" cy="155" r="104"/></g>
+  <g fill="#eff8b4"><circle cx="181" cy="118" r="6"/><circle cx="270" cy="136" r="4"/><circle cx="118" cy="177" r="5"/><path d="M228 60l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/></g>
+  <ellipse cx="215" cy="496" rx="145" ry="18" fill="#102c28" opacity=".5"/>
+</svg>

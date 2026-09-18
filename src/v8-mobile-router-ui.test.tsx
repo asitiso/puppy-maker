@@ -6,6 +6,7 @@ import {initialState} from './game';
 import MobileRouterChrome from './MobileRouterChrome';
 import type {MobileNavigationState} from './mobile-router';
 
+const homeNavigation:MobileNavigationState={current:{kind:'home'},stack:[]};
 const growthNavigation:MobileNavigationState={
   current:{kind:'category',category:'growth'},
   stack:[{kind:'home'}],
@@ -38,6 +39,13 @@ describe('V8 mobile router chrome',()=>{
     expect(html).not.toContain('v8-play-guard');
   });
 
+  it('gives the playable home world the full interaction surface instead of covering it with menu chrome',()=>{
+    const html=render(homeNavigation);
+    expect(html).toContain('is-world-home');
+    expect(html).not.toContain('v8-bottom-nav');
+    expect(html).toContain('content');
+  });
+
   it('shows only Back and Home navigation while an attempt is guarded',()=>{
     const html=render(guardedNavigation,true);
     expect(html).toContain('v8-play-guard');
@@ -61,6 +69,7 @@ describe('V8 mobile router chrome',()=>{
     expect(css).toMatch(/\.v8-route-body[^}]*min-height:\s*0[^}]*overflow-y:\s*auto[^}]*overscroll-behavior:\s*contain/s);
     expect(css).toContain('env(safe-area-inset-bottom)');
     expect(css).toContain('min-height:var(--ui-touch-min)');
+    expect(css).toContain('.v8-mobile-shell.is-world-home>.v8-route-body{overflow:hidden;padding:0;scrollbar-gutter:auto}');
     expect(css).toContain('@media(max-width:430px)');
     expect(css).toContain('@media(max-width:390px)');
     expect(css).toContain('@media(max-width:360px)');

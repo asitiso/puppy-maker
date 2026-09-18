@@ -1,5 +1,6 @@
 import {emptyCampaignRunState,hydrateCampaignRunState,type CampaignRunState} from './campaign-state';
 import {emptyCharacterBondsState,hydrateCharacterBondsState,type CharacterBondsState} from './character-bonds';
+import {emptyLivingRegionState,hydrateLivingRegionState,type LivingRegionState} from './exploration/living-region-state';
 import {emptyLegacyState,hydrateLegacyState,type LegacyState} from './legacy-state';
 import {sanitizeActivityCheckpoint,type ActivityCheckpoint} from './scene/activity-checkpoint';
 import {isV3Record} from './v3-state-sanitize';
@@ -12,6 +13,7 @@ export type V3PersistentState={
   characterBonds:CharacterBondsState;
   legacy:LegacyState;
   v12Builds:V12PersistentBuildState;
+  livingRegions:LivingRegionState;
   sceneCheckpoint?:ActivityCheckpoint|null;
 };
 
@@ -22,12 +24,13 @@ export function emptyV3PersistentState():V3PersistentState{
     characterBonds:emptyCharacterBondsState(),
     legacy:emptyLegacyState(),
     v12Builds:emptyV12PersistentBuildState(),
+    livingRegions:emptyLivingRegionState(),
     sceneCheckpoint:null,
   };
 }
 
 function hasLegacyV3Shape(source:Record<string,unknown>):boolean{
-  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
+  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds','livingRegions'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
 }
 
 export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
@@ -44,6 +47,7 @@ export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
     characterBonds:hydrateCharacterBondsState(source.characterBonds),
     legacy:hydrateLegacyState(legacySource),
     v12Builds:hydrateV12PersistentBuildState(source.v12Builds),
+    livingRegions:hydrateLivingRegionState(source.livingRegions),
     ...sceneCheckpoint,
   };
 }
@@ -58,6 +62,7 @@ export function pickV3PersistentState(state:V3PersistentState):V3PersistentState
     characterBonds:state.characterBonds,
     legacy:state.legacy,
     v12Builds:state.v12Builds,
+    livingRegions:hydrateLivingRegionState(state.livingRegions),
     ...sceneCheckpoint,
   };
 }
@@ -69,6 +74,7 @@ export function prepareNewRunState(current:V3PersistentState):V3PersistentState{
     characterBonds:emptyCharacterBondsState(),
     legacy:current.legacy,
     v12Builds:current.v12Builds,
+    livingRegions:emptyLivingRegionState(),
     sceneCheckpoint:null,
   };
 }

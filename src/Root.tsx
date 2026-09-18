@@ -4,7 +4,7 @@ import { attendanceKey } from './attendance';
 import App from './App';
 import CollectionArchiveOverlay from './CollectionArchiveOverlay';
 import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
-import LayeredHome from './LayeredHome';
+import RpgHomeHub from './RpgHomeHub';
 import MobileCategoryPage from './MobileCategoryPage';
 import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
 import MobileRouterChrome from './MobileRouterChrome';
@@ -52,7 +52,6 @@ import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import type { WeeklyFocusId } from './weekly-life';
-import './layered-home.css';
 import './weekly-planner.css';
 import './home-panels.css';
 import './seasonal-home.css';
@@ -300,23 +299,7 @@ export default function Root() {
   const renderRoute = (state:GameState) => {
     const route=navigation.current;
     if(route.kind==='home')return <>
-      <LayeredHome
-        state={state}
-        onSchedule={()=>openFeature('schedule')}
-        onClaimAchievement={handleClaimAchievement}
-        onOuting={handleOuting}
-        onGift={handleGift}
-        onAttendance={handleAttendance}
-        onMail={handleMail}
-        onMonthlyFocus={handleMonthlyFocus}
-        onWeeklyFocus={handleWeeklyFocus}
-        onCompleteWeek={handleCompleteWeek}
-        onAdvanceWeek={handleAdvanceWeek}
-        onExpedition={()=>openFeature('expedition')}
-        onSeason={()=>openFeature('season')}
-        onMenuNavigate={handleHomeMenuNavigate}
-        onWeeklyPlannerNavigate={()=>openCategory('life')}
-      />
+      <RpgHomeHub state={state} onCategory={openCategory} onFeature={openFeature}/>
       <SeasonalHomeBadge month={state.month} stamps={state.seasonStamps}/>
       <YearEndCeremonyOverlay state={state}/>
     </>;

@@ -1,0 +1,19 @@
+import {describe,expect,it} from 'vitest';
+import fs from 'node:fs';
+
+const source=fs.readFileSync(new URL('./LivingRegionSceneFlow.tsx',import.meta.url),'utf8');
+
+describe('V16 living region scene flow',()=>{
+  it('keeps every living region on the shared persistent exploration runtime',()=>{
+    expect(source).toContain('regionId:LivingRegionId');
+    expect(source).toContain('livingRegionExplorationBuilders[regionId](progress');
+    expect(source).toContain('completedInteractionIds={progress.completedInteractions}');
+    expect(source).toContain('onInteractionComplete={handleInteractionComplete}');
+    expect(source).toContain("const updates:LivingRegionUpdate[]=[{kind:'recordInteraction',interactionId}]");
+    expect(source).toContain("updates.push({kind:'recordDiscovery',discoveryId})");
+    expect(source).toContain("updates.push({kind:'startMainQuest'})");
+    expect(source).toContain("updates.push({kind:'resolveMainQuest'})");
+    expect(source).toContain("updates.push({kind:'advancePostResolution'})");
+    expect(source).toContain('requestLivingRegionUpdates(regionId,updates)');
+  });
+});
