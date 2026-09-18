@@ -23,7 +23,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       interactables:base.interactables.map(interaction=>{
         const destination=parseDistrictDestination(interaction.destinationId??'');
         return destination?.kind==='feature'&&destination.feature===recommendation.feature
-          ?{...interaction,label:`◆ ${recommendation.label}`,questTarget:true,nameplate:`추천 의뢰 · ${recommendation.label}`}
+          ?{...interaction,label:`◆ 추천 · ${recommendation.label}`}
           :interaction;
       }),
     };
@@ -47,7 +47,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       <small>DISTRICT · {world.label}</small>
       <strong>추천 의뢰 · {recommendation.label}</strong>
       <p>{recommendation.reason}</p>
-      <span>{state.year}년차 · {state.month}월 {state.week}주차 · 월드의 ◆ 표식을 따라가세요</span>
+      <span>{state.year}년차 · {state.month}월 {state.week}주차 · 월드의 ◆ 추천 표식을 따라가세요</span>
     </aside>
   </section>;
 }
