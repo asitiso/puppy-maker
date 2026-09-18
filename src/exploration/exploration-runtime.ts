@@ -74,14 +74,21 @@ export function interactionIsUnlocked(item:ExplorationInteractable,completed:Rea
 export function nearestInteractable(player:Vec2,items:readonly ExplorationInteractable[]):ExplorationInteractable|null{
   let nearest:ExplorationInteractable|null=null;
   let nearestDistance=Number.POSITIVE_INFINITY;
+  let nearestPriority=Number.POSITIVE_INFINITY;
   for(const item of items){
     if(item.enabled===false) continue;
     const dx=finite(item.position.x)-finite(player.x);
     const dy=finite(item.position.y)-finite(player.y);
     const distance=Math.hypot(dx,dy);
-    if(distance<=Math.max(0,finite(item.radius))&&distance<nearestDistance){
+    if(distance>Math.max(0,finite(item.radius))) continue;
+
+    // One-shot discoveries and quest steps should not be hidden behind nearby
+    // repeatable NPC chatter when their interaction radii overlap.
+    const priority=item.repeatable===true?1:0;
+    if(priority<nearestPriority||(priority===nearestPriority&&distance<nearestDistance)){
       nearest=item;
       nearestDistance=distance;
+      nearestPriority=priority;
     }
   }
   return nearest;
