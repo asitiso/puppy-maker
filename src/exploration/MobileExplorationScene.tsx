@@ -25,6 +25,7 @@ export default function MobileExplorationScene({
   const actionButtonRef=useRef<HTMLButtonElement|null>(null);
   const joystickRef=useRef<Vec2>({x:0,y:0});
   const pressedKeysRef=useRef(new Set<string>());
+  const blockedMovementKeysRef=useRef(new Set<string>());
   const activeFrameRef=useRef<ExplorationStoryFrame|null>(null);
   const committedRef=useRef(false);
   const [viewport,setViewport]=useState<WorldBounds>({width:390,height:844});
@@ -38,12 +39,14 @@ export default function MobileExplorationScene({
   useEffect(()=>{activeFrameRef.current=activeFrame;},[activeFrame]);
   useEffect(()=>{
     if(!activeFrame) return;
+    for(const code of pressedKeysRef.current) blockedMovementKeysRef.current.add(code);
     pressedKeysRef.current.clear();
     joystickRef.current={x:0,y:0};
     setMoving(false);
   },[activeFrame]);
   useEffect(()=>{
     pressedKeysRef.current.clear();
+    blockedMovementKeysRef.current.clear();
     joystickRef.current={x:0,y:0};
     setPosition(world.start);
     setMoving(false);
@@ -142,7 +145,11 @@ export default function MobileExplorationScene({
       const intent=explorationKeyboardIntent(event.code,event.repeat,event.target);
       if(intent==='movement'){
         event.preventDefault();
-        if(activeFrameRef.current) return;
+        if(activeFrameRef.current){
+          blockedMovementKeysRef.current.add(event.code);
+          return;
+        }
+        if(blockedMovementKeysRef.current.has(event.code)) return;
         pressedKeysRef.current.add(event.code);
         return;
       }
@@ -157,8 +164,12 @@ export default function MobileExplorationScene({
         if(activeFrameRef.current) closeStory(); else onExit();
       }
     };
-    const keyUp=(event:KeyboardEvent)=>{if(isMovementKey(event.code)) pressedKeysRef.current.delete(event.code);};
-    const clear=()=>{pressedKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
+    const keyUp=(event:KeyboardEvent)=>{
+      if(!isMovementKey(event.code)) return;
+      pressedKeysRef.current.delete(event.code);
+      blockedMovementKeysRef.current.delete(event.code);
+    };
+    const clear=()=>{pressedKeysRef.current.clear();blockedMovementKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
     const clearWhenHidden=()=>{if(document.hidden) clear();};
     window.addEventListener('keydown',keyDown);
     window.addEventListener('keyup',keyUp);
