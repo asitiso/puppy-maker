@@ -113,6 +113,7 @@ export default function MobileExplorationScene({
     if(nearby.kind==='story'&&nearby.storyFrameId){
       const frame=storyFrames[nearby.storyFrameId];
       if(frame){
+        activeFrameRef.current=frame;
         setActiveInteractionId(nearby.id);
         setActiveFrame(frame);
       }
@@ -120,6 +121,7 @@ export default function MobileExplorationScene({
   },[nearby,onExit,onPortal,storyFrames]);
 
   const closeStory=useCallback((focusAction=true)=>{
+    activeFrameRef.current=null;
     setActiveFrame(null);
     setActiveInteractionId(null);
     requestAnimationFrame(()=>{
@@ -129,6 +131,8 @@ export default function MobileExplorationScene({
   },[]);
 
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
+    if(activeFrameRef.current!==frame) return;
+    activeFrameRef.current=null;
     if(activeInteractionId){
       setCompleted(current=>new Set(current).add(activeInteractionId));
       onInteractionComplete?.(activeInteractionId);
