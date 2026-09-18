@@ -12,6 +12,8 @@ export type MobileCategoryRecommendation={
   reason:string;
 };
 
+export type MobileWorldRecommendation=MobileCategoryRecommendation&{category:MobileContentCategory;priority:'reward'|'progress'|'routine'};
+
 const fallback:Record<MobileContentCategory,MobileCategoryRecommendation>={
   life:{feature:'schedule',label:'이번 주 스케줄',description:'이번 주 훈련과 하루 일정을 먼저 정해요.',reason:'이번 주 행동을 정하면 다른 생활 목표도 자연스럽게 따라옵니다.'},
   growth:{feature:'raising',label:'성장 방향 확인',description:'Calling과 Trait, 현재 성장 방향을 확인해요.',reason:'지금의 성장 방향을 확인하면 다음 선택이 쉬워집니다.'},
@@ -55,6 +57,18 @@ export function mobileCategoryRecommendation(category:MobileContentCategory,stat
     if(giftCount>0)return {feature:'gifts',label:'선물 전하기',description:'보유한 선물로 루나에게 마음을 전해요.',reason:'지금 바로 사용할 수 있는 선물이 있습니다.'};
   }
   return fallback[category];
+}
+
+export function mobileWorldRecommendation(currentCategory:MobileContentCategory,state:GameState):MobileWorldRecommendation{
+  const attendance=mobileCategoryRecommendation('life',state);
+  if(attendance.feature==='attendance'||attendance.feature==='mail')return {...attendance,category:'life',priority:'reward'};
+  const growth=mobileCategoryRecommendation('growth',state);
+  if(growth.feature==='achievements')return {...growth,category:'growth',priority:'reward'};
+  const adventure=mobileCategoryRecommendation('adventure',state);
+  if(adventure.feature==='world')return {...adventure,category:'adventure',priority:'progress'};
+  const bond=mobileCategoryRecommendation('bond',state);
+  if(bond.feature==='gifts')return {...bond,category:'bond',priority:'progress'};
+  return {...mobileCategoryRecommendation(currentCategory,state),category:currentCategory,priority:'routine'};
 }
 
 export function mobileCategoryPriorityFeatures(category:MobileContentCategory,state:GameState):MobileFeatureId[]{

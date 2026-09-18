@@ -3,7 +3,7 @@ import type {ExplorationInteractable,ExplorationWorldDefinition} from './explora
 
 const gate=(name:string)=>`/assets/exploration/crossroads/${name}`;
 
-const districtOrder:readonly MobileContentCategory[]=['life','growth','adventure','bond','records'];
+export const districtOrder:readonly MobileContentCategory[]=['life','growth','adventure','bond','records'];
 
 export type DistrictDestination=
   |{kind:'feature';feature:MobileFeatureId}
@@ -42,10 +42,26 @@ const specs:Record<MobileContentCategory,DistrictSpec>={
 
 export const districtFeatureIds:Record<MobileContentCategory,readonly MobileFeatureId[]>={life:['schedule','weekly_planner','mission','attendance','mail'],growth:['raising','ambition','achievements','inventory','season','sanctuary'],adventure:['outing','expedition','world'],bond:['bond','gifts','stories'],records:['archive','lineage','world_chronicle']};
 
+export function districtForFeature(feature:MobileFeatureId):MobileContentCategory|null{
+  return districtOrder.find(category=>districtFeatureIds[category].includes(feature))??null;
+}
+
 function neighborCategories(category:MobileContentCategory):readonly [MobileContentCategory,MobileContentCategory]{
   const index=districtOrder.indexOf(category);
   return [districtOrder[(index+districtOrder.length-1)%districtOrder.length],districtOrder[(index+1)%districtOrder.length]];
 }
+
+export function nextDistrictToward(from:MobileContentCategory,to:MobileContentCategory):MobileContentCategory|null{
+  if(from===to)return null;
+  const fromIndex=districtOrder.indexOf(from);
+  const toIndex=districtOrder.indexOf(to);
+  const clockwise=(toIndex-fromIndex+districtOrder.length)%districtOrder.length;
+  const counterClockwise=(fromIndex-toIndex+districtOrder.length)%districtOrder.length;
+  const step=clockwise<=counterClockwise?1:-1;
+  return districtOrder[(fromIndex+step+districtOrder.length)%districtOrder.length];
+}
+
+export function districtLabel(category:MobileContentCategory):string{return specs[category].label;}
 
 export function rpgDistrictWorld(category:MobileContentCategory):ExplorationWorldDefinition{
   const spec=specs[category];
