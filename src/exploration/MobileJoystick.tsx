@@ -90,6 +90,7 @@ export default function MobileJoystick({disabled=false,onDirection}:Props){
   return <div
     className="exploration-joystick"
     data-disabled={disabled||undefined}
+    data-active={activePointerRef.current!==null||undefined}
     aria-label="이동 조이스틱"
     aria-disabled={disabled}
     role="application"
