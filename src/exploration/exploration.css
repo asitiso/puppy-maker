@@ -76,6 +76,16 @@
   .exploration-story-frame{grid-template-columns:minmax(0,1.18fr) minmax(230px,.82fr);grid-template-rows:1fr;width:min(90vw,840px);max-height:min(88dvh,430px)}
   .exploration-story-frame__visual{min-height:0}.exploration-story-frame__art{min-height:0;height:100%}.exploration-story-frame__copy{display:flex;flex-direction:column;justify-content:center;padding:14px 16px}.exploration-story-frame__copy h2{font-size:18px}.exploration-story-frame__copy p{font-size:12px;line-height:1.38;margin:8px 0 12px}
 }
+@media (orientation:landscape) and (max-height:380px){
+  .exploration-story-backdrop{padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+  .exploration-story-frame{grid-template-columns:1fr;grid-template-rows:1fr;width:min(94vw,760px);max-height:min(94dvh,350px)}
+  .exploration-story-frame__visual{display:none}
+  .exploration-story-frame__copy{justify-content:flex-start;padding:10px 14px}
+  .exploration-story-frame__copy h2{font-size:17px}
+  .exploration-story-frame__copy b{margin-top:5px}
+  .exploration-story-frame__copy p{font-size:12px;line-height:1.35;margin:6px 0 9px}
+  .exploration-story-frame__continue{min-height:48px}
+}
 @media (prefers-reduced-motion:reduce){
   .mobile-exploration__world,.mobile-exploration__player,.mobile-exploration__landmark[data-kind="portal"],.exploration-joystick__knob,.exploration-story-frame{transition:none!important;animation:none!important}
   .mobile-exploration__landmark[data-interaction="glowing-tracks"]{animation:none}
