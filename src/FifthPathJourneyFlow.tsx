@@ -16,7 +16,7 @@ import {
   serializeFifthPathJourney,
 } from './fifth-path-journey';
 
-const STORAGE_KEY = 'puppy-maker:fifth-path-journey:v1';
+export const FIFTH_PATH_JOURNEY_STORAGE_KEY = 'puppy-maker:fifth-path-journey:v1';
 
 type Props = {
   winterOutcome: FifthPathWinterOutcome;
@@ -24,10 +24,25 @@ type Props = {
   bondSignals: readonly string[];
 };
 
-function loadJourney() {
-  if (typeof window === 'undefined') return fifthPathJourneyReducer(initialFifthPathJourneyState, { type: 'UNLOCK' });
-  const restored = parseFifthPathJourney(window.localStorage.getItem(STORAGE_KEY));
+export function restoreFifthPathJourney(raw: string | null) {
+  const restored = parseFifthPathJourney(raw);
   return fifthPathJourneyReducer(restored, { type: 'UNLOCK' });
+}
+
+export function fifthPathJourneyActionForLabel(
+  label: string,
+  winterOutcome: FifthPathWinterOutcome,
+): Parameters<typeof fifthPathJourneyReducer>[1] | null {
+  const choice = resolveFifthPathJourneyChoice(label);
+  if (!choice) return null;
+  return choice === 'face_the_long_night'
+    ? { type: 'CHOOSE', choice, outcome: winterOutcome }
+    : { type: 'CHOOSE', choice };
+}
+
+function loadJourney() {
+  if (typeof window === 'undefined') return restoreFifthPathJourney(null);
+  return restoreFifthPathJourney(window.localStorage.getItem(FIFTH_PATH_JOURNEY_STORAGE_KEY));
 }
 
 export default function FifthPathJourneyFlow({ winterOutcome, worldSignals, bondSignals }: Props) {
@@ -35,7 +50,7 @@ export default function FifthPathJourneyFlow({ winterOutcome, worldSignals, bond
   const [journey, dispatch] = useReducer(fifthPathJourneyReducer, undefined, loadJourney);
 
   useEffect(() => {
-    try { window.localStorage.setItem(STORAGE_KEY, serializeFifthPathJourney(journey)); } catch { /* storage is best-effort */ }
+    try { window.localStorage.setItem(FIFTH_PATH_JOURNEY_STORAGE_KEY, serializeFifthPathJourney(journey)); } catch { /* storage is best-effort */ }
   }, [journey]);
 
   const spring = useMemo(() => buildFifthPathSpringPresentation({
@@ -88,11 +103,8 @@ export default function FifthPathJourneyFlow({ winterOutcome, worldSignals, bond
   }), [spring, journey, current, nextChoice]);
 
   const choose = useCallback((label: string) => {
-    const choice = resolveFifthPathJourneyChoice(label);
-    if (!choice) return;
-    dispatch(choice === 'face_the_long_night'
-      ? { type: 'CHOOSE', choice, outcome: winterOutcome }
-      : { type: 'CHOOSE', choice });
+    const action = fifthPathJourneyActionForLabel(label, winterOutcome);
+    if (action) dispatch(action);
   }, [winterOutcome]);
 
   return <FifthPathHub
