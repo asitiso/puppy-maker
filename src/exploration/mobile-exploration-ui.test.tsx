@@ -13,7 +13,7 @@ describe('mobile-first exploration controls',()=>{
     expect(joystick).toContain('onDirection({x:0,y:0})');
   });
 
-  it('presents story as an illustrated modal frame and keeps Tab focus inside its only action',()=>{
+  it('presents story as an illustrated modal frame with touch cancel and trapped keyboard focus',()=>{
     const story=source('StoryFrameOverlay.tsx');
     expect(story).toContain('role="dialog"');
     expect(story).toContain('aria-modal="true"');
@@ -22,7 +22,11 @@ describe('mobile-first exploration controls',()=>{
     expect(story).toContain('frame.actionLabel');
     expect(story).toContain("if(event.key!=='Tab') return");
     expect(story).toContain('event.preventDefault()');
-    expect(story).toContain('continueButton.focus()');
+    expect(story).toContain("querySelectorAll<HTMLButtonElement>('button:not([disabled])')");
+    expect(story).toContain('document.activeElement===last');
+    expect(story).toContain('document.activeElement===first');
+    expect(story).toContain('aria-label="스토리 닫기"');
+    expect(story).toContain('onClick={onCancel}');
     expect(story).toContain('onKeyDown={keepDialogFocus}');
   });
 
