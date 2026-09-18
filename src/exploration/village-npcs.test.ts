@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 import {villageExplorationForContext} from './village-world';
+import {nearestInteractable} from './exploration-runtime';
 import type {LivingNpcContext} from '../living-npcs';
 
 const villageAsset=(name:string)=>readFileSync(new URL(`../../public/assets/exploration/village/npcs/${name}`,import.meta.url),'utf8');
@@ -28,6 +29,11 @@ describe('living NPC village exploration',()=>{
       expect(exploration.storyFrames[npc.storyFrameId!]?.progression).toBe(false);
       expect(exploration.storyFrames[npc.storyFrameId!]?.speaker).toBeTruthy();
     }
+  });
+
+  it('does not let overlapping repeatable villagers hide a one-time village discovery',()=>{
+    const exploration=villageExplorationForContext(caretakerWeek);
+    expect(nearestInteractable({x:1433,y:858},exploration.world.interactables)?.id).toBe('village-square');
   });
 
   it('changes who is physically present when campaign and route context changes',()=>{

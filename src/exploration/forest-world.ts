@@ -10,7 +10,7 @@ export const forestWorld:ExplorationWorldDefinition={
   height:1400,
   playerRadius:22,
   playerSpeed:235,
-  start:{x:340,y:1120},
+  start:{x:380,y:1080},
   layers:[
     {id:'ground',src:forestAsset('forest-ground.svg'),zIndex:0},
     {id:'trees',src:forestAsset('forest-trees.svg'),zIndex:3},

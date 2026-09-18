@@ -3,7 +3,6 @@ import type { GiftItemId, OutingLocationId } from './adventure';
 import {
   activities,
   initialState,
-  reducer,
   trainingGrade,
   type AchievementId,
   type ActivityId,
@@ -21,6 +20,7 @@ import {
   type SkillId,
   type YearlyAmbitionId,
 } from './game';
+import {appReducer} from './app-living-region-reducer';
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
 import type { BattleResult } from './tactical-battle';
@@ -39,6 +39,7 @@ import type { WeeklyFocusId } from './weekly-life';
 import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
+import {livingRegionUpdateRequestEvent,type LivingRegionUpdateRequest} from './living-region-ui-events';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 import TrainingActivityMinigame from './TrainingActivityMinigame';
 
@@ -202,7 +203,7 @@ type AppProps = {
 };
 
 export default function App({ onStateChange, onNavigateReady, onClaimAchievementReady, onOutingReady, onGiftReady, onAttendanceReady, onMailReady, onMonthlyFocusReady, onYearlyAmbitionReady, onExpeditionFinishReady, onExpeditionEquipReady, onExpeditionUnequipReady, onExpeditionCraftReady, onGuardianCallingReady, onGrowthTraitReady, onSeasonPurchaseReady, onSeasonLegacyUnlockReady, onSanctuaryUpgradeReady, onSanctuarySpecializationReady, onSanctuaryMasterworkReady, onAstralRiftClearReady, onAstralRiftRelicReady, onTacticalPartyReady, onTacticalPreferencesReady, onTacticalCompleteReady, onWeeklyFocusReady, onWeeklyCompleteReady, onWeeklyAdvanceReady }: AppProps = {}) {
-  const [state, dispatch] = useReducer(reducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
+  const [state, dispatch] = useReducer(appReducer, initialState, () => loadProductionState(localStorage, reportClientTelemetry));
   const navigate = useCallback((screen: Screen) => dispatch({ type: 'GO', screen }), []);
   const claimAchievement = useCallback((achievement: AchievementId) => dispatch({ type: 'CLAIM_ACHIEVEMENT', achievement }), []);
   const goOuting = useCallback((location: OutingLocationId) => dispatch({ type: 'GO_OUTING', location }), []);
@@ -258,6 +259,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     return ()=>window.removeEventListener(v12BuildRequestEvent,handleV12Build);
   },[]);
   useEffect(() => {
+    const handleLivingRegionUpdate=(event:Event)=>{
+      const request=(event as CustomEvent<LivingRegionUpdateRequest>).detail;
+      if(request)dispatch({type:'UPDATE_LIVING_REGION_BATCH',regionId:request.regionId,updates:request.updates});
+    };
+    window.addEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
+    return ()=>window.removeEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
+  },[]);
+  useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
   }, [state]);
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
@@ -277,11 +286,11 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => onGrowthTraitReady?.(purchaseGrowthTrait), [purchaseGrowthTrait, onGrowthTraitReady]);
   useEffect(() => onSeasonPurchaseReady?.(purchaseSeasonOffer), [purchaseSeasonOffer, onSeasonPurchaseReady]);
   useEffect(() => onSeasonLegacyUnlockReady?.(unlockSeasonLegacyNode), [unlockSeasonLegacyNode, onSeasonLegacyUnlockReady]);
-  useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary, onSanctuaryUpgradeReady]);
-  useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization, onSanctuarySpecializationReady]);
-  useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork, onSanctuaryMasterworkReady]);
-  useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift, onAstralRiftClearReady]);
-  useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic, onAstralRiftRelicReady]);
+  useEffect(() => onSanctuaryUpgradeReady?.(upgradeSanctuary), [upgradeSanctuary,onSanctuaryUpgradeReady]);
+  useEffect(() => onSanctuarySpecializationReady?.(selectSanctuarySpecialization), [selectSanctuarySpecialization,onSanctuarySpecializationReady]);
+  useEffect(() => onSanctuaryMasterworkReady?.(buildSanctuaryMasterwork), [buildSanctuaryMasterwork,onSanctuaryMasterworkReady]);
+  useEffect(() => onAstralRiftClearReady?.(clearAstralRift), [clearAstralRift,onAstralRiftClearReady]);
+  useEffect(() => onAstralRiftRelicReady?.(purchaseAstralRiftRelic), [purchaseAstralRiftRelic,onAstralRiftRelicReady]);
   useEffect(() => onTacticalPartyReady?.(setTacticalParty), [setTacticalParty,onTacticalPartyReady]);
   useEffect(() => onTacticalPreferencesReady?.(setTacticalPreferences), [setTacticalPreferences,onTacticalPreferencesReady]);
   useEffect(() => onTacticalCompleteReady?.(completeTacticalBattle), [completeTacticalBattle,onTacticalCompleteReady]);

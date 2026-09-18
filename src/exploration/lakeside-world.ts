@@ -11,7 +11,7 @@ export const lakesideWorld:ExplorationWorldDefinition={
   height:1450,
   playerRadius:22,
   playerSpeed:232,
-  start:{x:330,y:1080},
+  start:{x:400,y:1020},
   layers:[
     {id:'ground',src:lakeAsset('lakeside-ground.svg'),zIndex:0},
     {id:'shore',src:lakeAsset('lakeside-shore.svg'),zIndex:3},

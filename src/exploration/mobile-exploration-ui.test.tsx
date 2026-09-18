@@ -13,13 +13,21 @@ describe('mobile-first exploration controls',()=>{
     expect(joystick).toContain('onDirection({x:0,y:0})');
   });
 
-  it('presents story as an illustrated frame instead of a prose panel',()=>{
+  it('presents story as an illustrated modal frame with touch cancel and trapped keyboard focus',()=>{
     const story=source('StoryFrameOverlay.tsx');
     expect(story).toContain('role="dialog"');
     expect(story).toContain('aria-modal="true"');
     expect(story).toContain('exploration-story-frame__art');
     expect(story).toContain('exploration-story-frame__ornament');
     expect(story).toContain('frame.actionLabel');
+    expect(story).toContain("if(event.key!=='Tab') return");
+    expect(story).toContain('event.preventDefault()');
+    expect(story).toContain("querySelectorAll<HTMLButtonElement>('button:not([disabled])')");
+    expect(story).toContain('document.activeElement===last');
+    expect(story).toContain('document.activeElement===first');
+    expect(story).toContain('aria-label="스토리 닫기"');
+    expect(story).toContain('onClick={onCancel}');
+    expect(story).toContain('onKeyDown={keepDialogFocus}');
   });
 
   it('reserves thumb-safe controls and adapts to short landscape screens',()=>{
@@ -32,5 +40,18 @@ describe('mobile-first exploration controls',()=>{
     expect(css).toContain('min-height:52px');
     expect(css).toContain('@media (orientation:landscape) and (max-height:560px)');
     expect(css).toContain('@media (prefers-reduced-motion:reduce)');
+  });
+
+  it('keeps story completion reachable on extra-short landscape screens',()=>{
+    const css=source('exploration.css');
+    expect(css).toContain('@media (orientation:landscape) and (max-height:380px)');
+    expect(css).toContain('.exploration-story-frame__visual{display:none}');
+    expect(css).toContain('.exploration-story-frame{grid-template-columns:1fr;grid-template-rows:1fr;width:min(94vw,760px);max-height:min(94dvh,350px)}');
+    expect(css).toContain('.exploration-story-frame__continue{min-height:48px}');
+  });
+
+  it('keeps the short-landscape prompt inside the center lane between thumb controls',()=>{
+    const css=source('exploration.css');
+    expect(css).toContain('.mobile-exploration__prompt{bottom:max(77px,calc(env(safe-area-inset-bottom) + 69px));max-width:min(46vw,350px);font-size:9px}');
   });
 });

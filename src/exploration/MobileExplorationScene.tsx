@@ -1,6 +1,7 @@
 import {type CSSProperties,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import MobileJoystick from './MobileJoystick';
 import StoryFrameOverlay from './StoryFrameOverlay';
+import {explorationKeyboardIntent,isMovementKey,keyboardDirection} from './exploration-keyboard';
 import {cameraForPlayer,interactionIsUnlocked,moveWithCollisions,nearestInteractable,normalizeDirection} from './exploration-runtime';
 import type {ExplorationStoryFrame,ExplorationWorldDefinition,Vec2,WorldBounds} from './exploration-types';
 import './exploration.css';
@@ -12,21 +13,19 @@ type Props={
   onProgress:()=>void;
   onExit:()=>void;
   onPortal?:(destinationId:string)=>void;
+  completedInteractionIds?:readonly string[];
+  onInteractionComplete?:(interactionId:string)=>void;
 };
 
-const MOVEMENT_KEYS=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
-const ACTION_KEYS=new Set(['Space','KeyE']);
-
-function keyboardDirection(keys:ReadonlySet<string>):Vec2{
-  const x=(keys.has('ArrowRight')||keys.has('KeyD')?1:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?1:0);
-  const y=(keys.has('ArrowDown')||keys.has('KeyS')?1:0)-(keys.has('ArrowUp')||keys.has('KeyW')?1:0);
-  return normalizeDirection({x,y});
-}
-
-export default function MobileExplorationScene({world,storyFrames,playerArtSrc,onProgress,onExit,onPortal}:Props){
+export default function MobileExplorationScene({
+  world,storyFrames,playerArtSrc,onProgress,onExit,onPortal,
+  completedInteractionIds=[],onInteractionComplete,
+}:Props){
   const viewportRef=useRef<HTMLElement|null>(null);
+  const actionButtonRef=useRef<HTMLButtonElement|null>(null);
   const joystickRef=useRef<Vec2>({x:0,y:0});
   const pressedKeysRef=useRef(new Set<string>());
+  const blockedMovementKeysRef=useRef(new Set<string>());
   const activeFrameRef=useRef<ExplorationStoryFrame|null>(null);
   const committedRef=useRef(false);
   const [viewport,setViewport]=useState<WorldBounds>({width:390,height:844});
@@ -35,19 +34,27 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
   const [facing,setFacing]=useState<'left'|'right'>('right');
   const [activeFrame,setActiveFrame]=useState<ExplorationStoryFrame|null>(null);
   const [activeInteractionId,setActiveInteractionId]=useState<string|null>(null);
-  const [completed,setCompleted]=useState<Set<string>>(()=>new Set());
+  const [completed,setCompleted]=useState<Set<string>>(()=>new Set(completedInteractionIds));
 
   useEffect(()=>{activeFrameRef.current=activeFrame;},[activeFrame]);
   useEffect(()=>{
+    if(!activeFrame) return;
+    for(const code of pressedKeysRef.current) blockedMovementKeysRef.current.add(code);
     pressedKeysRef.current.clear();
+    joystickRef.current={x:0,y:0};
+    setMoving(false);
+  },[activeFrame]);
+  useEffect(()=>{
+    pressedKeysRef.current.clear();
+    blockedMovementKeysRef.current.clear();
     joystickRef.current={x:0,y:0};
     setPosition(world.start);
     setMoving(false);
-    setCompleted(new Set());
+    setCompleted(new Set(completedInteractionIds));
     setActiveFrame(null);
     setActiveInteractionId(null);
     committedRef.current=false;
-  },[world]);
+  },[world.id]);
 
   useEffect(()=>{
     const node=viewportRef.current;
@@ -106,47 +113,79 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     if(nearby.kind==='story'&&nearby.storyFrameId){
       const frame=storyFrames[nearby.storyFrameId];
       if(frame){
+        activeFrameRef.current=frame;
         setActiveInteractionId(nearby.id);
         setActiveFrame(frame);
       }
     }
   },[nearby,onExit,onPortal,storyFrames]);
 
+  const closeStory=useCallback((focusAction=true)=>{
+    activeFrameRef.current=null;
+    setActiveFrame(null);
+    setActiveInteractionId(null);
+    requestAnimationFrame(()=>{
+      if(focusAction&&!actionButtonRef.current?.disabled) actionButtonRef.current?.focus();
+      else viewportRef.current?.focus();
+    });
+  },[]);
+
   const finishStory=useCallback((frame:ExplorationStoryFrame)=>{
-    if(activeInteractionId) setCompleted(current=>new Set(current).add(activeInteractionId));
+    if(activeFrameRef.current!==frame) return;
+    activeFrameRef.current=null;
+    if(activeInteractionId){
+      setCompleted(current=>new Set(current).add(activeInteractionId));
+      onInteractionComplete?.(activeInteractionId);
+    }
     if(frame.progression&&!committedRef.current){
       committedRef.current=true;
       onProgress();
     }
-    setActiveFrame(null);
-    setActiveInteractionId(null);
-  },[activeInteractionId,onProgress]);
+    closeStory(false);
+  },[activeInteractionId,closeStory,onInteractionComplete,onProgress]);
 
   useEffect(()=>{
     const keyDown=(event:KeyboardEvent)=>{
-      if(MOVEMENT_KEYS.has(event.code)){
+      const intent=explorationKeyboardIntent(event.code,event.repeat,event.target);
+      if(intent==='movement'){
         event.preventDefault();
+        if(activeFrameRef.current){
+          blockedMovementKeysRef.current.add(event.code);
+          return;
+        }
+        if(blockedMovementKeysRef.current.has(event.code)) return;
         pressedKeysRef.current.add(event.code);
         return;
       }
-      if(ACTION_KEYS.has(event.code)&&!event.repeat){
+      if(intent==='action'){
         event.preventDefault();
         const frame=activeFrameRef.current;
         if(frame) finishStory(frame); else openInteraction();
         return;
       }
-      if(event.code==='Escape'&&!event.repeat){
+      if(intent==='exit'){
         event.preventDefault();
-        if(activeFrameRef.current){setActiveFrame(null);setActiveInteractionId(null);}else onExit();
+        if(activeFrameRef.current) closeStory(); else onExit();
       }
     };
-    const keyUp=(event:KeyboardEvent)=>{if(MOVEMENT_KEYS.has(event.code)) pressedKeysRef.current.delete(event.code);};
-    const clear=()=>{pressedKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
+    const keyUp=(event:KeyboardEvent)=>{
+      if(!isMovementKey(event.code)) return;
+      pressedKeysRef.current.delete(event.code);
+      blockedMovementKeysRef.current.delete(event.code);
+    };
+    const clear=()=>{pressedKeysRef.current.clear();blockedMovementKeysRef.current.clear();joystickRef.current={x:0,y:0};setMoving(false);};
+    const clearWhenHidden=()=>{if(document.hidden) clear();};
     window.addEventListener('keydown',keyDown);
     window.addEventListener('keyup',keyUp);
     window.addEventListener('blur',clear);
-    return ()=>{window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);};
-  },[finishStory,onExit,openInteraction]);
+    document.addEventListener('visibilitychange',clearWhenHidden);
+    return ()=>{
+      window.removeEventListener('keydown',keyDown);
+      window.removeEventListener('keyup',keyUp);
+      window.removeEventListener('blur',clear);
+      document.removeEventListener('visibilitychange',clearWhenHidden);
+    };
+  },[closeStory,finishStory,onExit,openInteraction]);
 
   const worldStyle={
     width:`${world.width}px`,height:`${world.height}px`,
@@ -158,9 +197,9 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     :completed.size>0
       ?'새로 나타난 흔적이 있는지 주변을 살펴보세요.'
       :'직접 움직여 주변의 단서를 찾아보세요.';
-  const actionText=nearby?.kind==='portal'?'이동':nearby?'조사':'···';
+  const actionText=nearby?.kind==='portal'?'이동':nearby?.kind==='exit'?'돌아가기':nearby?'조사':'···';
 
-  return <section ref={viewportRef} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
+  return <section ref={viewportRef} tabIndex={-1} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
       <div className="mobile-exploration__world" style={worldStyle}>
         {world.layers.map(layer=><img key={layer.id} className="mobile-exploration__layer" src={layer.src} alt="" draggable={false} style={{zIndex:layer.zIndex}}/>)}
@@ -186,10 +225,10 @@ export default function MobileExplorationScene({world,storyFrames,playerArtSrc,o
     </div>
 
     <div className="mobile-exploration__hud"><small>EXPLORATION</small><strong>{world.label}</strong><span>{world.objective}</span></div>
-    <button type="button" className="mobile-exploration__exit" onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
+    <button type="button" className="mobile-exploration__exit" disabled={Boolean(activeFrame)} onClick={onExit} aria-label={`${world.label} 탐험 종료`}>×</button>
     <div className="mobile-exploration__prompt" role="status" aria-live="polite">{nearby?nearby.label:idlePrompt}</div>
     <MobileJoystick disabled={Boolean(activeFrame)} onDirection={setJoystickDirection}/>
-    <button type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
-    {activeFrame?<StoryFrameOverlay frame={activeFrame} onComplete={()=>finishStory(activeFrame)}/>:null}
+    <button ref={actionButtonRef} type="button" className="mobile-exploration__action" disabled={!nearby||Boolean(activeFrame)} onClick={openInteraction} aria-label={nearby?.label??'주변에 조사할 대상이 없습니다'}>{actionText}</button>
+    {activeFrame?<StoryFrameOverlay frame={activeFrame} onComplete={()=>finishStory(activeFrame)} onCancel={()=>closeStory()}/>:null}
   </section>;
 }

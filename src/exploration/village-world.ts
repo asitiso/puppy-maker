@@ -14,7 +14,7 @@ export const villageWorld:ExplorationWorldDefinition={
   height:1500,
   playerRadius:22,
   playerSpeed:240,
-  start:{x:1180,y:1320},
+  start:{x:1180,y:1240},
   layers:[
     {id:'ground',src:villageAsset('village-ground.svg'),zIndex:0},
     {id:'buildings',src:villageAsset('village-buildings.svg'),zIndex:3},

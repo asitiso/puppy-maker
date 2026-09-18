@@ -1,11 +1,25 @@
-import type {ExplorationWorldDefinition} from './exploration-types';
+import type {ExplorationInteractable,ExplorationWorldDefinition} from './exploration-types';
+import {REGION_IDS,getRegionDefinition,type RegionId} from './region-registry';
 
 const crossroadsAsset=(name:string)=>`/assets/exploration/crossroads/${name}`;
+
+const regionPortals:ExplorationInteractable[]=REGION_IDS.map(destinationId=>{
+  const portal=getRegionDefinition(destinationId).crossroads;
+  return {
+    id:portal.interactionId,
+    label:portal.label,
+    kind:'portal',
+    destinationId,
+    position:portal.position,
+    radius:portal.radius,
+    artSrc:portal.artSrc,
+  };
+});
 
 export const outingCrossroadsWorld:ExplorationWorldDefinition={
   id:'outing-crossroads',
   label:'여행자 교차로',
-  objective:'세 갈래 길을 직접 걸어 원하는 지역의 표식을 찾아보세요.',
+  objective:'여섯 갈래 길을 직접 걸어 원하는 지역의 표식을 찾아보세요.',
   width:2400,
   height:1600,
   playerRadius:22,
@@ -32,17 +46,28 @@ export const outingCrossroadsWorld:ExplorationWorldDefinition={
       id:'crossroads-exit',label:'집으로 돌아가기',kind:'exit',
       position:{x:1200,y:1490},radius:105,
     },
-    {
-      id:'crossroads-forest',label:'별빛 숲으로 들어가기',kind:'portal',destinationId:'forest',
-      position:{x:1200,y:250},radius:150,artSrc:crossroadsAsset('forest-gate.svg'),
-    },
-    {
-      id:'crossroads-village',label:'마법 마을로 들어가기',kind:'portal',destinationId:'village',
-      position:{x:345,y:760},radius:150,artSrc:crossroadsAsset('village-gate.svg'),
-    },
-    {
-      id:'crossroads-lakeside',label:'바람 호숫가로 내려가기',kind:'portal',destinationId:'lakeside',
-      position:{x:2050,y:835},radius:150,artSrc:crossroadsAsset('lakeside-gate.svg'),
-    },
+    ...regionPortals,
   ],
 };
+
+const RETURN_PORTAL_CLEARANCE=48;
+
+export function outingCrossroadsWorldForReturn(regionId:RegionId|null):ExplorationWorldDefinition {
+  if(regionId===null)return outingCrossroadsWorld;
+
+  const portal=getRegionDefinition(regionId).crossroads;
+  const dx=outingCrossroadsWorld.start.x-portal.position.x;
+  const dy=outingCrossroadsWorld.start.y-portal.position.y;
+  const length=Math.hypot(dx,dy);
+  const returnDistance=portal.radius+outingCrossroadsWorld.playerRadius+RETURN_PORTAL_CLEARANCE;
+
+  if(length<=returnDistance)return outingCrossroadsWorld;
+
+  return {
+    ...outingCrossroadsWorld,
+    start:{
+      x:portal.position.x+(dx/length)*returnDistance,
+      y:portal.position.y+(dy/length)*returnDistance,
+    },
+  };
+}

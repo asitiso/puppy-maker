@@ -29,6 +29,36 @@ describe('mobile exploration runtime',()=>{
     expect(moveWithCollisions({x:150,y:120},{x:80,y:40},world)).toEqual({x:150,y:160});
   });
 
+  it('uses the player circle at obstacle corners instead of an invisible square collision envelope',()=>{
+    const cornerWorld={...world,obstacles:[{id:'crate',x:200,y:200,width:80,height:80}]};
+    const clearCorner=moveWithCollisions({x:180,y:180},{x:5,y:5},cornerWorld);
+    expect(clearCorner.x).toBe(185);
+    expect(clearCorner.y).toBe(185);
+
+    const blockedCorner=moveWithCollisions({x:180,y:180},{x:10,y:10},cornerWorld);
+    expect(blockedCorner.x).toBe(190);
+    expect(blockedCorner.y).toBe(180);
+  });
+
+  it('still blocks direct contact with obstacle faces while allowing close corner movement',()=>{
+    const obstacleWorld={...world,obstacles:[{id:'crate',x:200,y:200,width:80,height:80}]};
+    expect(moveWithCollisions({x:180,y:240},{x:10,y:0},obstacleWorld)).toEqual({x:180,y:240});
+    expect(moveWithCollisions({x:180,y:180},{x:5,y:0},obstacleWorld)).toEqual({x:185,y:180});
+  });
+
+  it('cannot tunnel through authored obstacles during a long frame or large movement delta',()=>{
+    const moved=moveWithCollisions({x:100,y:120},{x:220,y:0},world);
+    expect(moved.x).toBeLessThan(164);
+    expect(moved.x).toBeGreaterThanOrEqual(100);
+    expect(moved.y).toBe(120);
+  });
+
+  it('still permits large unobstructed movement instead of slowing the player to one collision step',()=>{
+    const moved=moveWithCollisions({x:400,y:400},{x:220,y:120},world);
+    expect(moved.x).toBeCloseTo(620,10);
+    expect(moved.y).toBeCloseTo(520,10);
+  });
+
   it('centers the camera on the player and clamps it at world edges',()=>{
     expect(cameraForPlayer({x:500,y:400},world,{width:390,height:844})).toEqual({x:305,y:0});
     expect(cameraForPlayer({x:990,y:790},world,{width:390,height:300})).toEqual({x:610,y:500});
@@ -43,6 +73,15 @@ describe('mobile exploration runtime',()=>{
     ];
     expect(nearestInteractable({x:100,y:100},items)?.id).toBe('tracks');
     expect(nearestInteractable({x:400,y:400},items)).toBeNull();
+  });
+
+  it('prioritizes unfinished one-time progress over repeatable chatter inside overlapping ranges',()=>{
+    const items:ExplorationInteractable[]=[
+      {id:'npc-chat',label:'Chat',kind:'story',position:{x:105,y:100},radius:120,storyFrameId:'chat',repeatable:true},
+      {id:'quest-step',label:'Quest',kind:'story',position:{x:180,y:100},radius:130,storyFrameId:'quest'},
+    ];
+    expect(nearestInteractable({x:100,y:100},items)?.id).toBe('quest-step');
+    expect(nearestInteractable({x:100,y:100},[{...items[1],enabled:false},items[0]])?.id).toBe('npc-chat');
   });
 
   it('unlocks later discoveries only after every authored prerequisite is completed',()=>{

@@ -15,11 +15,15 @@ export function normalizeDirection(input:Vec2):Vec2{
 function collides(point:Vec2,world:ExplorationWorldDefinition):boolean{
   const radius=Math.max(0,finite(world.playerRadius));
   return world.obstacles.some(obstacle=>{
-    const left=finite(obstacle.x)-radius;
-    const right=finite(obstacle.x)+Math.max(0,finite(obstacle.width))+radius;
-    const top=finite(obstacle.y)-radius;
-    const bottom=finite(obstacle.y)+Math.max(0,finite(obstacle.height))+radius;
-    return point.x>=left&&point.x<=right&&point.y>=top&&point.y<=bottom;
+    const left=finite(obstacle.x);
+    const top=finite(obstacle.y);
+    const right=left+Math.max(0,finite(obstacle.width));
+    const bottom=top+Math.max(0,finite(obstacle.height));
+    const nearestX=clamp(finite(point.x),left,right);
+    const nearestY=clamp(finite(point.y),top,bottom);
+    const dx=finite(point.x)-nearestX;
+    const dy=finite(point.y)-nearestY;
+    return dx*dx+dy*dy<=radius*radius;
   });
 }
 
@@ -33,12 +37,22 @@ function clampToWorld(point:Vec2,world:ExplorationWorldDefinition):Vec2{
   };
 }
 
-export function moveWithCollisions(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
-  const start=clampToWorld(position,world);
-  const nextX=clampToWorld({x:start.x+finite(delta.x),y:start.y},world);
-  const afterX=collides(nextX,world)?start:nextX;
+function moveCollisionStep(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
+  const nextX=clampToWorld({x:position.x+finite(delta.x),y:position.y},world);
+  const afterX=collides(nextX,world)?position:nextX;
   const nextY=clampToWorld({x:afterX.x,y:afterX.y+finite(delta.y)},world);
   return collides(nextY,world)?afterX:nextY;
+}
+
+export function moveWithCollisions(position:Vec2,delta:Vec2,world:ExplorationWorldDefinition):Vec2{
+  let current=clampToWorld(position,world);
+  const dx=finite(delta.x);
+  const dy=finite(delta.y);
+  const radius=Math.max(1,finite(world.playerRadius,1));
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/radius));
+  const step={x:dx/steps,y:dy/steps};
+  for(let index=0;index<steps;index+=1) current=moveCollisionStep(current,step,world);
+  return current;
 }
 
 export function cameraForPlayer(player:Vec2,world:WorldBounds,viewport:WorldBounds):Vec2{
@@ -60,14 +74,21 @@ export function interactionIsUnlocked(item:ExplorationInteractable,completed:Rea
 export function nearestInteractable(player:Vec2,items:readonly ExplorationInteractable[]):ExplorationInteractable|null{
   let nearest:ExplorationInteractable|null=null;
   let nearestDistance=Number.POSITIVE_INFINITY;
+  let nearestPriority=Number.POSITIVE_INFINITY;
   for(const item of items){
     if(item.enabled===false) continue;
     const dx=finite(item.position.x)-finite(player.x);
     const dy=finite(item.position.y)-finite(player.y);
     const distance=Math.hypot(dx,dy);
-    if(distance<=Math.max(0,finite(item.radius))&&distance<nearestDistance){
+    if(distance>Math.max(0,finite(item.radius))) continue;
+
+    // One-shot discoveries and quest steps should not be hidden behind nearby
+    // repeatable NPC chatter when their interaction radii overlap.
+    const priority=item.repeatable===true?1:0;
+    if(priority<nearestPriority||(priority===nearestPriority&&distance<nearestDistance)){
       nearest=item;
       nearestDistance=distance;
+      nearestPriority=priority;
     }
   }
   return nearest;

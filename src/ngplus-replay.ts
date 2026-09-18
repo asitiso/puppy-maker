@@ -1,6 +1,7 @@
 import {emptyCampaignRunState} from './campaign-state';
 import {emptyCharacterBondsState} from './character-bonds';
 import {selectCompletedRunHandoff} from './campaign-winter-season';
+import {emptyLivingRegionState} from './exploration/living-region-state';
 import {resolveFifthPathEligibility} from './fifth-path-eligibility';
 import {
   hydrateLegacyState,
@@ -67,6 +68,7 @@ export function prepareNewPossibilityV3State(current:V3PersistentState):
     characterBonds:emptyCharacterBondsState(),
     legacy,
     v12Builds:current.v12Builds,
+    livingRegions:emptyLivingRegionState(),
   };
   return {
     started:true,
