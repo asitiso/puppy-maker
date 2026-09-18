@@ -261,7 +261,7 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
   useEffect(() => {
     const handleLivingRegionUpdate=(event:Event)=>{
       const request=(event as CustomEvent<LivingRegionUpdateRequest>).detail;
-      if(request)dispatch({type:'UPDATE_LIVING_REGION',regionId:request.regionId,update:request.update});
+      if(request)dispatch({type:'UPDATE_LIVING_REGION_BATCH',regionId:request.regionId,updates:request.updates});
     };
     window.addEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
     return ()=>window.removeEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
