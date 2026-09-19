@@ -17,6 +17,16 @@ export type WorldEventVisual={
   phase:Exclude<WorldEventPhase,'hidden'|'resolved'>;
 };
 
+export type WorldConsequenceKind='rescued-traveler'|'abandoned-supplies';
+
+export type WorldConsequenceVisual={
+  id:DawnreachWorldEventId;
+  kind:WorldConsequenceKind;
+  label:string;
+  position:Vec3;
+  interactionRadius:number;
+};
+
 export const ROADSIDE_AMBUSH={
   id:'roadside-ambush' as const,
   label:'길목 습격',
@@ -95,4 +105,35 @@ export function roadsideAmbushVisual(phase:WorldEventPhase):WorldEventVisual|nul
     position:point(ROADSIDE_AMBUSH.position.x,ROADSIDE_AMBUSH.position.z),
     phase,
   };
+}
+
+export function roadsideAmbushConsequence(outcome:DawnreachWorldEventOutcome|undefined):WorldConsequenceVisual|null{
+  if(!outcome)return null;
+  const rescued=outcome==='rescued';
+  const x=rescued?ROADSIDE_AMBUSH.position.x+1.8:ROADSIDE_AMBUSH.position.x-.8;
+  const z=rescued?ROADSIDE_AMBUSH.position.z+1.2:ROADSIDE_AMBUSH.position.z+.5;
+  return {
+    id:ROADSIDE_AMBUSH.id,
+    kind:rescued?'rescued-traveler':'abandoned-supplies',
+    label:rescued?'구조된 여행자':'버려진 짐',
+    position:point(x,z),
+    interactionRadius:rescued?5.5:5,
+  };
+}
+
+export function playerNearWorldConsequence(
+  player:Vec3,
+  consequence:WorldConsequenceVisual|null,
+):boolean{
+  if(!consequence)return false;
+  return Math.hypot(
+    player.x-consequence.position.x,
+    player.z-consequence.position.z,
+  )<=consequence.interactionRadius;
+}
+
+export function roadsideConsequenceMessage(kind:WorldConsequenceKind):string{
+  return kind==='rescued-traveler'
+    ?'여행자: “고마워요. 서쪽 달이끼 군락 너머 바위에서 찬 바람이 새어 나와요. 평범한 절벽은 아닌 것 같았어요.”'
+    :'찢어진 짐자루와 깊게 패인 바퀴 자국만 남아 있습니다. 습격자들은 재빛 야영지 쪽으로 물러난 흔적을 남겼습니다.';
 }
