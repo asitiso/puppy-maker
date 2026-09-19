@@ -1,12 +1,15 @@
 import {describe,expect,it} from 'vitest';
 import {
   applyBurningHazardsToEnemies,
+  applyBurningHazardsToPlayer,
+  burningHazardAvoidanceZones,
   createDryGrassPatch,
   igniteFieldHazard,
   spreadFieldFireWithWind,
   stepFieldHazards,
 } from './environment-combat';
 import type {AdventureEnemyState} from './enemy-ai';
+import {DEFAULT_PLAYER_COMBAT,tryStartPlayerDodge} from './combat-system';
 
 const enemy=(x:number,z:number):AdventureEnemyState=>({
   id:'enemy',label:'enemy',archetype:'rusher',
@@ -47,6 +50,33 @@ describe('V18 environment combat reactions',()=>{
     hazards=stepFieldHazards(hazards,.05).hazards;
     expect(hazards[0].burning).toBe(false);
     expect(hazards[0].spent).toBe(true);
+  });
+
+  it('exposes only active fire as AI avoidance zones',()=>{
+    const hazards=[
+      {...createDryGrassPatch('burning',{x:1,y:0,z:2},4),burning:true,burnRemaining:5},
+      createDryGrassPatch('safe',{x:8,y:0,z:2},4),
+      {...createDryGrassPatch('spent',{x:12,y:0,z:2},4),spent:true},
+    ];
+    const zones=burningHazardAvoidanceZones(hazards);
+    expect(zones).toHaveLength(1);
+    expect(zones[0].position).toEqual({x:1,y:0,z:2});
+    expect(zones[0].radius).toBe(4);
+  });
+
+  it('makes burning terrain dangerous to the player as well as enemies',()=>{
+    const hazards=[{...createDryGrassPatch('grass',{x:0,y:0,z:0},4),burning:true,burnRemaining:5}];
+    const hit=applyBurningHazardsToPlayer(DEFAULT_PLAYER_COMBAT,{x:1,y:0,z:0},hazards);
+    expect(hit.damaged).toBe(true);
+    expect(hit.state.hp).toBe(94);
+  });
+
+  it('lets a correctly timed dodge pass through fire during its invulnerability window',()=>{
+    const hazards=[{...createDryGrassPatch('grass',{x:0,y:0,z:0},4),burning:true,burnRemaining:5}];
+    const dodge=tryStartPlayerDodge(DEFAULT_PLAYER_COMBAT,100,{x:1,z:0},0);
+    const hit=applyBurningHazardsToPlayer(dodge.state,{x:0,y:0,z:0},hazards);
+    expect(hit.damaged).toBe(false);
+    expect(hit.state.hp).toBe(100);
   });
 
   it('turns fire into a tactical damage zone that also knocks enemies away from its center',()=>{

@@ -52,6 +52,20 @@ describe('V18 perception-driven enemy AI',()=>{
     expect(current.mode).toBe('recover');
   });
 
+  it('steers around generic avoidance zones instead of blindly pathing through hazards',()=>{
+    const chasing=enemy({mode:'chase',position:{x:0,y:0,z:0}});
+    const player={x:0,y:0,z:-10};
+    const baseline=stepEnemyAi(chasing,player,.05,flat).enemy;
+    const avoided=stepEnemyAi(chasing,player,.05,flat,[{
+      position:{x:1,y:0,z:-2},
+      radius:2,
+      weight:2.4,
+    }]).enemy;
+    expect(Math.abs(baseline.position.x)).toBeLessThan(.001);
+    expect(Math.abs(avoided.position.x)).toBeGreaterThan(.02);
+    expect(avoided.position.z).toBeGreaterThan(baseline.position.z);
+  });
+
   it('returns toward its authored home when pulled beyond the leash',()=>{
     const pulled=enemy({mode:'chase',position:{x:30,y:0,z:0}});
     const result=stepEnemyAi(pulled,{x:40,y:0,z:0},.05,flat);

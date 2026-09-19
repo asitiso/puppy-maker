@@ -16,7 +16,7 @@ import {
 } from './combat-system';
 import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState} from './enemy-ai';
 import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
-import {applyBurningHazardsToEnemies,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
+import {applyBurningHazardsToEnemies,applyBurningHazardsToPlayer,burningHazardAvoidanceZones,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
 import {createStartingCampEnemies} from './starting-encounter';
 import {createStartingCampHazards} from './starting-hazards';
@@ -273,7 +273,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           hazardPulseSerialRef.current,
         );
         enemiesRef.current=burned.enemies;
-        if(burned.damagedIds.length>0)setNotice(`환경 화재가 적 ${burned.damagedIds.length}명에게 피해를 주고 진형을 흔들었습니다.`);
+
+        const playerBurn=applyBurningHazardsToPlayer(
+          combat,
+          playerRef.current.position,
+          hazardsRef.current,
+        );
+        combat=playerBurn.state;
+
+        if(playerBurn.damaged)setNotice(combat.hp>0
+          ?'불길 안에 오래 머물러 화상을 입었습니다. 회피나 이동으로 위험 지대에서 벗어나세요.'
+          :'환경 화재에 쓰러졌습니다. 불길도 적 공격처럼 피해야 합니다.');
+        else if(burned.damagedIds.length>0)setNotice(`환경 화재가 적 ${burned.damagedIds.length}명에게 피해를 주고 진형을 흔들었습니다.`);
       }
 
       if(playerAttackWindowOpen(combat)){
@@ -286,7 +297,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
 
       if(combat.hp>0){
-        const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(enemy,playerRef.current.position,dt,startingFieldHeight));
+        const avoidanceZones=burningHazardAvoidanceZones(hazardsRef.current);
+        const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
+          enemy,
+          playerRef.current.position,
+          dt,
+          startingFieldHeight,
+          avoidanceZones,
+        ));
         enemiesRef.current=alertNearbyEnemies(stepped.map(result=>result.enemy));
         for(const result of stepped){
           if(!result.attack)continue;

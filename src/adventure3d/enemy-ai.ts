@@ -27,6 +27,12 @@ export type EnemyAttackEvent={
   range:number;
 };
 
+export type EnemyAvoidanceZone={
+  position:Vec3;
+  radius:number;
+  weight?:number;
+};
+
 type ArchetypeConfig={
   moveSpeed:number;
   chaseSpeed:number;
@@ -58,13 +64,30 @@ function moveToward(
   speed:number,
   dt:number,
   terrainHeight:TerrainHeight,
+  avoidanceZones:readonly EnemyAvoidanceZone[]=[],
 ):Vec3{
   const dx=target.x-position.x,dz=target.z-position.z;
   const distance=Math.hypot(dx,dz);
   if(distance<.001)return {...position,y:terrainHeight(position.x,position.z)};
+
+  let moveX=dx/distance;
+  let moveZ=dz/distance;
+  for(const zone of avoidanceZones){
+    const zx=position.x-zone.position.x;
+    const zz=position.z-zone.position.z;
+    const zoneDistance=Math.hypot(zx,zz);
+    const influenceRadius=Math.max(0,zone.radius)+2.4;
+    if(zoneDistance>=influenceRadius)continue;
+    const safeDistance=Math.max(.001,zoneDistance);
+    const influence=(1-zoneDistance/influenceRadius)*Math.max(.1,zone.weight??1.7);
+    moveX+=zx/safeDistance*influence;
+    moveZ+=zz/safeDistance*influence;
+  }
+
+  const moveLength=Math.max(.001,Math.hypot(moveX,moveZ));
   const step=Math.min(distance,speed*dt);
-  const x=position.x+dx/distance*step;
-  const z=position.z+dz/distance*step;
+  const x=position.x+moveX/moveLength*step;
+  const z=position.z+moveZ/moveLength*step;
   return {x,y:terrainHeight(x,z),z};
 }
 
@@ -84,6 +107,7 @@ export function stepEnemyAi(
   player:Vec3,
   dtRaw:number,
   terrainHeight:TerrainHeight,
+  avoidanceZones:readonly EnemyAvoidanceZone[]=[],
 ):{enemy:AdventureEnemyState;attack:EnemyAttackEvent|null}{
   if(enemy.mode==='defeated'||enemy.hp<=0)return {enemy:{...enemy,hp:0,mode:'defeated',timer:0},attack:null};
   const dt=clampDt(dtRaw);
@@ -125,7 +149,7 @@ export function stepEnemyAi(
     if(playerDistance<=config.attackRange){
       return {enemy:{...enemy,mode:'windup',timer:config.windup,facingYaw},attack:null};
     }
-    const position=moveToward(enemy.position,player,config.chaseSpeed,dt,terrainHeight);
+    const position=moveToward(enemy.position,player,config.chaseSpeed,dt,terrainHeight,avoidanceZones);
     return {enemy:{...enemy,position,facingYaw},attack:null};
   }
 
@@ -133,7 +157,7 @@ export function stepEnemyAi(
     if(seesPlayer&&homeDistance<config.leash*.75)return {enemy:{...enemy,mode:'suspicious',timer:.35,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)},attack:null};
     if(homeDistance<.6)return {enemy:{...enemy,position:{...enemy.home,y:terrainHeight(enemy.home.x,enemy.home.z)},mode:'patrol',timer:0},attack:null};
     const facingYaw=faceToward(enemy.position,enemy.home,enemy.facingYaw);
-    const position=moveToward(enemy.position,enemy.home,config.moveSpeed*1.2,dt,terrainHeight);
+    const position=moveToward(enemy.position,enemy.home,config.moveSpeed*1.2,dt,terrainHeight,avoidanceZones);
     return {enemy:{...enemy,position,facingYaw},attack:null};
   }
 
@@ -146,7 +170,7 @@ export function stepEnemyAi(
     return {enemy:{...enemy,patrolIndex,timer:0},attack:null};
   }
   const facingYaw=faceToward(enemy.position,patrolTarget,enemy.facingYaw);
-  const position=moveToward(enemy.position,patrolTarget,config.moveSpeed,dt,terrainHeight);
+  const position=moveToward(enemy.position,patrolTarget,config.moveSpeed,dt,terrainHeight,avoidanceZones);
   return {enemy:{...enemy,position,facingYaw},attack:null};
 }
 
