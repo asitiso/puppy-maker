@@ -20,6 +20,7 @@ describe('canonical save',()=>{
     expect(CURRENT_SAVE_VERSION).toBe(3);
     expect(hydrated.campaignRun.runNumber).toBe(4);
     expect(hydrated.worldHistory.currentFacts).toEqual(['festival_saved']);
+    expect(hydrated.adventureWorld).toEqual(initialState.adventureWorld);
   });
 
   it('loads legacy unversioned state',()=>expect(hydrateSave(JSON.stringify({...initialState,gold:6543})).gold).toBe(6543));
