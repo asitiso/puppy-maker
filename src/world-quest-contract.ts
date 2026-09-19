@@ -2,7 +2,7 @@ import type {MobileContentCategory,MobileFeatureId} from './mobile-router';
 import type {MobileWorldRecommendation} from './mobile-category-guidance';
 import {questNpcForCategory} from './world-quest-npcs';
 
-export type WorldQuestContract={id:string;feature:MobileFeatureId;category:MobileContentCategory;title:string;reason:string;acceptedAt:string;issuerId?:string;issuerName?:string;};
+export type WorldQuestContract={id:string;feature:MobileFeatureId;category:MobileContentCategory;title:string;reason:string;acceptedAt:string;issuerId?:string;issuerName?:string;readyToTurnIn?:boolean;readyAt?:string;};
 export type WorldQuestJournalEntry={title:string;issuerId:string;issuerName:string;category:MobileContentCategory;completedAt:string};
 export type WorldQuestHistory={completed:number;lastCompletedAt:string|null;lastTitle:string|null;lastIssuerName:string|null;completedByIssuer:Record<string,number>;recent:WorldQuestJournalEntry[]};
 export type NpcQuestProgress={rank:string;nextRank:string|null;nextAt:number|null;remaining:number;percent:number};
@@ -18,6 +18,13 @@ export function questFromRecommendation(recommendation:MobileWorldRecommendation
   return {id:`${recommendation.category}:${recommendation.feature}`,feature:recommendation.feature,category:recommendation.category,title:recommendation.label,reason:recommendation.reason,acceptedAt:now.toISOString(),issuerId:npc.id,issuerName:npc.name};
 }
 export function isQuestResolved(contract:WorldQuestContract,recommendation:MobileWorldRecommendation){return contract.feature!==recommendation.feature||contract.category!==recommendation.category;}
+export function markWorldQuestReady(storage:Pick<Storage,'setItem'>|null|undefined,contract:WorldQuestContract,now=new Date()):WorldQuestContract{
+  if(contract.readyToTurnIn)return contract;
+  const next={...contract,readyToTurnIn:true,readyAt:now.toISOString()};
+  saveWorldQuest(storage,next);
+  return next;
+}
+
 export function loadWorldQuest(storage:Pick<Storage,'getItem'>|null|undefined):WorldQuestContract|null{
   if(!storage)return null;try{const raw=storage.getItem(WORLD_QUEST_STORAGE_KEY);if(!raw)return null;const value=JSON.parse(raw) as Partial<WorldQuestContract>;if(typeof value.id!=='string'||typeof value.feature!=='string'||typeof value.category!=='string'||typeof value.title!=='string'||typeof value.reason!=='string'||typeof value.acceptedAt!=='string')return null;return value as WorldQuestContract;}catch{return null;}
 }
