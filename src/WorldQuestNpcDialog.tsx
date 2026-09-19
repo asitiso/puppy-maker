@@ -48,7 +48,7 @@ export default function WorldQuestNpcDialog({
     :ownsActive
       ?'수행 중인 의뢰가 있습니다. 목표 시설에서 행동을 마친 뒤 다시 찾아오세요.'
       :activeQuest
-        ?\`\${activeQuest.issuerName??'다른 NPC'}의 의뢰를 수행 중입니다. 먼저 그 의뢰를 마쳐야 새 의뢰를 받을 수 있어요.\`
+        ?`${activeQuest.issuerName??'다른 NPC'}의 의뢰를 수행 중입니다. 먼저 그 의뢰를 마쳐야 새 의뢰를 받을 수 있어요.`
         :npc.greeting;
 
   return <div className="world-quest-dialog__backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
@@ -61,9 +61,9 @@ export default function WorldQuestNpcDialog({
       <div className="world-quest-dialog__trust">
         <span><b>{progress.rank}</b><small>완료 {issuerCompleted}건</small></span>
         <progress value={progress.percent} max="100">{progress.percent}%</progress>
-        <em>{progress.nextRank?\`다음 관계 \${progress.nextRank}까지 \${progress.remaining}건\`:'최고 관계 단계'}</em>
+        <em>{progress.nextRank?`다음 관계 ${progress.nextRank}까지 ${progress.remaining}건`:'최고 관계 단계'}</em>
       </div>
-      <article className={\`world-quest-dialog__contract\${ready?' is-ready':''}\`}>
+      <article className={`world-quest-dialog__contract${ready?' is-ready':''}`}>
         <small>{ready?'TURN IN':ownsActive?'ACTIVE CONTRACT':activeQuest?'BUSY':'NEW CONTRACT'}</small>
         <strong>{ownsActive?activeQuest!.title:activeQuest?'현재 다른 의뢰 수행 중':recommendation.label}</strong>
         <p>{ownsActive?activeQuest!.reason:activeQuest?status:recommendation.reason}</p>
@@ -76,7 +76,7 @@ export default function WorldQuestNpcDialog({
           :<button type="button" className="is-primary" autoFocus onClick={onAccept}>의뢰 수락</button>}
         <button type="button" aria-pressed={continuous} onClick={onToggleContinuous}>{continuous?'연속 의뢰 끄기':'완료 후 다음 의뢰 자동 수락'}</button>
       </div>
-      {recent.length>0&&<details className="world-quest-dialog__journal"><summary>{npc.name}와 완료한 최근 의뢰</summary>{recent.map((entry,index)=><span key={\`\${entry.completedAt}:\${index}\`}>✓ {entry.title}</span>)}</details>}
+      {recent.length>0&&<details className="world-quest-dialog__journal"><summary>{npc.name}와 완료한 최근 의뢰</summary>{recent.map((entry,index)=><span key={`${entry.completedAt}:${index}`}>✓ {entry.title}</span>)}</details>}
     </section>
   </div>;
 }
