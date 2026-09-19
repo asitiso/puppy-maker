@@ -49,6 +49,13 @@ describe('V18 open adventure persistent state',()=>{
     expect(state.dawnreach.campCleared).toBe(true);
   });
 
+  it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
+    const state=applyOpenAdventureUpdate(emptyOpenAdventureState(),{type:'discover',id:'skywatch'});
+    expect(applyOpenAdventureUpdate(state,{type:'discover',id:'skywatch'})).toBe(state);
+    const cleared=applyOpenAdventureUpdate(state,{type:'clear-camp'});
+    expect(applyOpenAdventureUpdate(cleared,{type:'clear-camp'})).toBe(cleared);
+  });
+
   it('round trips partial ruin progress and makes claimed reward unlock exploration information',()=>{
     let state=emptyOpenAdventureState();
     state=applyOpenAdventureUpdate(state,{
