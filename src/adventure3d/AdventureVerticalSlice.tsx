@@ -22,6 +22,7 @@ import {createStartingCampEnemies} from './starting-encounter';
 import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
+import {cycleLockOnTarget,lockedTargetStillValid,selectLockOnTarget,smoothLockOnYaw,targetCandidates,yawToTarget} from './targeting-system';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -53,6 +54,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const echoSenseRef=useRef(false);
   const hazardsRef=useRef(createStartingCampHazards());
   const hazardPulseSerialRef=useRef(10000);
+  const lockedTargetRef=useRef<string|null>(null);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -68,6 +70,42 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [echoSenseUnlocked,setEchoSenseUnlocked]=useState(false);
   const [nearHazard,setNearHazard]=useState(false);
   const [burningHazards,setBurningHazards]=useState(0);
+  const [lockedTargetId,setLockedTargetId]=useState<string|null>(null);
+  const [lockCandidateCount,setLockCandidateCount]=useState(0);
+
+  const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
+    const id=enemy?.id??null;
+    lockedTargetRef.current=id;
+    setLockedTargetId(id);
+    if(enemy)setNotice(`락온 · ${enemy.label}`);
+  },[]);
+
+  const toggleLockOn=useCallback(()=>{
+    if(lockedTargetRef.current){
+      lockedTargetRef.current=null;
+      setLockedTargetId(null);
+      setNotice('락온을 해제했습니다. 자유 시점으로 돌아갑니다.');
+      return;
+    }
+    const target=selectLockOnTarget(
+      enemiesRef.current,
+      playerRef.current.position,
+      cameraRef.current.yaw,
+    );
+    applyLockTarget(target);
+    if(!target)setNotice('락온할 적이 시야 안에 없습니다.');
+  },[applyLockTarget]);
+
+  const cycleLockOn=useCallback(()=>{
+    const target=cycleLockOnTarget(
+      enemiesRef.current,
+      playerRef.current.position,
+      cameraRef.current.yaw,
+      lockedTargetRef.current,
+    );
+    applyLockTarget(target);
+    if(!target)setNotice('전환할 적이 없습니다.');
+  },[applyLockTarget]);
 
   const discover=useCallback(()=>{
     const target=nearbyRef.current;
@@ -163,6 +201,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     dodgeRef.current=false;
     jumpRef.current=false;
     campClearedRef.current=false;
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
     setHp(DEFAULT_PLAYER_COMBAT.hp);
     setStamina(DEFAULT_PLAYER_STATE.stamina);
     setLivingEnemies(enemiesRef.current.length);
@@ -177,6 +217,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(event.code==='Space'&&!event.repeat){event.preventDefault();jumpRef.current=true;return;}
       if(event.code==='KeyJ'&&!event.repeat){event.preventDefault();attackRef.current=true;return;}
       if(event.code==='KeyK'&&!event.repeat){event.preventDefault();dodgeRef.current=true;return;}
+      if(event.code==='KeyL'&&!event.repeat){event.preventDefault();toggleLockOn();return;}
+      if(event.code==='KeyT'&&!event.repeat){event.preventDefault();cycleLockOn();return;}
       if(event.code==='KeyR'&&!event.repeat&&combatRef.current.hp<=0){event.preventDefault();recoverAtEntrance();return;}
       if(event.code==='KeyQ'&&!event.repeat){event.preventDefault();castEnvironmentAbility('windPulse');return;}
       if(event.code==='KeyC'&&!event.repeat){event.preventDefault();castEnvironmentAbility('emberSpark');return;}
@@ -193,7 +235,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     window.addEventListener('keyup',up);
     window.addEventListener('blur',clear);
     return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);window.removeEventListener('blur',clear);};
-  },[castEnvironmentAbility,discover,interactWorld,onExit,recoverAtEntrance]);
+  },[castEnvironmentAbility,cycleLockOn,discover,interactWorld,onExit,recoverAtEntrance,toggleLockOn]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;
@@ -226,8 +268,21 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const forward=keyboardForward-stick.y;
       const move=cameraRelativeMove(strafe,forward,cameraRef.current.yaw);
 
+      let lockedEnemy=lockedTargetRef.current
+        ?enemiesRef.current.find(enemy=>enemy.id===lockedTargetRef.current)
+        :undefined;
+      if(lockedTargetRef.current&&!lockedTargetStillValid(lockedEnemy,playerRef.current.position)){
+        lockedTargetRef.current=null;
+        setLockedTargetId(null);
+        lockedEnemy=undefined;
+      }
+
       let combat=stepPlayerCombat(combatRef.current,dt);
       if(attackRef.current){
+        if(lockedEnemy)playerRef.current={
+          ...playerRef.current,
+          facingYaw:yawToTarget(playerRef.current.position,lockedEnemy.position),
+        };
         combat=tryStartPlayerAttack(combat);
         attackRef.current=false;
       }
@@ -320,6 +375,20 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         y:playerRef.current.position.y+1.8,
         z:playerRef.current.position.z,
       },dt);
+      const cameraLockedEnemy=lockedTargetRef.current
+        ?enemiesRef.current.find(enemy=>enemy.id===lockedTargetRef.current)
+        :undefined;
+      if(lockedTargetStillValid(cameraLockedEnemy,playerRef.current.position)){
+        cameraRef.current={
+          ...cameraRef.current,
+          yaw:smoothLockOnYaw(
+            cameraRef.current.yaw,
+            playerRef.current.position,
+            cameraLockedEnemy!.position,
+            dt,
+          ),
+        };
+      }
 
       const nextNearby=nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
       nearbyRef.current=nextNearby;
@@ -338,6 +407,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         STARTING_RUIN_PUZZLE,
         echoSenseRef.current,
         hazardsRef.current,
+        lockedTargetRef.current,
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -360,6 +430,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setPuzzleSolved(ruinPuzzleRef.current.solved);
         setNearHazard(playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
+        setLockCandidateCount(targetCandidates(
+          enemiesRef.current,
+          playerRef.current.position,
+          cameraRef.current.yaw,
+        ).length);
       }
 
       frame=requestAnimationFrame(tick);
@@ -379,6 +454,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     if(!drag||drag.pointerId!==event.pointerId)return;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
     drag.x=event.clientX;drag.y=event.clientY;
+    if(lockedTargetRef.current&&Math.abs(dx)+Math.abs(dy)>5){
+      lockedTargetRef.current=null;
+      setLockedTargetId(null);
+      setNotice('수동 시점 조작으로 락온을 해제했습니다.');
+    }
     cameraRef.current=rotateAdventureCamera(cameraRef.current,-dx*.006,-dy*.0045);
   };
   const endLook=(event:PointerEvent<HTMLCanvasElement>)=>{
@@ -399,7 +479,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       onPointerUp={endLook}
       onPointerCancel={endLook}
       onWheel={event=>{event.preventDefault();cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);}}
-      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, Q 바람밀기, C 불씨점화, E 상호작용"
+      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용"
     />
 
     <header className="adventure3d__hud">
@@ -407,6 +487,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>야영지 위협 {livingEnemies}</em>}
+      {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
       {nearHazard&&burningHazards>0&&<em>환경 · 화재 {burningHazards}</em>}
@@ -418,6 +499,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     </div>
 
     <button type="button" className="adventure3d__exit" onClick={onExit} aria-label="새벽들판 나가기">×</button>
+    {(combatEngaged||lockCandidateCount>0)&&!defeated&&<div className="adventure3d__target-controls" aria-label="전투 타겟 조작">
+      {!lockedTargetId?<button type="button" onClick={toggleLockOn}>락온</button>:<>
+        {lockCandidateCount>1&&<button type="button" onClick={cycleLockOn}>다음 적</button>}
+        <button type="button" onClick={toggleLockOn}>해제</button>
+      </>}
+    </div>}
     <MobileJoystick disabled={defeated} onDirection={direction=>{stickRef.current=direction;}}/>
     <div className="adventure3d__actions">
       <button
@@ -436,6 +523,6 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" className="is-primary" disabled={(!nearby&&!nearStone&&!rewardReady)||combatEngaged||defeated} onClick={interactWorld}>{rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
-    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · Q 바람밀기 · C 불씨점화 · E 상호작용</div>
+    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용</div>
   </section>;
 }
