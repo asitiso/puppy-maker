@@ -107,6 +107,7 @@ function drawEnemy(
   camera:AdventureCameraState,
   width:number,
   height:number,
+  locked=false,
 ){
   if(enemy.mode==='defeated')return;
   const base=projectAdventurePoint(enemy.position,camera,width,height);
@@ -114,6 +115,22 @@ function drawEnemy(
   if(!base||!top)return;
   const scale=Math.max(5,Math.min(24,base.scale*.62));
   ctx.save();
+
+  if(locked){
+    const ring=Math.max(16,Math.min(62,base.scale*2.7));
+    ctx.strokeStyle='rgba(186,232,255,.92)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.ellipse(base.x,base.y,ring,ring*.34,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(186,232,255,.52)';
+    ctx.lineWidth=2;
+    const bracket=ring*.34;
+    ctx.beginPath();
+    ctx.moveTo(base.x-ring,base.y-bracket*.2);ctx.lineTo(base.x-ring,base.y-bracket);ctx.lineTo(base.x-ring+bracket,base.y-bracket);
+    ctx.moveTo(base.x+ring,base.y-bracket*.2);ctx.lineTo(base.x+ring,base.y-bracket);ctx.lineTo(base.x+ring-bracket,base.y-bracket);
+    ctx.stroke();
+  }
 
   if(enemy.mode==='windup'){
     const ring=Math.max(12,Math.min(54,base.scale*2.2));
@@ -326,6 +343,7 @@ export function renderAdventureField(
   ruinLayout?:RuinPuzzleLayout,
   echoSenseUnlocked=false,
   hazards:readonly FieldHazardState[]=[],
+  lockedTargetId:string|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -366,7 +384,7 @@ export function renderAdventureField(
     const pb=projectAdventurePoint(b.position,camera,width,height);
     return (pb?.depth??0)-(pa?.depth??0);
   });
-  for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height);
+  for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
   if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
   drawPlayer(ctx,player,camera,width,height);
 }
