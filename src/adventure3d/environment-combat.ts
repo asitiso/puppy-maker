@@ -1,4 +1,5 @@
-import {applyEnemyDamage,type AdventureEnemyState} from './enemy-ai';
+import {applyEnemyDamage,type AdventureEnemyState,type EnemyAvoidanceZone} from './enemy-ai';
+import {applyPlayerDamage,type PlayerCombatState} from './combat-system';
 import type {EnvironmentAbilityId} from './environment-system';
 import type {Vec3} from './types';
 
@@ -110,6 +111,24 @@ export function stepFieldHazards(
     return {...item,burnRemaining,pulseClock:pulseClock>=.7?pulseClock-.7:pulseClock};
   });
   return {hazards:next,damagePulse};
+}
+
+export function burningHazardAvoidanceZones(
+  hazards:readonly FieldHazardState[],
+):EnemyAvoidanceZone[]{
+  return hazards
+    .filter(item=>item.burning&&!item.spent)
+    .map(item=>({position:item.position,radius:item.radius,weight:2.4}));
+}
+
+export function applyBurningHazardsToPlayer(
+  combat:PlayerCombatState,
+  player:Vec3,
+  hazards:readonly FieldHazardState[],
+):{state:PlayerCombatState;damaged:boolean}{
+  const burning=hazards.find(item=>item.burning&&!item.spent&&distance2(player,item.position)<=item.radius);
+  if(!burning)return {state:combat,damaged:false};
+  return applyPlayerDamage(combat,6);
 }
 
 export function applyBurningHazardsToEnemies(
