@@ -5,10 +5,12 @@ import {questNpcForCategory} from './world-quest-npcs';
 export type WorldQuestContract={id:string;feature:MobileFeatureId;category:MobileContentCategory;title:string;reason:string;acceptedAt:string;issuerId?:string;issuerName?:string;};
 export type WorldQuestJournalEntry={title:string;issuerId:string;issuerName:string;category:MobileContentCategory;completedAt:string};
 export type WorldQuestHistory={completed:number;lastCompletedAt:string|null;lastTitle:string|null;lastIssuerName:string|null;completedByIssuer:Record<string,number>;recent:WorldQuestJournalEntry[]};
+export type NpcQuestProgress={rank:string;nextRank:string|null;nextAt:number|null;remaining:number;percent:number};
 
 export const WORLD_QUEST_STORAGE_KEY='puppy-maker:v17:world-quest';
 export const WORLD_QUEST_HISTORY_KEY='puppy-maker:v17:world-quest-history';
 const emptyHistory=():WorldQuestHistory=>({completed:0,lastCompletedAt:null,lastTitle:null,lastIssuerName:null,completedByIssuer:{},recent:[]});
+const QUEST_RANKS=[{at:0,label:'첫 만남'},{at:1,label:'첫 의뢰 완료'},{at:5,label:'단골 모험가'},{at:10,label:'신뢰받는 동료'},{at:20,label:'전설의 동료'}] as const;
 
 export function questFromRecommendation(recommendation:MobileWorldRecommendation,now=new Date()):WorldQuestContract{
   const npc=questNpcForCategory(recommendation.category);
@@ -35,4 +37,9 @@ export function recordWorldQuestCompletion(storage:(Pick<Storage,'getItem'|'setI
   const next:WorldQuestHistory={completed:previous.completed+1,lastCompletedAt:completedAt,lastTitle:contract.title,lastIssuerName:issuerName,completedByIssuer:{...previous.completedByIssuer,[issuerId]:(previous.completedByIssuer[issuerId]??0)+1},recent:[{title:contract.title,issuerId,issuerName,category:contract.category,completedAt},...previous.recent].slice(0,10)};
   storage?.setItem(WORLD_QUEST_HISTORY_KEY,JSON.stringify(next));return next;
 }
-export function npcQuestRank(completed:number){if(completed>=20)return '전설의 동료';if(completed>=10)return '신뢰받는 동료';if(completed>=5)return '단골 모험가';if(completed>=1)return '첫 의뢰 완료';return '첫 만남';}
+export function npcQuestProgress(completed:number):NpcQuestProgress{
+  const safe=Math.max(0,Math.floor(completed));let currentIndex=0;for(let index=1;index<QUEST_RANKS.length;index+=1)if(safe>=QUEST_RANKS[index].at)currentIndex=index;
+  const current=QUEST_RANKS[currentIndex];const next=QUEST_RANKS[currentIndex+1]??null;if(!next)return {rank:current.label,nextRank:null,nextAt:null,remaining:0,percent:100};
+  const span=next.at-current.at;return {rank:current.label,nextRank:next.label,nextAt:next.at,remaining:next.at-safe,percent:Math.max(0,Math.min(100,Math.round(((safe-current.at)/span)*100)))};
+}
+export function npcQuestRank(completed:number){return npcQuestProgress(completed).rank;}
