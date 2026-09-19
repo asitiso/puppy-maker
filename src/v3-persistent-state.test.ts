@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCampaignRunState} from './campaign-state';
+import {emptyOpenAdventureState} from './adventure3d/open-adventure-state';
 import {emptyCharacterBondsState} from './character-bonds';
 import {emptyLivingRegionState} from './exploration/living-region-state';
 import {emptyLegacyState} from './legacy-state';
@@ -13,6 +14,7 @@ describe('V3 persistent composition',()=>{
     expect(state.worldHistory).toEqual({currentFacts:[],inheritedFacts:[]});
     expect(state.legacy).toEqual(emptyLegacyState());
     expect(state.livingRegions).toEqual(emptyLivingRegionState());
+    expect(state.openAdventure).toEqual(emptyOpenAdventureState());
   });
 
   it('seeds legacy ending history from V2 top-level endingCollection when legacy is absent',()=>{
@@ -63,6 +65,31 @@ describe('V3 persistent composition',()=>{
     expect(picked.livingRegions.herb_hills.phase).toBe('active');
   });
 
+  it('hydrates and picks sanitized open-adventure progress for ordinary saves',()=>{
+    const raw={
+      ...emptyV3PersistentState(),
+      openAdventure:{
+        dawnreach:{
+          discoveredIds:['echo-ruins','echo-ruins','bad'],
+          echoSenseUnlocked:true,
+          campCleared:true,
+          ruin:{
+            stonePosition:{x:-57,z:-38},
+            brazierLit:true,
+            solved:true,
+            rewardClaimed:true,
+          },
+        },
+      },
+    };
+    const hydrated=hydrateV3PersistentState(raw);
+    expect(hydrated.openAdventure.dawnreach.discoveredIds).toEqual(['echo-ruins']);
+    expect(hydrated.openAdventure.dawnreach.campCleared).toBe(true);
+    expect(hydrated.openAdventure.dawnreach.echoSenseUnlocked).toBe(true);
+    const picked=pickV3PersistentState(hydrated);
+    expect(picked.openAdventure).toEqual(hydrated.openAdventure);
+  });
+
   it('prepares but does not activate a clean future run boundary',()=>{
     const current={
       ...emptyV3PersistentState(),
@@ -79,5 +106,6 @@ describe('V3 persistent composition',()=>{
     expect(next.worldHistory).toEqual({currentFacts:[],inheritedFacts:['regional_alliance']});
     expect(next.legacy).toEqual(current.legacy);
     expect(next.livingRegions).toEqual(emptyLivingRegionState());
+    expect(next.openAdventure).toEqual(emptyOpenAdventureState());
   });
 });
