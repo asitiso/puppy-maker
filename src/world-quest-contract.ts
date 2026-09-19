@@ -6,12 +6,15 @@ export type WorldQuestContract={id:string;feature:MobileFeatureId;category:Mobil
 export type WorldQuestJournalEntry={title:string;issuerId:string;issuerName:string;category:MobileContentCategory;completedAt:string};
 export type WorldQuestHistory={completed:number;lastCompletedAt:string|null;lastTitle:string|null;lastIssuerName:string|null;completedByIssuer:Record<string,number>;recent:WorldQuestJournalEntry[]};
 export type NpcQuestProgress={rank:string;nextRank:string|null;nextAt:number|null;remaining:number;percent:number};
+export type WorldQuestCampaignProgress={chapter:number;rank:string;completedInChapter:number;chapterSize:number;remaining:number;percent:number;nextRank:string};
 
 export const WORLD_QUEST_STORAGE_KEY='puppy-maker:v17:world-quest';
 export const WORLD_QUEST_HISTORY_KEY='puppy-maker:v17:world-quest-history';
 export const WORLD_QUEST_CONTINUOUS_KEY='puppy-maker:v17:world-quest-continuous';
 const emptyHistory=():WorldQuestHistory=>({completed:0,lastCompletedAt:null,lastTitle:null,lastIssuerName:null,completedByIssuer:{},recent:[]});
 const QUEST_RANKS=[{at:0,label:'첫 만남'},{at:1,label:'첫 의뢰 완료'},{at:5,label:'단골 모험가'},{at:10,label:'신뢰받는 동료'},{at:20,label:'전설의 동료'}] as const;
+const CAMPAIGN_RANKS=['새싹 모험가','마을 해결사','월드 탐험가','길드 베테랑','전설의 모험가'] as const;
+export const WORLD_QUEST_CHAPTER_SIZE=10;
 
 export function questFromRecommendation(recommendation:MobileWorldRecommendation,now=new Date()):WorldQuestContract{
   const npc=questNpcForCategory(recommendation.category);
@@ -46,3 +49,7 @@ export function npcQuestProgress(completed:number):NpcQuestProgress{
   const span=next.at-current.at;return {rank:current.label,nextRank:next.label,nextAt:next.at,remaining:next.at-safe,percent:Math.max(0,Math.min(100,Math.round(((safe-current.at)/span)*100)))};
 }
 export function npcQuestRank(completed:number){return npcQuestProgress(completed).rank;}
+export function worldQuestCampaignProgress(completed:number):WorldQuestCampaignProgress{
+  const safe=Math.max(0,Math.floor(completed));const chapter=Math.floor(safe/WORLD_QUEST_CHAPTER_SIZE)+1;const completedInChapter=safe%WORLD_QUEST_CHAPTER_SIZE;const rankIndex=Math.min(CAMPAIGN_RANKS.length-1,Math.floor(safe/20));const nextRankIndex=Math.min(CAMPAIGN_RANKS.length-1,rankIndex+1);
+  return {chapter,rank:CAMPAIGN_RANKS[rankIndex],completedInChapter,chapterSize:WORLD_QUEST_CHAPTER_SIZE,remaining:WORLD_QUEST_CHAPTER_SIZE-completedInChapter,percent:Math.round((completedInChapter/WORLD_QUEST_CHAPTER_SIZE)*100),nextRank:CAMPAIGN_RANKS[nextRankIndex]};
+}
