@@ -29,7 +29,6 @@ export function emptyV3PersistentState():V3PersistentState{
     livingRegions:emptyLivingRegionState(),
     adventureWorld:emptyAdventureWorldState(),
     sceneCheckpoint:null,
-    adventureWorld:emptyAdventureWorldState(),
   };
 }
 
@@ -81,6 +80,7 @@ export function prepareNewRunState(current:V3PersistentState):V3PersistentState{
     legacy:current.legacy,
     v12Builds:current.v12Builds,
     livingRegions:emptyLivingRegionState(),
+    adventureWorld:emptyAdventureWorldState(),
     sceneCheckpoint:null,
   };
 }
