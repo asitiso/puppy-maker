@@ -16,8 +16,10 @@ import {
 } from './combat-system';
 import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState} from './enemy-ai';
 import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
+import {applyBurningHazardsToEnemies,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
 import {createStartingCampEnemies} from './starting-encounter';
+import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {renderAdventureField} from './software-renderer';
@@ -49,6 +51,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const ruinPuzzleRef=useRef(createRuinPuzzleState(STARTING_RUIN_PUZZLE));
   const ruinSolvedNotifiedRef=useRef(false);
   const echoSenseRef=useRef(false);
+  const hazardsRef=useRef(createStartingCampHazards());
+  const hazardPulseSerialRef=useRef(10000);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -62,6 +66,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [rewardReady,setRewardReady]=useState(false);
   const [puzzleSolved,setPuzzleSolved]=useState(false);
   const [echoSenseUnlocked,setEchoSenseUnlocked]=useState(false);
+  const [nearHazard,setNearHazard]=useState(false);
+  const [burningHazards,setBurningHazards]=useState(0);
 
   const discover=useCallback(()=>{
     const target=nearbyRef.current;
@@ -74,9 +80,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   },[]);
 
   const castEnvironmentAbility=useCallback((ability:EnvironmentAbilityId)=>{
-    const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
-    if(inCombat||combatRef.current.hp<=0)return;
-    const result=castRuinAbility(
+    if(combatRef.current.hp<=0)return;
+
+    const ruinResult=castRuinAbility(
       ruinPuzzleRef.current,
       STARTING_RUIN_PUZZLE,
       ability,
@@ -84,11 +90,36 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       playerRef.current.facingYaw,
       startingFieldHeight,
     );
-    ruinPuzzleRef.current=result.state;
-    if(result.affected)setNotice(ability==='windPulse'
-      ?'바람밀기가 공명석을 밀어냈습니다. 위치를 바꿔 다른 공명판을 시험해 보세요.'
-      :'불씨점화가 오래된 화로를 깨웠습니다. 열의 공명이 서쪽 장치로 이어집니다.');
-    else if(playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position,18))setNotice('능력이 닿지 않았습니다. 대상 쪽을 바라보고 조금 더 가까이 가 보세요.');
+    ruinPuzzleRef.current=ruinResult.state;
+
+    const fieldResult=castFieldEnvironmentAbility(
+      hazardsRef.current,
+      ability,
+      playerRef.current.position,
+      playerRef.current.facingYaw,
+    );
+    hazardsRef.current=fieldResult.hazards;
+
+    if(fieldResult.affected){
+      setNotice(ability==='emberSpark'
+        ?'마른 풀이 불붙었습니다. 적을 불길 쪽으로 유도하거나 바람으로 화재를 퍼뜨릴 수 있습니다.'
+        :fieldResult.spread
+          ?'바람이 불길을 다음 마른 풀 지대로 퍼뜨렸습니다.'
+          :'바람이 불길을 거세게 만들었지만 확산될 풀이 바람 방향에 없습니다.');
+      return;
+    }
+
+    if(ruinResult.affected){
+      setNotice(ability==='windPulse'
+        ?'바람밀기가 공명석을 밀어냈습니다. 위치를 바꿔 다른 공명판을 시험해 보세요.'
+        :'불씨점화가 오래된 화로를 깨웠습니다. 열의 공명이 서쪽 장치로 이어집니다.');
+      return;
+    }
+
+    if(
+      playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position,18)||
+      playerNearFieldHazard(hazardsRef.current,playerRef.current.position,14)
+    )setNotice('능력이 닿지 않았습니다. 반응할 환경 쪽을 바라보고 조금 더 가까이 가 보세요.');
   },[]);
 
   const interactWorld=useCallback(()=>{
@@ -232,6 +263,19 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNotice('메아리 폐허의 봉인이 풀렸습니다. 안쪽 공명핵에서 새로운 탐험 감각을 얻을 수 있습니다.');
       }
 
+      const hazardStep=stepFieldHazards(hazardsRef.current,dt);
+      hazardsRef.current=hazardStep.hazards;
+      if(hazardStep.damagePulse){
+        hazardPulseSerialRef.current+=1;
+        const burned=applyBurningHazardsToEnemies(
+          enemiesRef.current,
+          hazardsRef.current,
+          hazardPulseSerialRef.current,
+        );
+        enemiesRef.current=burned.enemies;
+        if(burned.damagedIds.length>0)setNotice(`환경 화재가 적 ${burned.damagedIds.length}명에게 피해를 주고 진형을 흔들었습니다.`);
+      }
+
       if(playerAttackWindowOpen(combat)){
         enemiesRef.current=enemiesRef.current.map(enemy=>{
           if(!playerAttackConnects(playerRef.current.position,playerRef.current.facingYaw,enemy.position,1))return enemy;
@@ -275,6 +319,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         ruinPuzzleRef.current,
         STARTING_RUIN_PUZZLE,
         echoSenseRef.current,
+        hazardsRef.current,
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -295,6 +340,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearStone(playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
         setRewardReady(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
         setPuzzleSolved(ruinPuzzleRef.current.solved);
+        setNearHazard(playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
+        setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
       }
 
       frame=requestAnimationFrame(tick);
@@ -344,6 +391,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {combatEngaged&&<em>야영지 위협 {livingEnemies}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
+      {nearHazard&&burningHazards>0&&<em>환경 · 화재 {burningHazards}</em>}
     </header>
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
@@ -365,8 +413,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {nearPuzzle&&!combatEngaged&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {nearPuzzle&&!combatEngaged&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button type="button" className="is-primary" disabled={(!nearby&&!nearStone&&!rewardReady)||combatEngaged||defeated} onClick={interactWorld}>{rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
