@@ -15,9 +15,11 @@ import {
   type PlayerCombatState,
 } from './combat-system';
 import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState} from './enemy-ai';
+import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
 import {createStartingCampEnemies} from './starting-encounter';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
+import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -44,6 +46,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const dragRef=useRef<{pointerId:number;x:number;y:number}|null>(null);
   const visitedRef=useRef(new Set<string>());
   const campClearedRef=useRef(false);
+  const ruinPuzzleRef=useRef(createRuinPuzzleState(STARTING_RUIN_PUZZLE));
+  const ruinSolvedNotifiedRef=useRef(false);
+  const echoSenseRef=useRef(false);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -52,6 +57,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [sprinting,setSprinting]=useState(false);
   const [combatEngaged,setCombatEngaged]=useState(false);
   const [livingEnemies,setLivingEnemies]=useState(enemiesRef.current.length);
+  const [nearPuzzle,setNearPuzzle]=useState(false);
+  const [nearStone,setNearStone]=useState(false);
+  const [rewardReady,setRewardReady]=useState(false);
+  const [puzzleSolved,setPuzzleSolved]=useState(false);
+  const [echoSenseUnlocked,setEchoSenseUnlocked]=useState(false);
 
   const discover=useCallback(()=>{
     const target=nearbyRef.current;
@@ -62,6 +72,56 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       ?'높은 곳에서 시야가 열렸습니다. 아래를 둘러보고 다음 목적지를 직접 정하세요.'
       :`${target.label} 발견 · ${target.hint}`);
   },[]);
+
+  const castEnvironmentAbility=useCallback((ability:EnvironmentAbilityId)=>{
+    const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
+    if(inCombat||combatRef.current.hp<=0)return;
+    const result=castRuinAbility(
+      ruinPuzzleRef.current,
+      STARTING_RUIN_PUZZLE,
+      ability,
+      playerRef.current.position,
+      playerRef.current.facingYaw,
+      startingFieldHeight,
+    );
+    ruinPuzzleRef.current=result.state;
+    if(result.affected)setNotice(ability==='windPulse'
+      ?'바람밀기가 공명석을 밀어냈습니다. 위치를 바꿔 다른 공명판을 시험해 보세요.'
+      :'불씨점화가 오래된 화로를 깨웠습니다. 열의 공명이 서쪽 장치로 이어집니다.');
+    else if(playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position,18))setNotice('능력이 닿지 않았습니다. 대상 쪽을 바라보고 조금 더 가까이 가 보세요.');
+  },[]);
+
+  const interactWorld=useCallback(()=>{
+    const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
+    if(inCombat||combatRef.current.hp<=0)return;
+
+    if(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position)){
+      ruinPuzzleRef.current=claimRuinReward(ruinPuzzleRef.current);
+      echoSenseRef.current=true;
+      setEchoSenseUnlocked(true);
+      setRewardReady(false);
+      setNotice('메아리 감각을 얻었습니다. 이전에는 눈에 띄지 않던 숨은 장소가 들판에서 희미하게 드러납니다.');
+      return;
+    }
+
+    if(playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position)){
+      const result=pushRuinStone(
+        ruinPuzzleRef.current,
+        STARTING_RUIN_PUZZLE,
+        playerRef.current.position,
+        playerRef.current.facingYaw,
+        startingFieldHeight,
+      );
+      ruinPuzzleRef.current=result.state;
+      if(result.moved){
+        setNotice('공명석을 밀었습니다. 두 공명판을 동시에 깨울 방법은 하나가 아닙니다.');
+        return;
+      }
+    }
+
+    discover();
+  },[discover]);
+
 
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
@@ -87,7 +147,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(event.code==='KeyJ'&&!event.repeat){event.preventDefault();attackRef.current=true;return;}
       if(event.code==='KeyK'&&!event.repeat){event.preventDefault();dodgeRef.current=true;return;}
       if(event.code==='KeyR'&&!event.repeat&&combatRef.current.hp<=0){event.preventDefault();recoverAtEntrance();return;}
-      if((event.code==='KeyE'||event.code==='KeyF')&&!event.repeat){event.preventDefault();discover();return;}
+      if(event.code==='KeyQ'&&!event.repeat){event.preventDefault();castEnvironmentAbility('windPulse');return;}
+      if(event.code==='KeyC'&&!event.repeat){event.preventDefault();castEnvironmentAbility('emberSpark');return;}
+      if(event.code==='KeyE'&&!event.repeat){event.preventDefault();interactWorld();return;}
+      if(event.code==='KeyF'&&!event.repeat){event.preventDefault();discover();return;}
       if(event.code==='Escape'){event.preventDefault();onExit();}
     };
     const up=(event:KeyboardEvent)=>{
@@ -99,7 +162,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     window.addEventListener('keyup',up);
     window.addEventListener('blur',clear);
     return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);window.removeEventListener('blur',clear);};
-  },[discover,onExit,recoverAtEntrance]);
+  },[castEnvironmentAbility,discover,interactWorld,onExit,recoverAtEntrance]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;
@@ -157,6 +220,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,startingFieldHeight,STARTING_FIELD.halfSize);
 
+      const wasPuzzleSolved=ruinPuzzleRef.current.solved;
+      ruinPuzzleRef.current=stepRuinPuzzle(
+        ruinPuzzleRef.current,
+        STARTING_RUIN_PUZZLE,
+        playerRef.current.position,
+        dt,
+      );
+      if(!wasPuzzleSolved&&ruinPuzzleRef.current.solved&&!ruinSolvedNotifiedRef.current){
+        ruinSolvedNotifiedRef.current=true;
+        setNotice('메아리 폐허의 봉인이 풀렸습니다. 안쪽 공명핵에서 새로운 탐험 감각을 얻을 수 있습니다.');
+      }
+
       if(playerAttackWindowOpen(combat)){
         enemiesRef.current=enemiesRef.current.map(enemy=>{
           if(!playerAttackConnects(playerRef.current.position,playerRef.current.facingYaw,enemy.position,1))return enemy;
@@ -197,6 +272,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         nextNearby?.id??null,
         enemiesRef.current,
         combat,
+        ruinPuzzleRef.current,
+        STARTING_RUIN_PUZZLE,
+        echoSenseRef.current,
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -213,6 +291,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
+        setNearPuzzle(playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setNearStone(playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
+        setRewardReady(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setPuzzleSolved(ruinPuzzleRef.current.solved);
       }
 
       frame=requestAnimationFrame(tick);
@@ -252,7 +334,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       onPointerUp={endLook}
       onPointerCancel={endLook}
       onWheel={event=>{event.preventDefault();cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);}}
-      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, E 조사"
+      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, Q 바람밀기, C 불씨점화, E 상호작용"
     />
 
     <header className="adventure3d__hud">
@@ -260,11 +342,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>야영지 위협 {livingEnemies}</em>}
+      {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
+      {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
     </header>
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
-      <span>{nearby&&!combatEngaged?nearby.hint:notice}</span>
+      <span>{rewardReady?'봉인 안쪽의 공명핵이 손에 닿을 거리에서 울립니다.':nearStone&&!combatEngaged?'공명석을 직접 밀거나 바람밀기로 옮길 수 있습니다.':nearby&&!combatEngaged?nearby.hint:notice}</span>
     </div>
 
     <button type="button" className="adventure3d__exit" onClick={onExit} aria-label="새벽들판 나가기">×</button>
@@ -281,9 +365,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      <button type="button" className="is-primary" disabled={!nearby||combatEngaged||defeated} onClick={discover}>{nearby?'살펴보기':'주변 관찰'}</button>
+      {nearPuzzle&&!combatEngaged&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {nearPuzzle&&!combatEngaged&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      <button type="button" className="is-primary" disabled={(!nearby&&!nearStone&&!rewardReady)||combatEngaged||defeated} onClick={interactWorld}>{rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
-    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · E 발견</div>
+    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · Q 바람밀기 · C 불씨점화 · E 상호작용</div>
   </section>;
 }
