@@ -6,14 +6,18 @@ import {nearestInteractable} from './exploration-runtime';
 const categories:MobileContentCategory[]=['life','growth','adventure','bond','records'];
 
 describe('RPG district worlds',()=>{
-  it('maps every category feature to one physical facility portal plus two world gates',()=>{
+  it('maps every category feature to one physical facility portal, one quest NPC and two world gates',()=>{
     for(const category of categories){
       const world=rpgDistrictWorld(category);
       const facilities=world.interactables.filter(item=>parseDistrictDestination(item.destinationId??'')?.kind==='feature');
       const districtGates=world.interactables.filter(item=>parseDistrictDestination(item.destinationId??'')?.kind==='district');
+      const questNpcs=world.interactables.filter(item=>parseDistrictDestination(item.destinationId??'')?.kind==='questNpc');
       expect(facilities).toHaveLength(districtFeatureIds[category].length);
       expect(facilities.map(item=>parseDistrictFeature(item.destinationId??''))).toEqual([...districtFeatureIds[category]]);
       expect(districtGates).toHaveLength(2);
+      expect(questNpcs).toHaveLength(1);
+      expect(questNpcs[0].id).toBe(`district-quest-npc:${category}`);
+      expect(questNpcs[0].label).toMatch(/^! /);
     }
   });
 
@@ -79,6 +83,7 @@ describe('RPG district worlds',()=>{
   it('parses valid world travel and rejects unknown destinations',()=>{
     expect(parseDistrictDestination('district:adventure')).toEqual({kind:'district',category:'adventure'});
     expect(parseDistrictDestination('feature:outing')).toEqual({kind:'feature',feature:'outing'});
+    expect(parseDistrictDestination('quest-npc:bond')).toEqual({kind:'questNpc',category:'bond'});
     expect(parseDistrictDestination('district:not-real')).toBeNull();
     expect(parseDistrictFeature('district:life')).toBeNull();
     expect(parseDistrictFeature('feature:not-real')).toBeNull();
