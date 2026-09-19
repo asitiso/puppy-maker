@@ -26,7 +26,9 @@ export function markWorldQuestReady(storage:Pick<Storage,'setItem'>|null|undefin
 }
 
 export function loadWorldQuest(storage:Pick<Storage,'getItem'>|null|undefined):WorldQuestContract|null{
-  if(!storage)return null;try{const raw=storage.getItem(WORLD_QUEST_STORAGE_KEY);if(!raw)return null;const value=JSON.parse(raw) as Partial<WorldQuestContract>;if(typeof value.id!=='string'||typeof value.feature!=='string'||typeof value.category!=='string'||typeof value.title!=='string'||typeof value.reason!=='string'||typeof value.acceptedAt!=='string')return null;return value as WorldQuestContract;}catch{return null;}
+  if(!storage)return null;try{const raw=storage.getItem(WORLD_QUEST_STORAGE_KEY);if(!raw)return null;const value=JSON.parse(raw) as Partial<WorldQuestContract>;if(typeof value.id!=='string'||typeof value.feature!=='string'||typeof value.category!=='string'||typeof value.title!=='string'||typeof value.reason!=='string'||typeof value.acceptedAt!=='string')return null;
+    return {...value,readyToTurnIn:value.readyToTurnIn===true?true:undefined,readyAt:typeof value.readyAt==='string'?value.readyAt:undefined} as WorldQuestContract;
+  }catch{return null;}
 }
 export function saveWorldQuest(storage:Pick<Storage,'setItem'>|null|undefined,contract:WorldQuestContract){storage?.setItem(WORLD_QUEST_STORAGE_KEY,JSON.stringify(contract));}
 export function clearWorldQuest(storage:Pick<Storage,'removeItem'>|null|undefined){storage?.removeItem(WORLD_QUEST_STORAGE_KEY);}
