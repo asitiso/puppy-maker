@@ -10,7 +10,9 @@ describe('V18 environment magic combat integration',()=>{
     expect(slice).toContain('castFieldEnvironmentAbility');
     expect(slice).toContain('applyBurningHazardsToEnemies');
     expect(slice).toContain('(nearPuzzle||nearHazard)&&!defeated');
-    expect(slice).not.toContain("if(inCombat||combatRef.current.hp<=0)return");
+    const castBlock=slice.slice(slice.indexOf('const castEnvironmentAbility='),slice.indexOf('const interactWorld='));
+    expect(castBlock).toContain('if(combatRef.current.hp<=0)return');
+    expect(castBlock).not.toContain('inCombat||');
   });
 
   it('feeds field hazards through the same exploration renderer and enemy list',()=>{
