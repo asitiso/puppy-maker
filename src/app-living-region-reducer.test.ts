@@ -33,6 +33,17 @@ describe('app living region reducer bridge',()=>{
     expect(next.explorationXp).toEqual(active.explorationXp);
   });
 
+  it('updates open-adventure persistence without granting legacy outing rewards',()=>{
+    const discovered=appReducer(initialState,{type:'UPDATE_OPEN_ADVENTURE',update:{type:'discover',id:'skywatch'}});
+    expect(discovered.openAdventure.dawnreach.discoveredIds).toEqual(['skywatch']);
+    expect(discovered.gold).toBe(initialState.gold);
+    expect(discovered.explorationXp).toEqual(initialState.explorationXp);
+
+    const cleared=appReducer(discovered,{type:'UPDATE_OPEN_ADVENTURE',update:{type:'clear-camp'}});
+    expect(cleared.openAdventure.dawnreach.campCleared).toBe(true);
+    expect(cleared.gold).toBe(initialState.gold);
+  });
+
   it('passes existing game actions through unchanged',()=>{
     const next=appReducer(initialState,{type:'GO',screen:'schedule'});
     expect(next.screen).toBe('schedule');
