@@ -72,6 +72,7 @@ import './sanctuary.css';
 import './astral-rift.css';
 
 
+const AdventureVerticalSlice=lazy(()=>import('./adventure3d/AdventureVerticalSlice'));
 const CollectionArchiveOverlay=lazy(()=>import('./CollectionArchiveOverlay'));
 const GuardianExpeditionOverlay=lazy(()=>import('./GuardianExpeditionOverlay'));
 const MobileLegacyFeaturePage=lazy(()=>import('./MobileLegacyFeaturePage'));
@@ -302,6 +303,7 @@ export default function Root() {
   />;
 
   const renderFeature = (state:GameState,feature:MobileFeatureId) => {
+    if(feature==='outing')return <AdventureVerticalSlice state={state} onExit={handleBack}/>;
     if(isRpgFacilityFeature(feature))return <RpgFacilityFeature
       feature={feature}
       state={state}
