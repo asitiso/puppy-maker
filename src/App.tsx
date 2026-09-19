@@ -40,6 +40,8 @@ import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
 import {livingRegionUpdateRequestEvent,type LivingRegionUpdateRequest} from './living-region-ui-events';
+import {adventureWorldUpdateRequestEvent} from './adventure3d/adventure-world-events';
+import type {AdventureWorldState} from './adventure3d/adventure-world-state';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 import TrainingActivityMinigame from './TrainingActivityMinigame';
 import './rpg-activity-loop.css';
@@ -317,6 +319,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     };
     window.addEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
     return ()=>window.removeEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
+  },[]);
+  useEffect(() => {
+    const handleAdventureWorldUpdate=(event:Event)=>{
+      const adventureWorld=(event as CustomEvent<AdventureWorldState>).detail;
+      if(adventureWorld)dispatch({type:'SET_ADVENTURE_WORLD',adventureWorld});
+    };
+    window.addEventListener(adventureWorldUpdateRequestEvent,handleAdventureWorldUpdate);
+    return ()=>window.removeEventListener(adventureWorldUpdateRequestEvent,handleAdventureWorldUpdate);
   },[]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);
