@@ -29,7 +29,7 @@ const specs:Record<MobileContentCategory,DistrictSpec>={
   growth:{
     id:'growth-quarter',label:'수련 구역',objective:'수련장을 직접 돌며 성장 방향, 장비, 시즌 성장과 성소를 선택하세요.',layer:'/assets/training/focus_training_bg.webp',
     portals:[['raising','성장 제단 · 정체성과 Calling',430,850,'old-shrine-gate.svg'],['ambition','목표석 · 올해의 야망',720,520,'old-shrine-gate.svg'],['achievements','명예 게시판 · 성장 업적',1100,390,'expedition-outpost-gate.svg'],['inventory','장비고 · 능력과 보유품',1480,520,'village-gate.svg'],['season','시즌 문 · 시즌 여정',1770,850,'forest-gate.svg'],['sanctuary','별빛 성소 · 장기 성장',1100,940,'old-shrine-gate.svg']],
-    questNpcPosition:{x:1100,y:680},
+    questNpcPosition:{x:980,y:680},
   },
   adventure:{
     id:'adventure-quarter',label:'모험 구역',objective:'월드 게이트, 원정 게시판, 세계 지도를 걸어 선택하며 다음 모험을 시작하세요.',layer:'/assets/outing/forest_walk_bg.webp',
