@@ -1,8 +1,13 @@
+import {applyOpenAdventureUpdate,type OpenAdventureUpdate} from './adventure3d/open-adventure-state';
 import {reducer,type GameState} from './game';
 import {applyLivingRegionUpdate,type LivingRegionUpdate} from './exploration/living-region-state';
 import type {LivingRegionId} from './exploration/region-registry';
 
 export type AppLivingRegionAction=
+  | {
+      type:'UPDATE_OPEN_ADVENTURE';
+      update:OpenAdventureUpdate;
+    }
   | {
       type:'UPDATE_LIVING_REGION';
       regionId:LivingRegionId;
@@ -17,6 +22,10 @@ export type AppLivingRegionAction=
 export type AppAction=Parameters<typeof reducer>[1]|AppLivingRegionAction;
 
 export function appReducer(state:GameState,action:AppAction):GameState{
+  if(action.type==='UPDATE_OPEN_ADVENTURE'){
+    const openAdventure=applyOpenAdventureUpdate(state.openAdventure,action.update);
+    return openAdventure===state.openAdventure?state:{...state,openAdventure};
+  }
   if(action.type==='UPDATE_LIVING_REGION'||action.type==='UPDATE_LIVING_REGION_BATCH'){
     const updates=action.type==='UPDATE_LIVING_REGION'?[action.update]:action.updates;
     let livingRegions=state.livingRegions;
