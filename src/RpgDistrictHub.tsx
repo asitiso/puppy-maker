@@ -73,7 +73,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       ?`${currentNpc.name} · 대화`
       :`${currentNpc.name} · 새 의뢰`;
   const npcBadge=acceptedLocal?(questReady?'?':'·'):acceptedQuest?undefined:'!';
-  const npcBadgeTone=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest';
+  const npcBadgeTone:'quest'|'active'|'ready'|undefined=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest';
   const world={
     ...baseWorld,
     objective:`${baseWorld.objective} ${priorityLabel}: ${targetLabel}. 다음 길: ${routeHint}.`,
