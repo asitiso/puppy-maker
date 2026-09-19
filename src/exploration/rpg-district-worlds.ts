@@ -82,11 +82,14 @@ export function rpgDistrictWorld(category:MobileContentCategory):ExplorationWorl
   const npc=questNpcForCategory(category);
   const questNpc:ExplorationInteractable={
     id:`district-quest-npc:${category}`,
-    label:`! ${npc.name} · ${npc.role}`,
+    label:`${npc.name} · ${npc.role}`,
     kind:'portal',
     destinationId:`quest-npc:${category}`,
     position:spec.questNpcPosition,
     radius:125,
+    artSrc:npc.worldArtSrc,
+    badge:'!',
+    badgeTone:'quest',
   };
   return {id:spec.id,label:spec.label,objective:`${spec.objective} 구역 끝의 길을 통해 다른 지역으로 바로 이동할 수 있습니다.`,width:2200,height:1400,playerRadius:22,playerSpeed:245,start:{x:1100,y:1200},obstacles:[],interactables:[...facilities,questNpc,...districtGates],layers:[{id:'district-background',src:spec.layer,zIndex:0}]};
 }

@@ -1,4 +1,4 @@
-import {type CSSProperties,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Fragment,type CSSProperties,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import MobileJoystick from './MobileJoystick';
 import StoryFrameOverlay from './StoryFrameOverlay';
 import {explorationKeyboardIntent,isMovementKey,keyboardDirection} from './exploration-keyboard';
@@ -198,32 +198,39 @@ export default function MobileExplorationScene({
     :completed.size>0
       ?'새로 나타난 흔적이 있는지 주변을 살펴보세요.'
       :'직접 움직여 주변의 단서를 찾아보세요.';
-  const actionText=nearby?.kind==='portal'?'이동':nearby?.kind==='exit'?'돌아가기':nearby?'조사':'···';
+  const actionText=nearby?.id.startsWith('district-quest-npc:')?'대화':nearby?.kind==='portal'?'이동':nearby?.kind==='exit'?'돌아가기':nearby?'조사':'···';
 
   return <section ref={viewportRef} tabIndex={-1} className="mobile-exploration" aria-label={`${world.label} 탐험`}>
     <div className="mobile-exploration__viewport" aria-hidden="true">
       <div className="mobile-exploration__world" style={worldStyle}>
         {world.layers.map(layer=><img key={layer.id} className="mobile-exploration__layer" src={layer.src} alt="" draggable={false} style={{zIndex:layer.zIndex}}/>)}
-        {unlockedInteractables.map(interaction=>interaction.artSrc?<img
-          key={interaction.id}
-          className="mobile-exploration__landmark"
-          data-interaction={interaction.id}
-          data-kind={interaction.kind}
-          data-completed={(completed.has(interaction.id)&&!interaction.repeatable)||undefined}
-          src={interaction.artSrc}
-          alt=""
-          draggable={false}
-          style={{left:interaction.position.x,top:interaction.position.y}}
-        />:interaction.kind==='portal'?<span
-          key={interaction.id}
-          className="mobile-exploration__portal-marker"
-          data-interaction={interaction.id}
-          style={{left:interaction.position.x,top:interaction.position.y}}
-          aria-hidden="true"
-        >{interaction.id.startsWith('district-quest-npc:')?'!':'◎'}</span>:interaction.kind==='exit'?<span key={interaction.id} className="mobile-exploration__exit-marker" style={{left:interaction.position.x,top:interaction.position.y}} aria-hidden="true">↩</span>:null)}
+        {unlockedInteractables.map(interaction=><Fragment key={interaction.id}>
+          {interaction.artSrc?<img
+            className="mobile-exploration__landmark"
+            data-interaction={interaction.id}
+            data-kind={interaction.kind}
+            data-completed={(completed.has(interaction.id)&&!interaction.repeatable)||undefined}
+            src={interaction.artSrc}
+            alt=""
+            draggable={false}
+            style={{left:interaction.position.x,top:interaction.position.y}}
+          />:interaction.kind==='portal'?<span
+            className="mobile-exploration__portal-marker"
+            data-interaction={interaction.id}
+            style={{left:interaction.position.x,top:interaction.position.y}}
+            aria-hidden="true"
+          >◎</span>:interaction.kind==='exit'?<span className="mobile-exploration__exit-marker" style={{left:interaction.position.x,top:interaction.position.y}} aria-hidden="true">↩</span>:null}
+          {interaction.badge?<span
+            className="mobile-exploration__interaction-badge"
+            data-tone={interaction.badgeTone}
+            style={{left:interaction.position.x,top:interaction.position.y}}
+            aria-hidden="true"
+          >{interaction.badge}</span>:null}
+        </Fragment>)}
         {unlockedInteractables.filter(interaction=>interaction.kind==='portal').map(interaction=><span
           key={`${interaction.id}:label`}
           className="mobile-exploration__portal-label"
+          data-interaction={interaction.id}
           style={{left:interaction.position.x,top:interaction.position.y}}
           aria-hidden="true"
         >{interaction.label}</span>)}

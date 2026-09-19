@@ -27,6 +27,8 @@ export type ExplorationInteractable={
   radius:number;
   storyFrameId?:string;
   artSrc?:string;
+  badge?:string;
+  badgeTone?:'quest'|'active'|'ready';
   destinationId?:string;
   nameplate?:string;
   enabled?:boolean;

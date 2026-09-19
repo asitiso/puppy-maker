@@ -20,6 +20,8 @@ describe('world quest NPC dialog',()=>{
   it('offers a new contract only through the physical NPC conversation',()=>{
     const html=renderToStaticMarkup(<WorldQuestNpcDialog npc={questNpcForCategory('adventure')} recommendation={recommendation} activeQuest={null} history={history} continuous={false} {...callbacks}/>);
     expect(html).toContain('WORLD QUEST NPC');
+    expect(html).toContain('/assets/exploration/quest-npcs/bora-world.svg');
+    expect(html).toContain('world-quest-dialog__portrait');
     expect(html).toContain('보라');
     expect(html).toContain('단골 모험가');
     expect(html).toContain('NEW CONTRACT');
@@ -31,6 +33,7 @@ describe('world quest NPC dialog',()=>{
     const active={...questFromRecommendation(recommendation),readyToTurnIn:true,readyAt:'2026-09-19T05:00:00.000Z'};
     const html=renderToStaticMarkup(<WorldQuestNpcDialog npc={questNpcForCategory('adventure')} recommendation={recommendation} activeQuest={active} history={history} continuous={true} {...callbacks}/>);
     expect(html).toContain('TURN IN');
+    expect(html).toContain('data-tone="ready"');
     expect(html).toContain('완료 보고');
     expect(html).toContain('연속 의뢰 끄기');
     expect(html).not.toContain('의뢰 포기');

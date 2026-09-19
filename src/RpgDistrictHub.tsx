@@ -68,14 +68,16 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
 
   const npcInteractionId=`district-quest-npc:${activeCategory}`;
   const npcLabel=acceptedLocal
-    ?questReady?`? ${currentNpc.name} · 완료 보고`:`! ${currentNpc.name} · 의뢰 수행 중`
+    ?questReady?`${currentNpc.name} · 완료 보고`:`${currentNpc.name} · 의뢰 수행 중`
     :acceptedQuest
       ?`${currentNpc.name} · 대화`
-      :`! ${currentNpc.name} · 새 의뢰`;
+      :`${currentNpc.name} · 새 의뢰`;
+  const npcBadge=acceptedLocal?(questReady?'?':'·'):acceptedQuest?undefined:'!';
+  const npcBadgeTone:'quest'|'active'|'ready'|undefined=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest';
   const world={
     ...baseWorld,
     objective:`${baseWorld.objective} ${priorityLabel}: ${targetLabel}. 다음 길: ${routeHint}.`,
-    interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel}:item),
+    interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel,badge:npcBadge,badgeTone:npcBadgeTone}:item),
   };
 
   const enterFeature=(feature:MobileFeatureId)=>{
