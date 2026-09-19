@@ -27,6 +27,7 @@ export default function WorldQuestNpcDialog({
   const recent=history.recent.filter(entry=>entry.issuerId===npc.id).slice(0,3);
   const ownsActive=activeQuest?.category===npc.category;
   const ready=Boolean(ownsActive&&activeQuest?.readyToTurnIn);
+  const dialogBadge=ready?'?':ownsActive?'·':activeQuest?'':'!';
 
   useEffect(()=>{
     const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();onClose();}};
@@ -54,7 +55,10 @@ export default function WorldQuestNpcDialog({
   return <div className="world-quest-dialog__backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
     <section ref={dialogRef} className="world-quest-dialog" role="dialog" aria-modal="true" aria-labelledby="world-quest-dialog-title" onKeyDown={trapFocus}>
       <header>
-        <span className="world-quest-dialog__mark" aria-hidden="true">!</span>
+        <div className="world-quest-dialog__portrait">
+          <img src={npc.portraitSrc} alt="" draggable={false}/>
+          {dialogBadge?<span data-tone={ready?'ready':ownsActive?'active':'quest'} aria-hidden="true">{dialogBadge}</span>:null}
+        </div>
         <div><small>WORLD QUEST NPC</small><h2 id="world-quest-dialog-title">{npc.name}</h2><p>{npc.role}</p></div>
         <button type="button" className="world-quest-dialog__close" aria-label="대화 닫기" onClick={onClose}>×</button>
       </header>
