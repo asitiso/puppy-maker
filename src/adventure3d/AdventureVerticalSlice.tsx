@@ -29,8 +29,11 @@ import {
   ROADSIDE_AMBUSH,
   createRoadsideAmbushEnemies,
   playerNearRoadsideAmbush,
+  playerNearWorldConsequence,
+  roadsideAmbushConsequence,
   roadsideAmbushDefeated,
   roadsideAmbushVisual,
+  roadsideConsequenceMessage,
   shouldWitnessRoadsideAmbush,
   type WorldEventPhase,
 } from './world-events';
@@ -82,6 +85,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const lockedTargetRef=useRef<string|null>(null);
   const roadsideResolution=persisted.worldEvents.find(event=>event.id===ROADSIDE_AMBUSH.id);
   const roadsideAmbushResolvedRef=useRef(Boolean(roadsideResolution));
+  const roadsideOutcomeRef=useRef(roadsideResolution?.outcome);
   const roadsideAmbushPhaseRef=useRef<WorldEventPhase>('hidden');
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
@@ -102,6 +106,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [lockCandidateCount,setLockCandidateCount]=useState(0);
   const [worldEventPhase,setWorldEventPhase]=useState<WorldEventPhase>('hidden');
   const [nearWorldEvent,setNearWorldEvent]=useState(false);
+  const [nearWorldConsequence,setNearWorldConsequence]=useState(false);
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -166,6 +171,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const passRoadsideAmbush=useCallback(()=>{
     if(roadsideAmbushResolvedRef.current||roadsideAmbushPhaseRef.current!=='witnessed')return;
     roadsideAmbushResolvedRef.current=true;
+    roadsideOutcomeRef.current='passed';
     roadsideAmbushPhaseRef.current='resolved';
     setWorldEventPhase('resolved');
     setNearWorldEvent(false);
@@ -230,6 +236,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
     const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
     if(inCombat||combatRef.current.hp<=0)return;
+
+    const consequence=roadsideAmbushConsequence(roadsideOutcomeRef.current);
+    if(playerNearWorldConsequence(playerRef.current.position,consequence)){
+      setNotice(roadsideConsequenceMessage(consequence!.kind));
+      return;
+    }
 
     if(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position)){
       ruinPuzzleRef.current=claimRuinReward(ruinPuzzleRef.current);
@@ -473,6 +485,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
       if(roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
         roadsideAmbushResolvedRef.current=true;
+        roadsideOutcomeRef.current='rescued';
         roadsideAmbushPhaseRef.current='resolved';
         setWorldEventPhase('resolved');
         setNearWorldEvent(false);
@@ -520,6 +533,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         hazardsRef.current,
         lockedTargetRef.current,
         roadsideAmbushVisual(roadsideAmbushPhaseRef.current),
+        roadsideAmbushConsequence(roadsideOutcomeRef.current),
+        playerNearWorldConsequence(
+          playerRef.current.position,
+          roadsideAmbushConsequence(roadsideOutcomeRef.current),
+        ),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -546,6 +564,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearWorldEvent(
           roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
         );
+        setNearWorldConsequence(playerNearWorldConsequence(
+          playerRef.current.position,
+          roadsideAmbushConsequence(roadsideOutcomeRef.current),
+        ));
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -605,6 +627,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>{worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
+      {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
+      {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -613,7 +637,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
-      <span>{rewardReady?'봉인 안쪽의 공명핵이 손에 닿을 거리에서 울립니다.':nearStone&&!combatEngaged?'공명석을 직접 밀거나 바람밀기로 옮길 수 있습니다.':nearby&&!combatEngaged?nearby.hint:notice}</span>
+      <span>{nearWorldConsequence&&!combatEngaged
+        ?roadsideOutcomeRef.current==='rescued'
+          ?'구조한 여행자가 아직 길목에 머물고 있습니다. 말을 걸면 주변에 대한 단서를 들을 수 있습니다.'
+          :'습격 뒤 남은 짐과 바퀴 자국을 살펴볼 수 있습니다.'
+        :rewardReady?'봉인 안쪽의 공명핵이 손에 닿을 거리에서 울립니다.':nearStone&&!combatEngaged?'공명석을 직접 밀거나 바람밀기로 옮길 수 있습니다.':nearby&&!combatEngaged?nearby.hint:notice}</span>
     </div>
 
     <button type="button" className="adventure3d__exit" onClick={onExit} aria-label="새벽들판 나가기">×</button>
@@ -651,9 +679,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
         onClick={interactWorld}
-      >{worldEventPhase==='witnessed'&&nearWorldEvent?'개입':rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
+      >{worldEventPhase==='witnessed'&&nearWorldEvent
+        ?'개입'
+        :nearWorldConsequence
+          ?roadsideOutcomeRef.current==='rescued'?'대화하기':'흔적 살피기'
+          :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
     <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>

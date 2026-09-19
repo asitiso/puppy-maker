@@ -4,8 +4,11 @@ import {
   createRoadsideAmbushEnemies,
   isRoadsideAmbushEnemy,
   playerNearRoadsideAmbush,
+  roadsideAmbushConsequence,
   roadsideAmbushDefeated,
   roadsideAmbushVisual,
+  roadsideConsequenceMessage,
+  playerNearWorldConsequence,
   shouldWitnessRoadsideAmbush,
 } from './world-events';
 
@@ -27,6 +30,18 @@ describe('V18 Dawnreach living world events',()=>{
     expect(roadsideAmbushDefeated(enemies)).toBe(false);
     const defeated=enemies.map(enemy=>({...enemy,hp:0,mode:'defeated' as const}));
     expect(roadsideAmbushDefeated(defeated)).toBe(true);
+  });
+
+  it('turns the saved outcome into a visible revisitable consequence',()=>{
+    const rescued=roadsideAmbushConsequence('rescued');
+    const passed=roadsideAmbushConsequence('passed');
+    expect(rescued).toMatchObject({kind:'rescued-traveler',label:'구조된 여행자'});
+    expect(passed).toMatchObject({kind:'abandoned-supplies',label:'버려진 짐'});
+    expect(roadsideAmbushConsequence(undefined)).toBeNull();
+    expect(playerNearWorldConsequence(rescued!.position,rescued)).toBe(true);
+    expect(playerNearWorldConsequence({x:0,y:0,z:0},rescued)).toBe(false);
+    expect(roadsideConsequenceMessage('rescued-traveler')).toContain('달이끼');
+    expect(roadsideConsequenceMessage('abandoned-supplies')).toContain('재빛 야영지');
   });
 
   it('exposes a visual witness state without turning the event into a permanent map marker',()=>{

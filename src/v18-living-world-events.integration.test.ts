@@ -21,6 +21,16 @@ describe('V18 living world event integration',()=>{
     expect(persistence).toContain("update.type==='resolve-world-event'");
   });
 
+  it('turns either saved outcome into a visible revisitable world consequence',()=>{
+    expect(slice).toContain('roadsideAmbushConsequence(roadsideOutcomeRef.current)');
+    expect(slice).toContain("roadsideOutcomeRef.current='rescued'");
+    expect(slice).toContain("roadsideOutcomeRef.current='passed'");
+    expect(slice).toContain('playerNearWorldConsequence');
+    expect(slice).toContain('roadsideConsequenceMessage');
+    expect(renderer).toContain('drawWorldConsequence');
+    expect(renderer).toContain("consequence.kind==='rescued-traveler'");
+  });
+
   it('keeps event enemies separate from permanent camp completion',()=>{
     expect(slice).toContain('isStartingCampEnemy');
     expect(slice).toContain('roadsideAmbushDefeated');

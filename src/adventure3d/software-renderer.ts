@@ -5,7 +5,7 @@ import type {AdventureEnemyState} from './enemy-ai';
 import type {PlayerCombatState} from './combat-system';
 import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
 import type {FieldHazardState} from './environment-combat';
-import type {WorldEventVisual} from './world-events';
+import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -287,6 +287,54 @@ function drawWorldEvent(
   ctx.restore();
 }
 
+function drawWorldConsequence(
+  ctx:CanvasRenderingContext2D,
+  consequence:WorldConsequenceVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+  nearby:boolean,
+){
+  const base=projectAdventurePoint(consequence.position,camera,width,height);
+  if(!base)return;
+  ctx.save();
+  const size=Math.max(7,Math.min(26,base.scale*.75));
+
+  if(consequence.kind==='rescued-traveler'){
+    const top=projectAdventurePoint({...consequence.position,y:consequence.position.y+1.72},camera,width,height);
+    if(!top){ctx.restore();return;}
+    ctx.fillStyle='#d8c5a0';
+    ctx.strokeStyle=nearby?'#fff0af':'rgba(76,66,55,.9)';
+    ctx.lineWidth=nearby?3:2;
+    ctx.beginPath();ctx.roundRect(top.x-size*.7,top.y,size*1.4,Math.max(size*2,base.y-top.y),size*.5);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7f9f8f';
+    ctx.beginPath();ctx.arc(top.x,top.y+size*.22,size*.56,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(216,235,189,.18)';
+    ctx.beginPath();ctx.arc(base.x,base.y-size*.2,size*1.8,0,Math.PI*2);ctx.fill();
+  }else{
+    ctx.fillStyle='#7b6045';
+    ctx.strokeStyle=nearby?'#ffe2a1':'rgba(67,51,38,.9)';
+    ctx.lineWidth=nearby?3:2;
+    ctx.beginPath();ctx.roundRect(base.x-size*1.1,base.y-size*.85,size*2.2,size*.85,4);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#9f815c';
+    ctx.beginPath();ctx.roundRect(base.x-size*.7,base.y-size*1.5,size*1.35,size*.72,4);ctx.fill();
+    ctx.strokeStyle='rgba(52,41,33,.82)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(base.x-size*1.15,base.y-size*.12);ctx.lineTo(base.x+size*1.15,base.y-size*.12);
+    ctx.moveTo(base.x-size*.35,base.y-size*1.5);ctx.lineTo(base.x+size*.35,base.y-size*.78);
+    ctx.stroke();
+  }
+
+  if(nearby){
+    ctx.fillStyle='#fff2bd';
+    ctx.font=`900 ${Math.max(10,Math.min(18,size*.9))}px system-ui`;
+    ctx.textAlign='center';
+    ctx.fillText('E',base.x,base.y-size*2);
+  }
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -387,6 +435,8 @@ export function renderAdventureField(
   hazards:readonly FieldHazardState[]=[],
   lockedTargetId:string|null=null,
   worldEvent:WorldEventVisual|null=null,
+  worldConsequence:WorldConsequenceVisual|null=null,
+  nearbyWorldConsequence=false,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -423,6 +473,7 @@ export function renderAdventureField(
   if(ruinPuzzle&&ruinLayout)drawRuinPuzzle(ctx,ruinPuzzle,ruinLayout,camera,width,height);
   drawFieldHazards(ctx,hazards,camera,width,height);
   if(worldEvent)drawWorldEvent(ctx,worldEvent,camera,width,height);
+  if(worldConsequence)drawWorldConsequence(ctx,worldConsequence,camera,width,height,nearbyWorldConsequence);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
     const pb=projectAdventurePoint(b.position,camera,width,height);
