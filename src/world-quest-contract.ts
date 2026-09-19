@@ -38,8 +38,8 @@ export function recordWorldQuestCompletion(storage:(Pick<Storage,'getItem'|'setI
   storage?.setItem(WORLD_QUEST_HISTORY_KEY,JSON.stringify(next));return next;
 }
 export function npcQuestProgress(completed:number):NpcQuestProgress{
-  const safe=Math.max(0,Math.floor(completed));let current=QUEST_RANKS[0];for(const rank of QUEST_RANKS)if(safe>=rank.at)current=rank;
-  const next=QUEST_RANKS.find(rank=>rank.at>safe)??null;if(!next)return {rank:current.label,nextRank:null,nextAt:null,remaining:0,percent:100};
+  const safe=Math.max(0,Math.floor(completed));let currentIndex=0;for(let index=1;index<QUEST_RANKS.length;index+=1)if(safe>=QUEST_RANKS[index].at)currentIndex=index;
+  const current=QUEST_RANKS[currentIndex];const next=QUEST_RANKS[currentIndex+1]??null;if(!next)return {rank:current.label,nextRank:null,nextAt:null,remaining:0,percent:100};
   const span=next.at-current.at;return {rank:current.label,nextRank:next.label,nextAt:next.at,remaining:next.at-safe,percent:Math.max(0,Math.min(100,Math.round(((safe-current.at)/span)*100)))};
 }
 export function npcQuestRank(completed:number){return npcQuestProgress(completed).rank;}
