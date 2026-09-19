@@ -3,7 +3,7 @@ import type {GameState} from '../game';
 import MobileJoystick from '../exploration/MobileJoystick';
 import {DEFAULT_ADVENTURE_CAMERA,followAdventureCamera,rotateAdventureCamera,zoomAdventureCamera} from './camera-controller';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
-import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight,visibleStartingLandmarks} from './starting-field';
+import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -138,8 +138,6 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const landmarks=visibleStartingLandmarks();
-
   return <section className="adventure3d" aria-label="새벽들판 자유 탐험 Vertical Slice">
     <canvas
       ref={canvasRef}
@@ -158,9 +156,6 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
     </header>
 
-    <aside className="adventure3d__glimpse" aria-label="처음 보이는 랜드마크">
-      {landmarks.map(item=><span key={item.id}>{item.label}</span>)}
-    </aside>
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
