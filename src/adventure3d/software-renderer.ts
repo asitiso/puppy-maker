@@ -264,7 +264,7 @@ function drawRuinPuzzle(
   if(reward){
     const size=Math.max(7,Math.min(28,reward.scale*.9));
     ctx.save();
-    ctx.globalAlpha=state.rewardClaimed?.38:1;
+    ctx.globalAlpha=state.rewardClaimed ? .38 : 1;
     ctx.fillStyle=state.solved?'rgba(174,220,238,.42)':'rgba(65,69,72,.72)';
     ctx.strokeStyle=state.solved?'rgba(208,245,255,.9)':'rgba(144,139,118,.55)';
     ctx.lineWidth=2;
