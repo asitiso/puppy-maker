@@ -220,7 +220,7 @@ export default function MobileExplorationScene({
           data-interaction={interaction.id}
           style={{left:interaction.position.x,top:interaction.position.y}}
           aria-hidden="true"
-        >◎</span>:interaction.kind==='exit'?<span key={interaction.id} className="mobile-exploration__exit-marker" style={{left:interaction.position.x,top:interaction.position.y}} aria-hidden="true">↩</span>:null)}
+        >{interaction.id.startsWith('district-quest-npc:')?'!':'◎'}</span>:interaction.kind==='exit'?<span key={interaction.id} className="mobile-exploration__exit-marker" style={{left:interaction.position.x,top:interaction.position.y}} aria-hidden="true">↩</span>:null)}
         {unlockedInteractables.filter(interaction=>interaction.kind==='portal').map(interaction=><span
           key={`${interaction.id}:label`}
           className="mobile-exploration__portal-label"
