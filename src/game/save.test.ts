@@ -30,6 +30,7 @@ describe('canonical save',()=>{
           discoveredIds:['echo-ruins' as const,'skywatch' as const],
           echoSenseUnlocked:true,
           campCleared:true,
+          worldEvents:[{id:'roadside-ambush' as const,outcome:'rescued' as const}],
           ruin:{
             stonePosition:{x:-57,z:-38},
             brazierLit:true,
