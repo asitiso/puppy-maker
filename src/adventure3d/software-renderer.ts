@@ -4,6 +4,7 @@ import type {AdventureCameraState,AdventureDiscovery,AdventureFieldDefinition,Pl
 import type {AdventureEnemyState} from './enemy-ai';
 import type {PlayerCombatState} from './combat-system';
 import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
+import type {FieldHazardState} from './environment-combat';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -194,6 +195,39 @@ function drawCombatEffects(
 }
 
 
+function drawFieldHazards(
+  ctx:CanvasRenderingContext2D,
+  hazards:readonly FieldHazardState[],
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  for(const hazard of hazards){
+    const p=projectAdventurePoint(hazard.position,camera,width,height);
+    if(!p)continue;
+    const radius=Math.max(9,Math.min(46,p.scale*hazard.radius*1.4));
+    ctx.save();
+    ctx.globalAlpha=hazard.spent?.5:1;
+    ctx.fillStyle=hazard.burning?'rgba(154,89,43,.38)':hazard.spent?'rgba(55,51,43,.42)':'rgba(151,132,75,.26)';
+    ctx.strokeStyle=hazard.burning?'rgba(255,151,72,.74)':'rgba(194,177,102,.28)';
+    ctx.lineWidth=hazard.burning?2:1;
+    ctx.beginPath();ctx.ellipse(p.x,p.y,radius,radius*.3,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+    if(hazard.burning){
+      ctx.fillStyle='rgba(255,101,45,.16)';
+      ctx.beginPath();ctx.arc(p.x,p.y-radius*.22,radius*1.25,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ffae55';
+      for(const offset of [-.45,0,.45]){
+        ctx.beginPath();
+        ctx.moveTo(p.x+radius*offset,p.y-radius*.15);
+        ctx.lineTo(p.x+radius*(offset-.18),p.y-radius*.88);
+        ctx.lineTo(p.x+radius*(offset+.18),p.y-radius*.15);
+        ctx.closePath();ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -291,6 +325,7 @@ export function renderAdventureField(
   ruinPuzzle?:RuinPuzzleState,
   ruinLayout?:RuinPuzzleLayout,
   echoSenseUnlocked=false,
+  hazards:readonly FieldHazardState[]=[],
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -325,6 +360,7 @@ export function renderAdventureField(
     drawDiscovery(ctx,discovery,camera,width,height,visitedDiscovery,nearby);
   }
   if(ruinPuzzle&&ruinLayout)drawRuinPuzzle(ctx,ruinPuzzle,ruinLayout,camera,width,height);
+  drawFieldHazards(ctx,hazards,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
     const pb=projectAdventurePoint(b.position,camera,width,height);
