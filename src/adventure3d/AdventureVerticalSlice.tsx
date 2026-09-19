@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState,type PointerEvent} from 'react';
 import type {GameState} from '../game';
+import {requestOpenAdventureUpdate} from '../open-adventure-ui-events';
 import MobileJoystick from '../exploration/MobileJoystick';
 import {DEFAULT_ADVENTURE_CAMERA,followAdventureCamera,rotateAdventureCamera,zoomAdventureCamera} from './camera-controller';
 import {
@@ -23,6 +24,7 @@ import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {cycleLockOnTarget,lockedTargetStillValid,selectLockOnTarget,smoothLockOnYaw,targetCandidates,yawToTarget} from './targeting-system';
+import {isDawnreachDiscoveryId} from './open-adventure-state';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -34,10 +36,24 @@ const movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','A
 const engagedModes=new Set(['suspicious','chase','windup','recover','stagger']);
 
 export default function AdventureVerticalSlice({state,onExit}:Props){
+  const persisted=state.openAdventure.dawnreach;
+  const restoredRuin={
+    ...createRuinPuzzleState(STARTING_RUIN_PUZZLE),
+    ...(persisted.ruin.stonePosition?{
+      stonePosition:{
+        x:persisted.ruin.stonePosition.x,
+        y:startingFieldHeight(persisted.ruin.stonePosition.x,persisted.ruin.stonePosition.z),
+        z:persisted.ruin.stonePosition.z,
+      },
+    }:{}),
+    brazierLit:persisted.ruin.brazierLit,
+    solved:persisted.ruin.solved,
+    rewardClaimed:persisted.ruin.rewardClaimed,
+  };
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
-  const enemiesRef=useRef<AdventureEnemyState[]>(createStartingCampEnemies());
+  const enemiesRef=useRef<AdventureEnemyState[]>(persisted.campCleared?[]:createStartingCampEnemies());
   const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}});
   const pressedRef=useRef(new Set<string>());
   const stickRef=useRef({x:0,y:0});
@@ -47,18 +63,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const sprintTouchRef=useRef(false);
   const nearbyRef=useRef<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
   const dragRef=useRef<{pointerId:number;x:number;y:number}|null>(null);
-  const visitedRef=useRef(new Set<string>());
-  const campClearedRef=useRef(false);
-  const ruinPuzzleRef=useRef(createRuinPuzzleState(STARTING_RUIN_PUZZLE));
-  const ruinSolvedNotifiedRef=useRef(false);
-  const echoSenseRef=useRef(false);
+  const visitedRef=useRef(new Set<string>(persisted.discoveredIds));
+  const campClearedRef=useRef(persisted.campCleared);
+  const ruinPuzzleRef=useRef(restoredRuin);
+  const ruinSolvedNotifiedRef=useRef(persisted.ruin.solved);
+  const echoSenseRef=useRef(persisted.echoSenseUnlocked);
   const hazardsRef=useRef(createStartingCampHazards());
   const hazardPulseSerialRef=useRef(10000);
   const lockedTargetRef=useRef<string|null>(null);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
-  const [visitedCount,setVisitedCount]=useState(0);
+  const [visitedCount,setVisitedCount]=useState(persisted.discoveredIds.length);
   const [notice,setNotice]=useState('멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.');
   const [sprinting,setSprinting]=useState(false);
   const [combatEngaged,setCombatEngaged]=useState(false);
@@ -66,8 +82,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearPuzzle,setNearPuzzle]=useState(false);
   const [nearStone,setNearStone]=useState(false);
   const [rewardReady,setRewardReady]=useState(false);
-  const [puzzleSolved,setPuzzleSolved]=useState(false);
-  const [echoSenseUnlocked,setEchoSenseUnlocked]=useState(false);
+  const [puzzleSolved,setPuzzleSolved]=useState(persisted.ruin.solved);
+  const [echoSenseUnlocked,setEchoSenseUnlocked]=useState(persisted.echoSenseUnlocked);
   const [nearHazard,setNearHazard]=useState(false);
   const [burningHazards,setBurningHazards]=useState(0);
   const [lockedTargetId,setLockedTargetId]=useState<string|null>(null);
@@ -112,6 +128,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     if(!target||visitedRef.current.has(target.id))return;
     visitedRef.current=new Set(visitedRef.current).add(target.id);
     setVisitedCount(visitedRef.current.size);
+    if(isDawnreachDiscoveryId(target.id))requestOpenAdventureUpdate({type:'discover',id:target.id});
     setNotice(target.kind==='vista'
       ?'높은 곳에서 시야가 열렸습니다. 아래를 둘러보고 다음 목적지를 직접 정하세요.'
       :`${target.label} 발견 · ${target.hint}`);
@@ -129,6 +146,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       startingFieldHeight,
     );
     ruinPuzzleRef.current=ruinResult.state;
+    if(ruinResult.affected)requestOpenAdventureUpdate({
+      type:'sync-ruin',
+      stonePosition:{x:ruinResult.state.stonePosition.x,z:ruinResult.state.stonePosition.z},
+      brazierLit:ruinResult.state.brazierLit,
+      solved:ruinResult.state.solved,
+      rewardClaimed:ruinResult.state.rewardClaimed,
+    });
 
     const fieldResult=castFieldEnvironmentAbility(
       hazardsRef.current,
@@ -167,6 +191,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     if(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position)){
       ruinPuzzleRef.current=claimRuinReward(ruinPuzzleRef.current);
       echoSenseRef.current=true;
+      requestOpenAdventureUpdate({
+        type:'sync-ruin',
+        stonePosition:{x:ruinPuzzleRef.current.stonePosition.x,z:ruinPuzzleRef.current.stonePosition.z},
+        brazierLit:ruinPuzzleRef.current.brazierLit,
+        solved:true,
+        rewardClaimed:true,
+      });
       setEchoSenseUnlocked(true);
       setRewardReady(false);
       setNotice('메아리 감각을 얻었습니다. 이전에는 눈에 띄지 않던 숨은 장소가 들판에서 희미하게 드러납니다.');
@@ -183,6 +214,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       );
       ruinPuzzleRef.current=result.state;
       if(result.moved){
+        requestOpenAdventureUpdate({
+          type:'sync-ruin',
+          stonePosition:{x:result.state.stonePosition.x,z:result.state.stonePosition.z},
+          brazierLit:result.state.brazierLit,
+          solved:result.state.solved,
+          rewardClaimed:result.state.rewardClaimed,
+        });
         setNotice('공명석을 밀었습니다. 두 공명판을 동시에 깨울 방법은 하나가 아닙니다.');
         return;
       }
@@ -195,12 +233,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
-    enemiesRef.current=createStartingCampEnemies();
+    enemiesRef.current=campClearedRef.current?[]:createStartingCampEnemies();
     cameraRef.current={...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}};
     attackRef.current=false;
     dodgeRef.current=false;
     jumpRef.current=false;
-    campClearedRef.current=false;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
     setHp(DEFAULT_PLAYER_COMBAT.hp);
@@ -315,6 +352,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       );
       if(!wasPuzzleSolved&&ruinPuzzleRef.current.solved&&!ruinSolvedNotifiedRef.current){
         ruinSolvedNotifiedRef.current=true;
+        requestOpenAdventureUpdate({
+          type:'sync-ruin',
+          stonePosition:{x:ruinPuzzleRef.current.stonePosition.x,z:ruinPuzzleRef.current.stonePosition.z},
+          brazierLit:ruinPuzzleRef.current.brazierLit,
+          solved:true,
+          rewardClaimed:ruinPuzzleRef.current.rewardClaimed,
+        });
         setNotice('메아리 폐허의 봉인이 풀렸습니다. 안쪽 공명핵에서 새로운 탐험 감각을 얻을 수 있습니다.');
       }
 
@@ -413,6 +457,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
       if(living===0&&!campClearedRef.current){
         campClearedRef.current=true;
+        requestOpenAdventureUpdate({type:'clear-camp'});
         setNotice('재빛 야영지의 위협이 사라졌습니다. 주변 흔적과 남겨진 물건을 직접 살펴보세요.');
       }
 

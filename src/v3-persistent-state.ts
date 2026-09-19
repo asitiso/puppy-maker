@@ -1,3 +1,4 @@
+import {emptyOpenAdventureState,hydrateOpenAdventureState,type OpenAdventureState} from './adventure3d/open-adventure-state';
 import {emptyCampaignRunState,hydrateCampaignRunState,type CampaignRunState} from './campaign-state';
 import {emptyCharacterBondsState,hydrateCharacterBondsState,type CharacterBondsState} from './character-bonds';
 import {emptyLivingRegionState,hydrateLivingRegionState,type LivingRegionState} from './exploration/living-region-state';
@@ -14,6 +15,7 @@ export type V3PersistentState={
   legacy:LegacyState;
   v12Builds:V12PersistentBuildState;
   livingRegions:LivingRegionState;
+  openAdventure:OpenAdventureState;
   sceneCheckpoint?:ActivityCheckpoint|null;
 };
 
@@ -25,12 +27,13 @@ export function emptyV3PersistentState():V3PersistentState{
     legacy:emptyLegacyState(),
     v12Builds:emptyV12PersistentBuildState(),
     livingRegions:emptyLivingRegionState(),
+    openAdventure:emptyOpenAdventureState(),
     sceneCheckpoint:null,
   };
 }
 
 function hasLegacyV3Shape(source:Record<string,unknown>):boolean{
-  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds','livingRegions'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
+  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds','livingRegions','openAdventure'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
 }
 
 export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
@@ -48,6 +51,7 @@ export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
     legacy:hydrateLegacyState(legacySource),
     v12Builds:hydrateV12PersistentBuildState(source.v12Builds),
     livingRegions:hydrateLivingRegionState(source.livingRegions),
+    openAdventure:hydrateOpenAdventureState(source.openAdventure),
     ...sceneCheckpoint,
   };
 }
@@ -63,6 +67,7 @@ export function pickV3PersistentState(state:V3PersistentState):V3PersistentState
     legacy:state.legacy,
     v12Builds:state.v12Builds,
     livingRegions:hydrateLivingRegionState(state.livingRegions),
+    openAdventure:hydrateOpenAdventureState(state.openAdventure),
     ...sceneCheckpoint,
   };
 }
@@ -75,6 +80,7 @@ export function prepareNewRunState(current:V3PersistentState):V3PersistentState{
     legacy:current.legacy,
     v12Builds:current.v12Builds,
     livingRegions:emptyLivingRegionState(),
+    openAdventure:emptyOpenAdventureState(),
     sceneCheckpoint:null,
   };
 }

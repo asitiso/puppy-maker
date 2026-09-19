@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCharacterBondsState} from './character-bonds';
+import {emptyOpenAdventureState} from './adventure3d/open-adventure-state';
 import {emptyV3PersistentState,hydrateV3PersistentState,type V3PersistentState} from './v3-persistent-state';
 import {commitLongNightOutcome,commitWinterEnding,resolveLongNightOutcome,resolveModularEnding} from './campaign-winter-season';
 import {prepareNewPossibilityV3State,selectNgPlusUnlocks} from './ngplus-replay';
@@ -59,6 +60,7 @@ describe('V3 NG+ replay systems',()=>{
     expect(started.state.characterBonds).toEqual(emptyCharacterBondsState());
     expect(started.state.worldHistory.currentFacts).toEqual([]);
     expect(started.state.worldHistory.inheritedFacts).toEqual(['festival_saved']);
+    expect(started.state.openAdventure).toEqual(emptyOpenAdventureState());
     expect(started.state.legacy.completedRuns).toBe(1);
     expect(started.state.legacy.runSummaries).toHaveLength(1);
     expect(started.state.legacy.ngPlusUnlocks).toEqual(['past_life_dialogue','relationship_reunion','world_echo']);

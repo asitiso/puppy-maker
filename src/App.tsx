@@ -40,6 +40,8 @@ import type {PublicProjectId} from './generational-world';
 import {nextGenerationRequestEvent} from './lineage-ui-events';
 import {publicProjectRequestEvent} from './public-project-ui-events';
 import {livingRegionUpdateRequestEvent,type LivingRegionUpdateRequest} from './living-region-ui-events';
+import {openAdventureUpdateRequestEvent} from './open-adventure-ui-events';
+import type {OpenAdventureUpdate} from './adventure3d/open-adventure-state';
 import {v12BuildRequestEvent,type V12BuildRequest} from './v12-build-ui-events';
 import TrainingActivityMinigame from './TrainingActivityMinigame';
 import './rpg-activity-loop.css';
@@ -317,6 +319,14 @@ export default function App({ onStateChange, onNavigateReady, onClaimAchievement
     };
     window.addEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
     return ()=>window.removeEventListener(livingRegionUpdateRequestEvent,handleLivingRegionUpdate);
+  },[]);
+  useEffect(() => {
+    const handleOpenAdventureUpdate=(event:Event)=>{
+      const update=(event as CustomEvent<OpenAdventureUpdate>).detail;
+      if(update)dispatch({type:'UPDATE_OPEN_ADVENTURE',update});
+    };
+    window.addEventListener(openAdventureUpdateRequestEvent,handleOpenAdventureUpdate);
+    return ()=>window.removeEventListener(openAdventureUpdateRequestEvent,handleOpenAdventureUpdate);
   },[]);
   useEffect(() => {
     writeProductionState(localStorage, state, reportClientTelemetry);

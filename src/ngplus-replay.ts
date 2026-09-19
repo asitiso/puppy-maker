@@ -1,4 +1,5 @@
 import {emptyCampaignRunState} from './campaign-state';
+import {emptyOpenAdventureState} from './adventure3d/open-adventure-state';
 import {emptyCharacterBondsState} from './character-bonds';
 import {selectCompletedRunHandoff} from './campaign-winter-season';
 import {emptyLivingRegionState} from './exploration/living-region-state';
@@ -69,6 +70,7 @@ export function prepareNewPossibilityV3State(current:V3PersistentState):
     legacy,
     v12Builds:current.v12Builds,
     livingRegions:emptyLivingRegionState(),
+    openAdventure:emptyOpenAdventureState(),
   };
   return {
     started:true,
