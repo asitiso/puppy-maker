@@ -72,10 +72,12 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     :acceptedQuest
       ?`${currentNpc.name} · 대화`
       :`! ${currentNpc.name} · 새 의뢰`;
+  const npcBadge=acceptedLocal?(questReady?'?':'·'):acceptedQuest?undefined:'!';
+  const npcBadgeTone=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest';
   const world={
     ...baseWorld,
     objective:`${baseWorld.objective} ${priorityLabel}: ${targetLabel}. 다음 길: ${routeHint}.`,
-    interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel}:item),
+    interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel,badge:npcBadge,badgeTone:npcBadgeTone}:item),
   };
 
   const enterFeature=(feature:MobileFeatureId)=>{
