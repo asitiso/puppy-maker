@@ -499,6 +499,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     </div>
 
     <button type="button" className="adventure3d__exit" onClick={onExit} aria-label="새벽들판 나가기">×</button>
+    {(combatEngaged||lockCandidateCount>0)&&!defeated&&<div className="adventure3d__target-controls" aria-label="전투 타겟 조작">
+      {!lockedTargetId?<button type="button" onClick={toggleLockOn}>락온</button>:<>
+        {lockCandidateCount>1&&<button type="button" onClick={cycleLockOn}>다음 적</button>}
+        <button type="button" onClick={toggleLockOn}>해제</button>
+      </>}
+    </div>}
     <MobileJoystick disabled={defeated} onDirection={direction=>{stickRef.current=direction;}}/>
     <div className="adventure3d__actions">
       <button
@@ -512,8 +518,6 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {(combatEngaged||lockCandidateCount>0)&&!defeated&&<button type="button" className="is-target" onClick={toggleLockOn}>{lockedTargetId?'락온 해제':'락온'}</button>}
-      {lockedTargetId&&lockCandidateCount>1&&!defeated&&<button type="button" className="is-target" onClick={cycleLockOn}>다음 적</button>}
       {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
       {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button type="button" className="is-primary" disabled={(!nearby&&!nearStone&&!rewardReady)||combatEngaged||defeated} onClick={interactWorld}>{rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
