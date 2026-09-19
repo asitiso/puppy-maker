@@ -15,7 +15,7 @@ describe('V18 in-world environment puzzle integration',()=>{
   });
 
   it('uses contextual environment controls instead of permanent quest UI',()=>{
-    expect(slice).toContain('nearPuzzle&&!combatEngaged&&!defeated');
+    expect(slice).toContain('(nearPuzzle||nearHazard)&&!defeated');
     expect(slice).toContain('바람밀기');
     expect(slice).toContain('불씨점화');
     expect(slice).toContain('공명석 밀기');
