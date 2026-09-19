@@ -18,6 +18,9 @@ describe('RPG district worlds',()=>{
       expect(questNpcs).toHaveLength(1);
       expect(questNpcs[0].id).toBe(`district-quest-npc:${category}`);
       expect(questNpcs[0].label).toMatch(/^! /);
+      expect(questNpcs[0].artSrc).toMatch(/\/assets\/exploration\/(quest-npcs|village\/npcs)\//);
+      expect(questNpcs[0].badge).toBe('!');
+      expect(questNpcs[0].badgeTone).toBe('quest');
     }
   });
 
