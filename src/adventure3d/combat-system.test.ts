@@ -21,7 +21,8 @@ describe('V18 realtime combat system',()=>{
     let combat=tryStartPlayerAttack(DEFAULT_PLAYER_COMBAT);
     expect(combat.attackSerial).toBe(1);
     expect(playerAttackWindowOpen(combat)).toBe(false);
-    combat=stepPlayerCombat(combat,PLAYER_ATTACK_ACTIVE_START+.01);
+    for(let frame=0;frame<3;frame++)combat=stepPlayerCombat(combat,.05);
+    expect(combat.attackClock).toBeGreaterThan(PLAYER_ATTACK_ACTIVE_START);
     expect(playerAttackWindowOpen(combat)).toBe(true);
   });
 
