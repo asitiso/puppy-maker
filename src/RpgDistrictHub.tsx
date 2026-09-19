@@ -99,7 +99,11 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     if(!acceptedLocal)return;
     clearWorldQuest(storage);
     setAcceptedQuest(null);
-    setCompletionNotice(`${currentNpc.name}: 의뢰를 취소했어요. 다시 필요하면 말을 걸어 주세요.`);
+    if(continuous){
+      saveContinuousWorldQuest(storage,false);
+      setContinuous(false);
+      setCompletionNotice(`${currentNpc.name}: 의뢰를 포기해 연속 의뢰도 함께 멈췄어요.`);
+    }else setCompletionNotice(`${currentNpc.name}: 의뢰를 취소했어요. 다시 필요하면 말을 걸어 주세요.`);
     setNpcDialogOpen(false);
   };
   const turnInQuest=()=>{
