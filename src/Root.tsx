@@ -1,23 +1,24 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { GiftItemId, OutingLocationId } from './adventure';
 import { attendanceKey } from './attendance';
 import App from './App';
-import CollectionArchiveOverlay from './CollectionArchiveOverlay';
-import GuardianExpeditionOverlay from './GuardianExpeditionOverlay';
+
+
 import RpgHomeHub from './RpgHomeHub';
 import RpgDistrictHub from './RpgDistrictHub';
 import RpgChronicleFeature from './RpgChronicleFeature';
 import RpgWeeklyPlannerFeature from './RpgWeeklyPlannerFeature';
-import MobileLegacyFeaturePage from './MobileLegacyFeaturePage';
+import RpgFacilityFeature from './RpgFacilityFeature';
+
 import MobileRouterChrome from './MobileRouterChrome';
-import RaisingIdentityOverlay from './RaisingIdentityOverlay';
-import SanctuaryOverlay from './SanctuaryOverlay';
+
+
 import SeasonalHomeBadge from './SeasonalHomeBadge';
-import SeasonLiveOpsOverlay from './SeasonLiveOpsOverlay';
-import TacticalExpeditionFlow, { type TacticalPhase } from './TacticalExpeditionFlow';
-import WorldProgressOverlay from './WorldProgressOverlay';
+
+
+
 import YearEndCeremonyOverlay from './YearEndCeremonyOverlay';
-import YearlyAmbitionOverlay from './YearlyAmbitionOverlay';
+
 import type { AstralRiftId, AstralRiftIntensity } from './astral-rift';
 import type { AstralRiftRelicId } from './astral-rift-relics';
 import type { BattleResult } from './tactical-battle';
@@ -54,6 +55,8 @@ import type { SanctuaryFacilityId } from './starlight-sanctuary';
 import type { SeasonLegacyNodeId } from './season-legacy-board';
 import type { SeasonShopOfferId } from './season-shop';
 import type { WeeklyFocusId } from './weekly-life';
+import {isRpgFacilityFeature} from './exploration/rpg-facility-worlds';
+import type {TacticalPhase} from './TacticalExpeditionFlow';
 import './weekly-planner.css';
 import './home-panels.css';
 import './seasonal-home.css';
@@ -67,6 +70,17 @@ import './expedition-world.css';
 import './raising-identity.css';
 import './sanctuary.css';
 import './astral-rift.css';
+
+
+const CollectionArchiveOverlay=lazy(()=>import('./CollectionArchiveOverlay'));
+const GuardianExpeditionOverlay=lazy(()=>import('./GuardianExpeditionOverlay'));
+const MobileLegacyFeaturePage=lazy(()=>import('./MobileLegacyFeaturePage'));
+const RaisingIdentityOverlay=lazy(()=>import('./RaisingIdentityOverlay'));
+const SanctuaryOverlay=lazy(()=>import('./SanctuaryOverlay'));
+const SeasonLiveOpsOverlay=lazy(()=>import('./SeasonLiveOpsOverlay'));
+const TacticalExpeditionFlow=lazy(()=>import('./TacticalExpeditionFlow'));
+const WorldProgressOverlay=lazy(()=>import('./WorldProgressOverlay'));
+const YearlyAmbitionOverlay=lazy(()=>import('./YearlyAmbitionOverlay'));
 
 const homeMenuFeatures:Record<HomeMenuId,MobileFeatureId>={
   schedule:'schedule',bag:'inventory',quest:'achievements',outing:'outing',bond:'bond',
@@ -276,22 +290,35 @@ export default function Root() {
     />}
   </>;
 
+  const legacyFeaturePage=(state:GameState,feature:MobileFeatureId)=> <MobileLegacyFeaturePage
+    feature={feature}
+    state={state}
+    onClaimAchievement={handleClaimAchievement}
+    onOuting={handleOuting}
+    onGift={handleGift}
+    onAttendance={handleAttendance}
+    onMail={handleMail}
+    onMonthlyFocus={handleMonthlyFocus}
+  />;
+
   const renderFeature = (state:GameState,feature:MobileFeatureId) => {
-    if(legacyPageFeatures.has(feature))return <MobileLegacyFeaturePage
+    if(isRpgFacilityFeature(feature))return <RpgFacilityFeature
       feature={feature}
       state={state}
-      onClaimAchievement={handleClaimAchievement}
-      onOuting={handleOuting}
-      onGift={handleGift}
-      onAttendance={handleAttendance}
-      onMail={handleMail}
-      onMonthlyFocus={handleMonthlyFocus}
+      onExit={handleBack}
+      renderSystem={returnToRoom=>{
+        if(feature==='inventory'||feature==='achievements')return <div className="rpg-facility-system__legacy">
+          <button type="button" className="rpg-facility-system__return" onClick={returnToRoom}>← 시설 내부로</button>
+          {legacyFeaturePage(state,feature)}
+        </div>;
+        if(feature==='raising')return <RaisingIdentityOverlay state={state} open onOpen={()=>undefined} onClose={returnToRoom} onCalling={calling=>setGuardianCalling?.(calling)} onTrait={trait=>purchaseGrowthTrait?.(trait)}/>;
+        if(feature==='ambition')return <YearlyAmbitionOverlay state={state} onSelect={handleYearlyAmbition} open onOpenChange={open=>{if(!open)returnToRoom();}}/>;
+        if(feature==='season')return <SeasonLiveOpsOverlay state={state} open onOpen={()=>undefined} onClose={returnToRoom} onPurchase={handleSeasonPurchase} onLegacyUnlock={handleSeasonLegacyUnlock}/>;
+        return <SanctuaryOverlay state={state} open onOpen={()=>undefined} onClose={returnToRoom} onUpgrade={handleSanctuaryUpgrade} onSpecialization={handleSanctuarySpecialization} onMasterwork={handleSanctuaryMasterwork} onAstralRiftClear={handleAstralRiftClear} onAstralRiftRelic={handleAstralRiftRelic} onConvergenceClear={()=>undefined} onGuardianBoon={()=>undefined}/>;
+      }}
     />;
+    if(legacyPageFeatures.has(feature))return legacyFeaturePage(state,feature);
     if(feature==='weekly_planner')return <RpgWeeklyPlannerFeature state={state} onBack={handleBack} onWeeklyFocus={handleWeeklyFocus} onCompleteWeek={handleCompleteWeek} onAdvanceWeek={handleAdvanceWeek}/>;
-    if(feature==='raising')return <RaisingIdentityOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onCalling={calling=>setGuardianCalling?.(calling)} onTrait={trait=>purchaseGrowthTrait?.(trait)}/>;
-    if(feature==='ambition')return <YearlyAmbitionOverlay state={state} onSelect={handleYearlyAmbition} open onOpenChange={open=>{if(!open)handleBack();}}/>;
-    if(feature==='season')return <SeasonLiveOpsOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onPurchase={handleSeasonPurchase} onLegacyUnlock={handleSeasonLegacyUnlock}/>;
-    if(feature==='sanctuary')return <SanctuaryOverlay state={state} open onOpen={()=>undefined} onClose={handleBack} onUpgrade={handleSanctuaryUpgrade} onSpecialization={handleSanctuarySpecialization} onMasterwork={handleSanctuaryMasterwork} onAstralRiftClear={handleAstralRiftClear} onAstralRiftRelic={handleAstralRiftRelic} onConvergenceClear={()=>undefined} onGuardianBoon={()=>undefined}/>;
     if(feature==='world')return <WorldProgressOverlay state={state} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='archive')return <CollectionArchiveOverlay state={state} onNavigate={handleHomeMenuNavigate} onExpedition={()=>openFeature('expedition')} open onOpenChange={open=>{if(!open)handleBack();}}/>;
     if(feature==='expedition')return renderExpedition(state);
@@ -359,7 +386,9 @@ export default function Root() {
       notificationCount={notificationCount}
       onNotifications={openNotifications}
     >
-      {renderRoute(gameState)}
+      <Suspense fallback={<div className="rpg-feature-loading" role="status"><div><small>LOADING AREA</small><strong>시설을 준비하고 있어요</strong><span>월드 상태는 그대로 유지됩니다.</span></div></div>}>
+        {renderRoute(gameState)}
+      </Suspense>
     </MobileRouterChrome>
   </>;
 }

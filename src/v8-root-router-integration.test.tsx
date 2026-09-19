@@ -10,9 +10,11 @@ describe('V8 root router integration',()=>{
   it('makes the V8 router the single mobile navigation authority',()=>{
     expect(root).toContain("from './MobileRouterChrome'");
     expect(root).toContain("from './RpgDistrictHub'");
-    expect(root).toContain("from './MobileLegacyFeaturePage'");
+    expect(root).toContain("lazy(()=>import('./MobileLegacyFeaturePage'))");
     expect(root).toContain("from './RpgWeeklyPlannerFeature'");
     expect(root).toContain("from './RpgChronicleFeature'");
+    expect(root).toContain("from './RpgFacilityFeature'");
+    expect(root).toContain('isRpgFacilityFeature(feature)');
     expect(root).toContain('mobileNavigationReducer');
     expect(root).toContain('initialMobileNavigationState');
     expect(root).toContain('isGuardedActiveRoute');
