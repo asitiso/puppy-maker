@@ -30,6 +30,7 @@ export type OpenAdventureUpdate=
   |{type:'clear-camp'};
 
 const discoverySet=new Set<string>(dawnreachDiscoveryIds);
+export const isDawnreachDiscoveryId=(value:string):value is DawnreachDiscoveryId=>discoverySet.has(value);
 const isRecord=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const finite=(value:unknown,fallback=0)=>typeof value==='number'&&Number.isFinite(value)?value:fallback;
 const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
