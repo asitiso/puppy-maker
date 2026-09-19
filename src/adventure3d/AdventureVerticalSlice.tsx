@@ -17,11 +17,9 @@ import {
   type PlayerCombatState,
 } from './combat-system';
 import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState} from './enemy-ai';
-import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
+import {canClaimRuinReward,castRuinAbility,claimRuinReward,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
 import {applyBurningHazardsToEnemies,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
-import {createStartingCampEnemies} from './starting-encounter';
-import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {renderAdventureField} from './software-renderer';
@@ -42,7 +40,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...restored.position}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
   const enemiesRef=useRef<AdventureEnemyState[]>(restored.enemies);
-  const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}});
+  const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:restored.position.x,y:restored.position.y+2,z:restored.position.z}});
   const pressedRef=useRef(new Set<string>());
   const stickRef=useRef({x:0,y:0});
   const jumpRef=useRef(false);
