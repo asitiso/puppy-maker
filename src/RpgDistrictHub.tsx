@@ -78,6 +78,15 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel}:item),
   };
 
+  const enterFeature=(feature:MobileFeatureId)=>{
+    if(acceptedQuest&&!acceptedQuest.readyToTurnIn&&acceptedQuest.category===activeCategory&&acceptedQuest.feature===feature){
+      const ready=markWorldQuestReady(storage,acceptedQuest);
+      setAcceptedQuest(ready);
+      setCompletionNotice(`${currentNpc.name}: 목표 시설 확인 완료. 돌아와서 결과를 보고해 주세요.`);
+    }
+    onFeature(feature);
+  };
+
   const acceptQuest=()=>{
     if(acceptedQuest)return;
     const quest=questFromRecommendation(localRecommendation);
@@ -134,7 +143,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       onExit={onBack}
       onPortal={destinationId=>{
         const destination=parseDistrictDestination(destinationId);
-        if(destination?.kind==='feature')onFeature(destination.feature);
+        if(destination?.kind==='feature')enterFeature(destination.feature);
         else if(destination?.kind==='district'){setNpcDialogOpen(false);setActiveCategory(destination.category);}
         else if(destination?.kind==='questNpc')setNpcDialogOpen(true);
       }}
