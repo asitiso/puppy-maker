@@ -15,7 +15,8 @@ describe('V17 physical world quest loop',()=>{
     expect(scene).toContain('mobile-exploration__interaction-badge');
     expect(scene).toContain("nearby?.id.startsWith('district-quest-npc:')?'대화'");
     expect(hub).toContain("npcBadge=acceptedLocal?(questReady?'?':'·'):acceptedQuest?undefined:'!'");
-    expect(hub).toContain("npcBadgeTone=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest'");
+    expect(hub).toContain("const npcBadgeTone:'quest'|'active'|'ready'|undefined=");
+    expect(hub).toContain("acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest'");
   });
 
   it('marks the target ready on world facility entry but records completion only on NPC turn-in',()=>{
