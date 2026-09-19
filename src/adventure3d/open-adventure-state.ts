@@ -1,3 +1,5 @@
+import {dawnreachWorldEventIds,dawnreachWorldEventOutcomes,type DawnreachWorldEventId,type DawnreachWorldEventOutcome} from './world-events';
+
 export const dawnreachDiscoveryIds=[
   'skywatch','echo-ruins','ember-camp','fallen-cart','wind-crystal','stone-switch','hollow-cave','herb-ring','old-bridge',
 ] as const;
@@ -12,10 +14,13 @@ export type DawnreachRuinProgress={
   rewardClaimed:boolean;
 };
 
+export type DawnreachWorldEventResolution={id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
+
 export type DawnreachAdventureProgress={
   discoveredIds:DawnreachDiscoveryId[];
   echoSenseUnlocked:boolean;
   campCleared:boolean;
+  worldEvents:DawnreachWorldEventResolution[];
   ruin:DawnreachRuinProgress;
 };
 
@@ -27,9 +32,12 @@ export type OpenAdventureUpdate=
   |{type:'discover';id:DawnreachDiscoveryId}
   |{type:'sync-ruin';stonePosition?:PersistentPlanarPosition|null;brazierLit?:boolean;solved?:boolean;rewardClaimed?:boolean}
   |{type:'unlock-echo-sense'}
-  |{type:'clear-camp'};
+  |{type:'clear-camp'}
+  |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
 const discoverySet=new Set<string>(dawnreachDiscoveryIds);
+const worldEventIdSet=new Set<string>(dawnreachWorldEventIds);
+const worldEventOutcomeSet=new Set<string>(dawnreachWorldEventOutcomes);
 export const isDawnreachDiscoveryId=(value:string):value is DawnreachDiscoveryId=>discoverySet.has(value);
 const isRecord=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
@@ -40,6 +48,7 @@ export function emptyOpenAdventureState():OpenAdventureState{
       discoveredIds:[],
       echoSenseUnlocked:false,
       campCleared:false,
+      worldEvents:[],
       ruin:{
         stonePosition:null,
         brazierLit:false,
@@ -48,6 +57,18 @@ export function emptyOpenAdventureState():OpenAdventureState{
       },
     },
   };
+}
+
+function hydrateWorldEvents(raw:unknown):DawnreachWorldEventResolution[]{
+  if(!Array.isArray(raw))return [];
+  const result:DawnreachWorldEventResolution[]=[];
+  for(const entry of raw){
+    if(!isRecord(entry)||typeof entry.id!=='string'||typeof entry.outcome!=='string')continue;
+    if(!worldEventIdSet.has(entry.id)||!worldEventOutcomeSet.has(entry.outcome))continue;
+    if(result.some(item=>item.id===entry.id))continue;
+    result.push({id:entry.id as DawnreachWorldEventId,outcome:entry.outcome as DawnreachWorldEventOutcome});
+  }
+  return result;
 }
 
 function hydratePosition(raw:unknown):PersistentPlanarPosition|null{
@@ -70,6 +91,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
       discoveredIds,
       echoSenseUnlocked,
       campCleared:dawnreach.campCleared===true,
+      worldEvents:hydrateWorldEvents(dawnreach.worldEvents),
       ruin:{
         stonePosition:hydratePosition(ruin.stonePosition),
         brazierLit:ruin.brazierLit===true,
@@ -90,6 +112,11 @@ export function applyOpenAdventureUpdate(
   if(update.type==='discover'){
     if(dawnreach.discoveredIds.includes(update.id))return current;
     return {...current,dawnreach:{...dawnreach,discoveredIds:[...dawnreach.discoveredIds,update.id]}};
+  }
+
+  if(update.type==='resolve-world-event'){
+    if(dawnreach.worldEvents.some(event=>event.id===update.id))return current;
+    return {...current,dawnreach:{...dawnreach,worldEvents:[...dawnreach.worldEvents,{id:update.id,outcome:update.outcome}]}};
   }
 
   if(update.type==='unlock-echo-sense'){
