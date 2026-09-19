@@ -1,6 +1,8 @@
 import {adventureCameraBasis} from './camera-controller';
 import {startingFieldHeight} from './starting-field';
 import type {AdventureCameraState,AdventureDiscovery,AdventureFieldDefinition,PlayerMotionState,Vec3} from './types';
+import type {AdventureEnemyState} from './enemy-ai';
+import type {PlayerCombatState} from './combat-system';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -96,6 +98,100 @@ function drawPlayer(ctx:CanvasRenderingContext2D,player:PlayerMotionState,camera
   ctx.restore();
 }
 
+
+function drawEnemy(
+  ctx:CanvasRenderingContext2D,
+  enemy:AdventureEnemyState,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  if(enemy.mode==='defeated')return;
+  const base=projectAdventurePoint(enemy.position,camera,width,height);
+  const top=projectAdventurePoint({...enemy.position,y:enemy.position.y+1.55},camera,width,height);
+  if(!base||!top)return;
+  const scale=Math.max(5,Math.min(24,base.scale*.62));
+  ctx.save();
+
+  if(enemy.mode==='windup'){
+    const ring=Math.max(12,Math.min(54,base.scale*2.2));
+    ctx.strokeStyle='rgba(255,101,73,.9)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.ellipse(base.x,base.y,ring,ring*.36,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,83,57,.11)';
+    ctx.fill();
+  }
+
+  const stagger=enemy.mode==='stagger';
+  const body=enemy.archetype==='guard'?'#705a4f':'#84504b';
+  ctx.fillStyle=stagger?'#f2d3b5':body;
+  ctx.strokeStyle=enemy.mode==='suspicious'?'#f2d77b':enemy.mode==='windup'?'#ff765e':'rgba(45,36,32,.9)';
+  ctx.lineWidth=enemy.mode==='windup'?3:2;
+  ctx.beginPath();
+  ctx.roundRect(top.x-scale,top.y,scale*2,Math.max(scale*2.1,base.y-top.y),scale*.7);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle=enemy.archetype==='guard'?'#d8c29d':'#c6a786';
+  ctx.beginPath();
+  ctx.arc(top.x,top.y+scale*.25,scale*.7,0,Math.PI*2);
+  ctx.fill();
+
+  if(enemy.mode==='suspicious'||enemy.mode==='chase'||enemy.mode==='windup'||enemy.mode==='recover'||enemy.hp<enemy.maxHp){
+    const barWidth=Math.max(28,Math.min(70,scale*3.2));
+    const ratio=Math.max(0,Math.min(1,enemy.hp/enemy.maxHp));
+    ctx.fillStyle='rgba(20,20,18,.72)';
+    ctx.fillRect(top.x-barWidth/2,top.y-12,barWidth,5);
+    ctx.fillStyle=enemy.mode==='windup'?'#ff846f':'#d9b878';
+    ctx.fillRect(top.x-barWidth/2,top.y-12,barWidth*ratio,5);
+  }
+
+  const mark=enemy.mode==='suspicious'?'?':enemy.mode==='chase'||enemy.mode==='windup'?'!':'';
+  if(mark){
+    ctx.fillStyle=enemy.mode==='windup'?'#ff8b73':'#ffe08a';
+    ctx.font=`900 ${Math.max(11,Math.min(22,scale*1.1))}px system-ui`;
+    ctx.textAlign='center';
+    ctx.fillText(mark,top.x,top.y-18);
+  }
+  ctx.restore();
+}
+
+function drawCombatEffects(
+  ctx:CanvasRenderingContext2D,
+  player:PlayerMotionState,
+  combat:PlayerCombatState,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const base=projectAdventurePoint(player.position,camera,width,height);
+  if(!base)return;
+  ctx.save();
+  if(combat.attackClock>=0){
+    const progress=Math.min(1,combat.attackClock/.48);
+    const radius=Math.max(18,Math.min(70,base.scale*2.6));
+    ctx.strokeStyle=progress<.58?'rgba(255,244,183,.82)':'rgba(255,244,183,.18)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(base.x,base.y-radius*.12,radius,-2.45,-.35);
+    ctx.stroke();
+  }
+  if(combat.dodgeClock>=0){
+    ctx.strokeStyle='rgba(174,225,238,.58)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.ellipse(base.x,base.y,Math.max(16,base.scale*1.5),Math.max(6,base.scale*.45),0,0,Math.PI*2);
+    ctx.stroke();
+  }
+  if(combat.flash>0){
+    ctx.fillStyle='rgba(255,88,70,.15)';
+    ctx.fillRect(0,0,width,height);
+  }
+  ctx.restore();
+}
+
 export function renderAdventureField(
   ctx:CanvasRenderingContext2D,
   width:number,
@@ -105,6 +201,8 @@ export function renderAdventureField(
   camera:AdventureCameraState,
   visited:ReadonlySet<string>,
   nearbyId:string|null,
+  enemies:readonly AdventureEnemyState[]=[],
+  combat?:PlayerCombatState,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -133,5 +231,12 @@ export function renderAdventureField(
     return (pb?.depth??0)-(pa?.depth??0);
   });
   for(const discovery of sorted)drawDiscovery(ctx,discovery,camera,width,height,visited.has(discovery.id),nearbyId===discovery.id);
+  const enemyDepth=[...enemies].sort((a,b)=>{
+    const pa=projectAdventurePoint(a.position,camera,width,height);
+    const pb=projectAdventurePoint(b.position,camera,width,height);
+    return (pb?.depth??0)-(pa?.depth??0);
+  });
+  for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height);
+  if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
   drawPlayer(ctx,player,camera,width,height);
 }
