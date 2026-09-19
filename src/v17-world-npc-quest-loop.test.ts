@@ -12,7 +12,10 @@ describe('V17 physical world quest loop',()=>{
     expect(hub).toContain('<WorldQuestNpcDialog');
     expect(hub).not.toContain('수락하고 바로 이동');
     expect(hub).not.toContain('목적지 열기');
-    expect(scene).toContain("interaction.id.startsWith('district-quest-npc:')?'!':'◎'");
+    expect(scene).toContain('mobile-exploration__interaction-badge');
+    expect(scene).toContain("nearby?.id.startsWith('district-quest-npc:')?'대화'");
+    expect(hub).toContain("npcBadge=acceptedLocal?(questReady?'?':'·'):acceptedQuest?undefined:'!'");
+    expect(hub).toContain("npcBadgeTone=acceptedLocal?(questReady?'ready':'active'):acceptedQuest?undefined:'quest'");
   });
 
   it('marks the target ready on world facility entry but records completion only on NPC turn-in',()=>{
