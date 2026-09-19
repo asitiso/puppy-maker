@@ -230,6 +230,7 @@ export default function MobileExplorationScene({
         {unlockedInteractables.filter(interaction=>interaction.kind==='portal').map(interaction=><span
           key={`${interaction.id}:label`}
           className="mobile-exploration__portal-label"
+          data-interaction={interaction.id}
           style={{left:interaction.position.x,top:interaction.position.y}}
           aria-hidden="true"
         >{interaction.label}</span>)}
