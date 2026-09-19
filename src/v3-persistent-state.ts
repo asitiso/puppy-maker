@@ -1,4 +1,5 @@
 import {emptyCampaignRunState,hydrateCampaignRunState,type CampaignRunState} from './campaign-state';
+import {emptyAdventureWorldState,hydrateAdventureWorldState,type AdventureWorldState} from './adventure3d/adventure-world-state';
 import {emptyCharacterBondsState,hydrateCharacterBondsState,type CharacterBondsState} from './character-bonds';
 import {emptyLivingRegionState,hydrateLivingRegionState,type LivingRegionState} from './exploration/living-region-state';
 import {emptyLegacyState,hydrateLegacyState,type LegacyState} from './legacy-state';
@@ -15,6 +16,7 @@ export type V3PersistentState={
   v12Builds:V12PersistentBuildState;
   livingRegions:LivingRegionState;
   sceneCheckpoint?:ActivityCheckpoint|null;
+  adventureWorld:AdventureWorldState;
 };
 
 export function emptyV3PersistentState():V3PersistentState{
@@ -25,12 +27,14 @@ export function emptyV3PersistentState():V3PersistentState{
     legacy:emptyLegacyState(),
     v12Builds:emptyV12PersistentBuildState(),
     livingRegions:emptyLivingRegionState(),
+    adventureWorld:emptyAdventureWorldState(),
     sceneCheckpoint:null,
+    adventureWorld:emptyAdventureWorldState(),
   };
 }
 
 function hasLegacyV3Shape(source:Record<string,unknown>):boolean{
-  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds','livingRegions'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
+  return ['campaignRun','worldHistory','characterBonds','legacy','v12Builds','livingRegions','adventureWorld'].some(key=>Object.prototype.hasOwnProperty.call(source,key));
 }
 
 export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
@@ -48,6 +52,7 @@ export function hydrateV3PersistentState(raw:unknown):V3PersistentState{
     legacy:hydrateLegacyState(legacySource),
     v12Builds:hydrateV12PersistentBuildState(source.v12Builds),
     livingRegions:hydrateLivingRegionState(source.livingRegions),
+    adventureWorld:hydrateAdventureWorldState(source.adventureWorld),
     ...sceneCheckpoint,
   };
 }
@@ -63,6 +68,7 @@ export function pickV3PersistentState(state:V3PersistentState):V3PersistentState
     legacy:state.legacy,
     v12Builds:state.v12Builds,
     livingRegions:hydrateLivingRegionState(state.livingRegions),
+    adventureWorld:hydrateAdventureWorldState(state.adventureWorld),
     ...sceneCheckpoint,
   };
 }
