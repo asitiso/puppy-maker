@@ -9,6 +9,7 @@ export type NpcQuestProgress={rank:string;nextRank:string|null;nextAt:number|nul
 
 export const WORLD_QUEST_STORAGE_KEY='puppy-maker:v17:world-quest';
 export const WORLD_QUEST_HISTORY_KEY='puppy-maker:v17:world-quest-history';
+export const WORLD_QUEST_CONTINUOUS_KEY='puppy-maker:v17:world-quest-continuous';
 const emptyHistory=():WorldQuestHistory=>({completed:0,lastCompletedAt:null,lastTitle:null,lastIssuerName:null,completedByIssuer:{},recent:[]});
 const QUEST_RANKS=[{at:0,label:'첫 만남'},{at:1,label:'첫 의뢰 완료'},{at:5,label:'단골 모험가'},{at:10,label:'신뢰받는 동료'},{at:20,label:'전설의 동료'}] as const;
 
@@ -22,6 +23,8 @@ export function loadWorldQuest(storage:Pick<Storage,'getItem'>|null|undefined):W
 }
 export function saveWorldQuest(storage:Pick<Storage,'setItem'>|null|undefined,contract:WorldQuestContract){storage?.setItem(WORLD_QUEST_STORAGE_KEY,JSON.stringify(contract));}
 export function clearWorldQuest(storage:Pick<Storage,'removeItem'>|null|undefined){storage?.removeItem(WORLD_QUEST_STORAGE_KEY);}
+export function loadContinuousWorldQuest(storage:Pick<Storage,'getItem'>|null|undefined){return storage?.getItem(WORLD_QUEST_CONTINUOUS_KEY)==='1';}
+export function saveContinuousWorldQuest(storage:Pick<Storage,'setItem'|'removeItem'>|null|undefined,enabled:boolean){if(!storage)return;if(enabled)storage.setItem(WORLD_QUEST_CONTINUOUS_KEY,'1');else storage.removeItem(WORLD_QUEST_CONTINUOUS_KEY);}
 
 export function loadWorldQuestHistory(storage:Pick<Storage,'getItem'>|null|undefined):WorldQuestHistory{
   const empty=emptyHistory();if(!storage)return empty;
