@@ -62,6 +62,7 @@ import {
   type PlayableCharacterId,
 } from './v12-character-builds';
 import { unlockedWardrobe } from './game/wardrobe';
+import {adventureWorldStateEqual,hydrateAdventureWorldState,type AdventureWorldState} from './adventure3d/adventure-world-state';
 
 export type TacticalBattleRecordMap = Partial<Record<TacticalEncounterId,TacticalBattleRecord>>;
 export type PersonalityKey = keyof Base.Personality;
@@ -152,6 +153,9 @@ export type Action = Base.Action | {
   type:'BEGIN_V12_RUN';
 } | {
   type:'END_V12_RUN';
+} | {
+  type:'SET_ADVENTURE_WORLD';
+  adventureWorld:AdventureWorldState;
 };
 
 const tacticalDefaults = hydrateTacticalPersistentState(undefined);
@@ -338,6 +342,11 @@ export function reducer(state:GameState,action:Action):GameState {
     return {...state,campaignRun:transition.state};
   }
   if (action.type === 'EVENT_CHOICE') return state;
+
+  if(action.type==='SET_ADVENTURE_WORLD'){
+    const adventureWorld=hydrateAdventureWorldState(action.adventureWorld);
+    return adventureWorldStateEqual(adventureWorld,state.adventureWorld)?state:{...state,adventureWorld};
+  }
 
   if(action.type==='START_PUBLIC_PROJECT'){
     const generationalWorld=startPublicProject(state.generationalWorld,action.projectId);
