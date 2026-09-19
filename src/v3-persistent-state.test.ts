@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCampaignRunState} from './campaign-state';
+import {emptyAdventureWorldState} from './adventure3d/adventure-world-state';
 import {emptyCharacterBondsState} from './character-bonds';
 import {emptyLivingRegionState} from './exploration/living-region-state';
 import {emptyLegacyState} from './legacy-state';
@@ -13,6 +14,7 @@ describe('V3 persistent composition',()=>{
     expect(state.worldHistory).toEqual({currentFacts:[],inheritedFacts:[]});
     expect(state.legacy).toEqual(emptyLegacyState());
     expect(state.livingRegions).toEqual(emptyLivingRegionState());
+    expect(state.adventureWorld).toEqual(emptyAdventureWorldState());
   });
 
   it('seeds legacy ending history from V2 top-level endingCollection when legacy is absent',()=>{
@@ -79,5 +81,6 @@ describe('V3 persistent composition',()=>{
     expect(next.worldHistory).toEqual({currentFacts:[],inheritedFacts:['regional_alliance']});
     expect(next.legacy).toEqual(current.legacy);
     expect(next.livingRegions).toEqual(emptyLivingRegionState());
+    expect(next.adventureWorld).toEqual(emptyAdventureWorldState());
   });
 });
