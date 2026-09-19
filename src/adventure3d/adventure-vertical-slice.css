@@ -14,3 +14,9 @@
 @media(max-width:520px){.adventure3d__hud{left:10px;top:10px;max-width:54vw}.adventure3d__notice{bottom:150px;max-width:72vw}.adventure3d__controls{display:none}.adventure3d__actions{right:10px;bottom:18px}.adventure3d__health,.adventure3d__stamina{width:132px}}
 @media(orientation:landscape) and (max-height:560px){.adventure3d__notice{bottom:10px;max-width:38vw}.adventure3d__actions{bottom:10px;grid-template-columns:repeat(3,54px)}.adventure3d__actions button{min-height:44px}.adventure3d__actions button.is-primary,.adventure3d__actions button.is-recover{grid-column:auto}.adventure3d__hud{padding:6px 8px}.adventure3d__hud strong{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.adventure3d *{transition:none!important;animation:none!important}}
+
+.adventure3d__target-controls{position:absolute;z-index:29;right:max(14px,env(safe-area-inset-right));top:max(68px,calc(env(safe-area-inset-top) + 60px));display:flex;gap:6px;padding:5px;border:1px solid rgba(166,218,243,.3);border-radius:12px;background:rgba(19,35,46,.58);backdrop-filter:blur(6px)}
+.adventure3d__target-controls button{min-width:52px;min-height:34px;padding:6px 8px;border:1px solid rgba(161,213,239,.5);border-radius:9px;background:linear-gradient(180deg,rgba(45,74,91,.86),rgba(32,48,60,.84));color:#d9f3ff;font:inherit;font-size:9px;font-weight:900}
+.adventure3d__target-controls button:focus-visible{outline:2px solid #c7efff;outline-offset:2px}
+@media(max-width:520px){.adventure3d__target-controls{right:10px;top:62px}.adventure3d__target-controls button{min-width:48px;min-height:32px}}
+@media(orientation:landscape) and (max-height:560px){.adventure3d__target-controls{right:60px;top:10px}}
