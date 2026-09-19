@@ -48,33 +48,33 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     const ready=markWorldQuestReady(storage,acceptedQuest);
     setAcceptedQuest(ready);
     const npc=questNpcForCategory(acceptedQuest.category);
-    setCompletionNotice(\`\${npc.name}: 목표 달성 확인. 돌아와서 완료를 보고해 줘.\`);
+    setCompletionNotice(`${npc.name}: 목표 달성 확인. 돌아와서 완료를 보고해 줘.`);
   },[acceptedQuest,questRecommendation?.category,questRecommendation?.feature,storage]);
 
   const issuerCompleted=history.completedByIssuer[issuer.id]??0;
   const questProgress=npcQuestProgress(issuerCompleted);
   const targetCategory=acceptedQuest?.category??activeCategory;
   const targetLabel=acceptedQuest
-    ?questReady?\`\${issuer.name}에게 완료 보고\`:acceptedQuest.title
-    :\`\${currentNpc.name}에게 새 의뢰 확인\`;
+    ?questReady?`${issuer.name}에게 완료 보고`:acceptedQuest.title
+    :`${currentNpc.name}에게 새 의뢰 확인`;
   const targetReason=acceptedQuest?.reason??currentNpc.greeting;
   const nextDistrict=nextDistrictToward(activeCategory,targetCategory);
   const routeHint=nextDistrict
-    ?\`\${districtLabel(nextDistrict)} 게이트로 이동\`
+    ?`${districtLabel(nextDistrict)} 게이트로 이동`
     :acceptedQuest
-      ?questReady?\`\${issuer.name}에게 돌아가 완료 보고\`:\`\${acceptedQuest.title} 시설로 이동\`
-      :\`\${currentNpc.name}에게 직접 말을 걸어 의뢰 확인\`;
+      ?questReady?`${issuer.name}에게 돌아가 완료 보고`:`${acceptedQuest.title} 시설로 이동`
+      :`${currentNpc.name}에게 직접 말을 걸어 의뢰 확인`;
   const priorityLabel=acceptedQuest?questReady?'완료 보고 가능':'수행 중 의뢰':'NPC 의뢰';
 
-  const npcInteractionId=\`district-quest-npc:\${activeCategory}\`;
+  const npcInteractionId=`district-quest-npc:${activeCategory}`;
   const npcLabel=acceptedLocal
-    ?questReady?\`? \${currentNpc.name} · 완료 보고\`:\`! \${currentNpc.name} · 의뢰 수행 중\`
+    ?questReady?`? ${currentNpc.name} · 완료 보고`:`! ${currentNpc.name} · 의뢰 수행 중`
     :acceptedQuest
-      ?\`\${currentNpc.name} · 대화\`
-      :\`! \${currentNpc.name} · 새 의뢰\`;
+      ?`${currentNpc.name} · 대화`
+      :`! ${currentNpc.name} · 새 의뢰`;
   const world={
     ...baseWorld,
-    objective:\`\${baseWorld.objective} \${priorityLabel}: \${targetLabel}. 다음 길: \${routeHint}.\`,
+    objective:`${baseWorld.objective} ${priorityLabel}: ${targetLabel}. 다음 길: ${routeHint}.`,
     interactables:baseWorld.interactables.map(item=>item.id===npcInteractionId?{...item,label:npcLabel}:item),
   };
 
@@ -92,14 +92,14 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     const quest=questFromRecommendation(localRecommendation);
     saveWorldQuest(storage,quest);
     setAcceptedQuest(quest);
-    setCompletionNotice(\`\${currentNpc.name}: \${quest.title} 의뢰를 맡겼어요.\`);
+    setCompletionNotice(`${currentNpc.name}: ${quest.title} 의뢰를 맡겼어요.`);
     setNpcDialogOpen(false);
   };
   const abandonQuest=()=>{
     if(!acceptedLocal)return;
     clearWorldQuest(storage);
     setAcceptedQuest(null);
-    setCompletionNotice(\`\${currentNpc.name}: 의뢰를 취소했어요. 다시 필요하면 말을 걸어 주세요.\`);
+    setCompletionNotice(`${currentNpc.name}: 의뢰를 취소했어요. 다시 필요하면 말을 걸어 주세요.`);
     setNpcDialogOpen(false);
   };
   const turnInQuest=()=>{
@@ -115,14 +115,14 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
       if(nextQuest.id!==completed.id){
         saveWorldQuest(storage,nextQuest);
         setAcceptedQuest(nextQuest);
-        setCompletionNotice(\`\${npc.completion} 다음 의뢰도 이어서 맡겼어요.\`);
+        setCompletionNotice(`${npc.completion} 다음 의뢰도 이어서 맡겼어요.`);
       }else{
         setAcceptedQuest(null);
-        setCompletionNotice(\`\${npc.completion} 새 의뢰가 생기면 다시 알려줄게요.\`);
+        setCompletionNotice(`${npc.completion} 새 의뢰가 생기면 다시 알려줄게요.`);
       }
     }else{
       setAcceptedQuest(null);
-      setCompletionNotice(\`\${npc.name}: \${npc.completion}\`);
+      setCompletionNotice(`${npc.name}: ${npc.completion}`);
     }
     setNpcDialogOpen(false);
   };
@@ -133,7 +133,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     setCompletionNotice(next?'연속 의뢰가 켜졌어요. 완료 보고 후 다음 의뢰를 자동 수락합니다.':'연속 의뢰가 꺼졌어요.');
   };
 
-  return <section className="rpg-home-hub rpg-district-hub" aria-label={\`\${world.label} 월드 구역\`}>
+  return <section className="rpg-home-hub rpg-district-hub" aria-label={`${world.label} 월드 구역`}>
     <MobileExplorationScene
       key={activeCategory}
       world={world}
