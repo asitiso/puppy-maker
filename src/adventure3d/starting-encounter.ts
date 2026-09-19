@@ -28,6 +28,12 @@ function enemy(
   };
 }
 
+const startingCampEnemyIdSet=new Set(['ash-runner-a','ash-runner-b','ash-warden']);
+
+export function isStartingCampEnemy(enemy:AdventureEnemyState|string):boolean{
+  return startingCampEnemyIdSet.has(typeof enemy==='string'?enemy:enemy.id);
+}
+
 export function createStartingCampEnemies():AdventureEnemyState[]{
   return [
     enemy('ash-runner-a','재빛 추적자','rusher',44,-34,42,[point(44,-34),point(53,-31),point(55,-42)]),

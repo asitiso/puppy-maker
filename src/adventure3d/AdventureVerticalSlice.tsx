@@ -19,12 +19,21 @@ import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState
 import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
 import {applyBurningHazardsToEnemies,applyBurningHazardsToPlayer,burningHazardAvoidanceZones,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
-import {createStartingCampEnemies} from './starting-encounter';
+import {createStartingCampEnemies,isStartingCampEnemy} from './starting-encounter';
 import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {cycleLockOnTarget,lockedTargetStillValid,selectLockOnTarget,smoothLockOnYaw,targetCandidates,yawToTarget} from './targeting-system';
 import {isDawnreachDiscoveryId} from './open-adventure-state';
+import {
+  ROADSIDE_AMBUSH,
+  createRoadsideAmbushEnemies,
+  playerNearRoadsideAmbush,
+  roadsideAmbushDefeated,
+  roadsideAmbushVisual,
+  shouldWitnessRoadsideAmbush,
+  type WorldEventPhase,
+} from './world-events';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -71,6 +80,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const hazardsRef=useRef(createStartingCampHazards());
   const hazardPulseSerialRef=useRef(10000);
   const lockedTargetRef=useRef<string|null>(null);
+  const roadsideResolution=persisted.worldEvents.find(event=>event.id===ROADSIDE_AMBUSH.id);
+  const roadsideAmbushResolvedRef=useRef(Boolean(roadsideResolution));
+  const roadsideAmbushPhaseRef=useRef<WorldEventPhase>('hidden');
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -88,6 +100,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [burningHazards,setBurningHazards]=useState(0);
   const [lockedTargetId,setLockedTargetId]=useState<string|null>(null);
   const [lockCandidateCount,setLockCandidateCount]=useState(0);
+  const [worldEventPhase,setWorldEventPhase]=useState<WorldEventPhase>('hidden');
+  const [nearWorldEvent,setNearWorldEvent]=useState(false);
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -132,6 +146,31 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setNotice(target.kind==='vista'
       ?'높은 곳에서 시야가 열렸습니다. 아래를 둘러보고 다음 목적지를 직접 정하세요.'
       :`${target.label} 발견 · ${target.hint}`);
+  },[]);
+
+  const interveneRoadsideAmbush=useCallback(()=>{
+    if(
+      roadsideAmbushResolvedRef.current||
+      roadsideAmbushPhaseRef.current!=='witnessed'||
+      !playerNearRoadsideAmbush(playerRef.current.position)||
+      combatRef.current.hp<=0
+    )return;
+    const existingIds=new Set(enemiesRef.current.map(enemy=>enemy.id));
+    const reinforcements=createRoadsideAmbushEnemies().filter(enemy=>!existingIds.has(enemy.id));
+    enemiesRef.current=[...enemiesRef.current,...reinforcements];
+    roadsideAmbushPhaseRef.current='intervening';
+    setWorldEventPhase('intervening');
+    setNotice('길목 습격에 개입했습니다. 여행자를 노리는 적 둘을 막아내세요.');
+  },[]);
+
+  const passRoadsideAmbush=useCallback(()=>{
+    if(roadsideAmbushResolvedRef.current||roadsideAmbushPhaseRef.current!=='witnessed')return;
+    roadsideAmbushResolvedRef.current=true;
+    roadsideAmbushPhaseRef.current='resolved';
+    setWorldEventPhase('resolved');
+    setNearWorldEvent(false);
+    requestOpenAdventureUpdate({type:'resolve-world-event',id:ROADSIDE_AMBUSH.id,outcome:'passed'});
+    setNotice('습격 현장을 지나쳤습니다. 사건은 플레이어의 개입 없이 흘러갑니다.');
   },[]);
 
   const castEnvironmentAbility=useCallback((ability:EnvironmentAbilityId)=>{
@@ -185,6 +224,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   },[]);
 
   const interactWorld=useCallback(()=>{
+    if(roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position)){
+      interveneRoadsideAmbush();
+      return;
+    }
     const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
     if(inCombat||combatRef.current.hp<=0)return;
 
@@ -227,13 +270,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
 
     discover();
-  },[discover]);
+  },[discover,interveneRoadsideAmbush]);
 
 
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
     enemiesRef.current=campClearedRef.current?[]:createStartingCampEnemies();
+    if(roadsideAmbushPhaseRef.current==='intervening'){
+      roadsideAmbushPhaseRef.current='witnessed';
+      setWorldEventPhase('witnessed');
+    }
     cameraRef.current={...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}};
     attackRef.current=false;
     dodgeRef.current=false;
@@ -260,6 +307,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(event.code==='KeyQ'&&!event.repeat){event.preventDefault();castEnvironmentAbility('windPulse');return;}
       if(event.code==='KeyC'&&!event.repeat){event.preventDefault();castEnvironmentAbility('emberSpark');return;}
       if(event.code==='KeyE'&&!event.repeat){event.preventDefault();interactWorld();return;}
+      if(event.code==='KeyX'&&!event.repeat&&roadsideAmbushPhaseRef.current==='witnessed'){event.preventDefault();passRoadsideAmbush();return;}
       if(event.code==='KeyF'&&!event.repeat){event.preventDefault();discover();return;}
       if(event.code==='Escape'){event.preventDefault();onExit();}
     };
@@ -272,7 +320,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     window.addEventListener('keyup',up);
     window.addEventListener('blur',clear);
     return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);window.removeEventListener('blur',clear);};
-  },[castEnvironmentAbility,cycleLockOn,discover,interactWorld,onExit,recoverAtEntrance,toggleLockOn]);
+  },[castEnvironmentAbility,cycleLockOn,discover,interactWorld,onExit,passRoadsideAmbush,recoverAtEntrance,toggleLockOn]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;
@@ -342,6 +390,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       },dt,startingFieldHeight,STARTING_FIELD.halfSize);
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,startingFieldHeight,STARTING_FIELD.halfSize);
+
+      if(
+        roadsideAmbushPhaseRef.current==='hidden'&&
+        !roadsideAmbushResolvedRef.current&&
+        shouldWitnessRoadsideAmbush(playerRef.current.position,false)
+      ){
+        roadsideAmbushPhaseRef.current='witnessed';
+        setWorldEventPhase('witnessed');
+        setNotice('앞쪽 길목에서 여행자가 습격당하고 있습니다. 개입할지, 지나갈지 직접 선택할 수 있습니다.');
+      }
 
       const wasPuzzleSolved=ruinPuzzleRef.current.solved;
       ruinPuzzleRef.current=stepRuinPuzzle(
@@ -413,6 +471,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         }
       }
 
+      if(roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
+        roadsideAmbushResolvedRef.current=true;
+        roadsideAmbushPhaseRef.current='resolved';
+        setWorldEventPhase('resolved');
+        setNearWorldEvent(false);
+        requestOpenAdventureUpdate({type:'resolve-world-event',id:ROADSIDE_AMBUSH.id,outcome:'rescued'});
+        setNotice('여행자를 구했습니다. 이 길목의 사건은 해결된 상태로 기억됩니다.');
+      }
+
       combatRef.current=combat;
       cameraRef.current=followAdventureCamera(cameraRef.current,{
         x:playerRef.current.position.x,
@@ -452,10 +519,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         echoSenseRef.current,
         hazardsRef.current,
         lockedTargetRef.current,
+        roadsideAmbushVisual(roadsideAmbushPhaseRef.current),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
-      if(living===0&&!campClearedRef.current){
+      const campLiving=enemiesRef.current.filter(enemy=>isStartingCampEnemy(enemy)&&enemy.hp>0).length;
+      if(campLiving===0&&!campClearedRef.current){
         campClearedRef.current=true;
         requestOpenAdventureUpdate({type:'clear-camp'});
         setNotice('재빛 야영지의 위협이 사라졌습니다. 주변 흔적과 남겨진 물건을 직접 살펴보세요.');
@@ -474,6 +543,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setRewardReady(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
         setPuzzleSolved(ruinPuzzleRef.current.solved);
         setNearHazard(playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
+        setNearWorldEvent(
+          roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
+        );
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -524,14 +596,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       onPointerUp={endLook}
       onPointerCancel={endLook}
       onWheel={event=>{event.preventDefault();cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);}}
-      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용"
+      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용, X 사건 지나가기"
     />
 
     <header className="adventure3d__hud">
       <div><small>{combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{STARTING_FIELD.label}</strong></div>
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
-      {combatEngaged&&<em>야영지 위협 {livingEnemies}</em>}
+      {combatEngaged&&<em>{worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
+      {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -544,6 +617,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     </div>
 
     <button type="button" className="adventure3d__exit" onClick={onExit} aria-label="새벽들판 나가기">×</button>
+    {worldEventPhase==='witnessed'&&!defeated&&<aside className="adventure3d__world-event" aria-label="우연한 월드 이벤트">
+      <small>우연한 사건</small>
+      <strong>{ROADSIDE_AMBUSH.label}</strong>
+      <p>여행자가 길목에서 습격당하고 있습니다. 퀘스트를 받은 것이 아니라, 지금 여기서 개입 여부를 정합니다.</p>
+      <div>
+        <button type="button" disabled={!nearWorldEvent} onClick={interveneRoadsideAmbush}>개입</button>
+        <button type="button" onClick={passRoadsideAmbush}>지나가기</button>
+      </div>
+      <em>{nearWorldEvent?'E 개입 · X 지나가기':'조금 더 가까이 가면 개입 가능 · X 지나가기'}</em>
+    </aside>}
     {(combatEngaged||lockCandidateCount>0)&&!defeated&&<div className="adventure3d__target-controls" aria-label="전투 타겟 조작">
       {!lockedTargetId?<button type="button" onClick={toggleLockOn}>락온</button>:<>
         {lockCandidateCount>1&&<button type="button" onClick={cycleLockOn}>다음 적</button>}
@@ -565,9 +648,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
       {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
       {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
-      <button type="button" className="is-primary" disabled={(!nearby&&!nearStone&&!rewardReady)||combatEngaged||defeated} onClick={interactWorld}>{rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
+      <button
+        type="button"
+        className="is-primary"
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        onClick={interactWorld}
+      >{worldEventPhase==='witnessed'&&nearWorldEvent?'개입':rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
-    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용</div>
+    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>
   </section>;
 }

@@ -15,8 +15,14 @@
 @media(orientation:landscape) and (max-height:560px){.adventure3d__notice{bottom:10px;max-width:38vw}.adventure3d__actions{bottom:10px;grid-template-columns:repeat(3,54px)}.adventure3d__actions button{min-height:44px}.adventure3d__actions button.is-primary,.adventure3d__actions button.is-recover{grid-column:auto}.adventure3d__hud{padding:6px 8px}.adventure3d__hud strong{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.adventure3d *{transition:none!important;animation:none!important}}
 
+.adventure3d__world-event{position:absolute;z-index:27;left:max(14px,env(safe-area-inset-left));top:max(150px,calc(env(safe-area-inset-top) + 138px));display:grid;gap:6px;width:min(300px,42vw);padding:11px 12px;border:1px solid rgba(255,208,128,.42);border-radius:14px;background:linear-gradient(145deg,rgba(46,35,24,.86),rgba(22,34,31,.78));box-shadow:0 10px 26px rgba(0,0,0,.24);backdrop-filter:blur(8px)}
+.adventure3d__world-event small{font-size:9px;font-weight:900;letter-spacing:.12em;color:#e8bd78}.adventure3d__world-event strong{font-size:15px;color:#fff0c3}.adventure3d__world-event p{margin:0;font-size:10px;line-height:1.45;color:#e7e0c9}.adventure3d__world-event em{font-size:9px;font-style:normal;color:#cfc7ad}.adventure3d__world-event div{display:grid;grid-template-columns:1fr 1fr;gap:7px}.adventure3d__world-event button{min-height:38px;border:1px solid rgba(241,220,163,.34);border-radius:10px;background:rgba(86,64,40,.76);color:#fff0c7;font:inherit;font-size:10px;font-weight:900}.adventure3d__world-event button+button{background:rgba(31,45,42,.78);color:#dce6dc}.adventure3d__world-event button:disabled{opacity:.42}.adventure3d__world-event button:focus-visible{outline:2px solid #ffe0a4;outline-offset:2px}
+
 .adventure3d__target-controls{position:absolute;z-index:29;right:max(14px,env(safe-area-inset-right));top:max(68px,calc(env(safe-area-inset-top) + 60px));display:flex;gap:6px;padding:5px;border:1px solid rgba(166,218,243,.3);border-radius:12px;background:rgba(19,35,46,.58);backdrop-filter:blur(6px)}
 .adventure3d__target-controls button{min-width:52px;min-height:34px;padding:6px 8px;border:1px solid rgba(161,213,239,.5);border-radius:9px;background:linear-gradient(180deg,rgba(45,74,91,.86),rgba(32,48,60,.84));color:#d9f3ff;font:inherit;font-size:9px;font-weight:900}
 .adventure3d__target-controls button:focus-visible{outline:2px solid #c7efff;outline-offset:2px}
 @media(max-width:520px){.adventure3d__target-controls{right:10px;top:62px}.adventure3d__target-controls button{min-width:48px;min-height:32px}}
 @media(orientation:landscape) and (max-height:560px){.adventure3d__target-controls{right:60px;top:10px}}
+
+@media(max-width:520px){.adventure3d__world-event{left:10px;right:10px;top:112px;width:auto}.adventure3d__world-event p{font-size:9px}}
+@media(orientation:landscape) and (max-height:560px){.adventure3d__world-event{left:10px;top:62px;width:min(280px,38vw);padding:8px 9px}.adventure3d__world-event p{display:none}}
