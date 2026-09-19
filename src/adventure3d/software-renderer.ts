@@ -5,6 +5,7 @@ import type {AdventureEnemyState} from './enemy-ai';
 import type {PlayerCombatState} from './combat-system';
 import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
 import type {FieldHazardState} from './environment-combat';
+import type {WorldEventVisual} from './world-events';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -245,6 +246,47 @@ function drawFieldHazards(
   }
 }
 
+function drawWorldEvent(
+  ctx:CanvasRenderingContext2D,
+  event:WorldEventVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const base=projectAdventurePoint(event.position,camera,width,height);
+  const top=projectAdventurePoint({...event.position,y:event.position.y+1.7},camera,width,height);
+  if(!base||!top)return;
+  const size=Math.max(7,Math.min(26,base.scale*.72));
+  ctx.save();
+
+  const ring=Math.max(18,Math.min(58,base.scale*2.4));
+  ctx.strokeStyle=event.phase==='witnessed'?'rgba(255,207,115,.88)':'rgba(154,222,203,.78)';
+  ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.ellipse(base.x,base.y,ring,ring*.32,0,0,Math.PI*2);ctx.stroke();
+
+  ctx.fillStyle='#d7c49d';
+  ctx.strokeStyle='#544a3f';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.roundRect(top.x-size*.7,top.y,size*1.4,Math.max(size*2,base.y-top.y),size*.5);
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='#7b9a86';
+  ctx.beginPath();ctx.arc(top.x,top.y+size*.25,size*.55,0,Math.PI*2);ctx.fill();
+
+  if(event.phase==='witnessed'){
+    ctx.fillStyle='rgba(126,61,54,.94)';
+    for(const offset of [-1.45,1.45]){
+      const x=base.x+size*offset;
+      ctx.beginPath();ctx.roundRect(x-size*.42,base.y-size*1.55,size*.84,size*1.55,size*.3);ctx.fill();
+    }
+    ctx.fillStyle='#ffd38b';
+    ctx.font=`900 ${Math.max(13,Math.min(24,size*1.25))}px system-ui`;
+    ctx.textAlign='center';
+    ctx.fillText('!',top.x,top.y-size*.7);
+  }
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -344,6 +386,7 @@ export function renderAdventureField(
   echoSenseUnlocked=false,
   hazards:readonly FieldHazardState[]=[],
   lockedTargetId:string|null=null,
+  worldEvent:WorldEventVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -379,6 +422,7 @@ export function renderAdventureField(
   }
   if(ruinPuzzle&&ruinLayout)drawRuinPuzzle(ctx,ruinPuzzle,ruinLayout,camera,width,height);
   drawFieldHazards(ctx,hazards,camera,width,height);
+  if(worldEvent)drawWorldEvent(ctx,worldEvent,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
     const pb=projectAdventurePoint(b.position,camera,width,height);
