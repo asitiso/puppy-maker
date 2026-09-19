@@ -111,14 +111,12 @@ export function renderAdventureField(
   sky.addColorStop(0,'#7ba8c2');sky.addColorStop(.5,'#c4d7c0');sky.addColorStop(1,'#506d55');
   ctx.fillStyle=sky;ctx.fillRect(0,0,width,height);
 
-  const groundBottom=projectAdventurePoint({x:0,y:0,z:110},camera,width,height);
   const groundTop=projectAdventurePoint({x:0,y:0,z:-110},camera,width,height);
-  if(groundBottom&&groundTop){
-    const ground=ctx.createLinearGradient(0,groundTop.y,0,height);
-    ground.addColorStop(0,'rgba(104,135,91,.55)');ground.addColorStop(1,'rgba(42,74,55,.96)');
-    ctx.fillStyle=ground;
-    ctx.fillRect(0,Math.max(0,groundTop.y),width,height-Math.max(0,groundTop.y));
-  }
+  const horizon=Math.max(0,Math.min(height,groundTop?.y??height*.46));
+  const ground=ctx.createLinearGradient(0,horizon,0,height);
+  ground.addColorStop(0,'rgba(104,135,91,.55)');ground.addColorStop(1,'rgba(42,74,55,.96)');
+  ctx.fillStyle=ground;
+  ctx.fillRect(0,horizon,width,height-horizon);
 
   for(let grid=-100;grid<=100;grid+=10){
     const xa=projectAdventurePoint({x:grid,y:startingFieldHeight(grid,-100),z:-100},camera,width,height);
