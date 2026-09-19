@@ -22,6 +22,27 @@ describe('canonical save',()=>{
     expect(hydrated.worldHistory.currentFacts).toEqual(['festival_saved']);
   });
 
+  it('round trips meaningful open-adventure progress through the canonical save',()=>{
+    const state={
+      ...initialState,
+      openAdventure:{
+        dawnreach:{
+          discoveredIds:['echo-ruins' as const,'skywatch' as const],
+          echoSenseUnlocked:true,
+          campCleared:true,
+          ruin:{
+            stonePosition:{x:-57,z:-38},
+            brazierLit:true,
+            solved:true,
+            rewardClaimed:true,
+          },
+        },
+      },
+    };
+    const hydrated=hydrateSave(serializeGameState(state));
+    expect(hydrated.openAdventure).toEqual(state.openAdventure);
+  });
+
   it('loads legacy unversioned state',()=>expect(hydrateSave(JSON.stringify({...initialState,gold:6543})).gold).toBe(6543));
   it('loads previous versioned envelopes',()=>expect(hydrateSave(JSON.stringify({version:2,savedAt:'old',state:{...initialState,gold:6001}})).gold).toBe(6001));
   it('recovers an active story event after refresh',()=>{
