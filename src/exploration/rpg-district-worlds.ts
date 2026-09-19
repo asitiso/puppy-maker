@@ -82,7 +82,7 @@ export function rpgDistrictWorld(category:MobileContentCategory):ExplorationWorl
   const npc=questNpcForCategory(category);
   const questNpc:ExplorationInteractable={
     id:`district-quest-npc:${category}`,
-    label:`! ${npc.name} · ${npc.role}`,
+    label:`${npc.name} · ${npc.role}`,
     kind:'portal',
     destinationId:`quest-npc:${category}`,
     position:spec.questNpcPosition,
