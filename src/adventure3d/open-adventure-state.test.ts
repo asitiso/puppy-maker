@@ -14,6 +14,7 @@ describe('V18 open adventure persistent state',()=>{
         discoveredIds:[],
         echoSenseUnlocked:false,
         campCleared:false,
+        worldEvents:[],
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -23,10 +24,17 @@ describe('V18 open adventure persistent state',()=>{
     const hydrated=hydrateOpenAdventureState({
       dawnreach:{
         discoveredIds:['skywatch','skywatch','nope',42],
+        worldEvents:[
+          {id:'roadside-ambush',outcome:'rescued'},
+          {id:'roadside-ambush',outcome:'passed'},
+          {id:'unknown',outcome:'rescued'},
+          {id:'roadside-ambush',outcome:'invalid'},
+        ],
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
     expect(hydrated.dawnreach.discoveredIds).toEqual(['skywatch']);
+    expect(hydrated.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'}]);
     expect(hydrated.dawnreach.ruin.stonePosition).toEqual({x:140,z:-140});
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
   });
@@ -47,6 +55,9 @@ describe('V18 open adventure persistent state',()=>{
     state=applyOpenAdventureUpdate(state,{type:'clear-camp'});
     expect(state.dawnreach.discoveredIds).toEqual(['echo-ruins']);
     expect(state.dawnreach.campCleared).toBe(true);
+    state=applyOpenAdventureUpdate(state,{type:'resolve-world-event',id:'roadside-ambush',outcome:'rescued'});
+    state=applyOpenAdventureUpdate(state,{type:'resolve-world-event',id:'roadside-ambush',outcome:'passed'});
+    expect(state.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'}]);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
@@ -54,6 +65,8 @@ describe('V18 open adventure persistent state',()=>{
     expect(applyOpenAdventureUpdate(state,{type:'discover',id:'skywatch'})).toBe(state);
     const cleared=applyOpenAdventureUpdate(state,{type:'clear-camp'});
     expect(applyOpenAdventureUpdate(cleared,{type:'clear-camp'})).toBe(cleared);
+    const resolved=applyOpenAdventureUpdate(cleared,{type:'resolve-world-event',id:'roadside-ambush',outcome:'passed'});
+    expect(applyOpenAdventureUpdate(resolved,{type:'resolve-world-event',id:'roadside-ambush',outcome:'rescued'})).toBe(resolved);
   });
 
   it('round trips partial ruin progress and makes claimed reward unlock exploration information',()=>{
