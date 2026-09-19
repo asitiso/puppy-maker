@@ -7,7 +7,7 @@ import type {MobileContentCategory,MobileFeatureId} from './mobile-router';
 import {
   clearWorldQuest,isQuestResolved,loadContinuousWorldQuest,loadWorldQuest,loadWorldQuestHistory,
   markWorldQuestReady,npcQuestProgress,questFromRecommendation,recordWorldQuestCompletion,
-  saveContinuousWorldQuest,saveWorldQuest,type WorldQuestContract,type WorldQuestHistory,
+  saveContinuousWorldQuest,saveWorldQuest,worldQuestCampaignProgress,type WorldQuestContract,type WorldQuestHistory,
 } from './world-quest-contract';
 import {questNpcForCategory} from './world-quest-npcs';
 import WorldQuestNpcDialog from './WorldQuestNpcDialog';
@@ -53,6 +53,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
 
   const issuerCompleted=history.completedByIssuer[issuer.id]??0;
   const questProgress=npcQuestProgress(issuerCompleted);
+  const campaign=worldQuestCampaignProgress(history.completed);
   const targetCategory=acceptedQuest?.category??activeCategory;
   const targetLabel=acceptedQuest
     ?questReady?`${issuer.name}에게 완료 보고`:acceptedQuest.title
@@ -109,24 +110,27 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
   const turnInQuest=()=>{
     if(!acceptedQuest||!acceptedQuest.readyToTurnIn||acceptedQuest.category!==activeCategory)return;
     const completed=acceptedQuest;
+    const previousCampaign=worldQuestCampaignProgress(history.completed);
     const nextHistory=recordWorldQuestCompletion(storage,completed);
+    const nextCampaign=worldQuestCampaignProgress(nextHistory.completed);
     clearWorldQuest(storage);
     setHistory(nextHistory);
     const npc=questNpcForCategory(completed.category);
+    const chapterNotice=nextCampaign.chapter>previousCampaign.chapter?` 모험 챕터 ${nextCampaign.chapter} 개방!`:` 챕터 ${nextCampaign.chapter} ${nextCampaign.completedInChapter}/${nextCampaign.chapterSize}.`;
     if(continuous){
       const nextRecommendation=recommendationFor(activeCategory,state);
       const nextQuest=questFromRecommendation(nextRecommendation);
       if(nextQuest.id!==completed.id){
         saveWorldQuest(storage,nextQuest);
         setAcceptedQuest(nextQuest);
-        setCompletionNotice(`${npc.completion} 다음 의뢰도 이어서 맡겼어요.`);
+        setCompletionNotice(`${npc.completion}${chapterNotice} 다음 의뢰도 이어서 맡겼어요.`);
       }else{
         setAcceptedQuest(null);
-        setCompletionNotice(`${npc.completion} 새 의뢰가 생기면 다시 알려줄게요.`);
+        setCompletionNotice(`${npc.completion}${chapterNotice} 새 의뢰가 생기면 다시 알려줄게요.`);
       }
     }else{
       setAcceptedQuest(null);
-      setCompletionNotice(`${npc.name}: ${npc.completion}`);
+      setCompletionNotice(`${npc.name}: ${npc.completion}${chapterNotice}`);
     }
     setNpcDialogOpen(false);
   };
@@ -154,6 +158,7 @@ export default function RpgDistrictHub({category,state,onFeature,onBack}:Props){
     />
     <aside className="rpg-home-hub__tracker rpg-district-hub__tracker" aria-label="월드 의뢰 추적">
       <div className="rpg-district-hub__npc"><b>{issuer.name}</b><span>{issuer.role}</span><i>{questProgress.rank} · {issuerCompleted}건</i></div>
+      <div className="rpg-district-hub__chain" aria-label="월드 모험 챕터 진행"><span>모험 챕터 {campaign.chapter} · {campaign.rank} · {campaign.completedInChapter}/{campaign.chapterSize}</span><progress value={campaign.percent} max="100">{campaign.percent}%</progress><span>다음 챕터까지 {campaign.remaining}건 · 다음 칭호 {campaign.nextRank}</span></div>
       {questProgress.nextRank&&<div className="rpg-district-hub__chain" aria-label="NPC 의뢰 관계 진행"><span>다음 관계 · {questProgress.nextRank}까지 {questProgress.remaining}건</span><progress value={questProgress.percent} max="100">{questProgress.percent}%</progress></div>}
       <small>WORLD QUEST · {priorityLabel} · 전체 {history.completed}건{continuous?' · 연속 의뢰 ON':''}</small>
       <strong>{targetLabel}</strong>
