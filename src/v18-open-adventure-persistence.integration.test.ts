@@ -9,7 +9,7 @@ const persistent=readFileSync(new URL('./v3-persistent-state.ts',import.meta.url
 
 describe('V18 open adventure persistence integration',()=>{
   it('restores major Dawnreach accomplishments from canonical game state',()=>{
-    expect(slice).toContain('const persisted=state.openAdventure.dawnreach');
+    expect(slice).toContain('hydrateOpenAdventureState(state.openAdventure).dawnreach');
     expect(slice).toContain('createDawnreachFieldEnemies(');
     expect(slice).toContain('persisted.campCleared');
     expect(slice).toContain('persisted.skybreak.beaconReached');

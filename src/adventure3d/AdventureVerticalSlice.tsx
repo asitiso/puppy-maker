@@ -27,7 +27,8 @@ import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
 import {cycleLockOnTarget,lockedTargetStillValid,selectLockOnTarget,smoothLockOnYaw,targetCandidates,yawToTarget} from './targeting-system';
-import {isDawnreachDiscoveryId} from './open-adventure-state';
+import {hydrateOpenAdventureState,isDawnreachDiscoveryId} from './open-adventure-state';
+import {reportClientTelemetry} from '../client-observability';
 import {
   ROADSIDE_AMBUSH,
   createRoadsideAmbushEnemies,
@@ -161,7 +162,9 @@ const movementKeys=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','A
 const engagedModes=new Set(['suspicious','chase','windup','recover','stagger']);
 
 export default function AdventureVerticalSlice({state,onExit}:Props){
-  const persisted=state.openAdventure.dawnreach;
+  // Do not trust an already-hydrated nested shape at this route boundary.
+  // Production can jump across several save-schema additions between visits.
+  const persisted=hydrateOpenAdventureState(state.openAdventure).dawnreach;
   const openingEligible=freshDawnreachOpeningEligible({
     discoveredCount:persisted.discoveredIds.length,
     campCleared:persisted.campCleared,
@@ -309,6 +312,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     tempestWardenPhase(enemiesRef.current.find(isTempestWarden)),
   );
   const [tempestWardenDefeated,setTempestWardenDefeated]=useState(persisted.tempestWarden.defeated);
+  const [runtimeFault,setRuntimeFault]=useState(false);
   const [openingTitleVisible,setOpeningTitleVisible]=useState(openingEligible);
   const [openingGuide,setOpeningGuide]=useState<string|null>(
     dawnreachOpeningGuidance(openingRef.current,null),
@@ -1566,10 +1570,19 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setDiscoveryReveal(discoveryRevealRef.current);
       }
 
-      frame=requestAnimationFrame(tick);
+      frame=requestAnimationFrame(safeTick);
     };
 
-    frame=requestAnimationFrame(tick);
+    const safeTick=(time:number)=>{
+      try{
+        tick(time);
+      }catch{
+        setRuntimeFault(true);
+        reportClientTelemetry('render_error','error_boundary');
+      }
+    };
+
+    frame=requestAnimationFrame(safeTick);
     return()=>cancelAnimationFrame(frame);
   },[]);
 
@@ -1608,6 +1621,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     data-opening={openingTitleVisible||undefined}
     aria-label="새벽들판 자유 탐험 Vertical Slice"
   >
+    {runtimeFault&&<div className="adventure3d__runtime-fallback" role="alert" aria-live="assertive">
+      <small>탐험 화면 복구 모드</small>
+      <strong>새벽들판 렌더링을 다시 시작할 수 없습니다</strong>
+      <span>저장 데이터는 유지됩니다. 홈으로 돌아간 뒤 다시 외출을 열어 주세요.</span>
+      <button type="button" onClick={onExit}>홈으로 돌아가기</button>
+    </div>}
     <canvas
       ref={canvasRef}
       className="adventure3d__canvas"

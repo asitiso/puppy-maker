@@ -145,3 +145,44 @@
   .adventure3d__discovery-reveal strong{font-size:25px}
   .adventure3d__guide{top:48px;max-width:52vw}
 }
+
+.adventure3d__runtime-fallback{
+  position:absolute;
+  z-index:60;
+  inset:0;
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  gap:10px;
+  padding:24px;
+  background:linear-gradient(180deg,rgba(13,26,29,.96),rgba(23,31,31,.98));
+  color:#f5f1d6;
+  text-align:center;
+}
+.adventure3d__runtime-fallback small{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.14em;
+  color:#a9d9df;
+}
+.adventure3d__runtime-fallback strong{
+  max-width:34rem;
+  font-size:clamp(20px,5vw,32px);
+}
+.adventure3d__runtime-fallback span{
+  max-width:34rem;
+  font-size:12px;
+  line-height:1.55;
+  color:#d7dfd6;
+}
+.adventure3d__runtime-fallback button{
+  min-height:44px;
+  margin-top:6px;
+  padding:10px 18px;
+  border:1px solid rgba(207,240,244,.5);
+  border-radius:12px;
+  background:rgba(65,101,106,.82);
+  color:#f4ffff;
+  font:inherit;
+  font-weight:900;
+}
