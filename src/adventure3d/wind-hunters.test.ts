@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {SKIMMER_HOVER_HEIGHT,isAirborneEnemy,stepEnemyAi} from './enemy-ai';
 import {
+  createDawnreachFieldEnemies,
   createDawnreachWindHunters,
   isDawnreachWindHunter,
   mergeDawnreachWindHunters,
@@ -24,6 +25,14 @@ describe('V18 Dawnreach aerial Windwalk hunters',()=>{
     expect(merged).toHaveLength(hunters.length);
     expect(new Set(merged.map(enemy=>enemy.id)).size).toBe(merged.length);
     expect(merged.every(isDawnreachWindHunter)).toBe(true);
+  });
+
+  it('keeps camp-clear persistence separate from transient aerial hunters',()=>{
+    expect(createDawnreachFieldEnemies(false,false).length).toBeGreaterThan(0);
+    expect(createDawnreachFieldEnemies(true,false)).toEqual([]);
+    const unlockedAfterCamp=createDawnreachFieldEnemies(true,true);
+    expect(unlockedAfterCamp).toHaveLength(2);
+    expect(unlockedAfterCamp.every(isDawnreachWindHunter)).toBe(true);
   });
 
   it('dives toward strike height during windup and stays low through recovery',()=>{
