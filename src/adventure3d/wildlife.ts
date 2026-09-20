@@ -12,6 +12,14 @@ export const DAWNREACH_HERD={
   witnessRadius:19,
 };
 
+export const WILDLIFE_DISCOVERY_TRAIL={
+  targetDiscoveryId:'hollow-cave' as const,
+  origin:{x:54,z:17},
+  triggerRadius:10,
+  playerWitnessRadius:24,
+  duration:18,
+};
+
 const herdPath=[
   {x:38,z:44},
   {x:58,z:18},
@@ -38,6 +46,12 @@ export type WildlifeVisual={
   facingYaw:number;
   behavior:WildlifeBehavior;
   members:readonly Vec3[];
+};
+
+export type WildlifeTrailVisual={
+  targetDiscoveryId:typeof WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId;
+  points:readonly Vec3[];
+  secondsRemaining:number;
 };
 
 function point(x:number,z:number):Vec3{
@@ -170,6 +184,45 @@ export function shouldWitnessDawnreachHerd(
   witnessed:boolean,
 ):boolean{
   return !witnessed&&playerNearDawnreachHerd(player,herd);
+}
+
+export function shouldRevealWildlifeDiscoveryTrail(
+  player:Vec3,
+  herd:DawnreachHerdState,
+  discovered:ReadonlySet<string>,
+):boolean{
+  if(discovered.has(WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId))return false;
+  if(herd.behavior==='flee-fire')return false;
+  const origin=point(WILDLIFE_DISCOVERY_TRAIL.origin.x,WILDLIFE_DISCOVERY_TRAIL.origin.z);
+  return (
+    distance(herd.center,origin)<=WILDLIFE_DISCOVERY_TRAIL.triggerRadius&&
+    distance(player,herd.center)<=WILDLIFE_DISCOVERY_TRAIL.playerWitnessRadius
+  );
+}
+
+export function dawnreachWildlifeTrailVisual(secondsRemaining:number):WildlifeTrailVisual|null{
+  if(secondsRemaining<=0)return null;
+  const target=STARTING_FIELD.discoveries.find(
+    item=>item.id===WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId,
+  );
+  if(!target)return null;
+  const start=point(WILDLIFE_DISCOVERY_TRAIL.origin.x,WILDLIFE_DISCOVERY_TRAIL.origin.z);
+  const dx=target.position.x-start.x;
+  const dz=target.position.z-start.z;
+  const length=Math.max(.001,Math.hypot(dx,dz));
+  const right={x:dz/length,z:-dx/length};
+  const points=Array.from({length:7},(_,index)=>{
+    const t=(index+1)/8;
+    const side=(index%2===0?-1:1)*.34;
+    const x=start.x+dx*t+right.x*side;
+    const z=start.z+dz*t+right.z*side;
+    return point(x,z);
+  });
+  return {
+    targetDiscoveryId:WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId,
+    points,
+    secondsRemaining,
+  };
 }
 
 export function dawnreachHerdVisual(state:DawnreachHerdState):WildlifeVisual{
