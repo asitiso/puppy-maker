@@ -22,7 +22,7 @@ import {applyBurningHazardsToEnemies,applyBurningHazardsToPlayer,burningHazardAv
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
 import {isStartingCampEnemy} from './starting-encounter';
 import {createDawnreachFieldEnemies,mergeDawnreachWindHunters} from './wind-hunters';
-import {advanceTempestWardenPhase,isTempestWarden,mergeTempestWarden,tempestWardenPhase} from './tempest-warden';
+import {advanceTempestWardenPhase,disruptTempestWardenWithWind,isTempestWarden,mergeTempestWarden,tempestWardenPhase} from './tempest-warden';
 import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
@@ -463,6 +463,25 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       return;
     }
 
+    if(ability==='windPulse'){
+      let disrupted=false;
+      enemiesRef.current=enemiesRef.current.map(enemy=>{
+        if(!isTempestWarden(enemy))return enemy;
+        const result=disruptTempestWardenWithWind(
+          enemy,
+          playerRef.current.position,
+          playerRef.current.facingYaw,
+          startingFieldHeight,
+        );
+        if(result.affected)disrupted=true;
+        return result.enemy;
+      });
+      if(disrupted){
+        setNotice('바람밀기가 폭풍갑주의 비행 기류를 무너뜨렸습니다. 감시자가 낮게 추락해 잠시 크게 비틀거립니다 — 지금 지상 공격을 이어가세요.');
+        return;
+      }
+    }
+
     const ruinResult=castRuinAbility(
       ruinPuzzleRef.current,
       STARTING_RUIN_PUZZLE,
@@ -824,6 +843,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setLivingEnemies(enemiesRef.current.length);
     setCombatEngaged(false);
     setCounterReady(false);
+    tempestPhaseTwoNotifiedRef.current=false;
+    setTempestWardenPhaseState(null);
     setNotice('들판 입구에서 다시 일어났습니다. 정면 전투 대신 다른 길로 우회해도 됩니다.');
   },[]);
 
@@ -1159,6 +1180,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           :skybreakRef.current.inside
             ?skybreakHighlandHeight
             :startingFieldHeight;
+        let tempestTransitioned=false;
+        enemiesRef.current=enemiesRef.current.map(enemy=>{
+          const transition=advanceTempestWardenPhase(enemy,enemyTerrain);
+          if(transition.changed)tempestTransitioned=true;
+          return transition.enemy;
+        });
+        if(tempestTransitioned&&!tempestPhaseTwoNotifiedRef.current){
+          tempestPhaseTwoNotifiedRef.current=true;
+          setNotice('폭풍갑주 감시자의 외갑이 깨졌습니다. 남은 갑주가 날개처럼 펼쳐지며 공중 2페이즈로 전환합니다 — 활강으로 추격하거나 Q 바람밀기로 낮게 떨어뜨리세요.');
+        }
         const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
           enemy,
           playerRef.current.position,
@@ -1176,6 +1207,29 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             continue;
           }
           if(hit.damaged)setNotice(combat.hp>0?'공격을 맞았습니다. 예고 동작을 보고 회피 타이밍을 잡으세요.':'쓰러졌습니다. R 또는 다시 일어나기로 들판 입구에서 재개할 수 있습니다.');
+        }
+      }
+
+      const tempestWarden=enemiesRef.current.find(isTempestWarden);
+      if(
+        !skybreakRef.current.inside&&
+        !cloudGardenRef.current.inside&&
+        cloudGardenRef.current.restored&&
+        !tempestWardenDefeatedRef.current&&
+        tempestWarden&&
+        tempestWarden.hp<=0
+      ){
+        tempestWardenDefeatedRef.current=true;
+        requestOpenAdventureUpdate({type:'defeat-tempest-warden'});
+        setTempestWardenDefeated(true);
+        setTempestWardenPhaseState(null);
+        if(!tempestDefeatNotifiedRef.current){
+          tempestDefeatNotifiedRef.current=true;
+          setNotice('폭풍갑주 감시자를 쓰러뜨렸습니다. 무너진 갑주가 서쪽 능선의 바람길을 고정해 영구 폭풍 발사기류가 열렸습니다.');
+        }
+        if(lockedTargetRef.current===tempestWarden.id){
+          lockedTargetRef.current=null;
+          setLockedTargetId(null);
         }
       }
 
@@ -1292,6 +1346,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
         setCounterReady(combat.counterWindow>0&&combat.dodgeClock<0);
+        const tempestHudEnemy=enemiesRef.current.find(isTempestWarden);
+        setTempestWardenPhaseState(
+          tempestHudEnemy&&tempestHudEnemy.hp>0&&engagedModes.has(tempestHudEnemy.mode)
+            ?tempestWardenPhase(tempestHudEnemy)
+            :null,
+        );
+        setTempestWardenDefeated(tempestWardenDefeatedRef.current);
         setNearPuzzle(!cloudGardenRef.current.inside&&playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
         setNearStone(!cloudGardenRef.current.inside&&playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
         setRewardReady(!cloudGardenRef.current.inside&&canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
@@ -1424,6 +1485,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>{insideCloudGarden?'정원 위협':insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
       {counterReady&&<em>전투 기회 · 반격 가능</em>}
+      {tempestWardenPhaseState&&<em>미니보스 · 폭풍갑주 감시자 · {tempestWardenPhaseState===1?'갑주 1페이즈':'공중 2페이즈'}</em>}
+      {tempestWardenDefeated&&<em>새 경로 · 폭풍 발사기류</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
@@ -1498,7 +1561,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       >{windwalkUnlockedState?'점프/활강':'점프'}</button>
       <button type="button" className="is-combat" data-active={counterReady||undefined} disabled={defeated} onClick={()=>{attackRef.current=true;}}>{counterReady?'반격':'공격'}</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated)||(tempestWardenPhaseState===2&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
       {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&!insideCloudGarden&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
