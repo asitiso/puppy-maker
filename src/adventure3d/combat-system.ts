@@ -15,6 +15,9 @@ export type PlayerCombatState={
   invulnerability:number;
   hitstun:number;
   flash:number;
+  counterWindow:number;
+  counterAttackSerial:number;
+  perfectDodgeFlash:number;
 };
 
 export const PLAYER_ATTACK_DAMAGE=18;
@@ -25,6 +28,9 @@ export const PLAYER_ATTACK_ACTIVE_END=.27;
 export const PLAYER_DODGE_TOTAL=.28;
 export const PLAYER_DODGE_INVULNERABILITY=.24;
 export const PLAYER_DODGE_COOLDOWN=.42;
+export const PLAYER_PERFECT_DODGE_END=.14;
+export const PLAYER_COUNTER_WINDOW=.85;
+export const PLAYER_COUNTER_DAMAGE=30;
 
 export const DEFAULT_PLAYER_COMBAT:PlayerCombatState={
   hp:100,
@@ -37,6 +43,9 @@ export const DEFAULT_PLAYER_COMBAT:PlayerCombatState={
   invulnerability:0,
   hitstun:0,
   flash:0,
+  counterWindow:0,
+  counterAttackSerial:-1,
+  perfectDodgeFlash:0,
 };
 
 export function stepPlayerCombat(state:PlayerCombatState,dtRaw:number):PlayerCombatState{
@@ -55,12 +64,30 @@ export function stepPlayerCombat(state:PlayerCombatState,dtRaw:number):PlayerCom
     invulnerability:Math.max(0,state.invulnerability-dt),
     hitstun:Math.max(0,state.hitstun-dt),
     flash:Math.max(0,state.flash-dt),
+    counterWindow:Math.max(0,state.counterWindow-dt),
+    perfectDodgeFlash:Math.max(0,state.perfectDodgeFlash-dt),
   };
 }
 
 export function tryStartPlayerAttack(state:PlayerCombatState):PlayerCombatState{
   if(state.hp<=0||state.hitstun>0||state.dodgeClock>=0||state.attackClock>=0)return state;
-  return {...state,attackClock:0,attackSerial:state.attackSerial+1};
+  const attackSerial=state.attackSerial+1;
+  const counter=state.counterWindow>0;
+  return {
+    ...state,
+    attackClock:0,
+    attackSerial,
+    counterWindow:counter?0:state.counterWindow,
+    counterAttackSerial:counter?attackSerial:state.counterAttackSerial,
+  };
+}
+
+export function playerAttackIsCounter(state:PlayerCombatState):boolean{
+  return state.attackClock>=0&&state.attackSerial===state.counterAttackSerial;
+}
+
+export function playerAttackDamage(state:PlayerCombatState):number{
+  return playerAttackIsCounter(state)?PLAYER_COUNTER_DAMAGE:PLAYER_ATTACK_DAMAGE;
 }
 
 export function playerAttackWindowOpen(state:PlayerCombatState):boolean{
@@ -94,6 +121,7 @@ export function tryStartPlayerDodge(
       dodgeCooldown:PLAYER_DODGE_COOLDOWN,
       dodgeDirection:direction,
       invulnerability:Math.max(state.invulnerability,PLAYER_DODGE_INVULNERABILITY),
+      counterWindow:0,
     },
     stamina:stamina-PLAYER_DODGE_STAMINA,
     started:true,
@@ -137,8 +165,33 @@ export function applyPlayerDamage(
       hitstun:hp>0?.28:0,
       invulnerability:hp>0?.46:0,
       flash:.18,
+      counterWindow:0,
     },
   };
+}
+
+export function resolveEnemyAttack(
+  state:PlayerCombatState,
+  damageRaw:number,
+):{state:PlayerCombatState;damaged:boolean;perfectDodged:boolean}{
+  const perfect=
+    state.hp>0&&
+    state.dodgeClock>=0&&
+    state.dodgeClock<=PLAYER_PERFECT_DODGE_END&&
+    state.invulnerability>0;
+  if(perfect){
+    return {
+      state:{
+        ...state,
+        counterWindow:Math.max(state.counterWindow,PLAYER_COUNTER_WINDOW),
+        perfectDodgeFlash:.22,
+      },
+      damaged:false,
+      perfectDodged:true,
+    };
+  }
+  const hit=applyPlayerDamage(state,damageRaw);
+  return {...hit,perfectDodged:false};
 }
 
 export function playerAttackConnects(
