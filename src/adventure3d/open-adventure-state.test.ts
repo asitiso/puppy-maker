@@ -17,6 +17,7 @@ describe('V18 open adventure persistent state',()=>{
         worldEvents:[],
         hollowCave:{shortcutOpen:false},
         skybreak:{beaconReached:false,windwalkTraces:[]},
+        cloudGarden:{restored:false},
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -36,6 +37,7 @@ describe('V18 open adventure persistent state',()=>{
         ],
         hollowCave:{shortcutOpen:'yes'},
         skybreak:{beaconReached:'yes',windwalkTraces:['sky-thread','sky-thread','bad']},
+        cloudGarden:{restored:true},
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
@@ -46,6 +48,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(false);
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(false);
     expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual([]);
+    expect(hydrated.dawnreach.cloudGarden.restored).toBe(false);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -115,6 +118,31 @@ describe('V18 open adventure persistent state',()=>{
     state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id:'sky-thread'});
     state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id:'ruin-crown'});
     expect(state.dawnreach.skybreak.windwalkTraces).toEqual(['sky-thread','ruin-crown']);
+  });
+
+  it('restores Cloud Garden only after all three Windwalk traces and keeps it sticky',()=>{
+    let state=emptyOpenAdventureState();
+    expect(applyOpenAdventureUpdate(state,{type:'restore-cloud-garden'})).toBe(state);
+    state=applyOpenAdventureUpdate(state,{type:'reach-skybreak-beacon'});
+    for(const id of ['sky-thread','ruin-crown','west-aerie'] as const){
+      state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id});
+    }
+    state=applyOpenAdventureUpdate(state,{type:'restore-cloud-garden'});
+    expect(state.dawnreach.cloudGarden.restored).toBe(true);
+    expect(applyOpenAdventureUpdate(state,{type:'restore-cloud-garden'})).toBe(state);
+
+    const hydrated=hydrateOpenAdventureState(JSON.parse(JSON.stringify(state)));
+    expect(hydrated.dawnreach.cloudGarden.restored).toBe(true);
+  });
+
+  it('drops impossible restored garden saves without a completed aerial route',()=>{
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{
+        skybreak:{beaconReached:true,windwalkTraces:['sky-thread']},
+        cloudGarden:{restored:true},
+      },
+    });
+    expect(hydrated.dawnreach.cloudGarden.restored).toBe(false);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{

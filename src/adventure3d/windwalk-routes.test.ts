@@ -45,6 +45,19 @@ describe('V18 Windwalk re-exploration route',()=>{
     expect(applyWindwalkCurrent(above,true,true,.05).boostedCurrentId).toBeNull();
   });
 
+  it('makes restored garden currents wider and stronger across the old field',()=>{
+    const current=windwalkCurrentPositions()[0];
+    const edge=airborne(
+      current.position.x+WINDWALK_ROUTE.currentRadius+1,
+      current.position.y+2,
+      current.position.z,
+    );
+    expect(applyWindwalkCurrent(edge,true,true,.05,false).boostedCurrentId).toBeNull();
+    const restored=applyWindwalkCurrent(edge,true,true,.05,true);
+    expect(restored.boostedCurrentId).toBe(current.id);
+    expect(restored.state.velocity.y).toBe(WINDWALK_ROUTE.restoredLiftSpeed);
+  });
+
   it('requires physically passing through an aerial trace and never collects it from the ground',()=>{
     const trace=windwalkTracePositions()[0];
     const discovered=new Set<typeof windwalkTraceIds[number]>();

@@ -27,7 +27,8 @@ describe('V18 Skybreak Highland complete exploration network',()=>{
     expect(slice).toContain('fieldEnemiesSnapshotRef');
     expect(slice).toContain('createSkybreakEnemies');
     expect(slice).toContain('fieldEnemiesSnapshotRef.current??');
-    expect(slice).toContain('skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight');
+    expect(slice).toContain('const enemyTerrain=cloudGardenRef.current.inside');
+    expect(slice).toContain('?skybreakHighlandHeight');
   });
 
   it('persists only the beacon result and turns it into a two-way Skywatch wind lift',()=>{

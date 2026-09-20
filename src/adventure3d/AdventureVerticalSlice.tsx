@@ -109,6 +109,24 @@ import {
   windwalkTraceIds,
   type WindwalkTraceId,
 } from './windwalk-routes';
+import {
+  CLOUD_GARDEN,
+  cloudGardenEnemiesDefeated,
+  cloudGardenEntranceVisual,
+  cloudGardenEntryPosition,
+  cloudGardenHeight,
+  cloudGardenOutsideReturnPosition,
+  cloudGardenVisual,
+  constrainCloudGardenPlayer,
+  createCloudGardenEnemies,
+  createCloudGardenState,
+  enterCloudGarden,
+  leaveCloudGarden,
+  playerNearCloudGardenExit,
+  playerNearCloudGardenHeart,
+  playerNearCloudGardenOutsideEntrance,
+  restoreCloudGarden,
+} from './cloud-garden';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -174,6 +192,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const windwalkTracesRef=useRef(new Set<WindwalkTraceId>(persisted.skybreak.windwalkTraces));
   const windwalkMasteredRef=useRef(windwalkMastered(persisted.skybreak.windwalkTraces.length));
   const boostedWindCurrentRef=useRef<string|null>(null);
+  const cloudGardenRef=useRef(createCloudGardenState(persisted.cloudGarden.restored));
+  const cloudGardenClearNotifiedRef=useRef(persisted.cloudGarden.restored);
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -232,6 +252,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [windwalkMasteredState,setWindwalkMasteredState]=useState(
     windwalkMastered(persisted.skybreak.windwalkTraces.length),
   );
+  const [insideCloudGarden,setInsideCloudGarden]=useState(false);
+  const [cloudGardenRestored,setCloudGardenRestored]=useState(persisted.cloudGarden.restored);
+  const [nearCloudGardenEntrance,setNearCloudGardenEntrance]=useState(false);
+  const [nearCloudGardenExit,setNearCloudGardenExit]=useState(false);
+  const [nearCloudGardenHeart,setNearCloudGardenHeart]=useState(false);
+  const [cloudGardenClear,setCloudGardenClear]=useState(persisted.cloudGarden.restored);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -267,6 +293,33 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setCombatEngaged(false);
     setLivingEnemies(enemiesRef.current.filter(enemy=>enemy.hp>0).length);
     snapPlayerTo(position);
+    setNotice(message);
+  },[snapPlayerTo]);
+
+  const enterCloudGardenAt=useCallback((message:string)=>{
+    fieldEnemiesSnapshotRef.current=enemiesRef.current;
+    enemiesRef.current=createCloudGardenEnemies(cloudGardenRef.current.restored);
+    cloudGardenRef.current=enterCloudGarden(cloudGardenRef.current);
+    cloudGardenClearNotifiedRef.current=cloudGardenRef.current.restored;
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideCloudGarden(true);
+    setCloudGardenClear(cloudGardenRef.current.restored||cloudGardenEnemiesDefeated(enemiesRef.current));
+    setLivingEnemies(enemiesRef.current.length);
+    snapPlayerTo(cloudGardenEntryPosition());
+    setNotice(message);
+  },[snapPlayerTo]);
+
+  const leaveCloudGardenToField=useCallback((message:string)=>{
+    cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    fieldEnemiesSnapshotRef.current=null;
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideCloudGarden(false);
+    setCombatEngaged(false);
+    setLivingEnemies(enemiesRef.current.filter(enemy=>enemy.hp>0).length);
+    snapPlayerTo(cloudGardenOutsideReturnPosition());
     setNotice(message);
   },[snapPlayerTo]);
 
@@ -428,6 +481,40 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   },[]);
 
   const interactWorld=useCallback(()=>{
+    if(cloudGardenRef.current.inside){
+      if(playerNearCloudGardenExit(playerRef.current.position,cloudGardenRef.current)){
+        leaveCloudGardenToField(
+          cloudGardenRef.current.restored
+            ?'복원된 구름정원을 나와 서쪽 능선으로 돌아왔습니다. 들판의 상승기류가 전보다 넓고 강하게 흐릅니다.'
+            :'구름틈을 빠져나와 서쪽 능선으로 돌아왔습니다. 정원의 수호자들은 다시 들어오면 자리를 지킵니다.',
+        );
+        return;
+      }
+      if(playerNearCloudGardenHeart(playerRef.current.position,cloudGardenRef.current)){
+        const cleared=cloudGardenEnemiesDefeated(enemiesRef.current);
+        if(!cleared){
+          setNotice('정원 심장은 폭풍 수호자들의 기류에 묶여 있습니다. 먼저 주변의 세 수호자를 물리쳐야 합니다.');
+          return;
+        }
+        cloudGardenRef.current=restoreCloudGarden(cloudGardenRef.current);
+        enemiesRef.current=[];
+        requestOpenAdventureUpdate({type:'restore-cloud-garden'});
+        cloudGardenClearNotifiedRef.current=true;
+        setCloudGardenRestored(true);
+        setCloudGardenClear(true);
+        setLivingEnemies(0);
+        setCombatEngaged(false);
+        setNotice('구름정원 심장이 다시 뛰기 시작했습니다. 새벽들판의 오래된 상승기류가 깨어나 반경·상승력·높이가 영구적으로 강화됐습니다.');
+        return;
+      }
+      setNotice(cloudGardenRef.current.restored
+        ?'바람꽃이 정원 전체를 감돌고 있습니다. 입구로 돌아가면 강화된 상승기류를 새벽들판에서 직접 확인할 수 있습니다.'
+        :cloudGardenEnemiesDefeated(enemiesRef.current)
+          ?'폭풍 수호자들이 사라졌습니다. 정원 북쪽의 흐린 심장에 가까이 가서 E로 바람을 되돌려 놓으세요.'
+          :'구름정원의 바람이 뒤틀려 있습니다. 폭풍싹 둘과 구름뿌리 수호자를 쓰러뜨리면 정원 심장에 접근할 수 있습니다.');
+      return;
+    }
+
     if(skybreakRef.current.inside){
       if(playerNearSkybreakBeacon(playerRef.current.position,skybreakRef.current)){
         skybreakRef.current=reachSkybreakBeacon(skybreakRef.current);
@@ -510,6 +597,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       setNotice(hollowCaveRef.current.shortcutOpen
         ?'동굴 양쪽에 출구가 열려 있습니다. 폭포 쪽으로 돌아가거나 새로 열린 돌다리 지름길을 이용할 수 있습니다.'
         :`동굴 안 바람 공명석 ${countActiveHollowCaveResonators(hollowCaveRef.current)}/3 · Q 바람밀기로 공명시킬 수 있습니다.`);
+      return;
+    }
+
+    if(playerNearCloudGardenOutsideEntrance(
+      playerRef.current.position,
+      windwalkMasteredRef.current,
+    )){
+      enterCloudGardenAt(
+        cloudGardenRef.current.restored
+          ?'서쪽 능선의 맑아진 구름틈을 통과해 복원된 구름정원으로 돌아왔습니다.'
+          :'세 공중 흔적이 하나로 이어지며 서쪽 능선의 구름틈이 열렸습니다. 안쪽에서는 뒤틀린 바람과 수호자의 움직임이 느껴집니다.',
+      );
       return;
     }
 
@@ -644,15 +743,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
 
     discover();
-  },[discover,enterSkybreakAt,interveneRoadsideAmbush,leaveSkybreakTo]);
+  },[discover,enterCloudGardenAt,enterSkybreakAt,interveneRoadsideAmbush,leaveCloudGardenToField,leaveSkybreakTo]);
 
 
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
     hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
     skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
+    cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
     setInsideHollowCave(false);
     setInsideSkybreak(false);
+    setInsideCloudGarden(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
     enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
     fieldEnemiesSnapshotRef.current=null;
@@ -774,8 +875,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const incapacitated=combat.hp<=0||combat.hitstun>0;
       const wantsSprint=!incapacitated&&combat.attackClock<0&&combat.dodgeClock<0&&sprintTouchRef.current;
       const movementInput=incapacitated||combat.dodgeClock>=0?{x:0,z:0}:move;
-      const terrainHeight=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
-      const movementHalfSize=skybreakRef.current.inside?SKYBREAK_HIGHLAND.halfSize:STARTING_FIELD.halfSize;
+      const terrainHeight=cloudGardenRef.current.inside
+        ?cloudGardenHeight
+        :skybreakRef.current.inside
+          ?skybreakHighlandHeight
+          :startingFieldHeight;
+      const movementHalfSize=cloudGardenRef.current.inside
+        ?CLOUD_GARDEN.halfSize
+        :skybreakRef.current.inside
+          ?SKYBREAK_HIGHLAND.halfSize
+          :STARTING_FIELD.halfSize;
       playerRef.current=stepPlayerMotion(playerRef.current,{
         moveX:movementInput.x,
         moveZ:movementInput.z,
@@ -794,12 +903,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       );
       playerRef.current=windwalkStep.state;
       windwalkActiveRef.current=windwalkStep.active;
-      if(!hollowCaveRef.current.inside&&!skybreakRef.current.inside){
+      if(!hollowCaveRef.current.inside&&!skybreakRef.current.inside&&!cloudGardenRef.current.inside){
         const currentStep=applyWindwalkCurrent(
           playerRef.current,
           windwalkHeld,
           windwalkUnlockedRef.current,
           dt,
+          cloudGardenRef.current.restored,
         );
         playerRef.current=currentStep.state;
         boostedWindCurrentRef.current=currentStep.boostedCurrentId;
@@ -831,6 +941,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
       hollowCaveRef.current=stepHollowCaveRuntime(hollowCaveRef.current,dt);
 
+      if(cloudGardenRef.current.inside){
+        playerRef.current={
+          ...playerRef.current,
+          position:constrainCloudGardenPlayer(playerRef.current.position),
+        };
+      }
+
       if(skybreakRef.current.inside){
         playerRef.current={
           ...playerRef.current,
@@ -852,11 +969,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         skybreakGustPushedRef.current=false;
       }
 
-      const caravanPause=playerNearWanderingCaravan(playerRef.current.position,caravanRef.current,7);
+      const dawnreachPlayerPosition=cloudGardenRef.current.inside
+        ?{x:999,y:0,z:999}
+        :playerRef.current.position;
+      const caravanPause=playerNearWanderingCaravan(dawnreachPlayerPosition,caravanRef.current,7);
       caravanRef.current=stepWanderingCaravan(caravanRef.current,dt,caravanPause);
       if(
         combat.hp>0&&
-        shouldWitnessWanderingCaravan(playerRef.current.position,caravanRef.current,caravanWitnessedRef.current)
+        !cloudGardenRef.current.inside&&
+        shouldWitnessWanderingCaravan(dawnreachPlayerPosition,caravanRef.current,caravanWitnessedRef.current)
       ){
         caravanWitnessedRef.current=true;
         setNotice('짐짐승 방울 소리와 함께 행상인이 들판 길을 지나갑니다. 가까이 가면 잠시 멈춰 이야기를 나눌 수 있습니다.');
@@ -865,7 +986,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(
         roadsideAmbushPhaseRef.current==='hidden'&&
         !roadsideAmbushResolvedRef.current&&
-        shouldWitnessRoadsideAmbush(playerRef.current.position,false)
+!cloudGardenRef.current.inside&&
+        shouldWitnessRoadsideAmbush(dawnreachPlayerPosition,false)
       ){
         roadsideAmbushPhaseRef.current='witnessed';
         setWorldEventPhase('witnessed');
@@ -876,7 +998,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       ruinPuzzleRef.current=stepRuinPuzzle(
         ruinPuzzleRef.current,
         STARTING_RUIN_PUZZLE,
-        playerRef.current.position,
+        dawnreachPlayerPosition,
         dt,
       );
       if(!wasPuzzleSolved&&ruinPuzzleRef.current.solved&&!ruinSolvedNotifiedRef.current){
@@ -897,28 +1019,30 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const previousHerdBehavior=herdRef.current.behavior;
       herdRef.current=stepDawnreachHerd(
         herdRef.current,
-        playerRef.current.position,
+        dawnreachPlayerPosition,
         hazardsRef.current,
         dt,
       );
       if(
         combat.hp>0&&
-        shouldWitnessDawnreachHerd(playerRef.current.position,herdRef.current,herdWitnessedRef.current)
+        !cloudGardenRef.current.inside&&
+        shouldWitnessDawnreachHerd(dawnreachPlayerPosition,herdRef.current,herdWitnessedRef.current)
       ){
         herdWitnessedRef.current=true;
         setNotice('풀숲 사이로 새벽사슴 무리가 움직입니다. 가까이 다가가면 놀라 달아나고, 불길이 번지면 먼저 위험을 피해 움직입니다.');
       }else if(
         previousHerdBehavior!=='flee-fire'&&
         herdRef.current.behavior==='flee-fire'&&
-        playerNearDawnreachHerd(playerRef.current.position,herdRef.current,26)
+        !cloudGardenRef.current.inside&&
+        playerNearDawnreachHerd(dawnreachPlayerPosition,herdRef.current,26)
       ){
         setNotice('불길에 놀란 새벽사슴 무리가 급히 방향을 틀어 안전한 쪽으로 달아납니다.');
       }
 
       if(visitedRef.current.has(WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId)){
         wildlifeTrailClockRef.current=0;
-      }else if(shouldRevealWildlifeDiscoveryTrail(
-        playerRef.current.position,
+      }else if(!cloudGardenRef.current.inside&&shouldRevealWildlifeDiscoveryTrail(
+        dawnreachPlayerPosition,
         herdRef.current,
         visitedRef.current,
       )){
@@ -943,7 +1067,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
         const playerBurn=applyBurningHazardsToPlayer(
           combat,
-          playerRef.current.position,
+          dawnreachPlayerPosition,
           hazardsRef.current,
         );
         combat=playerBurn.state;
@@ -964,8 +1088,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
 
       if(combat.hp>0){
-        const avoidanceZones=skybreakRef.current.inside?[]:burningHazardAvoidanceZones(hazardsRef.current);
-        const enemyTerrain=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
+        const avoidanceZones=skybreakRef.current.inside||cloudGardenRef.current.inside
+          ?[]
+          :burningHazardAvoidanceZones(hazardsRef.current);
+        const enemyTerrain=cloudGardenRef.current.inside
+          ?cloudGardenHeight
+          :skybreakRef.current.inside
+            ?skybreakHighlandHeight
+            :startingFieldHeight;
         const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
           enemy,
           playerRef.current.position,
@@ -982,7 +1112,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         }
       }
 
-      if(!skybreakRef.current.inside&&roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
+      if(!skybreakRef.current.inside&&!cloudGardenRef.current.inside&&roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
         roadsideAmbushResolvedRef.current=true;
         roadsideOutcomeRef.current='rescued';
         roadsideAmbushPhaseRef.current='resolved';
@@ -1013,7 +1143,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       }
 
-      const nextNearby=skybreakRef.current.inside?null:nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
+      const nextNearby=skybreakRef.current.inside||cloudGardenRef.current.inside?null:nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
       nearbyRef.current=nextNearby;
       renderAdventureField(
         context,
@@ -1048,16 +1178,37 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         skybreakHighlandVisual(skybreakRef.current,playerRef.current.position),
         {
           windwalkRoute:windwalkRouteVisual(
-            windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside,
+            windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside&&!cloudGardenRef.current.inside,
             windwalkTracesRef.current,
             boostedWindCurrentRef.current,
+            cloudGardenRef.current.restored,
+          ),
+          cloudGarden:cloudGardenVisual(
+            cloudGardenRef.current,
+            playerRef.current.position,
+            enemiesRef.current,
+          ),
+          cloudGardenEntrance:cloudGardenEntranceVisual(
+            windwalkMasteredRef.current,
+            cloudGardenRef.current.restored,
+            playerRef.current.position,
           ),
         },
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
+      if(
+        cloudGardenRef.current.inside&&
+        !cloudGardenRef.current.restored&&
+        living===0&&
+        !cloudGardenClearNotifiedRef.current
+      ){
+        cloudGardenClearNotifiedRef.current=true;
+        setCloudGardenClear(true);
+        setNotice('마지막 폭풍 수호자가 사라졌습니다. 정원 북쪽의 흐린 심장으로 가서 E로 바람을 되돌려 놓으세요.');
+      }
       const campLiving=enemiesRef.current.filter(enemy=>isStartingCampEnemy(enemy)&&enemy.hp>0).length;
-      if(!skybreakRef.current.inside&&campLiving===0&&!campClearedRef.current){
+      if(!skybreakRef.current.inside&&!cloudGardenRef.current.inside&&campLiving===0&&!campClearedRef.current){
         campClearedRef.current=true;
         requestOpenAdventureUpdate({type:'clear-camp'});
         setNotice('재빛 야영지의 위협이 사라졌습니다. 주변 흔적과 남겨진 물건을 직접 살펴보세요.');
@@ -1072,20 +1223,20 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
-        setNearPuzzle(playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
-        setNearStone(playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
-        setRewardReady(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setNearPuzzle(!cloudGardenRef.current.inside&&playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setNearStone(!cloudGardenRef.current.inside&&playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
+        setRewardReady(!cloudGardenRef.current.inside&&canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
         setPuzzleSolved(ruinPuzzleRef.current.solved);
-        setNearHazard(playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
+        setNearHazard(!cloudGardenRef.current.inside&&playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
         setNearWorldEvent(
-          roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
+          !cloudGardenRef.current.inside&&roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
         );
-        setNearWorldConsequence(playerNearWorldConsequence(
+        setNearWorldConsequence(!cloudGardenRef.current.inside&&playerNearWorldConsequence(
           playerRef.current.position,
           roadsideAmbushConsequence(roadsideOutcomeRef.current),
         ));
-        setNearCaravan(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
-        setNearWildlife(playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
+        setNearCaravan(!cloudGardenRef.current.inside&&playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
+        setNearWildlife(!cloudGardenRef.current.inside&&playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
         setWildlifeBehavior(herdRef.current.behavior);
         setWildlifeTrailActive(wildlifeTrailClockRef.current>0);
         setInsideHollowCave(hollowCaveRef.current.inside);
@@ -1125,11 +1276,26 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearSkybreakOutsideLift(
           !skybreakRef.current.inside&&
           !hollowCaveRef.current.inside&&
+          !cloudGardenRef.current.inside&&
           playerNearSkybreakOutsideLift(
             playerRef.current.position,
             skybreakRef.current.beaconReached,
           ),
         );
+        setInsideCloudGarden(cloudGardenRef.current.inside);
+        setCloudGardenRestored(cloudGardenRef.current.restored);
+        setCloudGardenClear(cloudGardenRef.current.restored||cloudGardenEnemiesDefeated(enemiesRef.current));
+        setNearCloudGardenEntrance(
+          !cloudGardenRef.current.inside&&
+          !hollowCaveRef.current.inside&&
+          !skybreakRef.current.inside&&
+          playerNearCloudGardenOutsideEntrance(
+            playerRef.current.position,
+            windwalkMasteredRef.current,
+          ),
+        );
+        setNearCloudGardenExit(playerNearCloudGardenExit(playerRef.current.position,cloudGardenRef.current));
+        setNearCloudGardenHeart(playerNearCloudGardenHeart(playerRef.current.position,cloudGardenRef.current));
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -1184,22 +1350,24 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     />
 
     <header className="adventure3d__hud">
-      <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
+      <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideCloudGarden?'SECRET SKY GARDEN':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideCloudGarden?CLOUD_GARDEN.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
-      {combatEngaged&&<em>{insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
+      {combatEngaged&&<em>{insideCloudGarden?'정원 위협':insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
       {nearWildlife&&<em>야생 · {DAWNREACH_HERD.label}{wildlifeBehavior==='flee-fire'?' · 불길 회피':wildlifeBehavior==='flee-player'?' · 경계 중':''}</em>}
-      {wildlifeTrailActive&&!insideHollowCave&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
+      {wildlifeTrailActive&&!insideHollowCave&&!insideCloudGarden&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
       {insideHollowCave&&<em>동굴 공명 · {hollowResonators}/3</em>}
       {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
       {insideSkybreak&&!skybreakBeaconReached&&<em>{skybreakCalm?'돌풍 · 잠시 잦아듦':skybreakGust?'돌풍 · 강풍':'돌풍 · 소강'}</em>}
       {insideSkybreak&&skybreakBeaconReached&&<em>새 경로 · 전망대 바람승강로 개방</em>}
       {windwalkUnlockedState&&<em>{windwalkActive?'바람걸음 · 활강 중':windwalkMasteredState?'바람걸음 · 숙련':'탐험 성장 · 바람걸음'}</em>}
       {windwalkUnlockedState&&!windwalkMasteredState&&<em>공중 흔적 · {windwalkTraceCount}/{windwalkTraceIds.length}</em>}
+      {insideCloudGarden&&!cloudGardenRestored&&cloudGardenClear&&<em>정원 심장 · 복원 가능</em>}
+      {insideCloudGarden&&cloudGardenRestored&&<em>세계 변화 · 상승기류 강화</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -1208,7 +1376,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
-      <span>{nearCaravan&&!combatEngaged
+      <span>{nearCloudGardenEntrance&&!insideCloudGarden
+        ?cloudGardenRestored
+          ?'복원된 구름정원으로 이어지는 맑은 구름틈입니다. E로 다시 들어갈 수 있습니다.'
+          :'바람걸음 숙련으로만 드러난 구름틈입니다. 안쪽에서 뒤틀린 바람과 수호자의 움직임이 느껴집니다.'
+        :nearCaravan&&!combatEngaged
         ?caravanFamiliar
           ?'전에 만난 행상인이 다시 들판 길을 지나고 있습니다. 가까이 가서 말을 걸 수 있습니다.'
           :'행상인이 이동 중입니다. 가까이 다가가면 잠시 멈춰 이야기를 나눌 수 있습니다.'
@@ -1257,13 +1429,19 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
       {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&!insideCloudGarden&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!nearSkybreakBridge&&!nearSkybreakEntrance&&!nearSkybreakBeacon&&!nearSkybreakWindLift&&!nearSkybreakOutsideLift&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!nearSkybreakBridge&&!nearSkybreakEntrance&&!nearSkybreakBeacon&&!nearSkybreakWindLift&&!nearSkybreakOutsideLift&&!nearCloudGardenEntrance&&!nearCloudGardenExit&&!nearCloudGardenHeart&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||(combatEngaged&&!nearCloudGardenExit)||defeated}
         onClick={interactWorld}
-      >{nearSkybreakBeacon
+      >{nearCloudGardenHeart
+        ?cloudGardenClear?'정원 복원':'심장 살피기'
+        :nearCloudGardenExit
+          ?'능선으로 돌아가기'
+          :nearCloudGardenEntrance
+            ?'구름틈 들어가기'
+            :nearSkybreakBeacon
         ?'봉화 깨우기'
         :nearSkybreakWindLift
           ?'전망대로 내려가기'
