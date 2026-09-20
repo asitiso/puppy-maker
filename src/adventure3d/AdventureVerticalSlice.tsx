@@ -101,7 +101,14 @@ import {
   skybreakWindLiftEntry,
   stepSkybreakHighland,
 } from './skybreak-highland';
-import {applyWindwalkGlide,windwalkUnlocked} from './windwalk';
+import {applyWindwalkGlide,windwalkMastered,windwalkUnlocked} from './windwalk';
+import {
+  applyWindwalkCurrent,
+  findWindwalkTrace,
+  windwalkRouteVisual,
+  windwalkTraceIds,
+  type WindwalkTraceId,
+} from './windwalk-routes';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -164,6 +171,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const hollowCaveRef=useRef(createHollowCaveRuntimeState(persisted.hollowCave.shortcutOpen));
   const skybreakRef=useRef(createSkybreakHighlandState(persisted.skybreak.beaconReached));
   const windwalkUnlockedRef=useRef(windwalkUnlocked(persisted.skybreak.beaconReached));
+  const windwalkTracesRef=useRef(new Set<WindwalkTraceId>(persisted.skybreak.windwalkTraces));
+  const windwalkMasteredRef=useRef(windwalkMastered(persisted.skybreak.windwalkTraces.length));
+  const boostedWindCurrentRef=useRef<string|null>(null);
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -173,7 +183,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [visitedCount,setVisitedCount]=useState(persisted.discoveredIds.length);
   const [notice,setNotice]=useState(
     persisted.skybreak.beaconReached
-      ?'바람걸음이 몸에 남아 있습니다. 공중에서 Space를 유지하면 스태미나를 써서 천천히 활강할 수 있습니다.'
+      ?'바람걸음이 몸에 남아 있습니다. 전망대에서 활강하며 들판 위 상승기류와 공중 흔적을 이어 보세요.'
       :'멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.',
   );
   const [sprinting,setSprinting]=useState(false);
@@ -218,6 +228,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     windwalkUnlocked(persisted.skybreak.beaconReached),
   );
   const [windwalkActive,setWindwalkActive]=useState(false);
+  const [windwalkTraceCount,setWindwalkTraceCount]=useState(persisted.skybreak.windwalkTraces.length);
+  const [windwalkMasteredState,setWindwalkMasteredState]=useState(
+    windwalkMastered(persisted.skybreak.windwalkTraces.length),
+  );
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -652,6 +666,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     jumpRef.current=false;
     glideHeldRef.current=false;
     windwalkActiveRef.current=false;
+    boostedWindCurrentRef.current=null;
     setWindwalkActive(false);
     lockedTargetRef.current=null;
     setLockedTargetId(null);
@@ -769,14 +784,45 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       },dt,terrainHeight,movementHalfSize);
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,terrainHeight,movementHalfSize);
+      const windwalkHeld=glideHeldRef.current&&combat.dodgeClock<0&&!incapacitated;
       const windwalkStep=applyWindwalkGlide(
         playerRef.current,
-        glideHeldRef.current&&combat.dodgeClock<0&&!incapacitated,
+        windwalkHeld,
         windwalkUnlockedRef.current,
         dt,
+        windwalkMasteredRef.current,
       );
       playerRef.current=windwalkStep.state;
       windwalkActiveRef.current=windwalkStep.active;
+      if(!hollowCaveRef.current.inside&&!skybreakRef.current.inside){
+        const currentStep=applyWindwalkCurrent(
+          playerRef.current,
+          windwalkHeld,
+          windwalkUnlockedRef.current,
+          dt,
+        );
+        playerRef.current=currentStep.state;
+        boostedWindCurrentRef.current=currentStep.boostedCurrentId;
+        const trace=findWindwalkTrace(
+          playerRef.current,
+          windwalkTracesRef.current,
+          windwalkUnlockedRef.current,
+        );
+        if(trace){
+          windwalkTracesRef.current=new Set(windwalkTracesRef.current).add(trace);
+          requestOpenAdventureUpdate({type:'discover-windwalk-trace',id:trace});
+          const traceCount=windwalkTracesRef.current.size;
+          const mastered=windwalkMastered(traceCount);
+          windwalkMasteredRef.current=mastered;
+          setWindwalkTraceCount(traceCount);
+          setWindwalkMasteredState(mastered);
+          setNotice(mastered
+            ?'세 공중 흔적을 모두 이었습니다. 바람걸음 숙련 — 같은 활강에 드는 스태미나가 줄어 더 멀리 이동할 수 있습니다.'
+            :`공중 흔적 ${traceCount}/${windwalkTraceIds.length} 발견 · 상승기류를 이어 다음 흔적을 찾아보세요.`);
+        }
+      }else{
+        boostedWindCurrentRef.current=null;
+      }
       if(hollowCaveRef.current.inside){
         playerRef.current={
           ...playerRef.current,
@@ -1000,6 +1046,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         dawnreachWildlifeTrailVisual(wildlifeTrailClockRef.current),
         hollowCaveVisual(hollowCaveRef.current,playerRef.current.position),
         skybreakHighlandVisual(skybreakRef.current,playerRef.current.position),
+        {
+          windwalkRoute:windwalkRouteVisual(
+            windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside,
+            windwalkTracesRef.current,
+            boostedWindCurrentRef.current,
+          ),
+        },
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -1145,7 +1198,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
       {insideSkybreak&&!skybreakBeaconReached&&<em>{skybreakCalm?'돌풍 · 잠시 잦아듦':skybreakGust?'돌풍 · 강풍':'돌풍 · 소강'}</em>}
       {insideSkybreak&&skybreakBeaconReached&&<em>새 경로 · 전망대 바람승강로 개방</em>}
-      {windwalkUnlockedState&&<em>{windwalkActive?'바람걸음 · 활강 중':'탐험 성장 · 바람걸음'}</em>}
+      {windwalkUnlockedState&&<em>{windwalkActive?'바람걸음 · 활강 중':windwalkMasteredState?'바람걸음 · 숙련':'탐험 성장 · 바람걸음'}</em>}
+      {windwalkUnlockedState&&!windwalkMasteredState&&<em>공중 흔적 · {windwalkTraceCount}/{windwalkTraceIds.length}</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}

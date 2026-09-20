@@ -10,8 +10,13 @@ import type {RoamingWorldPresenceVisual} from './roaming-world';
 import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 import type {HollowCaveVisual} from './hollow-cave';
 import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
+import {WINDWALK_ROUTE,type WindwalkRouteVisual} from './windwalk-routes';
 
 type Projected={x:number;y:number;depth:number;scale:number};
+
+export type AdventureWorldOverlay={
+  windwalkRoute?:WindwalkRouteVisual|null;
+};
 
 function dot(a:Vec3,b:Vec3){return a.x*b.x+a.y*b.y+a.z*b.z;}
 
@@ -640,6 +645,44 @@ function drawSkybreakHighland(
   ctx.restore();
 }
 
+function drawWindwalkRoute(
+  ctx:CanvasRenderingContext2D,
+  route:WindwalkRouteVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  ctx.save();
+  for(const current of route.currents){
+    const base=projectAdventurePoint(current.position,camera,width,height);
+    const top=projectAdventurePoint({...current.position,y:current.position.y+WINDWALK_ROUTE.currentHeight},camera,width,height);
+    if(!base||!top)continue;
+    const radius=Math.max(10,Math.min(38,base.scale*1.15));
+    ctx.strokeStyle=current.active?'rgba(205,250,255,.9)':'rgba(184,230,235,.36)';
+    ctx.lineWidth=current.active?3:2;
+    for(let i=0;i<4;i++){
+      const t=i/3;
+      const y=base.y+(top.y-base.y)*t;
+      ctx.beginPath();
+      ctx.ellipse(base.x,y,radius*(1-t*.25),radius*.28,0,0,Math.PI*2);
+      ctx.stroke();
+    }
+  }
+
+  for(const trace of route.traces){
+    if(trace.collected)continue;
+    const p=projectAdventurePoint(trace.position,camera,width,height);
+    if(!p)continue;
+    const radius=Math.max(8,Math.min(28,p.scale*.95));
+    ctx.strokeStyle='rgba(228,251,255,.88)';
+    ctx.fillStyle='rgba(184,236,242,.14)';
+    ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y,radius*.42,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -747,6 +790,7 @@ export function renderAdventureField(
   wildlifeTrail:WildlifeTrailVisual|null=null,
   hollowCave:HollowCaveVisual|null=null,
   skybreakHighland:SkybreakHighlandVisual|null=null,
+  worldOverlay:AdventureWorldOverlay={},
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -805,6 +849,7 @@ export function renderAdventureField(
   if(worldConsequence)drawWorldConsequence(ctx,worldConsequence,camera,width,height,nearbyWorldConsequence);
   if(roamingPresence)drawRoamingWorldPresence(ctx,roamingPresence,camera,width,height);
   if(wildlifeTrail)drawWildlifeTrail(ctx,wildlifeTrail,camera,width,height);
+  if(worldOverlay.windwalkRoute)drawWindwalkRoute(ctx,worldOverlay.windwalkRoute,camera,width,height);
   if(wildlife)drawWildlife(ctx,wildlife,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);

@@ -6,6 +6,7 @@ export const WINDWALK={
   forwardAcceleration:8.5,
   fallSpeed:-3.2,
   staminaPerSecond:20,
+  masteredStaminaPerSecond:13,
   minFallSpeed:-.85,
 };
 
@@ -16,6 +17,8 @@ export type WindwalkStepResult={
   state:PlayerMotionState;
   active:boolean;
 };
+
+export function windwalkMastered(traceCount:number){return traceCount>=3;}
 
 export function windwalkUnlocked(beaconReached:boolean){
   return beaconReached===true;
@@ -40,6 +43,7 @@ export function applyWindwalkGlide(
   held:boolean,
   unlocked:boolean,
   dtRaw:number,
+  mastered=false,
 ):WindwalkStepResult{
   const dt=clamp(finite(dtRaw),0,.05);
   if(!canWindwalkGlide(state,held,unlocked)||dt<=0)return {state,active:false};
@@ -63,7 +67,7 @@ export function applyWindwalkGlide(
         y:Math.max(finite(state.velocity.y),WINDWALK.fallSpeed),
         z:vz,
       },
-      stamina:Math.max(0,state.stamina-WINDWALK.staminaPerSecond*dt),
+      stamina:Math.max(0,state.stamina-(mastered?WINDWALK.masteredStaminaPerSecond:WINDWALK.staminaPerSecond)*dt),
     },
   };
 }

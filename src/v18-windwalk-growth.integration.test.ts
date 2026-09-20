@@ -35,6 +35,7 @@ describe('V18 Windwalk growth loop integration',()=>{
     expect(windwalk).toContain('maxPlanarSpeed:7.2');
     expect(windwalk).toContain('staminaPerSecond:20');
     expect(windwalk).toContain('!state.grounded');
-    expect(windwalk).toContain('state.stamina-WINDWALK.staminaPerSecond*dt');
+    expect(windwalk).toContain('WINDWALK.staminaPerSecond');
+    expect(windwalk).toContain('WINDWALK.masteredStaminaPerSecond');
   });
 });

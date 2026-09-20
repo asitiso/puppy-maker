@@ -16,7 +16,7 @@ describe('V18 open adventure persistent state',()=>{
         campCleared:false,
         worldEvents:[],
         hollowCave:{shortcutOpen:false},
-        skybreak:{beaconReached:false},
+        skybreak:{beaconReached:false,windwalkTraces:[]},
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -35,7 +35,7 @@ describe('V18 open adventure persistent state',()=>{
           {id:'wandering-caravan',outcome:'met'},
         ],
         hollowCave:{shortcutOpen:'yes'},
-        skybreak:{beaconReached:'yes'},
+        skybreak:{beaconReached:'yes',windwalkTraces:['sky-thread','sky-thread','bad']},
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
@@ -45,6 +45,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
     expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(false);
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(false);
+    expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual([]);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -96,6 +97,24 @@ describe('V18 open adventure persistent state',()=>{
       dawnreach:{skybreak:{beaconReached:true}},
     });
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(true);
+  });
+
+  it('hydrates valid Windwalk traces only for a completed beacon route',()=>{
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{skybreak:{beaconReached:true,windwalkTraces:['sky-thread','bad','sky-thread','west-aerie']}},
+    });
+    expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual(['sky-thread','west-aerie']);
+  });
+
+  it('persists Windwalk aerial traces only after the beacon unlock',()=>{
+    let locked=emptyOpenAdventureState();
+    expect(applyOpenAdventureUpdate(locked,{type:'discover-windwalk-trace',id:'sky-thread'})).toBe(locked);
+
+    let state=applyOpenAdventureUpdate(locked,{type:'reach-skybreak-beacon'});
+    state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id:'sky-thread'});
+    state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id:'sky-thread'});
+    state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id:'ruin-crown'});
+    expect(state.dawnreach.skybreak.windwalkTraces).toEqual(['sky-thread','ruin-crown']);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
