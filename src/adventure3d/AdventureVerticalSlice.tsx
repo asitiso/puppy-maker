@@ -193,6 +193,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const windwalkMasteredRef=useRef(windwalkMastered(persisted.skybreak.windwalkTraces.length));
   const boostedWindCurrentRef=useRef<string|null>(null);
   const cloudGardenRef=useRef(createCloudGardenState(persisted.cloudGarden.restored));
+  const cloudGardenClearNotifiedRef=useRef(persisted.cloudGarden.restored);
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -299,6 +300,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     fieldEnemiesSnapshotRef.current=enemiesRef.current;
     enemiesRef.current=createCloudGardenEnemies(cloudGardenRef.current.restored);
     cloudGardenRef.current=enterCloudGarden(cloudGardenRef.current);
+    cloudGardenClearNotifiedRef.current=cloudGardenRef.current.restored;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
     setInsideCloudGarden(true);
@@ -497,6 +499,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         cloudGardenRef.current=restoreCloudGarden(cloudGardenRef.current);
         enemiesRef.current=[];
         requestOpenAdventureUpdate({type:'restore-cloud-garden'});
+        cloudGardenClearNotifiedRef.current=true;
         setCloudGardenRestored(true);
         setCloudGardenClear(true);
         setLivingEnemies(0);
@@ -1175,7 +1178,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         skybreakHighlandVisual(skybreakRef.current,playerRef.current.position),
         {
           windwalkRoute:windwalkRouteVisual(
-            windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside,
+            windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside&&!cloudGardenRef.current.inside,
             windwalkTracesRef.current,
             boostedWindCurrentRef.current,
             cloudGardenRef.current.restored,
@@ -1194,6 +1197,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
+      if(
+        cloudGardenRef.current.inside&&
+        !cloudGardenRef.current.restored&&
+        living===0&&
+        !cloudGardenClearNotifiedRef.current
+      ){
+        cloudGardenClearNotifiedRef.current=true;
+        setCloudGardenClear(true);
+        setNotice('마지막 폭풍 수호자가 사라졌습니다. 정원 북쪽의 흐린 심장으로 가서 E로 바람을 되돌려 놓으세요.');
+      }
       const campLiving=enemiesRef.current.filter(enemy=>isStartingCampEnemy(enemy)&&enemy.hp>0).length;
       if(!skybreakRef.current.inside&&!cloudGardenRef.current.inside&&campLiving===0&&!campClearedRef.current){
         campClearedRef.current=true;
@@ -1210,20 +1223,20 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
-        setNearPuzzle(playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
-        setNearStone(playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
-        setRewardReady(canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setNearPuzzle(!cloudGardenRef.current.inside&&playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
+        setNearStone(!cloudGardenRef.current.inside&&playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
+        setRewardReady(!cloudGardenRef.current.inside&&canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
         setPuzzleSolved(ruinPuzzleRef.current.solved);
-        setNearHazard(playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
+        setNearHazard(!cloudGardenRef.current.inside&&playerNearFieldHazard(hazardsRef.current,playerRef.current.position));
         setNearWorldEvent(
-          roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
+          !cloudGardenRef.current.inside&&roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position),
         );
-        setNearWorldConsequence(playerNearWorldConsequence(
+        setNearWorldConsequence(!cloudGardenRef.current.inside&&playerNearWorldConsequence(
           playerRef.current.position,
           roadsideAmbushConsequence(roadsideOutcomeRef.current),
         ));
-        setNearCaravan(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
-        setNearWildlife(playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
+        setNearCaravan(!cloudGardenRef.current.inside&&playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
+        setNearWildlife(!cloudGardenRef.current.inside&&playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
         setWildlifeBehavior(herdRef.current.behavior);
         setWildlifeTrailActive(wildlifeTrailClockRef.current>0);
         setInsideHollowCave(hollowCaveRef.current.inside);
