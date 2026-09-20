@@ -35,7 +35,7 @@ export const DEFAULT_COMBAT_FEEDBACK:CombatFeedbackState={
 };
 
 const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
-const finite=(value:number,fallback=0)=>Number.isFinite(value)?value:fallback;
+const finite=(value:number|undefined,fallback=0)=>Number.isFinite(value)?value!:fallback;
 
 export function stepCombatFeedback(
   state:CombatFeedbackState,
