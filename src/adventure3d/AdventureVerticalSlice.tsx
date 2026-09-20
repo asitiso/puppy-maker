@@ -479,6 +479,39 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   },[]);
 
   const interactWorld=useCallback(()=>{
+    if(cloudGardenRef.current.inside){
+      if(playerNearCloudGardenExit(playerRef.current.position,cloudGardenRef.current)){
+        leaveCloudGardenToField(
+          cloudGardenRef.current.restored
+            ?'복원된 구름정원을 나와 서쪽 능선으로 돌아왔습니다. 들판의 상승기류가 전보다 넓고 강하게 흐릅니다.'
+            :'구름틈을 빠져나와 서쪽 능선으로 돌아왔습니다. 정원의 수호자들은 다시 들어오면 자리를 지킵니다.',
+        );
+        return;
+      }
+      if(playerNearCloudGardenHeart(playerRef.current.position,cloudGardenRef.current)){
+        const cleared=cloudGardenEnemiesDefeated(enemiesRef.current);
+        if(!cleared){
+          setNotice('정원 심장은 폭풍 수호자들의 기류에 묶여 있습니다. 먼저 주변의 세 수호자를 물리쳐야 합니다.');
+          return;
+        }
+        cloudGardenRef.current=restoreCloudGarden(cloudGardenRef.current);
+        enemiesRef.current=[];
+        requestOpenAdventureUpdate({type:'restore-cloud-garden'});
+        setCloudGardenRestored(true);
+        setCloudGardenClear(true);
+        setLivingEnemies(0);
+        setCombatEngaged(false);
+        setNotice('구름정원 심장이 다시 뛰기 시작했습니다. 새벽들판의 오래된 상승기류가 깨어나 반경·상승력·높이가 영구적으로 강화됐습니다.');
+        return;
+      }
+      setNotice(cloudGardenRef.current.restored
+        ?'바람꽃이 정원 전체를 감돌고 있습니다. 입구로 돌아가면 강화된 상승기류를 새벽들판에서 직접 확인할 수 있습니다.'
+        :cloudGardenEnemiesDefeated(enemiesRef.current)
+          ?'폭풍 수호자들이 사라졌습니다. 정원 북쪽의 흐린 심장에 가까이 가서 E로 바람을 되돌려 놓으세요.'
+          :'구름정원의 바람이 뒤틀려 있습니다. 폭풍싹 둘과 구름뿌리 수호자를 쓰러뜨리면 정원 심장에 접근할 수 있습니다.');
+      return;
+    }
+
     if(skybreakRef.current.inside){
       if(playerNearSkybreakBeacon(playerRef.current.position,skybreakRef.current)){
         skybreakRef.current=reachSkybreakBeacon(skybreakRef.current);
@@ -561,6 +594,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       setNotice(hollowCaveRef.current.shortcutOpen
         ?'동굴 양쪽에 출구가 열려 있습니다. 폭포 쪽으로 돌아가거나 새로 열린 돌다리 지름길을 이용할 수 있습니다.'
         :`동굴 안 바람 공명석 ${countActiveHollowCaveResonators(hollowCaveRef.current)}/3 · Q 바람밀기로 공명시킬 수 있습니다.`);
+      return;
+    }
+
+    if(playerNearCloudGardenOutsideEntrance(
+      playerRef.current.position,
+      windwalkMasteredRef.current,
+    )){
+      enterCloudGardenAt(
+        cloudGardenRef.current.restored
+          ?'서쪽 능선의 맑아진 구름틈을 통과해 복원된 구름정원으로 돌아왔습니다.'
+          :'세 공중 흔적이 하나로 이어지며 서쪽 능선의 구름틈이 열렸습니다. 안쪽에서는 뒤틀린 바람과 수호자의 움직임이 느껴집니다.',
+      );
       return;
     }
 
@@ -695,7 +740,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
 
     discover();
-  },[discover,enterSkybreakAt,interveneRoadsideAmbush,leaveSkybreakTo]);
+  },[discover,enterCloudGardenAt,enterSkybreakAt,interveneRoadsideAmbush,leaveCloudGardenToField,leaveSkybreakTo]);
 
 
   const recoverAtEntrance=useCallback(()=>{
