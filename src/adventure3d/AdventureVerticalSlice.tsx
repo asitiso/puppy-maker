@@ -131,6 +131,13 @@ import {
   restoreCloudGarden,
 } from './cloud-garden';
 import {renderAdventureField} from './software-renderer';
+import {
+  DEFAULT_COMBAT_FEEDBACK,
+  combatFeedbackCamera,
+  combatFeedbackTimeScale,
+  pushCombatFeedback,
+  stepCombatFeedback,
+} from './combat-feedback';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
 import './adventure-vertical-slice.css';
@@ -158,6 +165,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
+  const combatFeedbackRef=useRef({...DEFAULT_COMBAT_FEEDBACK});
   const enemiesRef=useRef<AdventureEnemyState[]>(createDawnreachFieldEnemies(
     persisted.campCleared,
     persisted.skybreak.beaconReached,
@@ -843,6 +851,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setLivingEnemies(enemiesRef.current.length);
     setCombatEngaged(false);
     setCounterReady(false);
+    combatFeedbackRef.current={...DEFAULT_COMBAT_FEEDBACK};
     tempestPhaseTwoNotifiedRef.current=false;
     setTempestWardenPhaseState(null);
     setNotice('들판 입구에서 다시 일어났습니다. 정면 전투 대신 다른 길로 우회해도 됩니다.');
@@ -905,8 +914,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
     const tick=(time:number)=>{
       resize();
-      const dt=Math.min(.05,Math.max(0,(time-last)/1000));
+      const rawDt=Math.min(.05,Math.max(0,(time-last)/1000));
       last=time;
+      combatFeedbackRef.current=stepCombatFeedback(combatFeedbackRef.current,rawDt);
+      const dt=rawDt*combatFeedbackTimeScale(combatFeedbackRef.current);
 
       const keys=pressedRef.current;
       const keyboardX=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
@@ -1161,6 +1172,32 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             {counter:counterAttack},
           );
           if(result.damaged){
+            const dealt=Math.max(0,enemy.hp-result.enemy.hp);
+            const boss=isTempestWarden(enemy);
+            const kind=result.defeated
+              ?'defeat'
+              :result.guardBroken
+                ?'guard-break'
+                :counterAttack
+                  ?'counter'
+                  :'hit';
+            combatFeedbackRef.current=pushCombatFeedback(combatFeedbackRef.current,{
+              kind,
+              position:{...enemy.position,y:enemy.position.y+1.6},
+              amount:dealt,
+              label:result.defeated
+                ?boss?'BOSS BREAK':'격파'
+                :result.guardBroken
+                  ?'가드 파괴'
+                  :counterAttack
+                    ?'COUNTER'
+                    :result.blocked
+                      ?'BLOCK'
+                      :undefined,
+              duration:result.defeated?.82:result.guardBroken?.72:counterAttack?.62:.48,
+              hitStop:result.defeated?.1:result.guardBroken?.075:counterAttack?.055:.03,
+              cameraImpulse:boss&&result.defeated?1.05:result.guardBroken?.78:counterAttack?.58:.28,
+            });
             if(result.defeated)setNotice(`${enemy.label} 격파`);
             else if(result.guardBroken)setNotice(`가드 파괴 · ${enemy.label}이 크게 비틀거립니다. 지금 추가 공격을 이어가세요.`);
             else if(counterAttack)setNotice(`완벽 회피 반격 · ${enemy.label}에게 강한 일격!`);
@@ -1188,6 +1225,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         });
         if(tempestTransitioned&&!tempestPhaseTwoNotifiedRef.current){
           tempestPhaseTwoNotifiedRef.current=true;
+          const phaseBoss=enemiesRef.current.find(isTempestWarden);
+          if(phaseBoss){
+            combatFeedbackRef.current=pushCombatFeedback(combatFeedbackRef.current,{
+              kind:'phase-break',
+              position:{...phaseBoss.position,y:phaseBoss.position.y+1.8},
+              label:'2 PHASE · AIRBORNE',
+              duration:1.15,
+              hitStop:.13,
+              cameraImpulse:1.15,
+            });
+          }
           setNotice('폭풍갑주 감시자의 외갑이 깨졌습니다. 남은 갑주가 날개처럼 펼쳐지며 공중 2페이즈로 전환합니다 — 활강으로 추격하거나 Q 바람밀기로 낮게 떨어뜨리세요.');
         }
         const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
@@ -1203,10 +1251,29 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           const hit=resolveEnemyAttack(combat,result.attack.damage);
           combat=hit.state;
           if(hit.perfectDodged){
+            combatFeedbackRef.current=pushCombatFeedback(combatFeedbackRef.current,{
+              kind:'counter',
+              position:{...playerRef.current.position,y:playerRef.current.position.y+1.7},
+              label:'JUST DODGE',
+              duration:.52,
+              hitStop:.025,
+              cameraImpulse:.32,
+            });
             setNotice('완벽 회피 · 반격 기회! 짧은 시간 안에 공격하면 강한 반격이 되고 방패형 적의 가드를 깨뜨립니다.');
             continue;
           }
-          if(hit.damaged)setNotice(combat.hp>0?'공격을 맞았습니다. 예고 동작을 보고 회피 타이밍을 잡으세요.':'쓰러졌습니다. R 또는 다시 일어나기로 들판 입구에서 재개할 수 있습니다.');
+          if(hit.damaged){
+            combatFeedbackRef.current=pushCombatFeedback(combatFeedbackRef.current,{
+              kind:'player-hit',
+              position:{...playerRef.current.position,y:playerRef.current.position.y+1.5},
+              amount:result.attack.damage,
+              label:combat.hp>0?'HIT':'DOWN',
+              duration:.58,
+              hitStop:.045,
+              cameraImpulse:.72,
+            });
+            setNotice(combat.hp>0?'공격을 맞았습니다. 예고 동작을 보고 회피 타이밍을 잡으세요.':'쓰러졌습니다. R 또는 다시 일어나기로 들판 입구에서 재개할 수 있습니다.');
+          }
         }
       }
 
@@ -1272,7 +1339,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         canvas.clientHeight,
         STARTING_FIELD,
         playerRef.current,
-        cameraRef.current,
+        combatFeedbackCamera(cameraRef.current,combatFeedbackRef.current),
         visitedRef.current,
         nextNearby?.id??null,
         enemiesRef.current,
@@ -1315,6 +1382,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             cloudGardenRef.current.restored,
             playerRef.current.position,
           ),
+          combatFeedback:combatFeedbackRef.current,
         },
       );
 
