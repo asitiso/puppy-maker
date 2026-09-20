@@ -156,12 +156,20 @@ export function stepDawnreachHerd(
   };
 }
 
+export function playerNearDawnreachHerd(
+  player:Vec3,
+  herd:DawnreachHerdState,
+  radius=DAWNREACH_HERD.witnessRadius,
+):boolean{
+  return distance(player,herd.center)<=radius;
+}
+
 export function shouldWitnessDawnreachHerd(
   player:Vec3,
   herd:DawnreachHerdState,
   witnessed:boolean,
 ):boolean{
-  return !witnessed&&distance(player,herd.center)<=DAWNREACH_HERD.witnessRadius;
+  return !witnessed&&playerNearDawnreachHerd(player,herd);
 }
 
 export function dawnreachHerdVisual(state:DawnreachHerdState):WildlifeVisual{
