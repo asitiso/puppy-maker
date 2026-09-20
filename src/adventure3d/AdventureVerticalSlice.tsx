@@ -109,6 +109,24 @@ import {
   windwalkTraceIds,
   type WindwalkTraceId,
 } from './windwalk-routes';
+import {
+  CLOUD_GARDEN,
+  cloudGardenEnemiesDefeated,
+  cloudGardenEntranceVisual,
+  cloudGardenEntryPosition,
+  cloudGardenHeight,
+  cloudGardenOutsideReturnPosition,
+  cloudGardenVisual,
+  constrainCloudGardenPlayer,
+  createCloudGardenEnemies,
+  createCloudGardenState,
+  enterCloudGarden,
+  leaveCloudGarden,
+  playerNearCloudGardenExit,
+  playerNearCloudGardenHeart,
+  playerNearCloudGardenOutsideEntrance,
+  restoreCloudGarden,
+} from './cloud-garden';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -174,6 +192,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const windwalkTracesRef=useRef(new Set<WindwalkTraceId>(persisted.skybreak.windwalkTraces));
   const windwalkMasteredRef=useRef(windwalkMastered(persisted.skybreak.windwalkTraces.length));
   const boostedWindCurrentRef=useRef<string|null>(null);
+  const cloudGardenRef=useRef(createCloudGardenState(persisted.cloudGarden.restored));
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -232,6 +251,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [windwalkMasteredState,setWindwalkMasteredState]=useState(
     windwalkMastered(persisted.skybreak.windwalkTraces.length),
   );
+  const [insideCloudGarden,setInsideCloudGarden]=useState(false);
+  const [cloudGardenRestored,setCloudGardenRestored]=useState(persisted.cloudGarden.restored);
+  const [nearCloudGardenEntrance,setNearCloudGardenEntrance]=useState(false);
+  const [nearCloudGardenExit,setNearCloudGardenExit]=useState(false);
+  const [nearCloudGardenHeart,setNearCloudGardenHeart]=useState(false);
+  const [cloudGardenClear,setCloudGardenClear]=useState(persisted.cloudGarden.restored);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -267,6 +292,32 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setCombatEngaged(false);
     setLivingEnemies(enemiesRef.current.filter(enemy=>enemy.hp>0).length);
     snapPlayerTo(position);
+    setNotice(message);
+  },[snapPlayerTo]);
+
+  const enterCloudGardenAt=useCallback((message:string)=>{
+    fieldEnemiesSnapshotRef.current=enemiesRef.current;
+    enemiesRef.current=createCloudGardenEnemies(cloudGardenRef.current.restored);
+    cloudGardenRef.current=enterCloudGarden(cloudGardenRef.current);
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideCloudGarden(true);
+    setCloudGardenClear(cloudGardenRef.current.restored||cloudGardenEnemiesDefeated(enemiesRef.current));
+    setLivingEnemies(enemiesRef.current.length);
+    snapPlayerTo(cloudGardenEntryPosition());
+    setNotice(message);
+  },[snapPlayerTo]);
+
+  const leaveCloudGardenToField=useCallback((message:string)=>{
+    cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    fieldEnemiesSnapshotRef.current=null;
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideCloudGarden(false);
+    setCombatEngaged(false);
+    setLivingEnemies(enemiesRef.current.filter(enemy=>enemy.hp>0).length);
+    snapPlayerTo(cloudGardenOutsideReturnPosition());
     setNotice(message);
   },[snapPlayerTo]);
 
