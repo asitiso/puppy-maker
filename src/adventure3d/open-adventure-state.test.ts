@@ -45,7 +45,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
     expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(false);
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(false);
-    expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual(['sky-thread']);
+    expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual([]);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -97,6 +97,13 @@ describe('V18 open adventure persistent state',()=>{
       dawnreach:{skybreak:{beaconReached:true}},
     });
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(true);
+  });
+
+  it('hydrates valid Windwalk traces only for a completed beacon route',()=>{
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{skybreak:{beaconReached:true,windwalkTraces:['sky-thread','bad','sky-thread','west-aerie']}},
+    });
+    expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual(['sky-thread','west-aerie']);
   });
 
   it('persists Windwalk aerial traces only after the beacon unlock',()=>{
