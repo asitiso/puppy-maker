@@ -965,8 +965,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {(nearPuzzle||nearHazard||(insideHollowCave&&!hollowShortcutOpen))&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {(nearPuzzle||nearHazard)&&!insideHollowCave&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
         className="is-primary"
