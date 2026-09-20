@@ -62,7 +62,7 @@ describe('V18 realtime combat system',()=>{
     expect(playerAttackDamage(combat)).toBe(PLAYER_COUNTER_DAMAGE);
     expect(combat.counterWindow).toBe(0);
 
-    combat=stepPlayerCombat(combat,.5);
+    for(let i=0;i<12&&combat.attackClock>=0;i++)combat=stepPlayerCombat(combat,.05);
     combat=tryStartPlayerAttack(combat);
     expect(playerAttackIsCounter(combat)).toBe(false);
     expect(playerAttackDamage(combat)).toBe(PLAYER_ATTACK_DAMAGE);
