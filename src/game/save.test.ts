@@ -34,6 +34,7 @@ describe('canonical save',()=>{
             {id:'roadside-ambush' as const,outcome:'rescued' as const},
             {id:'wandering-caravan' as const,outcome:'met' as const},
           ],
+          hollowCave:{shortcutOpen:true},
           ruin:{
             stonePosition:{x:-57,z:-38},
             brazierLit:true,
