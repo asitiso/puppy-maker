@@ -141,7 +141,7 @@ export function applyBurningHazardsToEnemies(
   const damagedIds:string[]=[];
   const next=enemies.map(enemy=>{
     if(enemy.hp<=0)return enemy;
-    const hazard=burning.find(item=>distance2(enemy.position,item.position)<=item.radius);
+    const hazard=burning.find(item=>distance2(enemy.position,item.position)<=item.radius&&Math.abs(enemy.position.y-item.position.y)<=2.4);
     if(!hazard)return enemy;
     const hit=applyEnemyDamage(enemy,8,pulseSerial);
     if(!hit.damaged)return enemy;

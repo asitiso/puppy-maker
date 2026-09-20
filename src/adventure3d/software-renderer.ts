@@ -129,6 +129,33 @@ function drawEnemy(
   const scale=Math.max(5,Math.min(24,base.scale*.62));
   ctx.save();
 
+  if(enemy.archetype==='skimmer'){
+    const ground=projectAdventurePoint(
+      {...enemy.position,y:startingFieldHeight(enemy.position.x,enemy.position.z)},
+      camera,
+      width,
+      height,
+    );
+    if(ground){
+      const altitude=Math.max(0,enemy.position.y-startingFieldHeight(enemy.position.x,enemy.position.z));
+      const shadow=Math.max(9,Math.min(34,base.scale*(1.45-altitude*.055)));
+      ctx.fillStyle='rgba(25,36,39,.22)';
+      ctx.beginPath();
+      ctx.ellipse(ground.x,ground.y,shadow,shadow*.28,0,0,Math.PI*2);
+      ctx.fill();
+      if(altitude>2){
+        ctx.strokeStyle='rgba(188,228,238,.22)';
+        ctx.lineWidth=1.5;
+        ctx.setLineDash([4,5]);
+        ctx.beginPath();
+        ctx.moveTo(base.x,base.y);
+        ctx.lineTo(ground.x,ground.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
   if(locked){
     const ring=Math.max(16,Math.min(62,base.scale*2.7));
     ctx.strokeStyle='rgba(186,232,255,.92)';
@@ -157,19 +184,36 @@ function drawEnemy(
   }
 
   const stagger=enemy.mode==='stagger';
-  const body=enemy.archetype==='guard'?'#705a4f':'#84504b';
-  ctx.fillStyle=stagger?'#f2d3b5':body;
   ctx.strokeStyle=enemy.mode==='suspicious'?'#f2d77b':enemy.mode==='windup'?'#ff765e':'rgba(45,36,32,.9)';
   ctx.lineWidth=enemy.mode==='windup'?3:2;
-  ctx.beginPath();
-  ctx.roundRect(top.x-scale,top.y,scale*2,Math.max(scale*2.1,base.y-top.y),scale*.7);
-  ctx.fill();
-  ctx.stroke();
 
-  ctx.fillStyle=enemy.archetype==='guard'?'#d8c29d':'#c6a786';
-  ctx.beginPath();
-  ctx.arc(top.x,top.y+scale*.25,scale*.7,0,Math.PI*2);
-  ctx.fill();
+  if(enemy.archetype==='skimmer'){
+    ctx.fillStyle=stagger?'#d9f0ec':enemy.mode==='windup'?'#7796a4':'#65899a';
+    ctx.beginPath();
+    ctx.moveTo(top.x-scale*2.25,top.y+scale*.65);
+    ctx.quadraticCurveTo(top.x-scale*.8,top.y-scale*.2,top.x,top.y+scale*.45);
+    ctx.quadraticCurveTo(top.x+scale*.8,top.y-scale*.2,top.x+scale*2.25,top.y+scale*.65);
+    ctx.quadraticCurveTo(top.x+scale*.9,top.y+scale*1.5,top.x,top.y+scale*1.15);
+    ctx.quadraticCurveTo(top.x-scale*.9,top.y+scale*1.5,top.x-scale*2.25,top.y+scale*.65);
+    ctx.closePath();
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle='#cce2df';
+    ctx.beginPath();
+    ctx.arc(top.x,top.y+scale*.62,scale*.5,0,Math.PI*2);
+    ctx.fill();
+  }else{
+    const body=enemy.archetype==='guard'?'#705a4f':'#84504b';
+    ctx.fillStyle=stagger?'#f2d3b5':body;
+    ctx.beginPath();
+    ctx.roundRect(top.x-scale,top.y,scale*2,Math.max(scale*2.1,base.y-top.y),scale*.7);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle=enemy.archetype==='guard'?'#d8c29d':'#c6a786';
+    ctx.beginPath();
+    ctx.arc(top.x,top.y+scale*.25,scale*.7,0,Math.PI*2);
+    ctx.fill();
+  }
 
   if(enemy.archetype==='guard'){
     const shieldX=top.x+scale*.86;
@@ -194,7 +238,11 @@ function drawEnemy(
     ctx.fillRect(top.x-barWidth/2,top.y-12,barWidth*ratio,5);
   }
 
-  const mark=enemy.mode==='suspicious'?'?':enemy.mode==='chase'||enemy.mode==='windup'?'!':'';
+  const mark=enemy.mode==='suspicious'
+    ?'?'
+    :enemy.mode==='chase'||enemy.mode==='windup'
+      ?enemy.archetype==='skimmer'&&enemy.mode==='windup'?'▼':'!'
+      :'';
   if(mark){
     ctx.fillStyle=enemy.mode==='windup'?'#ff8b73':'#ffe08a';
     ctx.font=`900 ${Math.max(11,Math.min(22,scale*1.1))}px system-ui`;

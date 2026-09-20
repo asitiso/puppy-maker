@@ -20,7 +20,8 @@ import {alertNearbyEnemies,applyEnemyDamage,stepEnemyAi,type AdventureEnemyState
 import {canClaimRuinReward,castRuinAbility,claimRuinReward,createRuinPuzzleState,playerNearRuinPuzzle,playerNearRuinStone,pushRuinStone,stepRuinPuzzle,type EnvironmentAbilityId} from './environment-system';
 import {applyBurningHazardsToEnemies,applyBurningHazardsToPlayer,burningHazardAvoidanceZones,castFieldEnvironmentAbility,playerNearFieldHazard,stepFieldHazards} from './environment-combat';
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
-import {createStartingCampEnemies,isStartingCampEnemy} from './starting-encounter';
+import {isStartingCampEnemy} from './starting-encounter';
+import {createDawnreachFieldEnemies,mergeDawnreachWindHunters} from './wind-hunters';
 import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
@@ -156,7 +157,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
-  const enemiesRef=useRef<AdventureEnemyState[]>(persisted.campCleared?[]:createStartingCampEnemies());
+  const enemiesRef=useRef<AdventureEnemyState[]>(createDawnreachFieldEnemies(
+    persisted.campCleared,
+    persisted.skybreak.beaconReached,
+  ));
   const fieldEnemiesSnapshotRef=useRef<AdventureEnemyState[]|null>(null);
   const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}});
   const pressedRef=useRef(new Set<string>());
@@ -287,7 +291,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const leaveSkybreakTo=useCallback((position:PlayerMotionState['position'],message:string)=>{
     skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
     fieldEnemiesSnapshotRef.current=null;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
@@ -314,7 +318,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const leaveCloudGardenToField=useCallback((message:string)=>{
     cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
     fieldEnemiesSnapshotRef.current=null;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
@@ -522,10 +526,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         skybreakRef.current=reachSkybreakBeacon(skybreakRef.current);
         requestOpenAdventureUpdate({type:'reach-skybreak-beacon'});
         windwalkUnlockedRef.current=true;
+        if(fieldEnemiesSnapshotRef.current){
+          fieldEnemiesSnapshotRef.current=mergeDawnreachWindHunters(
+            fieldEnemiesSnapshotRef.current,
+            true,
+          );
+        }
         setWindwalkUnlockedState(true);
         setSkybreakBeaconReached(true);
         setNearSkybreakBeacon(false);
-        setNotice('바람유리 봉화가 깨어났습니다. 바람걸음을 익혔습니다 — 공중에서 Space를 유지하면 스태미나를 사용해 낙하를 늦추고 앞으로 활강합니다. 전망대 바람승강로도 열렸습니다.');
+        setNotice('바람유리 봉화가 깨어났습니다. 바람걸음을 익혔습니다 — 공중에서 Space를 유지하면 활강할 수 있습니다. 봉화 빛에 반응해 새벽들판 상공에 돌풍날개가 나타났습니다. 지상에서는 급강하를 피한 뒤 반격하거나, 높은 곳에서 직접 요격할 수 있습니다.');
         return;
       }
       if(playerNearSkybreakWindLift(playerRef.current.position,skybreakRef.current)){
@@ -757,7 +767,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setInsideSkybreak(false);
     setInsideCloudGarden(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
     fieldEnemiesSnapshotRef.current=null;
     if(roadsideAmbushPhaseRef.current==='intervening'){
       roadsideAmbushPhaseRef.current='witnessed';

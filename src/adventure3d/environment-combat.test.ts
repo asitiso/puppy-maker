@@ -89,6 +89,14 @@ describe('V18 environment combat reactions',()=>{
     expect(result.enemies[0].mode).toBe('stagger');
   });
 
+  it('does not burn airborne enemies that are safely above the flames',()=>{
+    const hazards=[{...createDryGrassPatch('grass',{x:0,y:0,z:0},4),burning:true,burnRemaining:5}];
+    const target={...enemy(1,0),archetype:'skimmer' as const,position:{x:1,y:5,z:0}};
+    const result=applyBurningHazardsToEnemies([target],hazards,10001);
+    expect(result.damagedIds).toEqual([]);
+    expect(result.enemies[0].hp).toBe(target.hp);
+  });
+
   it('does not damage enemies outside burning terrain',()=>{
     const hazards=[{...createDryGrassPatch('grass',{x:0,y:0,z:0},3),burning:true,burnRemaining:5}];
     const target=enemy(10,0);

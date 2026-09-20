@@ -31,6 +31,7 @@ export const PLAYER_DODGE_COOLDOWN=.42;
 export const PLAYER_PERFECT_DODGE_END=.14;
 export const PLAYER_COUNTER_WINDOW=.85;
 export const PLAYER_COUNTER_DAMAGE=30;
+export const PLAYER_ATTACK_VERTICAL_REACH=2.6;
 
 export const DEFAULT_PLAYER_COMBAT:PlayerCombatState={
   hp:100,
@@ -201,9 +202,14 @@ export function playerAttackConnects(
   targetRadius=.8,
 ):boolean{
   const dx=target.x-player.x;
+  const dy=target.y-player.y;
   const dz=target.z-player.z;
   const distance=Math.hypot(dx,dz);
-  if(distance>3.1+Math.max(0,targetRadius)||distance<.001)return false;
+  if(
+    distance>3.1+Math.max(0,targetRadius)||
+    distance<.001||
+    Math.abs(dy)>PLAYER_ATTACK_VERTICAL_REACH+Math.max(0,targetRadius*.35)
+  )return false;
   const forward={x:Math.sin(facingYaw),z:-Math.cos(facingYaw)};
   const direction={x:dx/distance,z:dz/distance};
   return forward.x*direction.x+forward.z*direction.z>=Math.cos(58*Math.PI/180);
