@@ -55,7 +55,9 @@ describe('V18 realtime combat system',()=>{
     expect(evaded.perfectDodged).toBe(true);
     expect(evaded.state.counterWindow).toBeGreaterThan(0);
 
-    combat=tryStartPlayerAttack(evaded.state);
+    combat=evaded.state;
+    for(let i=0;i<6&&combat.dodgeClock>=0;i++)combat=stepPlayerCombat(combat,.05);
+    combat=tryStartPlayerAttack(combat);
     expect(playerAttackIsCounter(combat)).toBe(true);
     expect(playerAttackDamage(combat)).toBe(PLAYER_COUNTER_DAMAGE);
     expect(combat.counterWindow).toBe(0);
@@ -68,7 +70,7 @@ describe('V18 realtime combat system',()=>{
 
   it('does not award a counter to a late invulnerability dodge',()=>{
     let combat=tryStartPlayerDodge(DEFAULT_PLAYER_COMBAT,100,{x:1,z:0},0).state;
-    combat=stepPlayerCombat(combat,.2);
+    for(let i=0;i<4;i++)combat=stepPlayerCombat(combat,.05);
     const evaded=resolveEnemyAttack(combat,30);
     expect(evaded.damaged).toBe(false);
     expect(evaded.perfectDodged).toBe(false);
