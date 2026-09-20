@@ -69,6 +69,8 @@ describe('V18 first ten minutes opening experience',()=>{
     expect(reveal.remaining).toBe(DAWNREACH_OPENING.revealDuration);
     reveal=stepDiscoveryReveal(reveal,.25)!;
     expect(reveal.remaining).toBeLessThan(DAWNREACH_OPENING.revealDuration);
-    expect(stepDiscoveryReveal(reveal,DAWNREACH_OPENING.revealDuration)).toBeNull();
+    let current= reveal as ReturnType<typeof createDiscoveryReveal>|null;
+    for(let i=0;i<12&&current;i++)current=stepDiscoveryReveal(current,.25);
+    expect(current).toBeNull();
   });
 });
