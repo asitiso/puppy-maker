@@ -11,13 +11,14 @@ import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 import type {HollowCaveVisual} from './hollow-cave';
 import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
 import type {WindwalkRouteVisual} from './windwalk-routes';
-import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenVisual} from './cloud-garden';
+import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenEntranceVisual,type CloudGardenVisual} from './cloud-garden';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
 export type AdventureWorldOverlay={
   windwalkRoute?:WindwalkRouteVisual|null;
   cloudGarden?:CloudGardenVisual|null;
+  cloudGardenEntrance?:CloudGardenEntranceVisual|null;
 };
 
 function dot(a:Vec3,b:Vec3){return a.x*b.x+a.y*b.y+a.z*b.z;}
@@ -647,6 +648,33 @@ function drawSkybreakHighland(
   ctx.restore();
 }
 
+function drawCloudGardenEntrance(
+  ctx:CanvasRenderingContext2D,
+  entrance:CloudGardenEntranceVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const base=projectAdventurePoint(entrance.position,camera,width,height);
+  const top=projectAdventurePoint({...entrance.position,y:entrance.position.y+4.2},camera,width,height);
+  if(!base||!top)return;
+  const size=Math.max(10,Math.min(38,base.scale*1.15));
+  ctx.save();
+  ctx.strokeStyle=entrance.restored?'rgba(211,255,220,.92)':'rgba(218,244,255,.82)';
+  ctx.fillStyle=entrance.restored?'rgba(172,233,178,.16)':'rgba(183,225,240,.12)';
+  ctx.lineWidth=entrance.nearby?4:2.5;
+  ctx.beginPath();
+  ctx.ellipse(top.x,top.y+size*.35,size*.9,Math.max(size*1.4,(base.y-top.y)*.65),0,0,Math.PI*2);
+  ctx.fill();ctx.stroke();
+  if(entrance.nearby){
+    ctx.fillStyle='#f5ffd9';
+    ctx.font=`900 ${Math.max(11,Math.min(18,size*.55))}px system-ui`;
+    ctx.textAlign='center';
+    ctx.fillText('E',top.x,top.y-size*.8);
+  }
+  ctx.restore();
+}
+
 function drawCloudGarden(
   ctx:CanvasRenderingContext2D,
   garden:CloudGardenVisual,
@@ -932,6 +960,7 @@ export function renderAdventureField(
   if(roamingPresence)drawRoamingWorldPresence(ctx,roamingPresence,camera,width,height);
   if(wildlifeTrail)drawWildlifeTrail(ctx,wildlifeTrail,camera,width,height);
   if(worldOverlay.windwalkRoute)drawWindwalkRoute(ctx,worldOverlay.windwalkRoute,camera,width,height);
+  if(worldOverlay.cloudGardenEntrance)drawCloudGardenEntrance(ctx,worldOverlay.cloudGardenEntrance,camera,width,height);
   if(wildlife)drawWildlife(ctx,wildlife,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
