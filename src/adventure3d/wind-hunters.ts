@@ -1,6 +1,7 @@
 import {SKIMMER_HOVER_HEIGHT,type AdventureEnemyState} from './enemy-ai';
 import {startingFieldHeight} from './starting-field';
 import {createStartingCampEnemies} from './starting-encounter';
+import {mergeTempestWarden} from './tempest-warden';
 import type {Vec3} from './types';
 
 export const DAWNREACH_WIND_HUNTERS={
@@ -80,9 +81,15 @@ export function mergeDawnreachWindHunters(
 export function createDawnreachFieldEnemies(
   campCleared:boolean,
   windwalkUnlocked:boolean,
+  cloudGardenRestored=false,
+  tempestWardenDefeated=false,
 ):AdventureEnemyState[]{
-  return mergeDawnreachWindHunters(
-    campCleared?[]:createStartingCampEnemies(),
-    windwalkUnlocked,
+  return mergeTempestWarden(
+    mergeDawnreachWindHunters(
+      campCleared?[]:createStartingCampEnemies(),
+      windwalkUnlocked,
+    ),
+    cloudGardenRestored,
+    tempestWardenDefeated,
   );
 }

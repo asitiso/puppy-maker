@@ -17,6 +17,7 @@ export const WINDWALK_ROUTE={
     {id:'ruin-current',x:-29,z:-42},
     {id:'ridge-current',x:-52,z:-27},
   ],
+  stormLaunch:{id:'storm-launch',x:-76,z:8},
   traces:[
     {id:'sky-thread' as const,label:'하늘실 매듭',x:-17,z:-49,height:7.5},
     {id:'ruin-crown' as const,label:'폐허 위 바람문양',x:-40,z:-35,height:8},
@@ -42,8 +43,11 @@ const routePoint=(x:number,z:number,height=0):Vec3=>({
   z,
 });
 
-export function windwalkCurrentPositions(){
-  return WINDWALK_ROUTE.currents.map(current=>({
+export function windwalkCurrentPositions(stormLaunchAwakened=false){
+  const currents=stormLaunchAwakened
+    ?[...WINDWALK_ROUTE.currents,WINDWALK_ROUTE.stormLaunch]
+    :WINDWALK_ROUTE.currents;
+  return currents.map(current=>({
     ...current,
     position:routePoint(current.x,current.z,1.2),
   }));
@@ -70,13 +74,14 @@ export function applyWindwalkCurrent(
   unlocked:boolean,
   dtRaw:number,
   restored=false,
+  stormLaunchAwakened=false,
 ):{state:PlayerMotionState;boostedCurrentId:string|null}{
   if(!unlocked||!held||state.grounded||state.stamina<=.5){
     return {state,boostedCurrentId:null};
   }
   const radius=restored?WINDWALK_ROUTE.restoredCurrentRadius:WINDWALK_ROUTE.currentRadius;
   const height=restored?WINDWALK_ROUTE.restoredCurrentHeight:WINDWALK_ROUTE.currentHeight;
-  const current=windwalkCurrentPositions().find(item=>
+  const current=windwalkCurrentPositions(stormLaunchAwakened).find(item=>
     planarDistance(state.position,item.position)<=radius&&
     state.position.y>=item.position.y-1.5&&
     state.position.y<=item.position.y+height
@@ -114,10 +119,11 @@ export function windwalkRouteVisual(
   discovered:ReadonlySet<WindwalkTraceId>,
   boostedCurrentId:string|null,
   restored=false,
+  stormLaunchAwakened=false,
 ):WindwalkRouteVisual|null{
   if(!unlocked)return null;
   return {
-    currents:windwalkCurrentPositions().map(current=>({
+    currents:windwalkCurrentPositions(stormLaunchAwakened).map(current=>({
       id:current.id,
       position:current.position,
       active:current.id===boostedCurrentId,

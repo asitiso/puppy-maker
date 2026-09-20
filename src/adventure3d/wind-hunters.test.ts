@@ -35,6 +35,15 @@ describe('V18 Dawnreach aerial Windwalk hunters',()=>{
     expect(unlockedAfterCamp.every(isDawnreachWindHunter)).toBe(true);
   });
 
+  it('adds the Tempest Warden only after garden restoration and removes it after defeat',()=>{
+    const before=createDawnreachFieldEnemies(true,true,false,false);
+    expect(before.some(enemy=>enemy.id==='tempest-warden')).toBe(false);
+    const restored=createDawnreachFieldEnemies(true,true,true,false);
+    expect(restored.some(enemy=>enemy.id==='tempest-warden')).toBe(true);
+    const defeated=createDawnreachFieldEnemies(true,true,true,true);
+    expect(defeated.some(enemy=>enemy.id==='tempest-warden')).toBe(false);
+  });
+
   it('dives toward strike height during windup and stays low through recovery',()=>{
     const hunter={
       ...createDawnreachWindHunters(true)[0],

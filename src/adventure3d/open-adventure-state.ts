@@ -19,6 +19,7 @@ export type DawnreachWorldEventResolution={id:DawnreachWorldEventId;outcome:Dawn
 export type DawnreachHollowCaveProgress={shortcutOpen:boolean};
 export type DawnreachSkybreakProgress={beaconReached:boolean;windwalkTraces:WindwalkTraceId[]};
 export type DawnreachCloudGardenProgress={restored:boolean};
+export type DawnreachTempestWardenProgress={defeated:boolean};
 
 export type DawnreachAdventureProgress={
   discoveredIds:DawnreachDiscoveryId[];
@@ -28,6 +29,7 @@ export type DawnreachAdventureProgress={
   hollowCave:DawnreachHollowCaveProgress;
   skybreak:DawnreachSkybreakProgress;
   cloudGarden:DawnreachCloudGardenProgress;
+  tempestWarden:DawnreachTempestWardenProgress;
   ruin:DawnreachRuinProgress;
 };
 
@@ -43,6 +45,7 @@ export type OpenAdventureUpdate=
   |{type:'reach-skybreak-beacon'}
   |{type:'discover-windwalk-trace';id:WindwalkTraceId}
   |{type:'restore-cloud-garden'}
+  |{type:'defeat-tempest-warden'}
   |{type:'clear-camp'}
   |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
@@ -61,6 +64,7 @@ export function emptyOpenAdventureState():OpenAdventureState{
       hollowCave:{shortcutOpen:false},
       skybreak:{beaconReached:false,windwalkTraces:[]},
       cloudGarden:{restored:false},
+      tempestWarden:{defeated:false},
       ruin:{
         stonePosition:null,
         brazierLit:false,
@@ -98,12 +102,14 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
   const hollowCave=isRecord(dawnreach.hollowCave)?dawnreach.hollowCave:{};
   const skybreak=isRecord(dawnreach.skybreak)?dawnreach.skybreak:{};
   const cloudGarden=isRecord(dawnreach.cloudGarden)?dawnreach.cloudGarden:{};
+  const tempestWarden=isRecord(dawnreach.tempestWarden)?dawnreach.tempestWarden:{};
   const shortcutOpen=hollowCave.shortcutOpen===true;
   const beaconReached=skybreak.beaconReached===true;
   const windwalkTraces=beaconReached&&Array.isArray(skybreak.windwalkTraces)
     ?skybreak.windwalkTraces.filter((value):value is WindwalkTraceId=>typeof value==='string'&&isWindwalkTraceId(value)).filter((value,index,list)=>list.indexOf(value)===index)
     :[];
   const cloudGardenRestored=beaconReached&&windwalkTraces.length===3&&cloudGarden.restored===true;
+  const tempestWardenDefeated=cloudGardenRestored&&tempestWarden.defeated===true;
   if(shortcutOpen&&!discoveredIds.includes('hollow-cave'))discoveredIds.push('hollow-cave');
   const rewardClaimed=ruin.rewardClaimed===true;
   const solved=rewardClaimed||ruin.solved===true;
@@ -117,6 +123,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
       hollowCave:{shortcutOpen},
       skybreak:{beaconReached,windwalkTraces},
       cloudGarden:{restored:cloudGardenRestored},
+      tempestWarden:{defeated:tempestWardenDefeated},
       ruin:{
         stonePosition:hydratePosition(ruin.stonePosition),
         brazierLit:ruin.brazierLit===true,
@@ -191,6 +198,11 @@ export function applyOpenAdventureUpdate(
       dawnreach.skybreak.windwalkTraces.length!==3
     )return current;
     return {...current,dawnreach:{...dawnreach,cloudGarden:{restored:true}}};
+  }
+
+  if(update.type==='defeat-tempest-warden'){
+    if(dawnreach.tempestWarden.defeated||!dawnreach.cloudGarden.restored)return current;
+    return {...current,dawnreach:{...dawnreach,tempestWarden:{defeated:true}}};
   }
 
   if(update.type==='clear-camp'){
