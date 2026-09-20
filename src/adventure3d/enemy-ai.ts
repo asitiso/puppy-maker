@@ -192,7 +192,7 @@ export function stepEnemyAi(
     if(homeDistance<.6)return {enemy:settle({...enemy,position:{...enemy.home},mode:'patrol',timer:0}),attack:null};
     const facingYaw=faceToward(enemy.position,enemy.home,enemy.facingYaw);
     const position=moveToward(enemy.position,enemy.home,config.moveSpeed*1.2,dt,terrainHeight,avoidanceZones);
-    return {enemy:{...enemy,position,facingYaw},attack:null};
+    return {enemy:settle({...enemy,position,facingYaw}),attack:null};
   }
 
   if(seesPlayer)return {enemy:settle({...enemy,mode:'suspicious',timer:.42,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)}),attack:null};
@@ -205,7 +205,7 @@ export function stepEnemyAi(
   }
   const facingYaw=faceToward(enemy.position,patrolTarget,enemy.facingYaw);
   const position=moveToward(enemy.position,patrolTarget,config.moveSpeed,dt,terrainHeight,avoidanceZones);
-  return {enemy:{...enemy,position,facingYaw},attack:null};
+  return {enemy:settle({...enemy,position,facingYaw}),attack:null};
 }
 
 export type EnemyDamageOptions={counter?:boolean};
