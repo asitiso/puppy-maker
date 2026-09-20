@@ -10,12 +10,14 @@ import type {RoamingWorldPresenceVisual} from './roaming-world';
 import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 import type {HollowCaveVisual} from './hollow-cave';
 import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
-import {WINDWALK_ROUTE,type WindwalkRouteVisual} from './windwalk-routes';
+import type {WindwalkRouteVisual} from './windwalk-routes';
+import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenVisual} from './cloud-garden';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
 export type AdventureWorldOverlay={
   windwalkRoute?:WindwalkRouteVisual|null;
+  cloudGarden?:CloudGardenVisual|null;
 };
 
 function dot(a:Vec3,b:Vec3){return a.x*b.x+a.y*b.y+a.z*b.z;}
@@ -645,6 +647,73 @@ function drawSkybreakHighland(
   ctx.restore();
 }
 
+function drawCloudGarden(
+  ctx:CanvasRenderingContext2D,
+  garden:CloudGardenVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  ctx.save();
+  const sky=ctx.createLinearGradient(0,0,0,height);
+  sky.addColorStop(0,garden.restored?'#9fd8e7':'#728b9e');
+  sky.addColorStop(.58,garden.restored?'#d7e8cf':'#a8b4ac');
+  sky.addColorStop(1,garden.restored?'#7da27d':'#596b61');
+  ctx.fillStyle=sky;
+  ctx.fillRect(0,0,width,height);
+
+  for(let grid=-CLOUD_GARDEN.halfSize;grid<=CLOUD_GARDEN.halfSize;grid+=4){
+    const xa=projectAdventurePoint({x:grid,y:cloudGardenHeight(grid,-CLOUD_GARDEN.halfSize),z:-CLOUD_GARDEN.halfSize},camera,width,height);
+    const xb=projectAdventurePoint({x:grid,y:cloudGardenHeight(grid,CLOUD_GARDEN.halfSize),z:CLOUD_GARDEN.halfSize},camera,width,height);
+    line(ctx,xa,xb,garden.restored?'rgba(231,250,221,.2)':'rgba(224,236,229,.11)');
+    const za=projectAdventurePoint({x:-CLOUD_GARDEN.halfSize,y:cloudGardenHeight(-CLOUD_GARDEN.halfSize,grid),z:grid},camera,width,height);
+    const zb=projectAdventurePoint({x:CLOUD_GARDEN.halfSize,y:cloudGardenHeight(CLOUD_GARDEN.halfSize,grid),z:grid},camera,width,height);
+    line(ctx,za,zb,garden.restored?'rgba(231,250,221,.2)':'rgba(224,236,229,.11)');
+  }
+
+  const heart=projectAdventurePoint(garden.heart,camera,width,height);
+  if(heart){
+    const size=Math.max(12,Math.min(44,heart.scale*1.3));
+    ctx.fillStyle=garden.restored?'rgba(188,246,194,.34)':'rgba(98,111,120,.48)';
+    ctx.strokeStyle=garden.restored?'rgba(225,255,224,.95)':garden.enemiesDefeated?'rgba(210,241,245,.9)':'rgba(151,167,177,.7)';
+    ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(heart.x,heart.y-size*.55,size,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.arc(heart.x,heart.y-size*.55,size*.42,0,Math.PI*2);ctx.stroke();
+    if(garden.nearbyHeart&&garden.enemiesDefeated&&!garden.restored){
+      ctx.fillStyle='#f4ffd9';
+      ctx.font=`900 ${Math.max(11,Math.min(18,size*.55))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('E',heart.x,heart.y-size*1.75);
+    }
+  }
+
+  const gate=projectAdventurePoint(garden.entrance,camera,width,height);
+  if(gate){
+    const size=Math.max(10,Math.min(34,gate.scale));
+    ctx.strokeStyle='rgba(221,247,252,.78)';
+    ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(gate.x,gate.y-size,size,0,Math.PI*2);ctx.stroke();
+    if(garden.nearbyExit){
+      ctx.fillStyle='#f4ffd9';
+      ctx.font=`900 ${Math.max(10,Math.min(17,size*.55))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('E',gate.x,gate.y-size*2.1);
+    }
+  }
+
+  if(garden.restored){
+    ctx.fillStyle='rgba(232,255,228,.45)';
+    for(let i=0;i<18;i++){
+      const angle=(i/18)*Math.PI*2;
+      const radius=60+(i%4)*18;
+      const x=width*.5+Math.cos(angle)*radius;
+      const y=height*.42+Math.sin(angle*1.7)*32+(i%3)*16;
+      ctx.beginPath();ctx.ellipse(x,y,5,2.5,angle,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function drawWindwalkRoute(
   ctx:CanvasRenderingContext2D,
   route:WindwalkRouteVisual,
@@ -655,10 +724,10 @@ function drawWindwalkRoute(
   ctx.save();
   for(const current of route.currents){
     const base=projectAdventurePoint(current.position,camera,width,height);
-    const top=projectAdventurePoint({...current.position,y:current.position.y+WINDWALK_ROUTE.currentHeight},camera,width,height);
+    const top=projectAdventurePoint({...current.position,y:current.position.y+route.currentHeight},camera,width,height);
     if(!base||!top)continue;
     const radius=Math.max(10,Math.min(38,base.scale*1.15));
-    ctx.strokeStyle=current.active?'rgba(205,250,255,.9)':'rgba(184,230,235,.36)';
+    ctx.strokeStyle=current.active?'rgba(205,250,255,.9)':route.restored?'rgba(207,247,231,.58)':'rgba(184,230,235,.36)';
     ctx.lineWidth=current.active?3:2;
     for(let i=0;i<4;i++){
       const t=i/3;
@@ -821,6 +890,19 @@ export function renderAdventureField(
 
   if(skybreakHighland?.active){
     drawSkybreakHighland(ctx,skybreakHighland,camera,width,height);
+    const enemyDepth=[...enemies].sort((a,b)=>{
+      const pa=projectAdventurePoint(a.position,camera,width,height);
+      const pb=projectAdventurePoint(b.position,camera,width,height);
+      return (pb?.depth??0)-(pa?.depth??0);
+    });
+    for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
+    if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
+    drawPlayer(ctx,player,camera,width,height);
+    return;
+  }
+
+  if(worldOverlay.cloudGarden?.active){
+    drawCloudGarden(ctx,worldOverlay.cloudGarden,camera,width,height);
     const enemyDepth=[...enemies].sort((a,b)=>{
       const pa=projectAdventurePoint(a.position,camera,width,height);
       const pb=projectAdventurePoint(b.position,camera,width,height);
