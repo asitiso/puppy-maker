@@ -54,9 +54,8 @@ export function isWindwalkTraceId(value:string):value is WindwalkTraceId{
   return (windwalkTraceIds as readonly string[]).includes(value);
 }
 
-export function windwalkRouteMastered(discovered:ReadonlySet<WindwalkTraceId>|readonly WindwalkTraceId[]){
-  const count='size' in discovered?discovered.size:new Set(discovered).size;
-  return count===windwalkTraceIds.length;
+export function windwalkRouteMastered(discovered:Iterable<WindwalkTraceId>){
+  return new Set(discovered).size===windwalkTraceIds.length;
 }
 
 export function applyWindwalkCurrent(
