@@ -3,6 +3,7 @@ import {
   ROADSIDE_AMBUSH,
   createRoadsideAmbushEnemies,
   isRoadsideAmbushEnemy,
+  isValidDawnreachWorldEventResolution,
   playerNearRoadsideAmbush,
   roadsideAmbushConsequence,
   roadsideAmbushDefeated,
@@ -13,6 +14,13 @@ import {
 } from './world-events';
 
 describe('V18 Dawnreach living world events',()=>{
+  it('keeps outcomes valid for their own event instead of accepting any shared enum value',()=>{
+    expect(isValidDawnreachWorldEventResolution('roadside-ambush','rescued')).toBe(true);
+    expect(isValidDawnreachWorldEventResolution('roadside-ambush','met')).toBe(false);
+    expect(isValidDawnreachWorldEventResolution('wandering-caravan','met')).toBe(true);
+    expect(isValidDawnreachWorldEventResolution('wandering-caravan','passed')).toBe(false);
+  });
+
   it('stays unmarked until the player naturally enters the witness radius',()=>{
     const far={x:0,y:0,z:26};
     const near={x:ROADSIDE_AMBUSH.position.x+8,y:0,z:ROADSIDE_AMBUSH.position.z};
