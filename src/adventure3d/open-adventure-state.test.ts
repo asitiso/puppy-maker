@@ -29,12 +29,14 @@ describe('V18 open adventure persistent state',()=>{
           {id:'roadside-ambush',outcome:'passed'},
           {id:'unknown',outcome:'rescued'},
           {id:'roadside-ambush',outcome:'invalid'},
+          {id:'wandering-caravan',outcome:'passed'},
+          {id:'wandering-caravan',outcome:'met'},
         ],
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
     expect(hydrated.dawnreach.discoveredIds).toEqual(['skywatch']);
-    expect(hydrated.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'}]);
+    expect(hydrated.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'},{id:'wandering-caravan',outcome:'met'}]);
     expect(hydrated.dawnreach.ruin.stonePosition).toEqual({x:140,z:-140});
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
   });
@@ -57,7 +59,11 @@ describe('V18 open adventure persistent state',()=>{
     expect(state.dawnreach.campCleared).toBe(true);
     state=applyOpenAdventureUpdate(state,{type:'resolve-world-event',id:'roadside-ambush',outcome:'rescued'});
     state=applyOpenAdventureUpdate(state,{type:'resolve-world-event',id:'roadside-ambush',outcome:'passed'});
-    expect(state.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'}]);
+    state=applyOpenAdventureUpdate(state,{type:'resolve-world-event',id:'wandering-caravan',outcome:'met'});
+    expect(state.dawnreach.worldEvents).toEqual([
+      {id:'roadside-ambush',outcome:'rescued'},
+      {id:'wandering-caravan',outcome:'met'},
+    ]);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
