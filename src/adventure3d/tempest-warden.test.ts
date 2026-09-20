@@ -3,6 +3,7 @@ import {
   TEMPEST_WARDEN,
   advanceTempestWardenPhase,
   createTempestWarden,
+  disruptTempestWardenWithWind,
   isTempestWarden,
   mergeTempestWarden,
   tempestWardenPhase,
@@ -32,6 +33,20 @@ describe('V18 Tempest Warden miniboss',()=>{
 
     const duplicate=advanceTempestWardenPhase(transitioned.enemy,()=>2);
     expect(duplicate.changed).toBe(false);
+  });
+
+  it('lets a frontal wind pulse knock phase two down into a long punish window',()=>{
+    const boss=createTempestWarden(true,false)!;
+    const airborne=advanceTempestWardenPhase({...boss,hp:TEMPEST_WARDEN.phaseTwoHp},()=>0).enemy;
+    const player={x:airborne.position.x,y:0,z:airborne.position.z+5};
+    const disrupted=disruptTempestWardenWithWind(airborne,player,0,()=>0);
+    expect(disrupted.affected).toBe(true);
+    expect(disrupted.enemy.mode).toBe('stagger');
+    expect(disrupted.enemy.timer).toBe(1.15);
+    expect(disrupted.enemy.position.y).toBe(1.3);
+
+    const behind=disruptTempestWardenWithWind(airborne,player,Math.PI,()=>0);
+    expect(behind.affected).toBe(false);
   });
 
   it('merges idempotently into a restored field encounter set',()=>{
