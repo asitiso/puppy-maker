@@ -37,6 +37,15 @@ import {
   shouldWitnessRoadsideAmbush,
   type WorldEventPhase,
 } from './world-events';
+import {
+  WANDERING_CARAVAN,
+  createWanderingCaravanState,
+  playerNearWanderingCaravan,
+  shouldWitnessWanderingCaravan,
+  stepWanderingCaravan,
+  wanderingCaravanMessage,
+  wanderingCaravanVisual,
+} from './roaming-world';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -87,6 +96,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const roadsideAmbushResolvedRef=useRef(Boolean(roadsideResolution));
   const roadsideOutcomeRef=useRef(roadsideResolution?.outcome);
   const roadsideAmbushPhaseRef=useRef<WorldEventPhase>('hidden');
+  const caravanResolution=persisted.worldEvents.find(event=>event.id===WANDERING_CARAVAN.id);
+  const caravanMetRef=useRef(Boolean(caravanResolution));
+  const caravanWitnessedRef=useRef(Boolean(caravanResolution));
+  const caravanRef=useRef(createWanderingCaravanState());
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -107,6 +120,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [worldEventPhase,setWorldEventPhase]=useState<WorldEventPhase>('hidden');
   const [nearWorldEvent,setNearWorldEvent]=useState(false);
   const [nearWorldConsequence,setNearWorldConsequence]=useState(false);
+  const [nearCaravan,setNearCaravan]=useState(false);
+  const [caravanFamiliar,setCaravanFamiliar]=useState(Boolean(caravanResolution));
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -236,6 +251,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
     const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
     if(inCombat||combatRef.current.hp<=0)return;
+
+    if(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current)){
+      const familiar=caravanMetRef.current;
+      if(!familiar){
+        caravanMetRef.current=true;
+        setCaravanFamiliar(true);
+        requestOpenAdventureUpdate({type:'resolve-world-event',id:WANDERING_CARAVAN.id,outcome:'met'});
+      }
+      setNotice(wanderingCaravanMessage(familiar,roadsideOutcomeRef.current));
+      return;
+    }
 
     const consequence=roadsideAmbushConsequence(roadsideOutcomeRef.current);
     if(playerNearWorldConsequence(playerRef.current.position,consequence)){
@@ -403,6 +429,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,startingFieldHeight,STARTING_FIELD.halfSize);
 
+      const caravanPause=playerNearWanderingCaravan(playerRef.current.position,caravanRef.current,7);
+      caravanRef.current=stepWanderingCaravan(caravanRef.current,dt,caravanPause);
+      if(
+        combat.hp>0&&
+        shouldWitnessWanderingCaravan(playerRef.current.position,caravanRef.current,caravanWitnessedRef.current)
+      ){
+        caravanWitnessedRef.current=true;
+        setNotice('짐짐승 방울 소리와 함께 행상인이 들판 길을 지나갑니다. 가까이 가면 잠시 멈춰 이야기를 나눌 수 있습니다.');
+      }
+
       if(
         roadsideAmbushPhaseRef.current==='hidden'&&
         !roadsideAmbushResolvedRef.current&&
@@ -538,6 +574,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           playerRef.current.position,
           roadsideAmbushConsequence(roadsideOutcomeRef.current),
         ),
+        wanderingCaravanVisual(
+          caravanRef.current,
+          caravanMetRef.current,
+          playerNearWanderingCaravan(playerRef.current.position,caravanRef.current),
+        ),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -568,6 +609,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           playerRef.current.position,
           roadsideAmbushConsequence(roadsideOutcomeRef.current),
         ));
+        setNearCaravan(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -629,6 +671,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
+      {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -637,7 +680,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
-      <span>{nearWorldConsequence&&!combatEngaged
+      <span>{nearCaravan&&!combatEngaged
+        ?caravanFamiliar
+          ?'전에 만난 행상인이 다시 들판 길을 지나고 있습니다. 가까이 가서 말을 걸 수 있습니다.'
+          :'행상인이 이동 중입니다. 가까이 다가가면 잠시 멈춰 이야기를 나눌 수 있습니다.'
+        :nearWorldConsequence&&!combatEngaged
         ?roadsideOutcomeRef.current==='rescued'
           ?'구조한 여행자가 아직 길목에 머물고 있습니다. 말을 걸면 주변에 대한 단서를 들을 수 있습니다.'
           :'습격 뒤 남은 짐과 바퀴 자국을 살펴볼 수 있습니다.'
@@ -679,13 +726,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
         onClick={interactWorld}
       >{worldEventPhase==='witnessed'&&nearWorldEvent
         ?'개입'
-        :nearWorldConsequence
-          ?roadsideOutcomeRef.current==='rescued'?'대화하기':'흔적 살피기'
-          :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
+        :nearCaravan
+          ?'말 걸기'
+          :nearWorldConsequence
+            ?roadsideOutcomeRef.current==='rescued'?'대화하기':'흔적 살피기'
+            :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
     <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>

@@ -6,6 +6,7 @@ import type {PlayerCombatState} from './combat-system';
 import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
 import type {FieldHazardState} from './environment-combat';
 import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
+import type {RoamingWorldPresenceVisual} from './roaming-world';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -335,6 +336,50 @@ function drawWorldConsequence(
   ctx.restore();
 }
 
+function drawRoamingWorldPresence(
+  ctx:CanvasRenderingContext2D,
+  presence:RoamingWorldPresenceVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const base=projectAdventurePoint(presence.position,camera,width,height);
+  const top=projectAdventurePoint({...presence.position,y:presence.position.y+1.65},camera,width,height);
+  if(!base||!top)return;
+  const size=Math.max(7,Math.min(25,base.scale*.72));
+  ctx.save();
+
+  ctx.fillStyle=presence.familiar?'#89a98f':'#b79b69';
+  ctx.strokeStyle=presence.nearby?'#fff1ae':'rgba(64,55,45,.9)';
+  ctx.lineWidth=presence.nearby?3:2;
+  ctx.beginPath();ctx.roundRect(top.x-size*.55,top.y,size*1.1,Math.max(size*1.9,base.y-top.y),size*.45);ctx.fill();ctx.stroke();
+
+  const beastX=base.x+size*1.5;
+  ctx.fillStyle='#8a7157';
+  ctx.beginPath();ctx.ellipse(beastX,base.y-size*.62,size*.95,size*.55,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#6b553f';
+  ctx.beginPath();ctx.arc(beastX+size*.7,base.y-size*.9,size*.32,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#594534';
+  ctx.lineWidth=2;
+  for(const offset of [-.45,.4]){
+    ctx.beginPath();
+    ctx.moveTo(beastX+size*offset,base.y-size*.28);
+    ctx.lineTo(beastX+size*offset,base.y+size*.22);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle='#7a6046';
+  ctx.beginPath();ctx.roundRect(beastX-size*.45,base.y-size*1.18,size*.9,size*.48,3);ctx.fill();
+
+  if(presence.nearby){
+    ctx.fillStyle='#fff2bd';
+    ctx.font=`900 ${Math.max(10,Math.min(18,size*.9))}px system-ui`;
+    ctx.textAlign='center';
+    ctx.fillText('E',base.x,top.y-size*.55);
+  }
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -437,6 +482,7 @@ export function renderAdventureField(
   worldEvent:WorldEventVisual|null=null,
   worldConsequence:WorldConsequenceVisual|null=null,
   nearbyWorldConsequence=false,
+  roamingPresence:RoamingWorldPresenceVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -474,6 +520,7 @@ export function renderAdventureField(
   drawFieldHazards(ctx,hazards,camera,width,height);
   if(worldEvent)drawWorldEvent(ctx,worldEvent,camera,width,height);
   if(worldConsequence)drawWorldConsequence(ctx,worldConsequence,camera,width,height,nearbyWorldConsequence);
+  if(roamingPresence)drawRoamingWorldPresence(ctx,roamingPresence,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
     const pb=projectAdventurePoint(b.position,camera,width,height);

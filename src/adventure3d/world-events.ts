@@ -2,10 +2,10 @@ import {startingFieldHeight} from './starting-field';
 import type {AdventureEnemyState,EnemyArchetype} from './enemy-ai';
 import type {Vec3} from './types';
 
-export const dawnreachWorldEventIds=['roadside-ambush'] as const;
+export const dawnreachWorldEventIds=['roadside-ambush','wandering-caravan'] as const;
 export type DawnreachWorldEventId=typeof dawnreachWorldEventIds[number];
 
-export const dawnreachWorldEventOutcomes=['rescued','passed'] as const;
+export const dawnreachWorldEventOutcomes=['rescued','passed','met'] as const;
 export type DawnreachWorldEventOutcome=typeof dawnreachWorldEventOutcomes[number];
 
 export type WorldEventPhase='hidden'|'witnessed'|'intervening'|'resolved';
@@ -26,6 +26,20 @@ export type WorldConsequenceVisual={
   position:Vec3;
   interactionRadius:number;
 };
+
+const validWorldEventOutcomes:Record<DawnreachWorldEventId,ReadonlySet<DawnreachWorldEventOutcome>>={
+  'roadside-ambush':new Set<DawnreachWorldEventOutcome>(['rescued','passed']),
+  'wandering-caravan':new Set<DawnreachWorldEventOutcome>(['met']),
+};
+
+export function isValidDawnreachWorldEventResolution(
+  id:string,
+  outcome:string,
+):id is DawnreachWorldEventId{
+  return dawnreachWorldEventIds.includes(id as DawnreachWorldEventId)&&
+    dawnreachWorldEventOutcomes.includes(outcome as DawnreachWorldEventOutcome)&&
+    validWorldEventOutcomes[id as DawnreachWorldEventId].has(outcome as DawnreachWorldEventOutcome);
+}
 
 export const ROADSIDE_AMBUSH={
   id:'roadside-ambush' as const,
