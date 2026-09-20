@@ -1350,22 +1350,24 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     />
 
     <header className="adventure3d__hud">
-      <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
+      <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideCloudGarden?'SECRET SKY GARDEN':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideCloudGarden?CLOUD_GARDEN.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
-      {combatEngaged&&<em>{insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
+      {combatEngaged&&<em>{insideCloudGarden?'정원 위협':insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
       {nearWildlife&&<em>야생 · {DAWNREACH_HERD.label}{wildlifeBehavior==='flee-fire'?' · 불길 회피':wildlifeBehavior==='flee-player'?' · 경계 중':''}</em>}
-      {wildlifeTrailActive&&!insideHollowCave&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
+      {wildlifeTrailActive&&!insideHollowCave&&!insideCloudGarden&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
       {insideHollowCave&&<em>동굴 공명 · {hollowResonators}/3</em>}
       {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
       {insideSkybreak&&!skybreakBeaconReached&&<em>{skybreakCalm?'돌풍 · 잠시 잦아듦':skybreakGust?'돌풍 · 강풍':'돌풍 · 소강'}</em>}
       {insideSkybreak&&skybreakBeaconReached&&<em>새 경로 · 전망대 바람승강로 개방</em>}
       {windwalkUnlockedState&&<em>{windwalkActive?'바람걸음 · 활강 중':windwalkMasteredState?'바람걸음 · 숙련':'탐험 성장 · 바람걸음'}</em>}
       {windwalkUnlockedState&&!windwalkMasteredState&&<em>공중 흔적 · {windwalkTraceCount}/{windwalkTraceIds.length}</em>}
+      {insideCloudGarden&&!cloudGardenRestored&&cloudGardenClear&&<em>정원 심장 · 복원 가능</em>}
+      {insideCloudGarden&&cloudGardenRestored&&<em>세계 변화 · 상승기류 강화</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -1374,7 +1376,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
     <div className="adventure3d__notice" role="status" aria-live="polite">
       <small>{visitedCount}/{STARTING_FIELD.discoveries.length} 발견</small>
-      <span>{nearCaravan&&!combatEngaged
+      <span>{nearCloudGardenEntrance&&!insideCloudGarden
+        ?cloudGardenRestored
+          ?'복원된 구름정원으로 이어지는 맑은 구름틈입니다. E로 다시 들어갈 수 있습니다.'
+          :'바람걸음 숙련으로만 드러난 구름틈입니다. 안쪽에서 뒤틀린 바람과 수호자의 움직임이 느껴집니다.'
+        :nearCaravan&&!combatEngaged
         ?caravanFamiliar
           ?'전에 만난 행상인이 다시 들판 길을 지나고 있습니다. 가까이 가서 말을 걸 수 있습니다.'
           :'행상인이 이동 중입니다. 가까이 다가가면 잠시 멈춰 이야기를 나눌 수 있습니다.'
@@ -1423,13 +1429,19 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
       {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&!insideCloudGarden&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!nearSkybreakBridge&&!nearSkybreakEntrance&&!nearSkybreakBeacon&&!nearSkybreakWindLift&&!nearSkybreakOutsideLift&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!nearSkybreakBridge&&!nearSkybreakEntrance&&!nearSkybreakBeacon&&!nearSkybreakWindLift&&!nearSkybreakOutsideLift&&!nearCloudGardenEntrance&&!nearCloudGardenExit&&!nearCloudGardenHeart&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||(combatEngaged&&!nearCloudGardenExit)||defeated}
         onClick={interactWorld}
-      >{nearSkybreakBeacon
+      >{nearCloudGardenHeart
+        ?cloudGardenClear?'정원 복원':'심장 살피기'
+        :nearCloudGardenExit
+          ?'능선으로 돌아가기'
+          :nearCloudGardenEntrance
+            ?'구름틈 들어가기'
+            :nearSkybreakBeacon
         ?'봉화 깨우기'
         :nearSkybreakWindLift
           ?'전망대로 내려가기'
