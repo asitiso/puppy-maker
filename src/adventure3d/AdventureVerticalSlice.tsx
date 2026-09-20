@@ -747,8 +747,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
     hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
     skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
+    cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
     setInsideHollowCave(false);
     setInsideSkybreak(false);
+    setInsideCloudGarden(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
     enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
     fieldEnemiesSnapshotRef.current=null;
@@ -870,8 +872,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const incapacitated=combat.hp<=0||combat.hitstun>0;
       const wantsSprint=!incapacitated&&combat.attackClock<0&&combat.dodgeClock<0&&sprintTouchRef.current;
       const movementInput=incapacitated||combat.dodgeClock>=0?{x:0,z:0}:move;
-      const terrainHeight=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
-      const movementHalfSize=skybreakRef.current.inside?SKYBREAK_HIGHLAND.halfSize:STARTING_FIELD.halfSize;
+      const terrainHeight=cloudGardenRef.current.inside
+        ?cloudGardenHeight
+        :skybreakRef.current.inside
+          ?skybreakHighlandHeight
+          :startingFieldHeight;
+      const movementHalfSize=cloudGardenRef.current.inside
+        ?CLOUD_GARDEN.halfSize
+        :skybreakRef.current.inside
+          ?SKYBREAK_HIGHLAND.halfSize
+          :STARTING_FIELD.halfSize;
       playerRef.current=stepPlayerMotion(playerRef.current,{
         moveX:movementInput.x,
         moveZ:movementInput.z,
@@ -890,12 +900,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       );
       playerRef.current=windwalkStep.state;
       windwalkActiveRef.current=windwalkStep.active;
-      if(!hollowCaveRef.current.inside&&!skybreakRef.current.inside){
+      if(!hollowCaveRef.current.inside&&!skybreakRef.current.inside&&!cloudGardenRef.current.inside){
         const currentStep=applyWindwalkCurrent(
           playerRef.current,
           windwalkHeld,
           windwalkUnlockedRef.current,
           dt,
+          cloudGardenRef.current.restored,
         );
         playerRef.current=currentStep.state;
         boostedWindCurrentRef.current=currentStep.boostedCurrentId;
@@ -926,6 +937,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       }
       hollowCaveRef.current=stepHollowCaveRuntime(hollowCaveRef.current,dt);
+
+      if(cloudGardenRef.current.inside){
+        playerRef.current={
+          ...playerRef.current,
+          position:constrainCloudGardenPlayer(playerRef.current.position),
+        };
+      }
 
       if(skybreakRef.current.inside){
         playerRef.current={
@@ -1060,8 +1078,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
 
       if(combat.hp>0){
-        const avoidanceZones=skybreakRef.current.inside?[]:burningHazardAvoidanceZones(hazardsRef.current);
-        const enemyTerrain=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
+        const avoidanceZones=skybreakRef.current.inside||cloudGardenRef.current.inside
+          ?[]
+          :burningHazardAvoidanceZones(hazardsRef.current);
+        const enemyTerrain=cloudGardenRef.current.inside
+          ?cloudGardenHeight
+          :skybreakRef.current.inside
+            ?skybreakHighlandHeight
+            :startingFieldHeight;
         const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
           enemy,
           playerRef.current.position,
@@ -1078,7 +1102,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         }
       }
 
-      if(!skybreakRef.current.inside&&roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
+      if(!skybreakRef.current.inside&&!cloudGardenRef.current.inside&&roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
         roadsideAmbushResolvedRef.current=true;
         roadsideOutcomeRef.current='rescued';
         roadsideAmbushPhaseRef.current='resolved';
@@ -1109,7 +1133,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       }
 
-      const nextNearby=skybreakRef.current.inside?null:nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
+      const nextNearby=skybreakRef.current.inside||cloudGardenRef.current.inside?null:nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
       nearbyRef.current=nextNearby;
       renderAdventureField(
         context,
@@ -1147,13 +1171,24 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             windwalkUnlockedRef.current&&!hollowCaveRef.current.inside&&!skybreakRef.current.inside,
             windwalkTracesRef.current,
             boostedWindCurrentRef.current,
+            cloudGardenRef.current.restored,
+          ),
+          cloudGarden:cloudGardenVisual(
+            cloudGardenRef.current,
+            playerRef.current.position,
+            enemiesRef.current,
+          ),
+          cloudGardenEntrance:cloudGardenEntranceVisual(
+            windwalkMasteredRef.current,
+            cloudGardenRef.current.restored,
+            playerRef.current.position,
           ),
         },
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
       const campLiving=enemiesRef.current.filter(enemy=>isStartingCampEnemy(enemy)&&enemy.hp>0).length;
-      if(!skybreakRef.current.inside&&campLiving===0&&!campClearedRef.current){
+      if(!skybreakRef.current.inside&&!cloudGardenRef.current.inside&&campLiving===0&&!campClearedRef.current){
         campClearedRef.current=true;
         requestOpenAdventureUpdate({type:'clear-camp'});
         setNotice('재빛 야영지의 위협이 사라졌습니다. 주변 흔적과 남겨진 물건을 직접 살펴보세요.');
@@ -1221,11 +1256,26 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearSkybreakOutsideLift(
           !skybreakRef.current.inside&&
           !hollowCaveRef.current.inside&&
+          !cloudGardenRef.current.inside&&
           playerNearSkybreakOutsideLift(
             playerRef.current.position,
             skybreakRef.current.beaconReached,
           ),
         );
+        setInsideCloudGarden(cloudGardenRef.current.inside);
+        setCloudGardenRestored(cloudGardenRef.current.restored);
+        setCloudGardenClear(cloudGardenRef.current.restored||cloudGardenEnemiesDefeated(enemiesRef.current));
+        setNearCloudGardenEntrance(
+          !cloudGardenRef.current.inside&&
+          !hollowCaveRef.current.inside&&
+          !skybreakRef.current.inside&&
+          playerNearCloudGardenOutsideEntrance(
+            playerRef.current.position,
+            windwalkMasteredRef.current,
+          ),
+        );
+        setNearCloudGardenExit(playerNearCloudGardenExit(playerRef.current.position,cloudGardenRef.current));
+        setNearCloudGardenHeart(playerNearCloudGardenHeart(playerRef.current.position,cloudGardenRef.current));
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
