@@ -22,6 +22,7 @@ import {applyBurningHazardsToEnemies,applyBurningHazardsToPlayer,burningHazardAv
 import {cameraRelativeMove,DEFAULT_PLAYER_STATE,stepPlayerMotion} from './player-controller';
 import {isStartingCampEnemy} from './starting-encounter';
 import {createDawnreachFieldEnemies,mergeDawnreachWindHunters} from './wind-hunters';
+import {advanceTempestWardenPhase,isTempestWarden,mergeTempestWarden,tempestWardenPhase} from './tempest-warden';
 import {createStartingCampHazards} from './starting-hazards';
 import {nearestStartingFieldDiscovery,STARTING_FIELD,startingFieldHeight} from './starting-field';
 import {STARTING_RUIN_PUZZLE} from './starting-ruin-puzzle';
@@ -160,6 +161,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const enemiesRef=useRef<AdventureEnemyState[]>(createDawnreachFieldEnemies(
     persisted.campCleared,
     persisted.skybreak.beaconReached,
+    persisted.cloudGarden.restored,
+    persisted.tempestWarden.defeated,
   ));
   const fieldEnemiesSnapshotRef=useRef<AdventureEnemyState[]|null>(null);
   const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}});
@@ -199,6 +202,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const boostedWindCurrentRef=useRef<string|null>(null);
   const cloudGardenRef=useRef(createCloudGardenState(persisted.cloudGarden.restored));
   const cloudGardenClearNotifiedRef=useRef(persisted.cloudGarden.restored);
+  const tempestWardenDefeatedRef=useRef(persisted.tempestWarden.defeated);
+  const tempestPhaseTwoNotifiedRef=useRef(false);
+  const tempestDefeatNotifiedRef=useRef(persisted.tempestWarden.defeated);
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -264,6 +270,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearCloudGardenHeart,setNearCloudGardenHeart]=useState(false);
   const [cloudGardenClear,setCloudGardenClear]=useState(persisted.cloudGarden.restored);
   const [counterReady,setCounterReady]=useState(false);
+  const [tempestWardenPhaseState,setTempestWardenPhaseState]=useState<1|2|null>(
+    tempestWardenPhase(enemiesRef.current.find(isTempestWarden)),
+  );
+  const [tempestWardenDefeated,setTempestWardenDefeated]=useState(persisted.tempestWarden.defeated);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
