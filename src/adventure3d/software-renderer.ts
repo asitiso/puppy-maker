@@ -13,6 +13,7 @@ import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} fr
 import type {WindwalkRouteVisual} from './windwalk-routes';
 import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenEntranceVisual,type CloudGardenVisual} from './cloud-garden';
 import {isTempestWarden} from './tempest-warden';
+import type {CombatFeedbackState} from './combat-feedback';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -20,6 +21,7 @@ export type AdventureWorldOverlay={
   windwalkRoute?:WindwalkRouteVisual|null;
   cloudGarden?:CloudGardenVisual|null;
   cloudGardenEntrance?:CloudGardenEntranceVisual|null;
+  combatFeedback?:CombatFeedbackState|null;
 };
 
 function dot(a:Vec3,b:Vec3){return a.x*b.x+a.y*b.y+a.z*b.z;}
@@ -323,6 +325,68 @@ function drawCombatEffects(
   ctx.restore();
 }
 
+
+function drawCombatFeedback(
+  ctx:CanvasRenderingContext2D,
+  feedback:CombatFeedbackState,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  if(!feedback.events.length)return;
+  ctx.save();
+  for(const event of feedback.events){
+    const p=projectAdventurePoint(event.position,camera,width,height);
+    if(!p)continue;
+    const progress=1-event.remaining/event.duration;
+    const rise=18+progress*42;
+    const alpha=Math.max(0,Math.min(1,event.remaining/Math.min(.22,event.duration)));
+    const strong=event.kind==='counter'||event.kind==='guard-break'||event.kind==='phase-break'||event.kind==='defeat';
+    const size=Math.max(12,Math.min(strong?25:20,p.scale*(strong?1.15:.9)));
+    ctx.globalAlpha=alpha;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.lineJoin='round';
+
+    let color='#fff1b8';
+    if(event.kind==='counter')color='#baf5ff';
+    else if(event.kind==='guard-break')color='#d9fbff';
+    else if(event.kind==='player-hit')color='#ff9c86';
+    else if(event.kind==='phase-break')color='#d5f5ff';
+    else if(event.kind==='defeat')color='#fff3b0';
+
+    const primary=event.amount!==undefined
+      ?`-${Math.max(0,Math.floor(event.amount))}`
+      :event.label??'';
+    if(primary){
+      ctx.font=`900 ${size}px system-ui`;
+      ctx.lineWidth=4;
+      ctx.strokeStyle='rgba(10,20,21,.72)';
+      ctx.strokeText(primary,p.x,p.y-rise);
+      ctx.fillStyle=color;
+      ctx.fillText(primary,p.x,p.y-rise);
+    }
+    if(event.label&&event.amount!==undefined){
+      ctx.font=`900 ${Math.max(9,size*.48)}px system-ui`;
+      ctx.lineWidth=3;
+      ctx.strokeStyle='rgba(10,20,21,.7)';
+      ctx.strokeText(event.label,p.x,p.y-rise-size*.85);
+      ctx.fillStyle=color;
+      ctx.fillText(event.label,p.x,p.y-rise-size*.85);
+    }
+
+    if(event.kind==='phase-break'){
+      const ring=Math.max(28,Math.min(120,p.scale*(3.2+progress*2.2)));
+      ctx.globalAlpha=Math.max(0,.72-progress*.55);
+      ctx.strokeStyle='rgba(183,238,255,.95)';
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,ring,0,Math.PI*2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
 
 function drawFieldHazards(
   ctx:CanvasRenderingContext2D,
@@ -1025,6 +1089,7 @@ export function renderAdventureField(
     for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
     if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
     drawPlayer(ctx,player,camera,width,height);
+    if(worldOverlay.combatFeedback)drawCombatFeedback(ctx,worldOverlay.combatFeedback,camera,width,height);
     return;
   }
 
@@ -1038,6 +1103,7 @@ export function renderAdventureField(
     for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
     if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
     drawPlayer(ctx,player,camera,width,height);
+    if(worldOverlay.combatFeedback)drawCombatFeedback(ctx,worldOverlay.combatFeedback,camera,width,height);
     return;
   }
 
@@ -1069,4 +1135,5 @@ export function renderAdventureField(
   for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
   if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
   drawPlayer(ctx,player,camera,width,height);
+  if(worldOverlay.combatFeedback)drawCombatFeedback(ctx,worldOverlay.combatFeedback,camera,width,height);
 }
