@@ -16,6 +16,7 @@ export type DawnreachRuinProgress={
 
 export type DawnreachWorldEventResolution={id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 export type DawnreachHollowCaveProgress={shortcutOpen:boolean};
+export type DawnreachSkybreakProgress={beaconReached:boolean};
 
 export type DawnreachAdventureProgress={
   discoveredIds:DawnreachDiscoveryId[];
@@ -23,6 +24,7 @@ export type DawnreachAdventureProgress={
   campCleared:boolean;
   worldEvents:DawnreachWorldEventResolution[];
   hollowCave:DawnreachHollowCaveProgress;
+  skybreak:DawnreachSkybreakProgress;
   ruin:DawnreachRuinProgress;
 };
 
@@ -35,6 +37,7 @@ export type OpenAdventureUpdate=
   |{type:'sync-ruin';stonePosition?:PersistentPlanarPosition|null;brazierLit?:boolean;solved?:boolean;rewardClaimed?:boolean}
   |{type:'unlock-echo-sense'}
   |{type:'open-hollow-shortcut'}
+  |{type:'reach-skybreak-beacon'}
   |{type:'clear-camp'}
   |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
@@ -51,6 +54,7 @@ export function emptyOpenAdventureState():OpenAdventureState{
       campCleared:false,
       worldEvents:[],
       hollowCave:{shortcutOpen:false},
+      skybreak:{beaconReached:false},
       ruin:{
         stonePosition:null,
         brazierLit:false,
@@ -86,7 +90,9 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
     ?dawnreach.discoveredIds.filter((value):value is DawnreachDiscoveryId=>typeof value==='string'&&discoverySet.has(value)).filter((value,index,list)=>list.indexOf(value)===index)
     :[];
   const hollowCave=isRecord(dawnreach.hollowCave)?dawnreach.hollowCave:{};
+  const skybreak=isRecord(dawnreach.skybreak)?dawnreach.skybreak:{};
   const shortcutOpen=hollowCave.shortcutOpen===true;
+  const beaconReached=skybreak.beaconReached===true;
   if(shortcutOpen&&!discoveredIds.includes('hollow-cave'))discoveredIds.push('hollow-cave');
   const rewardClaimed=ruin.rewardClaimed===true;
   const solved=rewardClaimed||ruin.solved===true;
@@ -98,6 +104,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
       campCleared:dawnreach.campCleared===true,
       worldEvents:hydrateWorldEvents(dawnreach.worldEvents),
       hollowCave:{shortcutOpen},
+      skybreak:{beaconReached},
       ruin:{
         stonePosition:hydratePosition(ruin.stonePosition),
         brazierLit:ruin.brazierLit===true,
@@ -144,6 +151,11 @@ export function applyOpenAdventureUpdate(
         hollowCave:{shortcutOpen:true},
       },
     };
+  }
+
+  if(update.type==='reach-skybreak-beacon'){
+    if(dawnreach.skybreak.beaconReached)return current;
+    return {...current,dawnreach:{...dawnreach,skybreak:{beaconReached:true}}};
   }
 
   if(update.type==='clear-camp'){
