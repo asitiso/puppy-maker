@@ -15,6 +15,7 @@ describe('V18 open adventure persistent state',()=>{
         echoSenseUnlocked:false,
         campCleared:false,
         worldEvents:[],
+        hollowCave:{shortcutOpen:false},
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -32,6 +33,7 @@ describe('V18 open adventure persistent state',()=>{
           {id:'wandering-caravan',outcome:'passed'},
           {id:'wandering-caravan',outcome:'met'},
         ],
+        hollowCave:{shortcutOpen:'yes'},
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
@@ -39,6 +41,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.worldEvents).toEqual([{id:'roadside-ambush',outcome:'rescued'},{id:'wandering-caravan',outcome:'met'}]);
     expect(hydrated.dawnreach.ruin.stonePosition).toEqual({x:140,z:-140});
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
+    expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(false);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -64,6 +67,20 @@ describe('V18 open adventure persistent state',()=>{
       {id:'roadside-ambush',outcome:'rescued'},
       {id:'wandering-caravan',outcome:'met'},
     ]);
+  });
+
+  it('persists the Hollow Cave shortcut as a sticky major exploration result',()=>{
+    let state=emptyOpenAdventureState();
+    state=applyOpenAdventureUpdate(state,{type:'open-hollow-shortcut'});
+    expect(state.dawnreach.hollowCave.shortcutOpen).toBe(true);
+    expect(state.dawnreach.discoveredIds).toContain('hollow-cave');
+    expect(applyOpenAdventureUpdate(state,{type:'open-hollow-shortcut'})).toBe(state);
+
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{hollowCave:{shortcutOpen:true}},
+    });
+    expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(true);
+    expect(hydrated.dawnreach.discoveredIds).toContain('hollow-cave');
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
