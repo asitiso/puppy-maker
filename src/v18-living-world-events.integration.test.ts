@@ -5,6 +5,7 @@ import {describe,expect,it} from 'vitest';
 const slice=readFileSync(new URL('./adventure3d/AdventureVerticalSlice.tsx',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('./adventure3d/software-renderer.ts',import.meta.url),'utf8');
 const roaming=readFileSync(new URL('./adventure3d/roaming-world.ts',import.meta.url),'utf8');
+const wildlife=readFileSync(new URL('./adventure3d/wildlife.ts',import.meta.url),'utf8');
 const persistence=readFileSync(new URL('./adventure3d/open-adventure-state.ts',import.meta.url),'utf8');
 
 describe('V18 living world event integration',()=>{
@@ -40,6 +41,16 @@ describe('V18 living world event integration',()=>{
     expect(slice).toContain('wanderingCaravanMessage');
     expect(renderer).toContain('drawRoamingWorldPresence');
     expect(persistence).toContain('isValidDawnreachWorldEventResolution');
+  });
+
+  it('adds wildlife that moves on its own and reacts to both player proximity and field fire',()=>{
+    expect(wildlife).toContain('stepDawnreachHerd');
+    expect(wildlife).toContain("behavior='flee-player'");
+    expect(wildlife).toContain("behavior='flee-fire'");
+    expect(wildlife).toContain('closestBurningHazard');
+    expect(slice).toContain('herdRef.current=stepDawnreachHerd');
+    expect(slice).toContain('hazardsRef.current');
+    expect(renderer).toContain('drawWildlife');
   });
 
   it('keeps event enemies separate from permanent camp completion',()=>{

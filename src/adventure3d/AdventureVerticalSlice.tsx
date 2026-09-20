@@ -46,6 +46,15 @@ import {
   wanderingCaravanMessage,
   wanderingCaravanVisual,
 } from './roaming-world';
+import {
+  DAWNREACH_HERD,
+  createDawnreachHerdState,
+  dawnreachHerdVisual,
+  playerNearDawnreachHerd,
+  shouldWitnessDawnreachHerd,
+  stepDawnreachHerd,
+  type WildlifeBehavior,
+} from './wildlife';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -100,6 +109,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const caravanMetRef=useRef(Boolean(caravanResolution));
   const caravanWitnessedRef=useRef(Boolean(caravanResolution));
   const caravanRef=useRef(createWanderingCaravanState());
+  const herdRef=useRef(createDawnreachHerdState());
+  const herdWitnessedRef=useRef(false);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -122,6 +133,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearWorldConsequence,setNearWorldConsequence]=useState(false);
   const [nearCaravan,setNearCaravan]=useState(false);
   const [caravanFamiliar,setCaravanFamiliar]=useState(Boolean(caravanResolution));
+  const [nearWildlife,setNearWildlife]=useState(false);
+  const [wildlifeBehavior,setWildlifeBehavior]=useState<WildlifeBehavior>('grazing');
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -470,6 +483,27 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
       const hazardStep=stepFieldHazards(hazardsRef.current,dt);
       hazardsRef.current=hazardStep.hazards;
+
+      const previousHerdBehavior=herdRef.current.behavior;
+      herdRef.current=stepDawnreachHerd(
+        herdRef.current,
+        playerRef.current.position,
+        hazardsRef.current,
+        dt,
+      );
+      if(
+        combat.hp>0&&
+        shouldWitnessDawnreachHerd(playerRef.current.position,herdRef.current,herdWitnessedRef.current)
+      ){
+        herdWitnessedRef.current=true;
+        setNotice('풀숲 사이로 새벽사슴 무리가 움직입니다. 가까이 다가가면 놀라 달아나고, 불길이 번지면 먼저 위험을 피해 움직입니다.');
+      }else if(
+        previousHerdBehavior!=='flee-fire'&&
+        herdRef.current.behavior==='flee-fire'&&
+        playerNearDawnreachHerd(playerRef.current.position,herdRef.current,26)
+      ){
+        setNotice('불길에 놀란 새벽사슴 무리가 급히 방향을 틀어 안전한 쪽으로 달아납니다.');
+      }
       if(hazardStep.damagePulse){
         hazardPulseSerialRef.current+=1;
         const burned=applyBurningHazardsToEnemies(
@@ -579,6 +613,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           caravanMetRef.current,
           playerNearWanderingCaravan(playerRef.current.position,caravanRef.current),
         ),
+        dawnreachHerdVisual(herdRef.current),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -610,6 +645,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           roadsideAmbushConsequence(roadsideOutcomeRef.current),
         ));
         setNearCaravan(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
+        setNearWildlife(playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
+        setWildlifeBehavior(herdRef.current.behavior);
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -672,6 +709,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
+      {nearWildlife&&<em>야생 · {DAWNREACH_HERD.label}{wildlifeBehavior==='flee-fire'?' · 불길 회피':wildlifeBehavior==='flee-player'?' · 경계 중':''}</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}

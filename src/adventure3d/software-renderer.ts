@@ -7,6 +7,7 @@ import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
 import type {FieldHazardState} from './environment-combat';
 import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
 import type {RoamingWorldPresenceVisual} from './roaming-world';
+import type {WildlifeVisual} from './wildlife';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -380,6 +381,54 @@ function drawRoamingWorldPresence(
   ctx.restore();
 }
 
+function drawWildlife(
+  ctx:CanvasRenderingContext2D,
+  wildlife:WildlifeVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  ctx.save();
+  for(const member of wildlife.members){
+    const base=projectAdventurePoint(member,camera,width,height);
+    const top=projectAdventurePoint({...member,y:member.y+1.1},camera,width,height);
+    if(!base||!top)continue;
+    const size=Math.max(5,Math.min(18,base.scale*.55));
+    const fleeing=wildlife.behavior==='flee-player'||wildlife.behavior==='flee-fire';
+
+    ctx.fillStyle=fleeing?'#9a7350':'#8b7659';
+    ctx.beginPath();
+    ctx.ellipse(base.x,base.y-size*.55,size*.95,size*.48,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle='#755f47';
+    ctx.beginPath();
+    ctx.arc(base.x+size*.72,base.y-size*.9,size*.3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle='#67513c';
+    ctx.lineWidth=Math.max(1,size*.12);
+    for(const offset of [-.45,.35]){
+      ctx.beginPath();
+      ctx.moveTo(base.x+size*offset,base.y-size*.25);
+      ctx.lineTo(base.x+size*offset-(fleeing?size*.2:0),base.y+size*.28);
+      ctx.stroke();
+    }
+
+    if(fleeing){
+      ctx.strokeStyle=wildlife.behavior==='flee-fire'
+        ?'rgba(255,180,110,.72)'
+        :'rgba(235,235,206,.58)';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(base.x-size*1.15,base.y-size*.72);
+      ctx.lineTo(base.x-size*1.75,base.y-size*.72);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -483,6 +532,7 @@ export function renderAdventureField(
   worldConsequence:WorldConsequenceVisual|null=null,
   nearbyWorldConsequence=false,
   roamingPresence:RoamingWorldPresenceVisual|null=null,
+  wildlife:WildlifeVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -521,6 +571,7 @@ export function renderAdventureField(
   if(worldEvent)drawWorldEvent(ctx,worldEvent,camera,width,height);
   if(worldConsequence)drawWorldConsequence(ctx,worldConsequence,camera,width,height,nearbyWorldConsequence);
   if(roamingPresence)drawRoamingWorldPresence(ctx,roamingPresence,camera,width,height);
+  if(wildlife)drawWildlife(ctx,wildlife,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
     const pb=projectAdventurePoint(b.position,camera,width,height);
