@@ -22,7 +22,7 @@ describe('production Adventure blank-screen hardening',()=>{
 
   it('catches animation-frame failures that React error boundaries cannot catch',()=>{
     expect(slice).toContain('const safeTick=(time:number)=>');
-    expect(slice).toContain("reportClientTelemetry('render_error','adventure_loop')");
+    expect(slice).toContain("reportClientTelemetry('render_error','error_boundary')");
     expect(slice).toContain('setRuntimeFault(true)');
     expect(slice).toContain('requestAnimationFrame(safeTick)');
   });
