@@ -213,9 +213,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
   const [visitedCount,setVisitedCount]=useState(persisted.discoveredIds.length);
   const [notice,setNotice]=useState(
-    persisted.skybreak.beaconReached
-      ?'바람걸음이 몸에 남아 있습니다. 전망대에서 활강하며 들판 위 상승기류와 공중 흔적을 이어 보세요.'
-      :'멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.',
+    persisted.tempestWarden.defeated
+      ?'폭풍갑주 감시자가 사라진 서쪽 능선에 영구 발사기류가 남아 있습니다. 높은 곳으로 솟아 바람걸음을 바로 이어갈 수 있습니다.'
+      :persisted.cloudGarden.restored
+        ?'복원된 구름정원의 바람이 서쪽 능선의 오래된 갑주를 깨웠습니다. 능선 너머에서 거대한 기류가 움직입니다.'
+        :persisted.skybreak.beaconReached
+          ?'바람걸음이 몸에 남아 있습니다. 전망대에서 활강하며 들판 위 상승기류와 공중 흔적을 이어 보세요.'
+          :'멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.',
   );
   const [sprinting,setSprinting]=useState(false);
   const [combatEngaged,setCombatEngaged]=useState(false);
@@ -301,7 +305,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const leaveSkybreakTo=useCallback((position:PlayerMotionState['position'],message:string)=>{
     skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(
+      campClearedRef.current,
+      windwalkUnlockedRef.current,
+      cloudGardenRef.current.restored,
+      tempestWardenDefeatedRef.current,
+    );
     fieldEnemiesSnapshotRef.current=null;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
@@ -328,7 +337,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const leaveCloudGardenToField=useCallback((message:string)=>{
     cloudGardenRef.current=leaveCloudGarden(cloudGardenRef.current);
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(
+      campClearedRef.current,
+      windwalkUnlockedRef.current,
+      cloudGardenRef.current.restored,
+      tempestWardenDefeatedRef.current,
+    );
     fieldEnemiesSnapshotRef.current=null;
     lockedTargetRef.current=null;
     setLockedTargetId(null);
@@ -514,13 +528,20 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         }
         cloudGardenRef.current=restoreCloudGarden(cloudGardenRef.current);
         enemiesRef.current=[];
+        if(fieldEnemiesSnapshotRef.current){
+          fieldEnemiesSnapshotRef.current=mergeTempestWarden(
+            fieldEnemiesSnapshotRef.current,
+            true,
+            tempestWardenDefeatedRef.current,
+          );
+        }
         requestOpenAdventureUpdate({type:'restore-cloud-garden'});
         cloudGardenClearNotifiedRef.current=true;
         setCloudGardenRestored(true);
         setCloudGardenClear(true);
         setLivingEnemies(0);
         setCombatEngaged(false);
-        setNotice('구름정원 심장이 다시 뛰기 시작했습니다. 새벽들판의 오래된 상승기류가 깨어나 반경·상승력·높이가 영구적으로 강화됐습니다.');
+        setNotice('구름정원 심장이 다시 뛰기 시작했습니다. 새벽들판 상승기류가 강화됐고, 서쪽 능선의 오래된 폭풍갑주 감시자도 깨어났습니다. 정원 밖에서 그 기류를 추적할 수 있습니다.');
         return;
       }
       setNotice(cloudGardenRef.current.restored
@@ -777,7 +798,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setInsideSkybreak(false);
     setInsideCloudGarden(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
-    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(campClearedRef.current,windwalkUnlockedRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??createDawnreachFieldEnemies(
+      campClearedRef.current,
+      windwalkUnlockedRef.current,
+      cloudGardenRef.current.restored,
+      tempestWardenDefeatedRef.current,
+    );
     fieldEnemiesSnapshotRef.current=null;
     if(roadsideAmbushPhaseRef.current==='intervening'){
       roadsideAmbushPhaseRef.current='witnessed';
@@ -933,6 +959,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           windwalkUnlockedRef.current,
           dt,
           cloudGardenRef.current.restored,
+          tempestWardenDefeatedRef.current,
         );
         playerRef.current=currentStep.state;
         boostedWindCurrentRef.current=currentStep.boostedCurrentId;
@@ -1222,6 +1249,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             windwalkTracesRef.current,
             boostedWindCurrentRef.current,
             cloudGardenRef.current.restored,
+            tempestWardenDefeatedRef.current,
           ),
           cloudGarden:cloudGardenVisual(
             cloudGardenRef.current,
