@@ -5,11 +5,12 @@ import MobileJoystick from '../exploration/MobileJoystick';
 import {DEFAULT_ADVENTURE_CAMERA,followAdventureCamera,rotateAdventureCamera,zoomAdventureCamera} from './camera-controller';
 import {
   DEFAULT_PLAYER_COMBAT,
-  PLAYER_ATTACK_DAMAGE,
   applyDodgeMotion,
-  applyPlayerDamage,
   playerAttackConnects,
+  playerAttackDamage,
+  playerAttackIsCounter,
   playerAttackWindowOpen,
+  resolveEnemyAttack,
   stepPlayerCombat,
   tryStartPlayerAttack,
   tryStartPlayerDodge,
@@ -258,6 +259,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearCloudGardenExit,setNearCloudGardenExit]=useState(false);
   const [nearCloudGardenHeart,setNearCloudGardenHeart]=useState(false);
   const [cloudGardenClear,setCloudGardenClear]=useState(persisted.cloudGarden.restored);
+  const [counterReady,setCounterReady]=useState(false);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -775,6 +777,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     setStamina(DEFAULT_PLAYER_STATE.stamina);
     setLivingEnemies(enemiesRef.current.length);
     setCombatEngaged(false);
+    setCounterReady(false);
     setNotice('들판 입구에서 다시 일어났습니다. 정면 전투 대신 다른 길로 우회해도 됩니다.');
   },[]);
 
@@ -1079,10 +1082,23 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
 
       if(playerAttackWindowOpen(combat)){
+        const counterAttack=playerAttackIsCounter(combat);
+        const attackDamage=playerAttackDamage(combat);
         enemiesRef.current=enemiesRef.current.map(enemy=>{
           if(!playerAttackConnects(playerRef.current.position,playerRef.current.facingYaw,enemy.position,1))return enemy;
-          const result=applyEnemyDamage(enemy,PLAYER_ATTACK_DAMAGE,combat.attackSerial);
-          if(result.damaged)setNotice(result.defeated?`${enemy.label} 격파`:`${enemy.label}에게 공격 적중`);
+          const result=applyEnemyDamage(
+            enemy,
+            attackDamage,
+            combat.attackSerial,
+            {counter:counterAttack},
+          );
+          if(result.damaged){
+            if(result.defeated)setNotice(`${enemy.label} 격파`);
+            else if(result.guardBroken)setNotice(`가드 파괴 · ${enemy.label}이 크게 비틀거립니다. 지금 추가 공격을 이어가세요.`);
+            else if(counterAttack)setNotice(`완벽 회피 반격 · ${enemy.label}에게 강한 일격!`);
+            else if(result.blocked)setNotice(`${enemy.label}의 방어에 막혀 피해가 줄었습니다. 공격 예고에 맞춰 회피 후 반격하면 가드를 깰 수 있습니다.`);
+            else setNotice(`${enemy.label}에게 공격 적중`);
+          }
           return result.enemy;
         });
       }
@@ -1106,8 +1122,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         enemiesRef.current=alertNearbyEnemies(stepped.map(result=>result.enemy));
         for(const result of stepped){
           if(!result.attack)continue;
-          const hit=applyPlayerDamage(combat,result.attack.damage);
+          const hit=resolveEnemyAttack(combat,result.attack.damage);
           combat=hit.state;
+          if(hit.perfectDodged){
+            setNotice('완벽 회피 · 반격 기회! 짧은 시간 안에 공격하면 강한 반격이 되고 방패형 적의 가드를 깨뜨립니다.');
+            continue;
+          }
           if(hit.damaged)setNotice(combat.hp>0?'공격을 맞았습니다. 예고 동작을 보고 회피 타이밍을 잡으세요.':'쓰러졌습니다. R 또는 다시 일어나기로 들판 입구에서 재개할 수 있습니다.');
         }
       }
@@ -1223,6 +1243,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
+        setCounterReady(combat.counterWindow>0);
         setNearPuzzle(!cloudGardenRef.current.inside&&playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
         setNearStone(!cloudGardenRef.current.inside&&playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
         setRewardReady(!cloudGardenRef.current.inside&&canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
@@ -1354,6 +1375,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>{insideCloudGarden?'정원 위협':insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
+      {counterReady&&<em>전투 기회 · 반격 가능</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
@@ -1426,7 +1448,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         onPointerUp={()=>{glideHeldRef.current=false;}}
         onPointerCancel={()=>{glideHeldRef.current=false;}}
       >{windwalkUnlockedState?'점프/활강':'점프'}</button>
-      <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
+      <button type="button" className="is-combat" data-active={counterReady||undefined} disabled={defeated} onClick={()=>{attackRef.current=true;}}>{counterReady?'반격':'공격'}</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
       {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
       {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&!insideCloudGarden&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
