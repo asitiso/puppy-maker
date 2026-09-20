@@ -32,7 +32,7 @@ describe('V18 Skybreak Highland complete exploration network',()=>{
 
   it('persists only the beacon result and turns it into a two-way Skywatch wind lift',()=>{
     expect(persistence).toContain("type:'reach-skybreak-beacon'");
-    expect(persistence).toContain('skybreak:{beaconReached:false}');
+    expect(persistence).toContain('skybreak:{beaconReached:false,windwalkTraces:[]}');
     expect(slice).toContain("requestOpenAdventureUpdate({type:'reach-skybreak-beacon'})");
     expect(slice).toContain('playerNearSkybreakOutsideLift');
     expect(slice).toContain('skybreakReturnToSkywatch');
