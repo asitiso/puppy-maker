@@ -53,6 +53,17 @@ describe('V18 living world event integration',()=>{
     expect(renderer).toContain('drawWildlife');
   });
 
+  it('turns wildlife observation into a temporary trail toward a hidden discovery without persisting the trail itself',()=>{
+    expect(wildlife).toContain('WILDLIFE_DISCOVERY_TRAIL');
+    expect(wildlife).toContain('shouldRevealWildlifeDiscoveryTrail');
+    expect(wildlife).toContain('dawnreachWildlifeTrailVisual');
+    expect(slice).toContain('wildlifeTrailClockRef');
+    expect(slice).toContain('WILDLIFE_DISCOVERY_TRAIL.duration');
+    expect(slice).toContain('dawnreachWildlifeTrailVisual(wildlifeTrailClockRef.current)');
+    expect(renderer).toContain('drawWildlifeTrail');
+    expect(slice).not.toContain("requestOpenAdventureUpdate({type:'wildlife-trail'");
+  });
+
   it('keeps event enemies separate from permanent camp completion',()=>{
     expect(slice).toContain('isStartingCampEnemy');
     expect(slice).toContain('roadsideAmbushDefeated');
