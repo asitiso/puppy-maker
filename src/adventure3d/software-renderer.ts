@@ -356,7 +356,7 @@ function drawCombatFeedback(
     else if(event.kind==='defeat')color='#fff3b0';
 
     const primary=event.amount!==undefined
-      ?`${event.kind==='player-hit'?'-':'+'}${Math.max(0,Math.floor(event.amount))}`
+      ?`-${Math.max(0,Math.floor(event.amount))}`
       :event.label??'';
     if(primary){
       ctx.font=`900 ${size}px system-ui`;
