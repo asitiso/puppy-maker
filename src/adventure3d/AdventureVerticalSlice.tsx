@@ -966,11 +966,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         skybreakGustPushedRef.current=false;
       }
 
-      const caravanPause=playerNearWanderingCaravan(playerRef.current.position,caravanRef.current,7);
+      const dawnreachPlayerPosition=cloudGardenRef.current.inside
+        ?{x:999,y:0,z:999}
+        :playerRef.current.position;
+      const caravanPause=playerNearWanderingCaravan(dawnreachPlayerPosition,caravanRef.current,7);
       caravanRef.current=stepWanderingCaravan(caravanRef.current,dt,caravanPause);
       if(
         combat.hp>0&&
-        shouldWitnessWanderingCaravan(playerRef.current.position,caravanRef.current,caravanWitnessedRef.current)
+        !cloudGardenRef.current.inside&&
+        shouldWitnessWanderingCaravan(dawnreachPlayerPosition,caravanRef.current,caravanWitnessedRef.current)
       ){
         caravanWitnessedRef.current=true;
         setNotice('짐짐승 방울 소리와 함께 행상인이 들판 길을 지나갑니다. 가까이 가면 잠시 멈춰 이야기를 나눌 수 있습니다.');
@@ -979,7 +983,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(
         roadsideAmbushPhaseRef.current==='hidden'&&
         !roadsideAmbushResolvedRef.current&&
-        shouldWitnessRoadsideAmbush(playerRef.current.position,false)
+!cloudGardenRef.current.inside&&
+        shouldWitnessRoadsideAmbush(dawnreachPlayerPosition,false)
       ){
         roadsideAmbushPhaseRef.current='witnessed';
         setWorldEventPhase('witnessed');
@@ -990,7 +995,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       ruinPuzzleRef.current=stepRuinPuzzle(
         ruinPuzzleRef.current,
         STARTING_RUIN_PUZZLE,
-        playerRef.current.position,
+        dawnreachPlayerPosition,
         dt,
       );
       if(!wasPuzzleSolved&&ruinPuzzleRef.current.solved&&!ruinSolvedNotifiedRef.current){
@@ -1011,28 +1016,30 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const previousHerdBehavior=herdRef.current.behavior;
       herdRef.current=stepDawnreachHerd(
         herdRef.current,
-        playerRef.current.position,
+        dawnreachPlayerPosition,
         hazardsRef.current,
         dt,
       );
       if(
         combat.hp>0&&
-        shouldWitnessDawnreachHerd(playerRef.current.position,herdRef.current,herdWitnessedRef.current)
+        !cloudGardenRef.current.inside&&
+        shouldWitnessDawnreachHerd(dawnreachPlayerPosition,herdRef.current,herdWitnessedRef.current)
       ){
         herdWitnessedRef.current=true;
         setNotice('풀숲 사이로 새벽사슴 무리가 움직입니다. 가까이 다가가면 놀라 달아나고, 불길이 번지면 먼저 위험을 피해 움직입니다.');
       }else if(
         previousHerdBehavior!=='flee-fire'&&
         herdRef.current.behavior==='flee-fire'&&
-        playerNearDawnreachHerd(playerRef.current.position,herdRef.current,26)
+        !cloudGardenRef.current.inside&&
+        playerNearDawnreachHerd(dawnreachPlayerPosition,herdRef.current,26)
       ){
         setNotice('불길에 놀란 새벽사슴 무리가 급히 방향을 틀어 안전한 쪽으로 달아납니다.');
       }
 
       if(visitedRef.current.has(WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId)){
         wildlifeTrailClockRef.current=0;
-      }else if(shouldRevealWildlifeDiscoveryTrail(
-        playerRef.current.position,
+      }else if(!cloudGardenRef.current.inside&&shouldRevealWildlifeDiscoveryTrail(
+        dawnreachPlayerPosition,
         herdRef.current,
         visitedRef.current,
       )){
@@ -1057,7 +1064,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
         const playerBurn=applyBurningHazardsToPlayer(
           combat,
-          playerRef.current.position,
+          dawnreachPlayerPosition,
           hazardsRef.current,
         );
         combat=playerBurn.state;
