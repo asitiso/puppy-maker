@@ -10,7 +10,7 @@ import type {RoamingWorldPresenceVisual} from './roaming-world';
 import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 import type {HollowCaveVisual} from './hollow-cave';
 import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
-import type {WindwalkRouteVisual} from './windwalk-routes';
+import {WINDWALK_ROUTE,type WindwalkRouteVisual} from './windwalk-routes';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -655,7 +655,7 @@ function drawWindwalkRoute(
   ctx.save();
   for(const current of route.currents){
     const base=projectAdventurePoint(current.position,camera,width,height);
-    const top=projectAdventurePoint({...current.position,y:current.position.y+7},camera,width,height);
+    const top=projectAdventurePoint({...current.position,y:current.position.y+WINDWALK_ROUTE.currentHeight},camera,width,height);
     if(!base||!top)continue;
     const radius=Math.max(10,Math.min(38,base.scale*1.15));
     ctx.strokeStyle=current.active?'rgba(205,250,255,.9)':'rgba(184,230,235,.36)';
