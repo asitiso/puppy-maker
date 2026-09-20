@@ -99,3 +99,37 @@ export function mergeTempestWarden(
   const boss=createTempestWarden(true,false);
   return boss?[...enemies,boss]:[...enemies];
 }
+
+
+export function disruptTempestWardenWithWind(
+  enemy:AdventureEnemyState,
+  player:Vec3,
+  facingYaw:number,
+  terrainHeight:TerrainHeight=startingFieldHeight,
+):{enemy:AdventureEnemyState;affected:boolean}{
+  if(!isTempestWarden(enemy)||enemy.hp<=0||tempestWardenPhase(enemy)!==2){
+    return {enemy,affected:false};
+  }
+  const dx=enemy.position.x-player.x;
+  const dz=enemy.position.z-player.z;
+  const distance=Math.hypot(dx,dz);
+  if(distance>.001&&distance<=8.5){
+    const forward={x:Math.sin(facingYaw),z:-Math.cos(facingYaw)};
+    const dot=forward.x*(dx/distance)+forward.z*(dz/distance);
+    if(dot>=Math.cos(72*Math.PI/180)){
+      return {
+        enemy:{
+          ...enemy,
+          position:{
+            ...enemy.position,
+            y:terrainHeight(enemy.position.x,enemy.position.z)+1.3,
+          },
+          mode:'stagger',
+          timer:1.15,
+        },
+        affected:true,
+      };
+    }
+  }
+  return {enemy,affected:false};
+}
