@@ -26,8 +26,8 @@ describe('V18 Windwalk re-exploration route',()=>{
   });
 
   it('lets an unlocked airborne glider ride an updraft but not a grounded player',()=>{
-    const current=WINDWALK_ROUTE.currents[0];
-    const air=airborne(current.x,6,current.z);
+    const current=windwalkCurrentPositions()[0];
+    const air=airborne(current.position.x,current.position.y+2,current.position.z);
     const boosted=applyWindwalkCurrent(air,true,true,.05);
     expect(boosted.boostedCurrentId).toBe(current.id);
     expect(boosted.state.velocity.y).toBe(WINDWALK_ROUTE.liftSpeed);
