@@ -26,3 +26,27 @@
 
 @media(max-width:520px){.adventure3d__world-event{left:10px;right:10px;top:112px;width:auto}.adventure3d__world-event p{font-size:9px}}
 @media(orientation:landscape) and (max-height:560px){.adventure3d__world-event{left:10px;top:62px;width:min(280px,38vw);padding:8px 9px}.adventure3d__world-event p{display:none}}
+
+@media(max-width:520px){
+  .adventure3d[data-combat="true"] .adventure3d__actions button.is-combat{
+    order:-3;
+    min-height:58px;
+    border-width:2px;
+    font-size:11px;
+    box-shadow:0 9px 24px rgba(0,0,0,.34);
+  }
+  .adventure3d[data-combat="true"] .adventure3d__actions button.is-environment{order:-2}
+  .adventure3d[data-combat="true"] .adventure3d__actions button.is-combat[data-active="true"]{
+    border-color:rgba(188,245,255,.95);
+    background:linear-gradient(180deg,rgba(64,112,122,.94),rgba(45,62,68,.92));
+    color:#effeff;
+  }
+  .adventure3d[data-boss] .adventure3d__hud{
+    border-color:rgba(184,226,239,.5);
+    box-shadow:0 10px 28px rgba(19,47,58,.26);
+  }
+  .adventure3d[data-boss="2"] .adventure3d__actions button.is-environment{
+    border-width:2px;
+    border-color:rgba(183,239,247,.86);
+  }
+}
