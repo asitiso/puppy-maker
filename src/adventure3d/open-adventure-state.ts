@@ -1,4 +1,5 @@
 import {isValidDawnreachWorldEventResolution,type DawnreachWorldEventId,type DawnreachWorldEventOutcome} from './world-events';
+import {isWindwalkTraceId,type WindwalkTraceId} from './windwalk-routes';
 
 export const dawnreachDiscoveryIds=[
   'skywatch','echo-ruins','ember-camp','fallen-cart','wind-crystal','stone-switch','hollow-cave','herb-ring','old-bridge',
@@ -16,7 +17,7 @@ export type DawnreachRuinProgress={
 
 export type DawnreachWorldEventResolution={id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 export type DawnreachHollowCaveProgress={shortcutOpen:boolean};
-export type DawnreachSkybreakProgress={beaconReached:boolean};
+export type DawnreachSkybreakProgress={beaconReached:boolean;windwalkTraces:WindwalkTraceId[]};
 
 export type DawnreachAdventureProgress={
   discoveredIds:DawnreachDiscoveryId[];
@@ -38,6 +39,7 @@ export type OpenAdventureUpdate=
   |{type:'unlock-echo-sense'}
   |{type:'open-hollow-shortcut'}
   |{type:'reach-skybreak-beacon'}
+  |{type:'discover-windwalk-trace';id:WindwalkTraceId}
   |{type:'clear-camp'}
   |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
@@ -54,7 +56,7 @@ export function emptyOpenAdventureState():OpenAdventureState{
       campCleared:false,
       worldEvents:[],
       hollowCave:{shortcutOpen:false},
-      skybreak:{beaconReached:false},
+      skybreak:{beaconReached:false,windwalkTraces:[]},
       ruin:{
         stonePosition:null,
         brazierLit:false,
@@ -93,6 +95,9 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
   const skybreak=isRecord(dawnreach.skybreak)?dawnreach.skybreak:{};
   const shortcutOpen=hollowCave.shortcutOpen===true;
   const beaconReached=skybreak.beaconReached===true;
+  const windwalkTraces=Array.isArray(skybreak.windwalkTraces)
+    ?skybreak.windwalkTraces.filter((value):value is WindwalkTraceId=>typeof value==='string'&&isWindwalkTraceId(value)).filter((value,index,list)=>list.indexOf(value)===index)
+    :[];
   if(shortcutOpen&&!discoveredIds.includes('hollow-cave'))discoveredIds.push('hollow-cave');
   const rewardClaimed=ruin.rewardClaimed===true;
   const solved=rewardClaimed||ruin.solved===true;
@@ -104,7 +109,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
       campCleared:dawnreach.campCleared===true,
       worldEvents:hydrateWorldEvents(dawnreach.worldEvents),
       hollowCave:{shortcutOpen},
-      skybreak:{beaconReached},
+      skybreak:{beaconReached,windwalkTraces},
       ruin:{
         stonePosition:hydratePosition(ruin.stonePosition),
         brazierLit:ruin.brazierLit===true,
@@ -155,7 +160,21 @@ export function applyOpenAdventureUpdate(
 
   if(update.type==='reach-skybreak-beacon'){
     if(dawnreach.skybreak.beaconReached)return current;
-    return {...current,dawnreach:{...dawnreach,skybreak:{beaconReached:true}}};
+    return {...current,dawnreach:{...dawnreach,skybreak:{...dawnreach.skybreak,beaconReached:true}}};
+  }
+
+  if(update.type==='discover-windwalk-trace'){
+    if(!dawnreach.skybreak.beaconReached||dawnreach.skybreak.windwalkTraces.includes(update.id))return current;
+    return {
+      ...current,
+      dawnreach:{
+        ...dawnreach,
+        skybreak:{
+          ...dawnreach.skybreak,
+          windwalkTraces:[...dawnreach.skybreak.windwalkTraces,update.id],
+        },
+      },
+    };
   }
 
   if(update.type==='clear-camp'){
