@@ -58,6 +58,25 @@ import {
   stepDawnreachHerd,
   type WildlifeBehavior,
 } from './wildlife';
+import {
+  HOLLOW_CAVE,
+  castHollowCaveWindPulse,
+  constrainHollowCavePlayer,
+  countActiveHollowCaveResonators,
+  createHollowCaveRuntimeState,
+  enterHollowCave,
+  hollowCaveInsideEntryPosition,
+  hollowCaveInsideShortcutSpawn,
+  hollowCaveReturnFromEntrance,
+  hollowCaveReturnFromShortcut,
+  hollowCaveVisual,
+  leaveHollowCave,
+  playerNearHollowCaveEntrance,
+  playerNearHollowCaveExit,
+  playerNearHollowCaveOutsideShortcut,
+  playerNearHollowCaveShortcut,
+  stepHollowCaveRuntime,
+} from './hollow-cave';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -114,6 +133,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const caravanRef=useRef(createWanderingCaravanState());
   const herdRef=useRef(createDawnreachHerdState());
   const herdWitnessedRef=useRef(false);
+  const hollowCaveRef=useRef(createHollowCaveRuntimeState(persisted.hollowCave.shortcutOpen));
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
   const [stamina,setStamina]=useState(100);
@@ -141,6 +161,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearWildlife,setNearWildlife]=useState(false);
   const [wildlifeBehavior,setWildlifeBehavior]=useState<WildlifeBehavior>('grazing');
   const [wildlifeTrailActive,setWildlifeTrailActive]=useState(false);
+  const [insideHollowCave,setInsideHollowCave]=useState(false);
+  const [hollowResonators,setHollowResonators]=useState(
+    countActiveHollowCaveResonators(hollowCaveRef.current),
+  );
+  const [hollowShortcutOpen,setHollowShortcutOpen]=useState(persisted.hollowCave.shortcutOpen);
+  const [nearHollowExit,setNearHollowExit]=useState(false);
+  const [nearHollowShortcut,setNearHollowShortcut]=useState(false);
+  const [nearHollowEntrance,setNearHollowEntrance]=useState(false);
+  const [nearHollowOutsideShortcut,setNearHollowOutsideShortcut]=useState(false);
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -216,6 +245,30 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const castEnvironmentAbility=useCallback((ability:EnvironmentAbilityId)=>{
     if(combatRef.current.hp<=0)return;
 
+    if(hollowCaveRef.current.inside){
+      if(ability!=='windPulse'){
+        setNotice('동굴의 바람 공명석은 불씨보다 공기의 진동에 반응하는 것 같습니다.');
+        return;
+      }
+      const caveResult=castHollowCaveWindPulse(
+        hollowCaveRef.current,
+        playerRef.current.position,
+        playerRef.current.facingYaw,
+      );
+      hollowCaveRef.current=caveResult.state;
+      setHollowResonators(caveResult.activatedCount);
+      if(caveResult.openedShortcut){
+        requestOpenAdventureUpdate({type:'open-hollow-shortcut'});
+        setHollowShortcutOpen(true);
+        setNotice('세 바람 공명석이 한꺼번에 울리며 막혀 있던 바위문이 열렸습니다. 끊어진 돌다리 쪽으로 이어지는 지름길입니다.');
+      }else if(caveResult.affected){
+        setNotice(`바람 공명석이 깨어났습니다. 동굴 안 공명 ${caveResult.activatedCount}/3`);
+      }else{
+        setNotice('바람밀기가 공명석에 닿지 않았습니다. 가까이 가서 돌기둥을 바라보고 다시 사용해 보세요.');
+      }
+      return;
+    }
+
     const ruinResult=castRuinAbility(
       ruinPuzzleRef.current,
       STARTING_RUIN_PUZZLE,
@@ -270,6 +323,103 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
     const inCombat=enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode));
     if(inCombat||combatRef.current.hp<=0)return;
+
+    if(hollowCaveRef.current.inside){
+      if(playerNearHollowCaveShortcut(playerRef.current.position,hollowCaveRef.current)){
+        hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
+        playerRef.current={
+          ...playerRef.current,
+          position:hollowCaveReturnFromShortcut(),
+          velocity:{x:0,y:0,z:0},
+        };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
+        setInsideHollowCave(false);
+        setNearHollowShortcut(false);
+        setNotice('열린 바위문을 빠져나오자 끊어진 돌다리 아래쪽 길로 이어집니다. 이제 동굴과 돌다리를 빠르게 오갈 수 있습니다.');
+        return;
+      }
+      if(playerNearHollowCaveExit(playerRef.current.position,hollowCaveRef.current)){
+        hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
+        playerRef.current={
+          ...playerRef.current,
+          position:hollowCaveReturnFromEntrance(),
+          velocity:{x:0,y:0,z:0},
+        };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
+        setInsideHollowCave(false);
+        setNearHollowExit(false);
+        setNotice('폭포 뒤 틈을 빠져나와 새벽들판으로 돌아왔습니다.');
+        return;
+      }
+      setNotice(hollowCaveRef.current.shortcutOpen
+        ?'동굴 양쪽에 출구가 열려 있습니다. 폭포 쪽으로 돌아가거나 새로 열린 돌다리 지름길을 이용할 수 있습니다.'
+        :`동굴 안 바람 공명석 ${countActiveHollowCaveResonators(hollowCaveRef.current)}/3 · Q 바람밀기로 공명시킬 수 있습니다.`);
+      return;
+    }
+
+    if(playerNearHollowCaveOutsideShortcut(
+      playerRef.current.position,
+      hollowCaveRef.current.shortcutOpen,
+    )){
+      hollowCaveRef.current=enterHollowCave(hollowCaveRef.current);
+      playerRef.current={
+        ...playerRef.current,
+        position:hollowCaveInsideShortcutSpawn(),
+        velocity:{x:0,y:0,z:0},
+      };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
+      setInsideHollowCave(true);
+      setNotice('돌다리 아래 열린 틈을 통과해 바람숨 동굴 안쪽으로 들어왔습니다.');
+      return;
+    }
+
+    if(
+      (visitedRef.current.has(HOLLOW_CAVE.discoveryId)||
+        nearbyRef.current?.id===HOLLOW_CAVE.discoveryId)&&
+      playerNearHollowCaveEntrance(playerRef.current.position)
+    ){
+      if(!visitedRef.current.has(HOLLOW_CAVE.discoveryId))discover();
+      hollowCaveRef.current=enterHollowCave(hollowCaveRef.current);
+      playerRef.current={
+        ...playerRef.current,
+        position:hollowCaveInsideEntryPosition(),
+        velocity:{x:0,y:0,z:0},
+      };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
+      setInsideHollowCave(true);
+      setNotice(hollowCaveRef.current.shortcutOpen
+        ?'바람숨 동굴 안입니다. 예전에 열어 둔 바위문 너머로 돌다리 쪽 바람이 들어옵니다.'
+        :'바람숨 동굴 안쪽에 세 개의 공명석이 서 있습니다. 바람을 어떻게 전달할지 직접 시험해 보세요.');
+      return;
+    }
 
     if(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current)){
       const familiar=caravanMetRef.current;
@@ -332,6 +482,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
+    hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
+    setInsideHollowCave(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
     enemiesRef.current=campClearedRef.current?[]:createStartingCampEnemies();
     if(roadsideAmbushPhaseRef.current==='intervening'){
@@ -447,6 +599,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       },dt,startingFieldHeight,STARTING_FIELD.halfSize);
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,startingFieldHeight,STARTING_FIELD.halfSize);
+      if(hollowCaveRef.current.inside){
+        playerRef.current={
+          ...playerRef.current,
+          position:constrainHollowCavePlayer(playerRef.current.position),
+        };
+      }
+      hollowCaveRef.current=stepHollowCaveRuntime(hollowCaveRef.current,dt);
 
       const caravanPause=playerNearWanderingCaravan(playerRef.current.position,caravanRef.current,7);
       caravanRef.current=stepWanderingCaravan(caravanRef.current,dt,caravanPause);
@@ -639,6 +798,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         ),
         dawnreachHerdVisual(herdRef.current),
         dawnreachWildlifeTrailVisual(wildlifeTrailClockRef.current),
+        hollowCaveVisual(hollowCaveRef.current,playerRef.current.position),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -673,6 +833,23 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearWildlife(playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
         setWildlifeBehavior(herdRef.current.behavior);
         setWildlifeTrailActive(wildlifeTrailClockRef.current>0);
+        setInsideHollowCave(hollowCaveRef.current.inside);
+        setHollowResonators(countActiveHollowCaveResonators(hollowCaveRef.current));
+        setHollowShortcutOpen(hollowCaveRef.current.shortcutOpen);
+        setNearHollowExit(playerNearHollowCaveExit(playerRef.current.position,hollowCaveRef.current));
+        setNearHollowShortcut(playerNearHollowCaveShortcut(playerRef.current.position,hollowCaveRef.current));
+        setNearHollowEntrance(
+          !hollowCaveRef.current.inside&&
+          visitedRef.current.has(HOLLOW_CAVE.discoveryId)&&
+          playerNearHollowCaveEntrance(playerRef.current.position),
+        );
+        setNearHollowOutsideShortcut(
+          !hollowCaveRef.current.inside&&
+          playerNearHollowCaveOutsideShortcut(
+            playerRef.current.position,
+            hollowCaveRef.current.shortcutOpen,
+          ),
+        );
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -727,7 +904,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     />
 
     <header className="adventure3d__hud">
-      <div><small>{combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{STARTING_FIELD.label}</strong></div>
+      <div><small>{insideHollowCave?'HIDDEN INTERIOR':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:STARTING_FIELD.label}</strong></div>
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
       {combatEngaged&&<em>{worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
@@ -736,7 +913,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
       {nearWildlife&&<em>야생 · {DAWNREACH_HERD.label}{wildlifeBehavior==='flee-fire'?' · 불길 회피':wildlifeBehavior==='flee-player'?' · 경계 중':''}</em>}
-      {wildlifeTrailActive&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
+      {wildlifeTrailActive&&!insideHollowCave&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
+      {insideHollowCave&&<em>동굴 공명 · {hollowResonators}/3</em>}
+      {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -786,20 +965,28 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {(nearPuzzle||nearHazard)&&!defeated&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
         onClick={interactWorld}
-      >{worldEventPhase==='witnessed'&&nearWorldEvent
-        ?'개입'
-        :nearCaravan
-          ?'말 걸기'
-          :nearWorldConsequence
-            ?roadsideOutcomeRef.current==='rescued'?'대화하기':'흔적 살피기'
-            :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?'살펴보기':'주변 관찰'}</button>
+      >{nearHollowShortcut
+        ?'돌다리로 나가기'
+        :nearHollowExit
+          ?'들판으로 돌아가기'
+          :nearHollowOutsideShortcut
+            ?'동굴 지름길'
+            :nearHollowEntrance
+              ?'동굴 들어가기'
+              :worldEventPhase==='witnessed'&&nearWorldEvent
+                ?'개입'
+                :nearCaravan
+                  ?'말 걸기'
+                  :nearWorldConsequence
+                    ?roadsideOutcomeRef.current==='rescued'?'대화하기':'흔적 살피기'
+                    :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?.id===HOLLOW_CAVE.discoveryId?'폭포 뒤 들어가기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
     <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>

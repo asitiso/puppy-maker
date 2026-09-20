@@ -8,6 +8,7 @@ import type {FieldHazardState} from './environment-combat';
 import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
 import type {RoamingWorldPresenceVisual} from './roaming-world';
 import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
+import type {HollowCaveVisual} from './hollow-cave';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -456,6 +457,91 @@ function drawWildlife(
   ctx.restore();
 }
 
+function drawHollowCave(
+  ctx:CanvasRenderingContext2D,
+  cave:HollowCaveVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  ctx.save();
+  ctx.fillStyle='rgba(8,13,20,.84)';
+  ctx.fillRect(0,0,width,height);
+
+  const center=projectAdventurePoint(cave.center,camera,width,height);
+  if(center){
+    const glow=ctx.createRadialGradient(center.x,center.y,4,center.x,center.y,Math.min(width,height)*.42);
+    glow.addColorStop(0,'rgba(67,94,107,.28)');
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;
+    ctx.fillRect(0,0,width,height);
+  }
+
+  const ringPoints=Array.from({length:18},(_,index)=>{
+    const angle=index/18*Math.PI*2;
+    const x=cave.center.x+Math.cos(angle)*9.2;
+    const z=cave.center.z+Math.sin(angle)*9.2;
+    return projectAdventurePoint({x,y:startingFieldHeight(x,z)+.05,z},camera,width,height);
+  });
+  ctx.strokeStyle='rgba(127,149,157,.34)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ringPoints.forEach((point,index)=>{
+    if(!point)return;
+    if(index===0)ctx.moveTo(point.x,point.y);
+    else ctx.lineTo(point.x,point.y);
+  });
+  const first=ringPoints.find(Boolean);
+  if(first)ctx.lineTo(first.x,first.y);
+  ctx.stroke();
+
+  for(const [index,resonator] of cave.resonators.entries()){
+    const base=projectAdventurePoint(resonator.position,camera,width,height);
+    const top=projectAdventurePoint({...resonator.position,y:resonator.position.y+1.45},camera,width,height);
+    if(!base||!top)continue;
+    const size=Math.max(7,Math.min(25,base.scale*.72));
+    const flashing=cave.pulseFlash>0&&cave.lastResonator===index;
+    if(resonator.active||flashing){
+      ctx.fillStyle=flashing?'rgba(188,241,255,.4)':'rgba(132,213,222,.23)';
+      ctx.beginPath();ctx.arc(top.x,top.y+size*.5,size*(flashing?2:1.45),0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle=resonator.active?'#91c7c6':'#59626a';
+    ctx.strokeStyle=resonator.active?'#d6ffff':'rgba(179,194,198,.6)';
+    ctx.lineWidth=resonator.active?3:2;
+    ctx.beginPath();
+    ctx.roundRect(top.x-size*.55,top.y,size*1.1,Math.max(size*2,base.y-top.y),size*.3);
+    ctx.fill();ctx.stroke();
+  }
+
+  const drawGate=(position:Vec3,open:boolean,nearby:boolean,label:string)=>{
+    const base=projectAdventurePoint(position,camera,width,height);
+    const top=projectAdventurePoint({...position,y:position.y+2.2},camera,width,height);
+    if(!base||!top)return;
+    const size=Math.max(9,Math.min(34,base.scale*.9));
+    ctx.strokeStyle=open?'#a9dfce':'#6b7078';
+    ctx.lineWidth=open?4:3;
+    ctx.beginPath();
+    ctx.roundRect(top.x-size,top.y,size*2,Math.max(size*2.4,base.y-top.y),size*.8);
+    ctx.stroke();
+    if(open){
+      ctx.fillStyle='rgba(118,194,184,.17)';
+      ctx.fillRect(top.x-size*.75,top.y+size*.2,size*1.5,Math.max(size*1.6,base.y-top.y-size*.2));
+    }
+    if(nearby){
+      ctx.fillStyle='#e8f7d5';
+      ctx.font=`900 ${Math.max(11,Math.min(18,size*.65))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('E',base.x,top.y-size*.28);
+      ctx.font=`700 ${Math.max(9,Math.min(14,size*.48))}px system-ui`;
+      ctx.fillText(label,base.x,base.y+size*.75);
+    }
+  };
+
+  drawGate(cave.exit,true,cave.nearbyExit,'폭포 뒤로 돌아가기');
+  drawGate(cave.shortcut,cave.shortcutOpen,cave.nearbyShortcut,cave.shortcutOpen?'돌다리 지름길':'닫힌 바위문');
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -561,6 +647,7 @@ export function renderAdventureField(
   roamingPresence:RoamingWorldPresenceVisual|null=null,
   wildlife:WildlifeVisual|null=null,
   wildlifeTrail:WildlifeTrailVisual|null=null,
+  hollowCave:HollowCaveVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -581,6 +668,12 @@ export function renderAdventureField(
     const za=projectAdventurePoint({x:-100,y:startingFieldHeight(-100,grid),z:grid},camera,width,height);
     const zb=projectAdventurePoint({x:100,y:startingFieldHeight(100,grid),z:grid},camera,width,height);
     line(ctx,za,zb,'rgba(226,239,205,.09)');
+  }
+
+  if(hollowCave?.active){
+    drawHollowCave(ctx,hollowCave,camera,width,height);
+    drawPlayer(ctx,player,camera,width,height);
+    return;
   }
 
   const sorted=[...field.discoveries].sort((a,b)=>{
