@@ -18,6 +18,7 @@ describe('V18 open adventure persistent state',()=>{
         hollowCave:{shortcutOpen:false},
         skybreak:{beaconReached:false,windwalkTraces:[]},
         cloudGarden:{restored:false},
+        tempestWarden:{defeated:false},
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -38,6 +39,7 @@ describe('V18 open adventure persistent state',()=>{
         hollowCave:{shortcutOpen:'yes'},
         skybreak:{beaconReached:'yes',windwalkTraces:['sky-thread','sky-thread','bad']},
         cloudGarden:{restored:true},
+        tempestWarden:{defeated:true},
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
@@ -49,6 +51,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.skybreak.beaconReached).toBe(false);
     expect(hydrated.dawnreach.skybreak.windwalkTraces).toEqual([]);
     expect(hydrated.dawnreach.cloudGarden.restored).toBe(false);
+    expect(hydrated.dawnreach.tempestWarden.defeated).toBe(false);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -143,6 +146,31 @@ describe('V18 open adventure persistent state',()=>{
       },
     });
     expect(hydrated.dawnreach.cloudGarden.restored).toBe(false);
+  });
+
+  it('persists Tempest Warden defeat only after Cloud Garden restoration',()=>{
+    let state=emptyOpenAdventureState();
+    expect(applyOpenAdventureUpdate(state,{type:'defeat-tempest-warden'})).toBe(state);
+
+    state=applyOpenAdventureUpdate(state,{type:'reach-skybreak-beacon'});
+    for(const id of ['sky-thread','ruin-crown','west-aerie'] as const){
+      state=applyOpenAdventureUpdate(state,{type:'discover-windwalk-trace',id});
+    }
+    state=applyOpenAdventureUpdate(state,{type:'restore-cloud-garden'});
+    state=applyOpenAdventureUpdate(state,{type:'defeat-tempest-warden'});
+    expect(state.dawnreach.tempestWarden.defeated).toBe(true);
+    expect(applyOpenAdventureUpdate(state,{type:'defeat-tempest-warden'})).toBe(state);
+  });
+
+  it('drops impossible Tempest Warden defeat saves when the garden was never restored',()=>{
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{
+        skybreak:{beaconReached:true,windwalkTraces:['sky-thread','ruin-crown','west-aerie']},
+        cloudGarden:{restored:false},
+        tempestWarden:{defeated:true},
+      },
+    });
+    expect(hydrated.dawnreach.tempestWarden.defeated).toBe(false);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
