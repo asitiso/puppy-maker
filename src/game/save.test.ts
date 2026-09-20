@@ -36,6 +36,7 @@ describe('canonical save',()=>{
           ],
           hollowCave:{shortcutOpen:true},
           skybreak:{beaconReached:true,windwalkTraces:['sky-thread' as const,'ruin-crown' as const,'west-aerie' as const]},
+          cloudGarden:{restored:true},
           ruin:{
             stonePosition:{x:-57,z:-38},
             brazierLit:true,
