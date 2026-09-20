@@ -171,6 +171,20 @@ function drawEnemy(
   ctx.arc(top.x,top.y+scale*.25,scale*.7,0,Math.PI*2);
   ctx.fill();
 
+  if(enemy.archetype==='guard'){
+    const shieldX=top.x+scale*.86;
+    const shieldY=top.y+scale*1.05;
+    ctx.save();
+    ctx.globalAlpha=enemy.mode==='stagger'?.38:1;
+    ctx.fillStyle=enemy.mode==='stagger'?'rgba(207,225,218,.45)':'#8b806c';
+    ctx.strokeStyle=enemy.mode==='stagger'?'rgba(221,249,239,.65)':'#d8c49b';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.roundRect(shieldX-scale*.42,shieldY-scale*.62,scale*.84,scale*1.24,scale*.26);
+    ctx.fill();ctx.stroke();
+    ctx.restore();
+  }
+
   if(enemy.mode==='suspicious'||enemy.mode==='chase'||enemy.mode==='windup'||enemy.mode==='recover'||enemy.hp<enemy.maxHp){
     const barWidth=Math.max(28,Math.min(70,scale*3.2));
     const ratio=Math.max(0,Math.min(1,enemy.hp/enemy.maxHp));
@@ -204,18 +218,33 @@ function drawCombatEffects(
   if(combat.attackClock>=0){
     const progress=Math.min(1,combat.attackClock/.48);
     const radius=Math.max(18,Math.min(70,base.scale*2.6));
-    ctx.strokeStyle=progress<.58?'rgba(255,244,183,.82)':'rgba(255,244,183,.18)';
+    const counterAttack=combat.attackSerial===combat.counterAttackSerial;
+    ctx.strokeStyle=counterAttack
+      ?progress<.58?'rgba(171,245,255,.95)':'rgba(171,245,255,.24)'
+      :progress<.58?'rgba(255,244,183,.82)':'rgba(255,244,183,.18)';
     ctx.lineWidth=3;
     ctx.beginPath();
     ctx.arc(base.x,base.y-radius*.12,radius,-2.45,-.35);
     ctx.stroke();
   }
   if(combat.dodgeClock>=0){
-    ctx.strokeStyle='rgba(174,225,238,.58)';
+    ctx.strokeStyle=combat.dodgeClock<=.14?'rgba(190,247,255,.92)':'rgba(174,225,238,.58)';
     ctx.lineWidth=2;
     ctx.beginPath();
     ctx.ellipse(base.x,base.y,Math.max(16,base.scale*1.5),Math.max(6,base.scale*.45),0,0,Math.PI*2);
     ctx.stroke();
+  }
+  if(combat.counterWindow>0){
+    const radius=Math.max(20,Math.min(78,base.scale*3));
+    ctx.strokeStyle='rgba(177,248,255,.78)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(base.x,base.y-radius*.18,radius,0,Math.PI*2);
+    ctx.stroke();
+  }
+  if(combat.perfectDodgeFlash>0){
+    ctx.fillStyle='rgba(178,245,255,.12)';
+    ctx.fillRect(0,0,width,height);
   }
   if(combat.flash>0){
     ctx.fillStyle='rgba(255,88,70,.15)';
