@@ -481,7 +481,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           playerRef.current.facingYaw,
           startingFieldHeight,
         );
-        if(result.affected)disrupted=true;
+        if(result.affected){
+          disrupted=true;
+          combatFeedbackRef.current=pushCombatFeedback(combatFeedbackRef.current,{
+            kind:'guard-break',
+            position:{...result.enemy.position,y:result.enemy.position.y+1.8},
+            label:'WIND BREAK',
+            duration:.78,
+            hitStop:.07,
+            cameraImpulse:.88,
+          });
+        }
         return result.enemy;
       });
       if(disrupted){
@@ -916,8 +926,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       resize();
       const rawDt=Math.min(.05,Math.max(0,(time-last)/1000));
       last=time;
+      const combatTimeScale=combatFeedbackTimeScale(combatFeedbackRef.current);
       combatFeedbackRef.current=stepCombatFeedback(combatFeedbackRef.current,rawDt);
-      const dt=rawDt*combatFeedbackTimeScale(combatFeedbackRef.current);
+      const dt=rawDt*combatTimeScale;
 
       const keys=pressedRef.current;
       const keyboardX=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
@@ -1534,7 +1545,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
 
   const defeated=hp<=0;
 
-  return <section className="adventure3d" data-combat={combatEngaged||undefined} aria-label="새벽들판 자유 탐험 Vertical Slice">
+  return <section
+    className="adventure3d"
+    data-combat={combatEngaged||undefined}
+    data-boss={tempestWardenPhaseState||undefined}
+    aria-label="새벽들판 자유 탐험 Vertical Slice"
+  >
     <canvas
       ref={canvasRef}
       className="adventure3d__canvas"
