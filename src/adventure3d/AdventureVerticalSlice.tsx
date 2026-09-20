@@ -332,6 +332,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           position:hollowCaveReturnFromShortcut(),
           velocity:{x:0,y:0,z:0},
         };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
         setInsideHollowCave(false);
         setNearHollowShortcut(false);
         setNotice('열린 바위문을 빠져나오자 끊어진 돌다리 아래쪽 길로 이어집니다. 이제 동굴과 돌다리를 빠르게 오갈 수 있습니다.');
@@ -343,6 +351,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           ...playerRef.current,
           position:hollowCaveReturnFromEntrance(),
           velocity:{x:0,y:0,z:0},
+        };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
         };
         setInsideHollowCave(false);
         setNearHollowExit(false);
@@ -365,6 +381,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         position:hollowCaveInsideShortcutSpawn(),
         velocity:{x:0,y:0,z:0},
       };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
       setInsideHollowCave(true);
       setNotice('돌다리 아래 열린 틈을 통과해 바람숨 동굴 안쪽으로 들어왔습니다.');
       return;
@@ -382,6 +406,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         position:hollowCaveInsideEntryPosition(),
         velocity:{x:0,y:0,z:0},
       };
+        cameraRef.current={
+          ...cameraRef.current,
+          target:{
+            x:playerRef.current.position.x,
+            y:playerRef.current.position.y+1.8,
+            z:playerRef.current.position.z,
+          },
+        };
       setInsideHollowCave(true);
       setNotice(hollowCaveRef.current.shortcutOpen
         ?'바람숨 동굴 안입니다. 예전에 열어 둔 바위문 너머로 돌다리 쪽 바람이 들어옵니다.'
