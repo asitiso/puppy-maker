@@ -140,7 +140,6 @@ export function stepDawnreachHerd(
       };
     }
     direction=normalize(dx,dz);
-    behavior:'moving';
     behavior='moving';
   }
 
