@@ -77,6 +77,30 @@ import {
   playerNearHollowCaveShortcut,
   stepHollowCaveRuntime,
 } from './hollow-cave';
+import {
+  SKYBREAK_HIGHLAND,
+  applySkybreakGust,
+  castSkybreakWindPulse,
+  constrainSkybreakPlayer,
+  createSkybreakEnemies,
+  createSkybreakHighlandState,
+  enterSkybreakHighland,
+  leaveSkybreakHighland,
+  playerNearSkybreakBeacon,
+  playerNearSkybreakBridge,
+  playerNearSkybreakEntrance,
+  playerNearSkybreakOutsideLift,
+  playerNearSkybreakWindLift,
+  reachSkybreakBeacon,
+  skybreakEntryPosition,
+  skybreakGustActive,
+  skybreakHighlandHeight,
+  skybreakHighlandVisual,
+  skybreakReturnToBridge,
+  skybreakReturnToSkywatch,
+  skybreakWindLiftEntry,
+  stepSkybreakHighland,
+} from './skybreak-highland';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -106,6 +130,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
   const enemiesRef=useRef<AdventureEnemyState[]>(persisted.campCleared?[]:createStartingCampEnemies());
+  const fieldEnemiesSnapshotRef=useRef<AdventureEnemyState[]|null>(null);
   const cameraRef=useRef<AdventureCameraState>({...DEFAULT_ADVENTURE_CAMERA,target:{x:STARTING_FIELD.spawn.x,y:2,z:STARTING_FIELD.spawn.z}});
   const pressedRef=useRef(new Set<string>());
   const stickRef=useRef({x:0,y:0});
@@ -134,6 +159,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const herdRef=useRef(createDawnreachHerdState());
   const herdWitnessedRef=useRef(false);
   const hollowCaveRef=useRef(createHollowCaveRuntimeState(persisted.hollowCave.shortcutOpen));
+  const skybreakRef=useRef(createSkybreakHighlandState(persisted.skybreak.beaconReached));
+  const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
   const [stamina,setStamina]=useState(100);
@@ -170,6 +197,52 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearHollowShortcut,setNearHollowShortcut]=useState(false);
   const [nearHollowEntrance,setNearHollowEntrance]=useState(false);
   const [nearHollowOutsideShortcut,setNearHollowOutsideShortcut]=useState(false);
+  const [insideSkybreak,setInsideSkybreak]=useState(false);
+  const [skybreakBeaconReached,setSkybreakBeaconReached]=useState(persisted.skybreak.beaconReached);
+  const [skybreakGust,setSkybreakGust]=useState(false);
+  const [skybreakCalm,setSkybreakCalm]=useState(false);
+  const [nearSkybreakBridge,setNearSkybreakBridge]=useState(false);
+  const [nearSkybreakEntrance,setNearSkybreakEntrance]=useState(false);
+  const [nearSkybreakBeacon,setNearSkybreakBeacon]=useState(false);
+  const [nearSkybreakWindLift,setNearSkybreakWindLift]=useState(false);
+  const [nearSkybreakOutsideLift,setNearSkybreakOutsideLift]=useState(false);
+
+  const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
+    playerRef.current={
+      ...playerRef.current,
+      position,
+      velocity:{x:0,y:0,z:0},
+    };
+    cameraRef.current={
+      ...cameraRef.current,
+      target:{x:position.x,y:position.y+1.8,z:position.z},
+    };
+  },[]);
+
+  const enterSkybreakAt=useCallback((position:PlayerMotionState['position'],message:string)=>{
+    fieldEnemiesSnapshotRef.current=enemiesRef.current;
+    enemiesRef.current=createSkybreakEnemies(skybreakRef.current.beaconReached);
+    skybreakRef.current=enterSkybreakHighland(skybreakRef.current);
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideSkybreak(true);
+    setLivingEnemies(enemiesRef.current.length);
+    snapPlayerTo(position);
+    setNotice(message);
+  },[snapPlayerTo]);
+
+  const leaveSkybreakTo=useCallback((position:PlayerMotionState['position'],message:string)=>{
+    skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    fieldEnemiesSnapshotRef.current=null;
+    lockedTargetRef.current=null;
+    setLockedTargetId(null);
+    setInsideSkybreak(false);
+    setCombatEngaged(false);
+    setLivingEnemies(enemiesRef.current.filter(enemy=>enemy.hp>0).length);
+    snapPlayerTo(position);
+    setNotice(message);
+  },[snapPlayerTo]);
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -245,6 +318,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const castEnvironmentAbility=useCallback((ability:EnvironmentAbilityId)=>{
     if(combatRef.current.hp<=0)return;
 
+    if(skybreakRef.current.inside){
+      if(ability!=='windPulse'){
+        setNotice('높은 능선에는 불붙일 재료가 거의 없습니다. 돌풍은 바람밀기로 잠시 상쇄할 수 있습니다.');
+        return;
+      }
+      const result=castSkybreakWindPulse(skybreakRef.current);
+      skybreakRef.current=result.state;
+      setSkybreakCalm(result.state.calmClock>0);
+      setNotice('바람밀기가 맞바람을 흩뜨렸습니다. 잠시 중앙 돌풍길이 잦아듭니다.');
+      return;
+    }
+
     if(hollowCaveRef.current.inside){
       if(ability!=='windPulse'){
         setNotice('동굴의 바람 공명석은 불씨보다 공기의 진동에 반응하는 것 같습니다.');
@@ -317,6 +402,35 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   },[]);
 
   const interactWorld=useCallback(()=>{
+    if(skybreakRef.current.inside){
+      if(playerNearSkybreakBeacon(playerRef.current.position,skybreakRef.current)){
+        skybreakRef.current=reachSkybreakBeacon(skybreakRef.current);
+        requestOpenAdventureUpdate({type:'reach-skybreak-beacon'});
+        setSkybreakBeaconReached(true);
+        setNearSkybreakBeacon(false);
+        setNotice('바람유리 봉화가 깨어났습니다. 고지대의 바람길이 별바람 전망대까지 이어지며 새로운 양방향 이동로가 열렸습니다.');
+        return;
+      }
+      if(playerNearSkybreakWindLift(playerRef.current.position,skybreakRef.current)){
+        leaveSkybreakTo(
+          skybreakReturnToSkywatch(),
+          '바람승강로를 타고 별바람 전망대 아래로 내려왔습니다. 이제 전망대에서도 하늘갈림 고지로 되돌아갈 수 있습니다.',
+        );
+        return;
+      }
+      if(playerNearSkybreakEntrance(playerRef.current.position,skybreakRef.current)){
+        leaveSkybreakTo(
+          skybreakReturnToBridge(),
+          '하늘갈림 고지를 빠져나와 끊어진 돌다리로 돌아왔습니다.',
+        );
+        return;
+      }
+      setNotice(skybreakRef.current.beaconReached
+        ?'바람유리 봉화가 켜져 있습니다. 입구로 돌아가거나 봉화 옆 바람승강로를 이용할 수 있습니다.'
+        :'정면 중앙은 주기적인 돌풍길입니다. Q 바람밀기·달리기·회피로 뚫거나, 오른쪽 능선의 적을 상대해 우회할 수 있습니다.');
+      return;
+    }
+
     if(roadsideAmbushPhaseRef.current==='witnessed'&&playerNearRoadsideAmbush(playerRef.current.position)){
       interveneRoadsideAmbush();
       return;
@@ -391,6 +505,31 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       setInsideHollowCave(true);
       setNotice('돌다리 아래 열린 틈을 통과해 바람숨 동굴 안쪽으로 들어왔습니다.');
+      return;
+    }
+
+    if(playerNearSkybreakOutsideLift(
+      playerRef.current.position,
+      skybreakRef.current.beaconReached,
+    )){
+      enterSkybreakAt(
+        skybreakWindLiftEntry(),
+        '별바람 전망대의 바람승강로를 타고 하늘갈림 고지의 봉화 쪽으로 올라왔습니다.',
+      );
+      return;
+    }
+
+    if(
+      visitedRef.current.has('old-bridge')&&
+      playerNearSkybreakBridge(
+        playerRef.current.position,
+        hollowCaveRef.current.shortcutOpen,
+      )
+    ){
+      enterSkybreakAt(
+        skybreakEntryPosition(),
+        '끊어진 돌다리 아래 열린 바람길을 건너 하늘갈림 고지에 도착했습니다. 중앙의 돌풍을 뚫거나 오른쪽 능선으로 우회할 수 있습니다.',
+      );
       return;
     }
 
@@ -477,15 +616,18 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     }
 
     discover();
-  },[discover,interveneRoadsideAmbush]);
+  },[discover,enterSkybreakAt,interveneRoadsideAmbush,leaveSkybreakTo]);
 
 
   const recoverAtEntrance=useCallback(()=>{
     playerRef.current={...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}};
     hollowCaveRef.current=leaveHollowCave(hollowCaveRef.current);
+    skybreakRef.current=leaveSkybreakHighland(skybreakRef.current);
     setInsideHollowCave(false);
+    setInsideSkybreak(false);
     combatRef.current={...DEFAULT_PLAYER_COMBAT};
-    enemiesRef.current=campClearedRef.current?[]:createStartingCampEnemies();
+    enemiesRef.current=fieldEnemiesSnapshotRef.current??(campClearedRef.current?[]:createStartingCampEnemies());
+    fieldEnemiesSnapshotRef.current=null;
     if(roadsideAmbushPhaseRef.current==='intervening'){
       roadsideAmbushPhaseRef.current='witnessed';
       setWorldEventPhase('witnessed');
@@ -591,14 +733,16 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       const incapacitated=combat.hp<=0||combat.hitstun>0;
       const wantsSprint=!incapacitated&&combat.attackClock<0&&combat.dodgeClock<0&&sprintTouchRef.current;
       const movementInput=incapacitated||combat.dodgeClock>=0?{x:0,z:0}:move;
+      const terrainHeight=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
+      const movementHalfSize=skybreakRef.current.inside?SKYBREAK_HIGHLAND.halfSize:STARTING_FIELD.halfSize;
       playerRef.current=stepPlayerMotion(playerRef.current,{
         moveX:movementInput.x,
         moveZ:movementInput.z,
         sprint:wantsSprint,
         jump:!incapacitated&&combat.dodgeClock<0&&jumpRef.current,
-      },dt,startingFieldHeight,STARTING_FIELD.halfSize);
+      },dt,terrainHeight,movementHalfSize);
       jumpRef.current=false;
-      playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,startingFieldHeight,STARTING_FIELD.halfSize);
+      playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,terrainHeight,movementHalfSize);
       if(hollowCaveRef.current.inside){
         playerRef.current={
           ...playerRef.current,
@@ -606,6 +750,27 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       }
       hollowCaveRef.current=stepHollowCaveRuntime(hollowCaveRef.current,dt);
+
+      if(skybreakRef.current.inside){
+        playerRef.current={
+          ...playerRef.current,
+          position:constrainSkybreakPlayer(playerRef.current.position),
+        };
+        skybreakRef.current=stepSkybreakHighland(skybreakRef.current,dt);
+        const gust=applySkybreakGust(
+          playerRef.current.position,
+          skybreakRef.current,
+          combat.dodgeClock>=0,
+          dt,
+        );
+        playerRef.current={...playerRef.current,position:gust.position};
+        if(gust.pushed&&!skybreakGustPushedRef.current){
+          setNotice('정면 돌풍에 밀렸습니다. 돌풍이 잠잠할 때 달리거나, 회피로 버티거나, Q 바람밀기로 잠시 상쇄할 수 있습니다.');
+        }
+        skybreakGustPushedRef.current=gust.pushed;
+      }else{
+        skybreakGustPushedRef.current=false;
+      }
 
       const caravanPause=playerNearWanderingCaravan(playerRef.current.position,caravanRef.current,7);
       caravanRef.current=stepWanderingCaravan(caravanRef.current,dt,caravanPause);
@@ -719,12 +884,13 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       }
 
       if(combat.hp>0){
-        const avoidanceZones=burningHazardAvoidanceZones(hazardsRef.current);
+        const avoidanceZones=skybreakRef.current.inside?[]:burningHazardAvoidanceZones(hazardsRef.current);
+        const enemyTerrain=skybreakRef.current.inside?skybreakHighlandHeight:startingFieldHeight;
         const stepped=enemiesRef.current.map(enemy=>stepEnemyAi(
           enemy,
           playerRef.current.position,
           dt,
-          startingFieldHeight,
+          enemyTerrain,
           avoidanceZones,
         ));
         enemiesRef.current=alertNearbyEnemies(stepped.map(result=>result.enemy));
@@ -736,7 +902,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         }
       }
 
-      if(roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
+      if(!skybreakRef.current.inside&&roadsideAmbushPhaseRef.current==='intervening'&&roadsideAmbushDefeated(enemiesRef.current)){
         roadsideAmbushResolvedRef.current=true;
         roadsideOutcomeRef.current='rescued';
         roadsideAmbushPhaseRef.current='resolved';
@@ -767,7 +933,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         };
       }
 
-      const nextNearby=nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
+      const nextNearby=skybreakRef.current.inside?null:nearestStartingFieldDiscovery(playerRef.current.position.x,playerRef.current.position.z,visitedRef.current);
       nearbyRef.current=nextNearby;
       renderAdventureField(
         context,
@@ -799,11 +965,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         dawnreachHerdVisual(herdRef.current),
         dawnreachWildlifeTrailVisual(wildlifeTrailClockRef.current),
         hollowCaveVisual(hollowCaveRef.current,playerRef.current.position),
+        skybreakHighlandVisual(skybreakRef.current,playerRef.current.position),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
       const campLiving=enemiesRef.current.filter(enemy=>isStartingCampEnemy(enemy)&&enemy.hp>0).length;
-      if(campLiving===0&&!campClearedRef.current){
+      if(!skybreakRef.current.inside&&campLiving===0&&!campClearedRef.current){
         campClearedRef.current=true;
         requestOpenAdventureUpdate({type:'clear-camp'});
         setNotice('재빛 야영지의 위협이 사라졌습니다. 주변 흔적과 남겨진 물건을 직접 살펴보세요.');
@@ -845,9 +1012,34 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         );
         setNearHollowOutsideShortcut(
           !hollowCaveRef.current.inside&&
+          !skybreakRef.current.inside&&
           playerNearHollowCaveOutsideShortcut(
             playerRef.current.position,
             hollowCaveRef.current.shortcutOpen,
+          ),
+        );
+        setInsideSkybreak(skybreakRef.current.inside);
+        setSkybreakBeaconReached(skybreakRef.current.beaconReached);
+        setSkybreakGust(skybreakGustActive(skybreakRef.current));
+        setSkybreakCalm(skybreakRef.current.calmClock>0);
+        setNearSkybreakBridge(
+          !skybreakRef.current.inside&&
+          !hollowCaveRef.current.inside&&
+          visitedRef.current.has('old-bridge')&&
+          playerNearSkybreakBridge(
+            playerRef.current.position,
+            hollowCaveRef.current.shortcutOpen,
+          ),
+        );
+        setNearSkybreakEntrance(playerNearSkybreakEntrance(playerRef.current.position,skybreakRef.current));
+        setNearSkybreakBeacon(playerNearSkybreakBeacon(playerRef.current.position,skybreakRef.current));
+        setNearSkybreakWindLift(playerNearSkybreakWindLift(playerRef.current.position,skybreakRef.current));
+        setNearSkybreakOutsideLift(
+          !skybreakRef.current.inside&&
+          !hollowCaveRef.current.inside&&
+          playerNearSkybreakOutsideLift(
+            playerRef.current.position,
+            skybreakRef.current.beaconReached,
           ),
         );
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
@@ -904,10 +1096,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     />
 
     <header className="adventure3d__hud">
-      <div><small>{insideHollowCave?'HIDDEN INTERIOR':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:STARTING_FIELD.label}</strong></div>
+      <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
       {(combatEngaged||hp<DEFAULT_PLAYER_COMBAT.maxHp)&&<div className="adventure3d__health" aria-label={`체력 ${hp}`}><span style={{width:`${hp}%`}}/></div>}
       <div className="adventure3d__stamina" aria-label={`스태미나 ${stamina}`}><span style={{width:`${stamina}%`}}/></div>
-      {combatEngaged&&<em>{worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
+      {combatEngaged&&<em>{insideSkybreak?'능선 위협':worldEventPhase==='intervening'?'길목 습격':'필드 위협'} {livingEnemies}</em>}
       {worldEventPhase==='witnessed'&&<em>우연한 사건 · {ROADSIDE_AMBUSH.label}</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='rescued'&&<em>길목 · 구조된 여행자</em>}
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
@@ -916,6 +1108,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {wildlifeTrailActive&&!insideHollowCave&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
       {insideHollowCave&&<em>동굴 공명 · {hollowResonators}/3</em>}
       {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
+      {insideSkybreak&&!skybreakBeaconReached&&<em>{skybreakCalm?'돌풍 · 잠시 잦아듦':skybreakGust?'돌풍 · 강풍':'돌풍 · 소강'}</em>}
+      {insideSkybreak&&skybreakBeaconReached&&<em>새 경로 · 전망대 바람승강로 개방</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -965,14 +1159,24 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
-      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
-      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
+      {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
+      {(nearPuzzle||nearHazard)&&!defeated&&!insideHollowCave&&!insideSkybreak&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('emberSpark')}>불씨점화</button>}
       <button
         type="button"
         className="is-primary"
-        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
+        disabled={(!nearby&&!nearStone&&!rewardReady&&!nearWorldConsequence&&!nearCaravan&&!nearHollowExit&&!nearHollowShortcut&&!nearHollowEntrance&&!nearHollowOutsideShortcut&&!nearSkybreakBridge&&!nearSkybreakEntrance&&!nearSkybreakBeacon&&!nearSkybreakWindLift&&!nearSkybreakOutsideLift&&!(worldEventPhase==='witnessed'&&nearWorldEvent))||combatEngaged||defeated}
         onClick={interactWorld}
-      >{nearHollowShortcut
+      >{nearSkybreakBeacon
+        ?'봉화 깨우기'
+        :nearSkybreakWindLift
+          ?'전망대로 내려가기'
+          :nearSkybreakEntrance
+            ?'돌다리로 돌아가기'
+            :nearSkybreakOutsideLift
+              ?'고지대로 올라가기'
+              :nearSkybreakBridge
+                ?'고지대 건너기'
+                :nearHollowShortcut
         ?'돌다리로 나가기'
         :nearHollowExit
           ?'들판으로 돌아가기'

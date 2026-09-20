@@ -9,6 +9,7 @@ import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
 import type {RoamingWorldPresenceVisual} from './roaming-world';
 import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 import type {HollowCaveVisual} from './hollow-cave';
+import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -542,6 +543,103 @@ function drawHollowCave(
   ctx.restore();
 }
 
+function drawSkybreakHighland(
+  ctx:CanvasRenderingContext2D,
+  highland:SkybreakHighlandVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  ctx.save();
+
+  const sky=ctx.createLinearGradient(0,0,0,height);
+  sky.addColorStop(0,'#6e9eb4');
+  sky.addColorStop(.55,'#b9d1c4');
+  sky.addColorStop(1,'#5f735f');
+  ctx.fillStyle=sky;
+  ctx.fillRect(0,0,width,height);
+
+  for(let grid=-SKYBREAK_HIGHLAND.halfSize;grid<=SKYBREAK_HIGHLAND.halfSize;grid+=4){
+    const xa=projectAdventurePoint({x:grid,y:skybreakHighlandHeight(grid,-SKYBREAK_HIGHLAND.halfSize),z:-SKYBREAK_HIGHLAND.halfSize},camera,width,height);
+    const xb=projectAdventurePoint({x:grid,y:skybreakHighlandHeight(grid,SKYBREAK_HIGHLAND.halfSize),z:SKYBREAK_HIGHLAND.halfSize},camera,width,height);
+    line(ctx,xa,xb,'rgba(236,246,229,.12)');
+    const za=projectAdventurePoint({x:-SKYBREAK_HIGHLAND.halfSize,y:skybreakHighlandHeight(-SKYBREAK_HIGHLAND.halfSize,grid),z:grid},camera,width,height);
+    const zb=projectAdventurePoint({x:SKYBREAK_HIGHLAND.halfSize,y:skybreakHighlandHeight(SKYBREAK_HIGHLAND.halfSize,grid),z:grid},camera,width,height);
+    line(ctx,za,zb,'rgba(236,246,229,.12)');
+  }
+
+  for(const band of highland.gustBands){
+    const p=projectAdventurePoint(band.position,camera,width,height);
+    if(!p)continue;
+    const radius=Math.max(18,Math.min(85,p.scale*3.7));
+    ctx.strokeStyle=band.active?'rgba(209,243,255,.75)':'rgba(204,226,233,.2)';
+    ctx.lineWidth=band.active?3:1.5;
+    for(let offset=-1;offset<=1;offset++){
+      ctx.beginPath();
+      ctx.ellipse(p.x+offset*radius*.55,p.y-radius*.12,radius,radius*.22,-.08,0,Math.PI*2);
+      ctx.stroke();
+    }
+  }
+
+  const beacon=projectAdventurePoint(highland.beacon,camera,width,height);
+  const beaconTop=projectAdventurePoint({...highland.beacon,y:highland.beacon.y+7},camera,width,height);
+  if(beacon&&beaconTop){
+    const size=Math.max(10,Math.min(40,beacon.scale*1.2));
+    ctx.strokeStyle=highland.beaconReached?'#d6f7ff':'#d4d9c5';
+    ctx.fillStyle=highland.beaconReached?'rgba(156,224,235,.34)':'rgba(109,121,119,.5)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(beacon.x-size*.7,beacon.y);
+    ctx.lineTo(beaconTop.x-size*.25,beaconTop.y);
+    ctx.lineTo(beaconTop.x+size*.25,beaconTop.y);
+    ctx.lineTo(beacon.x+size*.7,beacon.y);
+    ctx.closePath();
+    ctx.fill();ctx.stroke();
+    if(highland.beaconReached){
+      ctx.fillStyle='rgba(196,244,255,.3)';
+      ctx.beginPath();ctx.arc(beaconTop.x,beaconTop.y,size*1.4,0,Math.PI*2);ctx.fill();
+    }
+    if(highland.nearbyBeacon){
+      ctx.fillStyle='#f4ffd9';
+      ctx.font=`900 ${Math.max(11,Math.min(18,size*.6))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('E',beaconTop.x,beaconTop.y-size*.45);
+    }
+  }
+
+  const drawGate=(position:Vec3,nearby:boolean,label:string,open=true)=>{
+    const base=projectAdventurePoint(position,camera,width,height);
+    const top=projectAdventurePoint({...position,y:position.y+2.4},camera,width,height);
+    if(!base||!top)return;
+    const size=Math.max(8,Math.min(30,base.scale*.82));
+    ctx.strokeStyle=open?'rgba(201,242,237,.82)':'rgba(107,115,119,.7)';
+    ctx.lineWidth=open?3:2;
+    ctx.beginPath();ctx.roundRect(top.x-size,top.y,size*2,Math.max(size*2.1,base.y-top.y),size*.8);ctx.stroke();
+    if(open){
+      ctx.fillStyle='rgba(168,226,220,.13)';
+      ctx.fillRect(top.x-size*.75,top.y+size*.2,size*1.5,Math.max(size*1.45,base.y-top.y-size*.2));
+    }
+    if(nearby){
+      ctx.fillStyle='#f0f7d6';
+      ctx.font=`900 ${Math.max(10,Math.min(17,size*.62))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('E',base.x,top.y-size*.25);
+      ctx.font=`700 ${Math.max(9,Math.min(13,size*.45))}px system-ui`;
+      ctx.fillText(label,base.x,base.y+size*.7);
+    }
+  };
+
+  drawGate(highland.entrance,highland.nearbyEntrance,'돌다리로 돌아가기');
+  drawGate(highland.windLift,highland.nearbyWindLift,'별바람 전망대',highland.windLiftOpen);
+
+  if(highland.calmActive){
+    ctx.fillStyle='rgba(211,246,242,.08)';
+    ctx.fillRect(0,0,width,height);
+  }
+
+  ctx.restore();
+}
+
 function drawRuinPuzzle(
   ctx:CanvasRenderingContext2D,
   state:RuinPuzzleState,
@@ -648,6 +746,7 @@ export function renderAdventureField(
   wildlife:WildlifeVisual|null=null,
   wildlifeTrail:WildlifeTrailVisual|null=null,
   hollowCave:HollowCaveVisual|null=null,
+  skybreakHighland:SkybreakHighlandVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -672,6 +771,19 @@ export function renderAdventureField(
 
   if(hollowCave?.active){
     drawHollowCave(ctx,hollowCave,camera,width,height);
+    drawPlayer(ctx,player,camera,width,height);
+    return;
+  }
+
+  if(skybreakHighland?.active){
+    drawSkybreakHighland(ctx,skybreakHighland,camera,width,height);
+    const enemyDepth=[...enemies].sort((a,b)=>{
+      const pa=projectAdventurePoint(a.position,camera,width,height);
+      const pb=projectAdventurePoint(b.position,camera,width,height);
+      return (pb?.depth??0)-(pa?.depth??0);
+    });
+    for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
+    if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
     drawPlayer(ctx,player,camera,width,height);
     return;
   }
