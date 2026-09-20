@@ -7,7 +7,7 @@ import type {RuinPuzzleLayout,RuinPuzzleState} from './environment-system';
 import type {FieldHazardState} from './environment-combat';
 import type {WorldConsequenceVisual,WorldEventVisual} from './world-events';
 import type {RoamingWorldPresenceVisual} from './roaming-world';
-import type {WildlifeVisual} from './wildlife';
+import type {WildlifeTrailVisual,WildlifeVisual} from './wildlife';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -381,6 +381,33 @@ function drawRoamingWorldPresence(
   ctx.restore();
 }
 
+function drawWildlifeTrail(
+  ctx:CanvasRenderingContext2D,
+  trail:WildlifeTrailVisual,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const alpha=.28+Math.min(1,trail.secondsRemaining/6)*.5;
+  ctx.save();
+  ctx.fillStyle=`rgba(218,230,187,${alpha})`;
+  ctx.strokeStyle=`rgba(91,112,78,${Math.min(.72,alpha+.12)})`;
+  ctx.lineWidth=1.2;
+  for(const [index,point] of trail.points.entries()){
+    const p=projectAdventurePoint(point,camera,width,height);
+    if(!p)continue;
+    const size=Math.max(3,Math.min(8,p.scale*.28));
+    const side=index%2===0?-1:1;
+    ctx.beginPath();
+    ctx.ellipse(p.x+side*size*.45,p.y-size*.18,size*.42,size*.72,side*.28,0,Math.PI*2);
+    ctx.fill();ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(p.x-side*size*.15,p.y+size*.18,size*.32,size*.58,-side*.2,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawWildlife(
   ctx:CanvasRenderingContext2D,
   wildlife:WildlifeVisual,
@@ -533,6 +560,7 @@ export function renderAdventureField(
   nearbyWorldConsequence=false,
   roamingPresence:RoamingWorldPresenceVisual|null=null,
   wildlife:WildlifeVisual|null=null,
+  wildlifeTrail:WildlifeTrailVisual|null=null,
 ){
   ctx.clearRect(0,0,width,height);
   const sky=ctx.createLinearGradient(0,0,0,height);
@@ -571,6 +599,7 @@ export function renderAdventureField(
   if(worldEvent)drawWorldEvent(ctx,worldEvent,camera,width,height);
   if(worldConsequence)drawWorldConsequence(ctx,worldConsequence,camera,width,height,nearbyWorldConsequence);
   if(roamingPresence)drawRoamingWorldPresence(ctx,roamingPresence,camera,width,height);
+  if(wildlifeTrail)drawWildlifeTrail(ctx,wildlifeTrail,camera,width,height);
   if(wildlife)drawWildlife(ctx,wildlife,camera,width,height);
   const enemyDepth=[...enemies].sort((a,b)=>{
     const pa=projectAdventurePoint(a.position,camera,width,height);
