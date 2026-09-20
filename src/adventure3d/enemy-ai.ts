@@ -1,7 +1,7 @@
 import type {Vec3} from './types';
 import type {TerrainHeight} from './player-controller';
 
-export type EnemyArchetype='rusher'|'guard';
+export type EnemyArchetype='rusher'|'guard'|'skimmer';
 export type EnemyAiMode='patrol'|'suspicious'|'chase'|'windup'|'recover'|'return'|'stagger'|'defeated';
 
 export type AdventureEnemyState={
@@ -43,15 +43,30 @@ type ArchetypeConfig={
   recovery:number;
   damage:number;
   leash:number;
+  hoverHeight:number;
 };
 
 const CONFIG:Record<EnemyArchetype,ArchetypeConfig>={
-  rusher:{moveSpeed:1.7,chaseSpeed:4.2,sight:18,hearing:6.5,attackRange:2.1,windup:.58,recovery:.58,damage:13,leash:28},
-  guard:{moveSpeed:1.3,chaseSpeed:3.1,sight:20,hearing:6,attackRange:2.4,windup:.82,recovery:.72,damage:18,leash:24},
+  rusher:{moveSpeed:1.7,chaseSpeed:4.2,sight:18,hearing:6.5,attackRange:2.1,windup:.58,recovery:.58,damage:13,leash:28,hoverHeight:0},
+  guard:{moveSpeed:1.3,chaseSpeed:3.1,sight:20,hearing:6,attackRange:2.4,windup:.82,recovery:.72,damage:18,leash:24,hoverHeight:0},
+  skimmer:{moveSpeed:2.4,chaseSpeed:4.8,sight:24,hearing:8,attackRange:2.6,windup:.68,recovery:.82,damage:16,leash:34,hoverHeight:4.8},
 };
 
 const clampDt=(value:number)=>Math.min(.05,Math.max(0,Number.isFinite(value)?value:0));
 const distance2=(a:Vec3,b:Vec3)=>Math.hypot(a.x-b.x,a.z-b.z);
+const distance3=(a:Vec3,b:Vec3)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+
+export const SKIMMER_HOVER_HEIGHT=CONFIG.skimmer.hoverHeight;
+export const SKIMMER_DIVE_HEIGHT=1.35;
+
+export function isAirborneEnemy(enemy:AdventureEnemyState|string){
+  return typeof enemy==='string'?false:enemy.archetype==='skimmer';
+}
+
+function approach(value:number,target:number,maxStep:number){
+  if(Math.abs(target-value)<=maxStep)return target;
+  return value+Math.sign(target-value)*maxStep;
+}
 
 function faceToward(from:Vec3,to:Vec3,fallback:number){
   const dx=to.x-from.x,dz=to.z-from.z;
@@ -68,7 +83,7 @@ function moveToward(
 ):Vec3{
   const dx=target.x-position.x,dz=target.z-position.z;
   const distance=Math.hypot(dx,dz);
-  if(distance<.001)return {...position,y:terrainHeight(position.x,position.z)};
+  if(distance<.001)return {...position};
 
   let moveX=dx/distance;
   let moveZ=dz/distance;
@@ -88,7 +103,7 @@ function moveToward(
   const step=Math.min(distance,speed*dt);
   const x=position.x+moveX/moveLength*step;
   const z=position.z+moveZ/moveLength*step;
-  return {x,y:terrainHeight(x,z),z};
+  return {x,y:position.y,z};
 }
 
 export function canEnemySeePlayer(enemy:AdventureEnemyState,player:Vec3):boolean{
@@ -112,62 +127,81 @@ export function stepEnemyAi(
   if(enemy.mode==='defeated'||enemy.hp<=0)return {enemy:{...enemy,hp:0,mode:'defeated',timer:0},attack:null};
   const dt=clampDt(dtRaw);
   const config=CONFIG[enemy.archetype];
+  const settle=(next:AdventureEnemyState)=>{
+    const base=terrainHeight(next.position.x,next.position.z);
+    const targetOffset=next.archetype==='skimmer'
+      ?next.mode==='windup'||next.mode==='recover'
+        ?SKIMMER_DIVE_HEIGHT
+        :SKIMMER_HOVER_HEIGHT
+      :0;
+    const verticalSpeed=next.archetype==='skimmer'
+      ?next.mode==='windup'?9.5:next.mode==='recover'?6.5:4.2
+      :999;
+    return {
+      ...next,
+      position:{
+        ...next.position,
+        y:approach(next.position.y,base+targetOffset,verticalSpeed*dt),
+      },
+    };
+  };
   const playerDistance=distance2(enemy.position,player);
   const homeDistance=distance2(enemy.position,enemy.home);
   const seesPlayer=canEnemySeePlayer(enemy,player);
 
   if(enemy.mode==='stagger'){
     const timer=Math.max(0,enemy.timer-dt);
-    return {enemy:{...enemy,timer,mode:timer<=0?'chase':'stagger'},attack:null};
+    return {enemy:settle({...enemy,timer,mode:timer<=0?'chase':'stagger'}),attack:null};
   }
 
   if(enemy.mode==='windup'){
     const timer=Math.max(0,enemy.timer-dt);
     const facingYaw=faceToward(enemy.position,player,enemy.facingYaw);
-    if(timer>0)return {enemy:{...enemy,timer,facingYaw},attack:null};
-    const attack=playerDistance<=config.attackRange+.55
+    if(timer>0)return {enemy:settle({...enemy,timer,facingYaw}),attack:null};
+    const attack=playerDistance<=config.attackRange+.55&&
+      (enemy.archetype!=='skimmer'||distance3(enemy.position,player)<=config.attackRange+1.25)
       ?{enemyId:enemy.id,damage:config.damage,origin:enemy.position,range:config.attackRange+.55}
       :null;
-    return {enemy:{...enemy,mode:'recover',timer:config.recovery,facingYaw},attack};
+    return {enemy:settle({...enemy,mode:'recover',timer:config.recovery,facingYaw}),attack};
   }
 
   if(enemy.mode==='recover'){
     const timer=Math.max(0,enemy.timer-dt);
-    return {enemy:{...enemy,timer,mode:timer<=0?'chase':'recover'},attack:null};
+    return {enemy:settle({...enemy,timer,mode:timer<=0?'chase':'recover'}),attack:null};
   }
 
   if(enemy.mode==='suspicious'){
     const timer=Math.max(0,enemy.timer-dt);
     const facingYaw=faceToward(enemy.position,player,enemy.facingYaw);
-    if(!seesPlayer&&playerDistance>config.sight*1.1)return {enemy:{...enemy,mode:'return',timer:0,facingYaw},attack:null};
-    return {enemy:{...enemy,timer,mode:timer<=0?'chase':'suspicious',facingYaw},attack:null};
+    if(!seesPlayer&&playerDistance>config.sight*1.1)return {enemy:settle({...enemy,mode:'return',timer:0,facingYaw}),attack:null};
+    return {enemy:settle({...enemy,timer,mode:timer<=0?'chase':'suspicious',facingYaw}),attack:null};
   }
 
   if(enemy.mode==='chase'){
-    if(homeDistance>config.leash||playerDistance>config.leash+8)return {enemy:{...enemy,mode:'return',timer:0},attack:null};
+    if(homeDistance>config.leash||playerDistance>config.leash+8)return {enemy:settle({...enemy,mode:'return',timer:0}),attack:null};
     const facingYaw=faceToward(enemy.position,player,enemy.facingYaw);
     if(playerDistance<=config.attackRange){
-      return {enemy:{...enemy,mode:'windup',timer:config.windup,facingYaw},attack:null};
+      return {enemy:settle({...enemy,mode:'windup',timer:config.windup,facingYaw}),attack:null};
     }
     const position=moveToward(enemy.position,player,config.chaseSpeed,dt,terrainHeight,avoidanceZones);
-    return {enemy:{...enemy,position,facingYaw},attack:null};
+    return {enemy:settle({...enemy,position,facingYaw}),attack:null};
   }
 
   if(enemy.mode==='return'){
-    if(seesPlayer&&homeDistance<config.leash*.75)return {enemy:{...enemy,mode:'suspicious',timer:.35,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)},attack:null};
-    if(homeDistance<.6)return {enemy:{...enemy,position:{...enemy.home,y:terrainHeight(enemy.home.x,enemy.home.z)},mode:'patrol',timer:0},attack:null};
+    if(seesPlayer&&homeDistance<config.leash*.75)return {enemy:settle({...enemy,mode:'suspicious',timer:.35,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)}),attack:null};
+    if(homeDistance<.6)return {enemy:settle({...enemy,position:{...enemy.home},mode:'patrol',timer:0}),attack:null};
     const facingYaw=faceToward(enemy.position,enemy.home,enemy.facingYaw);
     const position=moveToward(enemy.position,enemy.home,config.moveSpeed*1.2,dt,terrainHeight,avoidanceZones);
     return {enemy:{...enemy,position,facingYaw},attack:null};
   }
 
-  if(seesPlayer)return {enemy:{...enemy,mode:'suspicious',timer:.42,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)},attack:null};
+  if(seesPlayer)return {enemy:settle({...enemy,mode:'suspicious',timer:.42,facingYaw:faceToward(enemy.position,player,enemy.facingYaw)}),attack:null};
 
   const patrolTarget=enemy.patrol[enemy.patrolIndex%Math.max(1,enemy.patrol.length)]??enemy.home;
   const patrolDistance=distance2(enemy.position,patrolTarget);
   if(patrolDistance<.6){
     const patrolIndex=(enemy.patrolIndex+1)%Math.max(1,enemy.patrol.length);
-    return {enemy:{...enemy,patrolIndex,timer:0},attack:null};
+    return {enemy:settle({...enemy,patrolIndex,timer:0}),attack:null};
   }
   const facingYaw=faceToward(enemy.position,patrolTarget,enemy.facingYaw);
   const position=moveToward(enemy.position,patrolTarget,config.moveSpeed,dt,terrainHeight,avoidanceZones);
