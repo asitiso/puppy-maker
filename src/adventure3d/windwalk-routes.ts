@@ -55,7 +55,7 @@ export function isWindwalkTraceId(value:string):value is WindwalkTraceId{
 }
 
 export function windwalkRouteMastered(discovered:ReadonlySet<WindwalkTraceId>|readonly WindwalkTraceId[]){
-  const count=Array.isArray(discovered)?new Set(discovered).size:discovered.size;
+  const count='size' in discovered?discovered.size:new Set(discovered).size;
   return count===windwalkTraceIds.length;
 }
 
