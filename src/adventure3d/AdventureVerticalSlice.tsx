@@ -48,9 +48,12 @@ import {
 } from './roaming-world';
 import {
   DAWNREACH_HERD,
+  WILDLIFE_DISCOVERY_TRAIL,
   createDawnreachHerdState,
   dawnreachHerdVisual,
+  dawnreachWildlifeTrailVisual,
   playerNearDawnreachHerd,
+  shouldRevealWildlifeDiscoveryTrail,
   shouldWitnessDawnreachHerd,
   stepDawnreachHerd,
   type WildlifeBehavior,
@@ -111,6 +114,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const caravanRef=useRef(createWanderingCaravanState());
   const herdRef=useRef(createDawnreachHerdState());
   const herdWitnessedRef=useRef(false);
+  const wildlifeTrailClockRef=useRef(0);
+  const wildlifeTrailHintedRef=useRef(false);
   const [stamina,setStamina]=useState(100);
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
@@ -135,6 +140,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [caravanFamiliar,setCaravanFamiliar]=useState(Boolean(caravanResolution));
   const [nearWildlife,setNearWildlife]=useState(false);
   const [wildlifeBehavior,setWildlifeBehavior]=useState<WildlifeBehavior>('grazing');
+  const [wildlifeTrailActive,setWildlifeTrailActive]=useState(false);
 
   const applyLockTarget=useCallback((enemy:AdventureEnemyState|null)=>{
     const id=enemy?.id??null;
@@ -504,6 +510,24 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       ){
         setNotice('불길에 놀란 새벽사슴 무리가 급히 방향을 틀어 안전한 쪽으로 달아납니다.');
       }
+
+      if(visitedRef.current.has(WILDLIFE_DISCOVERY_TRAIL.targetDiscoveryId)){
+        wildlifeTrailClockRef.current=0;
+      }else if(shouldRevealWildlifeDiscoveryTrail(
+        playerRef.current.position,
+        herdRef.current,
+        visitedRef.current,
+      )){
+        const wasInactive=wildlifeTrailClockRef.current<=0;
+        wildlifeTrailClockRef.current=WILDLIFE_DISCOVERY_TRAIL.duration;
+        if(wasInactive&&!wildlifeTrailHintedRef.current){
+          wildlifeTrailHintedRef.current=true;
+          setNotice('사슴들이 자주 밟는 길에 희미한 발자국이 이어집니다. 폭포 쪽 바위 뒤로 사라지는 흔적을 따라가 볼 수 있습니다.');
+        }
+      }else{
+        wildlifeTrailClockRef.current=Math.max(0,wildlifeTrailClockRef.current-dt);
+      }
+
       if(hazardStep.damagePulse){
         hazardPulseSerialRef.current+=1;
         const burned=applyBurningHazardsToEnemies(
@@ -614,6 +638,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           playerNearWanderingCaravan(playerRef.current.position,caravanRef.current),
         ),
         dawnreachHerdVisual(herdRef.current),
+        dawnreachWildlifeTrailVisual(wildlifeTrailClockRef.current),
       );
 
       const living=enemiesRef.current.filter(enemy=>enemy.hp>0).length;
@@ -647,6 +672,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearCaravan(playerNearWanderingCaravan(playerRef.current.position,caravanRef.current));
         setNearWildlife(playerNearDawnreachHerd(playerRef.current.position,herdRef.current));
         setWildlifeBehavior(herdRef.current.behavior);
+        setWildlifeTrailActive(wildlifeTrailClockRef.current>0);
         setBurningHazards(hazardsRef.current.filter(hazard=>hazard.burning).length);
         setLockCandidateCount(targetCandidates(
           enemiesRef.current,
@@ -710,6 +736,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {nearWorldConsequence&&roadsideOutcomeRef.current==='passed'&&<em>길목 · 남겨진 흔적</em>}
       {nearCaravan&&<em>이동 중 · {caravanFamiliar?'아는 행상인':WANDERING_CARAVAN.label}</em>}
       {nearWildlife&&<em>야생 · {DAWNREACH_HERD.label}{wildlifeBehavior==='flee-fire'?' · 불길 회피':wildlifeBehavior==='flee-player'?' · 경계 중':''}</em>}
+      {wildlifeTrailActive&&<em>탐색 흔적 · 새벽사슴 발자국</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
