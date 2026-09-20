@@ -14,6 +14,7 @@ import type {WindwalkRouteVisual} from './windwalk-routes';
 import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenEntranceVisual,type CloudGardenVisual} from './cloud-garden';
 import {isTempestWarden} from './tempest-warden';
 import type {CombatFeedbackState} from './combat-feedback';
+import type {DiscoveryReveal} from './opening-experience';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -22,6 +23,7 @@ export type AdventureWorldOverlay={
   cloudGarden?:CloudGardenVisual|null;
   cloudGardenEntrance?:CloudGardenEntranceVisual|null;
   combatFeedback?:CombatFeedbackState|null;
+  discoveryReveal?:DiscoveryReveal|null;
 };
 
 function dot(a:Vec3,b:Vec3){return a.x*b.x+a.y*b.y+a.z*b.z;}
@@ -325,6 +327,38 @@ function drawCombatEffects(
   ctx.restore();
 }
 
+
+function drawDiscoveryReveal(
+  ctx:CanvasRenderingContext2D,
+  reveal:DiscoveryReveal,
+  camera:AdventureCameraState,
+  width:number,
+  height:number,
+){
+  const ground=startingFieldHeight(reveal.position.x,reveal.position.z);
+  const p=projectAdventurePoint(
+    {x:reveal.position.x,y:ground+.25,z:reveal.position.z},
+    camera,
+    width,
+    height,
+  );
+  if(!p)return;
+  const progress=1-reveal.remaining/reveal.duration;
+  const radius=Math.max(18,Math.min(120,p.scale*(1.8+progress*3.6)));
+  ctx.save();
+  ctx.globalAlpha=Math.max(0,.9-progress*.72);
+  ctx.strokeStyle='rgba(255,244,184,.94)';
+  ctx.lineWidth=4-progress*2;
+  ctx.beginPath();
+  ctx.ellipse(p.x,p.y,radius,radius*.28,0,0,Math.PI*2);
+  ctx.stroke();
+  ctx.strokeStyle='rgba(208,240,244,.72)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.ellipse(p.x,p.y,radius*.58,radius*.18,0,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
 
 function drawCombatFeedback(
   ctx:CanvasRenderingContext2D,
@@ -1133,6 +1167,7 @@ export function renderAdventureField(
     return (pb?.depth??0)-(pa?.depth??0);
   });
   for(const enemy of enemyDepth)drawEnemy(ctx,enemy,camera,width,height,enemy.id===lockedTargetId);
+  if(worldOverlay.discoveryReveal)drawDiscoveryReveal(ctx,worldOverlay.discoveryReveal,camera,width,height);
   if(combat)drawCombatEffects(ctx,player,combat,camera,width,height);
   drawPlayer(ctx,player,camera,width,height);
   if(worldOverlay.combatFeedback)drawCombatFeedback(ctx,worldOverlay.combatFeedback,camera,width,height);
