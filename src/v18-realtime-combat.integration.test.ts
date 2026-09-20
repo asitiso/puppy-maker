@@ -20,7 +20,7 @@ describe('V18 realtime combat field integration',()=>{
     expect(slice).toContain("event.code==='KeyK'");
     expect(slice).toContain("{counterReady?'반격':'공격'}</button>");
     expect(slice).toContain('>회피</button>');
-    expect(slice).toContain("combatEngaged?'COMBAT':'OPEN ADVENTURE'") || expect(slice).toContain("combatEngaged?'COMBAT'");
+    expect(slice).toContain("combatEngaged?'COMBAT':'OPEN ADVENTURE'");
   });
 
   it('renders readable enemy telegraphs and hit feedback instead of hidden dice rolls',()=>{
