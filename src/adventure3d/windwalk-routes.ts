@@ -6,6 +6,7 @@ export type WindwalkTraceId=typeof windwalkTraceIds[number];
 
 export const WINDWALK_ROUTE={
   currentRadius:6,
+  currentHeight:10,
   traceRadius:3.4,
   liftSpeed:6.4,
   currents:[
@@ -68,7 +69,9 @@ export function applyWindwalkCurrent(
     return {state,boostedCurrentId:null};
   }
   const current=windwalkCurrentPositions().find(item=>
-    planarDistance(state.position,item.position)<=WINDWALK_ROUTE.currentRadius
+    planarDistance(state.position,item.position)<=WINDWALK_ROUTE.currentRadius&&
+    state.position.y>=item.position.y-1.5&&
+    state.position.y<=item.position.y+WINDWALK_ROUTE.currentHeight
   );
   if(!current)return {state,boostedCurrentId:null};
   const dt=clamp(Number.isFinite(dtRaw)?dtRaw:0,0,.05);
