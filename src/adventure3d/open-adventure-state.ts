@@ -15,12 +15,14 @@ export type DawnreachRuinProgress={
 };
 
 export type DawnreachWorldEventResolution={id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
+export type DawnreachHollowCaveProgress={shortcutOpen:boolean};
 
 export type DawnreachAdventureProgress={
   discoveredIds:DawnreachDiscoveryId[];
   echoSenseUnlocked:boolean;
   campCleared:boolean;
   worldEvents:DawnreachWorldEventResolution[];
+  hollowCave:DawnreachHollowCaveProgress;
   ruin:DawnreachRuinProgress;
 };
 
@@ -32,6 +34,7 @@ export type OpenAdventureUpdate=
   |{type:'discover';id:DawnreachDiscoveryId}
   |{type:'sync-ruin';stonePosition?:PersistentPlanarPosition|null;brazierLit?:boolean;solved?:boolean;rewardClaimed?:boolean}
   |{type:'unlock-echo-sense'}
+  |{type:'open-hollow-shortcut'}
   |{type:'clear-camp'}
   |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
@@ -47,6 +50,7 @@ export function emptyOpenAdventureState():OpenAdventureState{
       echoSenseUnlocked:false,
       campCleared:false,
       worldEvents:[],
+      hollowCave:{shortcutOpen:false},
       ruin:{
         stonePosition:null,
         brazierLit:false,
@@ -81,6 +85,9 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
   const discoveredIds=Array.isArray(dawnreach.discoveredIds)
     ?dawnreach.discoveredIds.filter((value):value is DawnreachDiscoveryId=>typeof value==='string'&&discoverySet.has(value)).filter((value,index,list)=>list.indexOf(value)===index)
     :[];
+  const hollowCave=isRecord(dawnreach.hollowCave)?dawnreach.hollowCave:{};
+  const shortcutOpen=hollowCave.shortcutOpen===true;
+  if(shortcutOpen&&!discoveredIds.includes('hollow-cave'))discoveredIds.push('hollow-cave');
   const rewardClaimed=ruin.rewardClaimed===true;
   const solved=rewardClaimed||ruin.solved===true;
   const echoSenseUnlocked=rewardClaimed||dawnreach.echoSenseUnlocked===true;
@@ -90,6 +97,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
       echoSenseUnlocked,
       campCleared:dawnreach.campCleared===true,
       worldEvents:hydrateWorldEvents(dawnreach.worldEvents),
+      hollowCave:{shortcutOpen},
       ruin:{
         stonePosition:hydratePosition(ruin.stonePosition),
         brazierLit:ruin.brazierLit===true,
@@ -121,6 +129,21 @@ export function applyOpenAdventureUpdate(
   if(update.type==='unlock-echo-sense'){
     if(dawnreach.echoSenseUnlocked)return current;
     return {...current,dawnreach:{...dawnreach,echoSenseUnlocked:true}};
+  }
+
+  if(update.type==='open-hollow-shortcut'){
+    if(dawnreach.hollowCave.shortcutOpen)return current;
+    const discoveredIds=dawnreach.discoveredIds.includes('hollow-cave')
+      ?dawnreach.discoveredIds
+      :[...dawnreach.discoveredIds,'hollow-cave' as DawnreachDiscoveryId];
+    return {
+      ...current,
+      dawnreach:{
+        ...dawnreach,
+        discoveredIds,
+        hollowCave:{shortcutOpen:true},
+      },
+    };
   }
 
   if(update.type==='clear-camp'){
