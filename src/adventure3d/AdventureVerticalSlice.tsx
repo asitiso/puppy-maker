@@ -101,6 +101,7 @@ import {
   skybreakWindLiftEntry,
   stepSkybreakHighland,
 } from './skybreak-highland';
+import {applyWindwalkGlide,windwalkUnlocked} from './windwalk';
 import {renderAdventureField} from './software-renderer';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
@@ -135,6 +136,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const pressedRef=useRef(new Set<string>());
   const stickRef=useRef({x:0,y:0});
   const jumpRef=useRef(false);
+  const glideHeldRef=useRef(false);
+  const windwalkActiveRef=useRef(false);
   const attackRef=useRef(false);
   const dodgeRef=useRef(false);
   const sprintTouchRef=useRef(false);
@@ -160,6 +163,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const herdWitnessedRef=useRef(false);
   const hollowCaveRef=useRef(createHollowCaveRuntimeState(persisted.hollowCave.shortcutOpen));
   const skybreakRef=useRef(createSkybreakHighlandState(persisted.skybreak.beaconReached));
+  const windwalkUnlockedRef=useRef(windwalkUnlocked(persisted.skybreak.beaconReached));
   const skybreakGustPushedRef=useRef(false);
   const wildlifeTrailClockRef=useRef(0);
   const wildlifeTrailHintedRef=useRef(false);
@@ -167,7 +171,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [hp,setHp]=useState(DEFAULT_PLAYER_COMBAT.hp);
   const [nearby,setNearby]=useState<ReturnType<typeof nearestStartingFieldDiscovery>>(null);
   const [visitedCount,setVisitedCount]=useState(persisted.discoveredIds.length);
-  const [notice,setNotice]=useState('멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.');
+  const [notice,setNotice]=useState(
+    persisted.skybreak.beaconReached
+      ?'바람걸음이 몸에 남아 있습니다. 공중에서 Space를 유지하면 스태미나를 써서 천천히 활강할 수 있습니다.'
+      :'멀리 보이는 세 곳 중 마음이 가는 방향으로 움직여 보세요.',
+  );
   const [sprinting,setSprinting]=useState(false);
   const [combatEngaged,setCombatEngaged]=useState(false);
   const [livingEnemies,setLivingEnemies]=useState(enemiesRef.current.length);
@@ -206,6 +214,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const [nearSkybreakBeacon,setNearSkybreakBeacon]=useState(false);
   const [nearSkybreakWindLift,setNearSkybreakWindLift]=useState(false);
   const [nearSkybreakOutsideLift,setNearSkybreakOutsideLift]=useState(false);
+  const [windwalkUnlockedState,setWindwalkUnlockedState]=useState(
+    windwalkUnlocked(persisted.skybreak.beaconReached),
+  );
+  const [windwalkActive,setWindwalkActive]=useState(false);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -406,9 +418,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(playerNearSkybreakBeacon(playerRef.current.position,skybreakRef.current)){
         skybreakRef.current=reachSkybreakBeacon(skybreakRef.current);
         requestOpenAdventureUpdate({type:'reach-skybreak-beacon'});
+        windwalkUnlockedRef.current=true;
+        setWindwalkUnlockedState(true);
         setSkybreakBeaconReached(true);
         setNearSkybreakBeacon(false);
-        setNotice('바람유리 봉화가 깨어났습니다. 고지대의 바람길이 별바람 전망대까지 이어지며 새로운 양방향 이동로가 열렸습니다.');
+        setNotice('바람유리 봉화가 깨어났습니다. 바람걸음을 익혔습니다 — 공중에서 Space를 유지하면 스태미나를 사용해 낙하를 늦추고 앞으로 활강합니다. 전망대 바람승강로도 열렸습니다.');
         return;
       }
       if(playerNearSkybreakWindLift(playerRef.current.position,skybreakRef.current)){
@@ -636,6 +650,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     attackRef.current=false;
     dodgeRef.current=false;
     jumpRef.current=false;
+    glideHeldRef.current=false;
+    windwalkActiveRef.current=false;
+    setWindwalkActive(false);
     lockedTargetRef.current=null;
     setLockedTargetId(null);
     setHp(DEFAULT_PLAYER_COMBAT.hp);
@@ -649,7 +666,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     const down=(event:KeyboardEvent)=>{
       if(movementKeys.has(event.code)){event.preventDefault();pressedRef.current.add(event.code);return;}
       if(event.code==='ShiftLeft'||event.code==='ShiftRight'){sprintTouchRef.current=true;return;}
-      if(event.code==='Space'&&!event.repeat){event.preventDefault();jumpRef.current=true;return;}
+      if(event.code==='Space'){event.preventDefault();glideHeldRef.current=true;if(!event.repeat)jumpRef.current=true;return;}
       if(event.code==='KeyJ'&&!event.repeat){event.preventDefault();attackRef.current=true;return;}
       if(event.code==='KeyK'&&!event.repeat){event.preventDefault();dodgeRef.current=true;return;}
       if(event.code==='KeyL'&&!event.repeat){event.preventDefault();toggleLockOn();return;}
@@ -665,8 +682,17 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     const up=(event:KeyboardEvent)=>{
       pressedRef.current.delete(event.code);
       if(event.code==='ShiftLeft'||event.code==='ShiftRight')sprintTouchRef.current=false;
+      if(event.code==='Space')glideHeldRef.current=false;
     };
-    const clear=()=>{pressedRef.current.clear();stickRef.current={x:0,y:0};sprintTouchRef.current=false;attackRef.current=false;dodgeRef.current=false;};
+    const clear=()=>{
+      pressedRef.current.clear();
+      stickRef.current={x:0,y:0};
+      sprintTouchRef.current=false;
+      glideHeldRef.current=false;
+      windwalkActiveRef.current=false;
+      attackRef.current=false;
+      dodgeRef.current=false;
+    };
     window.addEventListener('keydown',down);
     window.addEventListener('keyup',up);
     window.addEventListener('blur',clear);
@@ -743,6 +769,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       },dt,terrainHeight,movementHalfSize);
       jumpRef.current=false;
       playerRef.current=applyDodgeMotion(playerRef.current,combat,dt,terrainHeight,movementHalfSize);
+      const windwalkStep=applyWindwalkGlide(
+        playerRef.current,
+        glideHeldRef.current&&combat.dodgeClock<0&&!incapacitated,
+        windwalkUnlockedRef.current,
+        dt,
+      );
+      playerRef.current=windwalkStep.state;
+      windwalkActiveRef.current=windwalkStep.active;
       if(hollowCaveRef.current.inside){
         playerRef.current={
           ...playerRef.current,
@@ -980,6 +1014,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         lastHud=time;
         setStamina(Math.round(playerRef.current.stamina));
         setHp(combat.hp);
+        setWindwalkActive(windwalkActiveRef.current);
         setSprinting(wantsSprint&&playerRef.current.stamina>.5&&Math.hypot(playerRef.current.velocity.x,playerRef.current.velocity.z)>5.8);
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
@@ -1092,7 +1127,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       onPointerUp={endLook}
       onPointerCancel={endLook}
       onWheel={event=>{event.preventDefault();cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);}}
-      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용, X 사건 지나가기"
+      aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프 및 해금 후 활강, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용, X 사건 지나가기"
     />
 
     <header className="adventure3d__hud">
@@ -1110,6 +1145,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       {hollowShortcutOpen&&insideHollowCave&&<em>새 경로 · 돌다리 지름길 개방</em>}
       {insideSkybreak&&!skybreakBeaconReached&&<em>{skybreakCalm?'돌풍 · 잠시 잦아듦':skybreakGust?'돌풍 · 강풍':'돌풍 · 소강'}</em>}
       {insideSkybreak&&skybreakBeaconReached&&<em>새 경로 · 전망대 바람승강로 개방</em>}
+      {windwalkUnlockedState&&<em>{windwalkActive?'바람걸음 · 활강 중':'탐험 성장 · 바람걸음'}</em>}
       {lockedTargetId&&<em>락온 · {enemiesRef.current.find(enemy=>enemy.id===lockedTargetId)?.label??'대상'}</em>}
       {!combatEngaged&&nearPuzzle&&<em>{puzzleSolved?'메아리 폐허 · 봉인 해제':'메아리 폐허 · 두 공명판'}</em>}
       {echoSenseUnlocked&&<em>탐험 감각 · 메아리</em>}
@@ -1156,7 +1192,14 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         onPointerUp={()=>{sprintTouchRef.current=false;}}
         onPointerCancel={()=>{sprintTouchRef.current=false;}}
       >달리기</button>
-      <button type="button" disabled={defeated} onClick={()=>{jumpRef.current=true;}}>점프</button>
+      <button
+        type="button"
+        disabled={defeated}
+        data-active={windwalkActive||undefined}
+        onPointerDown={()=>{jumpRef.current=true;glideHeldRef.current=true;}}
+        onPointerUp={()=>{glideHeldRef.current=false;}}
+        onPointerCancel={()=>{glideHeldRef.current=false;}}
+      >{windwalkUnlockedState?'점프/활강':'점프'}</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{attackRef.current=true;}}>공격</button>
       <button type="button" className="is-combat" disabled={defeated} onClick={()=>{dodgeRef.current=true;}}>회피</button>
       {(((nearPuzzle||nearHazard)&&!defeated)||(insideHollowCave&&!hollowShortcutOpen&&!defeated)||(insideSkybreak&&!defeated))&&<button type="button" className="is-environment" onClick={()=>castEnvironmentAbility('windPulse')}>바람밀기</button>}
@@ -1193,6 +1236,6 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
                     :rewardReady?'공명핵 회수':nearStone?'공명석 밀기':nearby?.id===HOLLOW_CAVE.discoveryId?'폭포 뒤 들어가기':nearby?'살펴보기':'주변 관찰'}</button>
       {defeated&&<button type="button" className="is-recover" onClick={recoverAtEntrance}>다시 일어나기</button>}
     </div>
-    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프 · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>
+    <div className="adventure3d__controls" aria-hidden="true">WASD 이동 · 드래그 시점 · Shift 달리기 · Space 점프{windwalkUnlockedState?' / 유지 활강':''} · J 공격 · K 회피 · L 락온 · T 다음 적 · Q 바람밀기 · C 불씨점화 · E 상호작용 · X 사건 지나가기</div>
   </section>;
 }
