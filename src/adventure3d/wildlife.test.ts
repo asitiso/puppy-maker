@@ -4,6 +4,7 @@ import {
   DAWNREACH_HERD,
   createDawnreachHerdState,
   dawnreachHerdVisual,
+  playerNearDawnreachHerd,
   shouldWitnessDawnreachHerd,
   stepDawnreachHerd,
 } from './wildlife';
@@ -45,6 +46,7 @@ describe('V18 Dawnreach wildlife ecology',()=>{
   it('is discovered naturally and renders as a four-member herd',()=>{
     const herd=createDawnreachHerdState();
     expect(shouldWitnessDawnreachHerd({x:80,y:0,z:80},herd,false)).toBe(false);
+    expect(playerNearDawnreachHerd(herd.center,herd)).toBe(true);
     expect(shouldWitnessDawnreachHerd(herd.center,herd,false)).toBe(true);
     expect(shouldWitnessDawnreachHerd(herd.center,herd,true)).toBe(false);
     const visual=dawnreachHerdVisual(herd);
