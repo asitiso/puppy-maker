@@ -5,6 +5,7 @@ import {
   findWindwalkTrace,
   windwalkRouteMastered,
   windwalkTraceIds,
+  windwalkCurrentPositions,
   windwalkTracePositions,
 } from './windwalk-routes';
 import type {PlayerMotionState} from './types';
@@ -32,6 +33,16 @@ describe('V18 Windwalk re-exploration route',()=>{
     expect(boosted.state.velocity.y).toBe(WINDWALK_ROUTE.liftSpeed);
     expect(applyWindwalkCurrent({...air,grounded:true},true,true,.05).boostedCurrentId).toBeNull();
     expect(applyWindwalkCurrent(air,true,false,.05).boostedCurrentId).toBeNull();
+  });
+
+  it('caps each updraft so holding glide cannot create infinite flight',()=>{
+    const current=windwalkCurrentPositions()[0];
+    const above=airborne(
+      current.position.x,
+      current.position.y+WINDWALK_ROUTE.currentHeight+1,
+      current.position.z,
+    );
+    expect(applyWindwalkCurrent(above,true,true,.05).boostedCurrentId).toBeNull();
   });
 
   it('requires physically passing through an aerial trace and never collects it from the ground',()=>{
