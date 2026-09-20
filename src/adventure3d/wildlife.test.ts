@@ -2,9 +2,12 @@ import {describe,expect,it} from 'vitest';
 import {createDryGrassPatch} from './environment-combat';
 import {
   DAWNREACH_HERD,
+  WILDLIFE_DISCOVERY_TRAIL,
   createDawnreachHerdState,
   dawnreachHerdVisual,
+  dawnreachWildlifeTrailVisual,
   playerNearDawnreachHerd,
+  shouldRevealWildlifeDiscoveryTrail,
   shouldWitnessDawnreachHerd,
   stepDawnreachHerd,
 } from './wildlife';
@@ -41,6 +44,27 @@ describe('V18 Dawnreach wildlife ecology',()=>{
     const fleeing=stepDawnreachHerd(herd,{x:-90,y:0,z:-90},[fire],.5);
     expect(fleeing.behavior).toBe('flee-fire');
     expect(fleeing.center.x).toBeLessThan(herd.center.x);
+  });
+
+  it('turns a naturally observed herd route into a temporary clue toward the hidden cave',()=>{
+    const herd=createDawnreachHerdState();
+    herd.center={
+      x:WILDLIFE_DISCOVERY_TRAIL.origin.x,
+      y:0,
+      z:WILDLIFE_DISCOVERY_TRAIL.origin.z,
+    };
+    herd.behavior='moving';
+    const player={x:55,y:0,z:20};
+    expect(shouldRevealWildlifeDiscoveryTrail(player,herd,new Set())).toBe(true);
+    expect(shouldRevealWildlifeDiscoveryTrail(player,herd,new Set(['hollow-cave']))).toBe(false);
+
+    herd.behavior='flee-fire';
+    expect(shouldRevealWildlifeDiscoveryTrail(player,herd,new Set())).toBe(false);
+
+    const trail=dawnreachWildlifeTrailVisual(WILDLIFE_DISCOVERY_TRAIL.duration);
+    expect(trail?.targetDiscoveryId).toBe('hollow-cave');
+    expect(trail?.points.length).toBeGreaterThanOrEqual(5);
+    expect(dawnreachWildlifeTrailVisual(0)).toBeNull();
   });
 
   it('is discovered naturally and renders as a four-member herd',()=>{
