@@ -94,7 +94,6 @@ export function createHollowCaveRuntimeState(shortcutOpen=false):HollowCaveRunti
 
 export function enterHollowCave(
   state:HollowCaveRuntimeState,
-  viaShortcut=false,
 ):HollowCaveRuntimeState{
   return {...state,inside:true,lastResonator:null,pulseFlash:0};
 }
