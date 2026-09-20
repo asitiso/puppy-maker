@@ -35,6 +35,7 @@ describe('canonical save',()=>{
             {id:'wandering-caravan' as const,outcome:'met' as const},
           ],
           hollowCave:{shortcutOpen:true},
+          skybreak:{beaconReached:true},
           ruin:{
             stonePosition:{x:-57,z:-38},
             brazierLit:true,
