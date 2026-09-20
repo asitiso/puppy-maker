@@ -50,3 +50,98 @@
     border-color:rgba(183,239,247,.86);
   }
 }
+
+.adventure3d__opening,
+.adventure3d__discovery-reveal{
+  position:absolute;
+  z-index:26;
+  left:50%;
+  top:max(13vh,calc(env(safe-area-inset-top) + 84px));
+  display:grid;
+  gap:5px;
+  width:min(560px,72vw);
+  padding:14px 18px;
+  transform:translateX(-50%);
+  text-align:center;
+  pointer-events:none;
+  text-shadow:0 2px 14px rgba(0,0,0,.46);
+}
+.adventure3d__opening small,
+.adventure3d__discovery-reveal small{
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.24em;
+  color:#d7e5c7;
+}
+.adventure3d__opening strong,
+.adventure3d__discovery-reveal strong{
+  font-size:clamp(24px,5vw,46px);
+  line-height:1;
+  color:#fff0bc;
+}
+.adventure3d__opening span,
+.adventure3d__discovery-reveal span{
+  justify-self:center;
+  max-width:520px;
+  font-size:11px;
+  line-height:1.5;
+  color:#f4f0d7;
+}
+.adventure3d__discovery-reveal{
+  top:max(16vh,calc(env(safe-area-inset-top) + 104px));
+}
+.adventure3d__discovery-reveal small{color:#bfeaf0}
+.adventure3d__discovery-reveal strong{color:#fff4c7}
+.adventure3d__guide{
+  position:absolute;
+  z-index:25;
+  left:50%;
+  top:max(82px,calc(env(safe-area-inset-top) + 72px));
+  max-width:min(520px,68vw);
+  padding:7px 11px;
+  transform:translateX(-50%);
+  border-radius:999px;
+  background:rgba(12,29,28,.52);
+  color:#eff1d5;
+  font-size:10px;
+  font-weight:800;
+  line-height:1.35;
+  text-align:center;
+  pointer-events:none;
+  backdrop-filter:blur(5px);
+}
+.adventure3d[data-opening="true"] .adventure3d__hud{
+  opacity:.48;
+  transform:scale(.96);
+  transform-origin:top left;
+}
+.adventure3d[data-opening="true"] .adventure3d__stamina{
+  opacity:.18;
+}
+@media(max-width:520px){
+  .adventure3d__opening,
+  .adventure3d__discovery-reveal{
+    top:92px;
+    width:78vw;
+    padding:10px 12px;
+  }
+  .adventure3d__opening strong,
+  .adventure3d__discovery-reveal strong{font-size:28px}
+  .adventure3d__opening span,
+  .adventure3d__discovery-reveal span{font-size:10px}
+  .adventure3d__guide{
+    top:76px;
+    max-width:72vw;
+    font-size:9px;
+  }
+}
+@media(orientation:landscape) and (max-height:560px){
+  .adventure3d__opening,
+  .adventure3d__discovery-reveal{
+    top:34px;
+    width:56vw;
+  }
+  .adventure3d__opening strong,
+  .adventure3d__discovery-reveal strong{font-size:25px}
+  .adventure3d__guide{top:48px;max-width:52vw}
+}
