@@ -27,7 +27,7 @@ describe('canonical save',()=>{
       ...initialState,
       openAdventure:{
         dawnreach:{
-          discoveredIds:['echo-ruins' as const,'skywatch' as const],
+          discoveredIds:['echo-ruins' as const,'skywatch' as const,'hollow-cave' as const],
           echoSenseUnlocked:true,
           campCleared:true,
           worldEvents:[
