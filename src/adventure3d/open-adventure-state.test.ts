@@ -16,6 +16,7 @@ describe('V18 open adventure persistent state',()=>{
         campCleared:false,
         worldEvents:[],
         hollowCave:{shortcutOpen:false},
+        skybreak:{beaconReached:false},
         ruin:{stonePosition:null,brazierLit:false,solved:false,rewardClaimed:false},
       },
     });
@@ -34,6 +35,7 @@ describe('V18 open adventure persistent state',()=>{
           {id:'wandering-caravan',outcome:'met'},
         ],
         hollowCave:{shortcutOpen:'yes'},
+        skybreak:{beaconReached:'yes'},
         ruin:{stonePosition:{x:999,z:-999},brazierLit:'yes',solved:false,rewardClaimed:false},
       },
     });
@@ -42,6 +44,7 @@ describe('V18 open adventure persistent state',()=>{
     expect(hydrated.dawnreach.ruin.stonePosition).toEqual({x:140,z:-140});
     expect(hydrated.dawnreach.ruin.brazierLit).toBe(false);
     expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(false);
+    expect(hydrated.dawnreach.skybreak.beaconReached).toBe(false);
   });
 
   it('makes reward ownership imply solved ruins and Echo Sense after hydration',()=>{
@@ -81,6 +84,18 @@ describe('V18 open adventure persistent state',()=>{
     });
     expect(hydrated.dawnreach.hollowCave.shortcutOpen).toBe(true);
     expect(hydrated.dawnreach.discoveredIds).toContain('hollow-cave');
+  });
+
+  it('persists the Skybreak beacon as a sticky exploration-network result',()=>{
+    let state=emptyOpenAdventureState();
+    state=applyOpenAdventureUpdate(state,{type:'reach-skybreak-beacon'});
+    expect(state.dawnreach.skybreak.beaconReached).toBe(true);
+    expect(applyOpenAdventureUpdate(state,{type:'reach-skybreak-beacon'})).toBe(state);
+
+    const hydrated=hydrateOpenAdventureState({
+      dawnreach:{skybreak:{beaconReached:true}},
+    });
+    expect(hydrated.dawnreach.skybreak.beaconReached).toBe(true);
   });
 
   it('keeps no-op updates referentially stable to avoid redundant production writes',()=>{
