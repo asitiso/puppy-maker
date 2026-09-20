@@ -45,7 +45,7 @@ export function stepCombatFeedback(
   if(dt<=0)return state;
   const events=state.events
     .map(event=>({...event,remaining:Math.max(0,event.remaining-dt)}))
-    .filter(event=>event.remaining>0);
+    .filter(event=>event.remaining>1e-6);
   return {
     ...state,
     events,
