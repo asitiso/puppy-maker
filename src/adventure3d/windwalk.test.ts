@@ -3,6 +3,7 @@ import {
   WINDWALK,
   applyWindwalkGlide,
   canWindwalkGlide,
+  windwalkMastered,
   windwalkUnlocked,
 } from './windwalk';
 import type {PlayerMotionState} from './types';
@@ -48,6 +49,14 @@ describe('V18 Windwalk traversal growth',()=>{
     );
     expect(Math.hypot(result.state.velocity.x,result.state.velocity.z))
       .toBeLessThanOrEqual(WINDWALK.maxPlanarSpeed+.001);
+  });
+
+  it('turns three aerial traces into lower glide stamina cost',()=>{
+    expect(windwalkMastered(2)).toBe(false);
+    expect(windwalkMastered(3)).toBe(true);
+    const normal=applyWindwalkGlide(airborne(),true,true,.05,false);
+    const mastered=applyWindwalkGlide(airborne(),true,true,.05,true);
+    expect(mastered.state.stamina).toBeGreaterThan(normal.state.stamina);
   });
 
   it('stays referentially stable when glide is unavailable',()=>{
