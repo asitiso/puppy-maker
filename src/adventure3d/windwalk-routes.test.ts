@@ -58,6 +58,17 @@ describe('V18 Windwalk re-exploration route',()=>{
     expect(restored.state.velocity.y).toBe(WINDWALK_ROUTE.restoredLiftSpeed);
   });
 
+  it('adds the west-ridge storm launch only after the miniboss reward is awakened',()=>{
+    expect(windwalkCurrentPositions(false).some(item=>item.id==='storm-launch')).toBe(false);
+    const awakened=windwalkCurrentPositions(true);
+    expect(awakened.some(item=>item.id==='storm-launch')).toBe(true);
+
+    const launch=awakened.find(item=>item.id==='storm-launch')!;
+    const air=airborne(launch.position.x,launch.position.y+2,launch.position.z);
+    expect(applyWindwalkCurrent(air,true,true,.05,true,false).boostedCurrentId).toBeNull();
+    expect(applyWindwalkCurrent(air,true,true,.05,true,true).boostedCurrentId).toBe('storm-launch');
+  });
+
   it('requires physically passing through an aerial trace and never collects it from the ground',()=>{
     const trace=windwalkTracePositions()[0];
     const discovered=new Set<typeof windwalkTraceIds[number]>();
