@@ -428,7 +428,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       if(playerNearSkybreakWindLift(playerRef.current.position,skybreakRef.current)){
         leaveSkybreakTo(
           skybreakReturnToSkywatch(),
-          '바람승강로를 타고 별바람 전망대 아래로 내려왔습니다. 이제 전망대에서도 하늘갈림 고지로 되돌아갈 수 있습니다.',
+          '바람승강로를 타고 별바람 전망대의 높은 능선으로 내려왔습니다. 여기서 뛰어내려 Space를 유지하면 새로 익힌 바람걸음으로 들판을 향해 활강할 수 있습니다.',
         );
         return;
       }
