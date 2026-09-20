@@ -4,6 +4,7 @@ import {describe,expect,it} from 'vitest';
 
 const slice=readFileSync(new URL('./adventure3d/AdventureVerticalSlice.tsx',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('./adventure3d/software-renderer.ts',import.meta.url),'utf8');
+const roaming=readFileSync(new URL('./adventure3d/roaming-world.ts',import.meta.url),'utf8');
 const persistence=readFileSync(new URL('./adventure3d/open-adventure-state.ts',import.meta.url),'utf8');
 
 describe('V18 living world event integration',()=>{
@@ -29,6 +30,16 @@ describe('V18 living world event integration',()=>{
     expect(slice).toContain('roadsideConsequenceMessage');
     expect(renderer).toContain('drawWorldConsequence');
     expect(renderer).toContain("consequence.kind==='rescued-traveler'");
+  });
+
+  it('adds a non-combat presence that moves independently, pauses for interaction, and remembers familiarity',()=>{
+    expect(roaming).toContain('stepWanderingCaravan');
+    expect(roaming).toContain('shouldWitnessWanderingCaravan');
+    expect(slice).toContain('caravanRef.current=stepWanderingCaravan');
+    expect(slice).toContain("id:WANDERING_CARAVAN.id,outcome:'met'");
+    expect(slice).toContain('wanderingCaravanMessage');
+    expect(renderer).toContain('drawRoamingWorldPresence');
+    expect(persistence).toContain('isValidDawnreachWorldEventResolution');
   });
 
   it('keeps event enemies separate from permanent camp completion',()=>{
