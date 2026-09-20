@@ -1578,7 +1578,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         tick(time);
       }catch{
         setRuntimeFault(true);
-        reportClientTelemetry('render_error','adventure_loop');
+        reportClientTelemetry('render_error','error_boundary');
       }
     };
 
