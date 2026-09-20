@@ -138,6 +138,19 @@ import {
   pushCombatFeedback,
   stepCombatFeedback,
 } from './combat-feedback';
+import {
+  DAWNREACH_OPENING,
+  completeDawnreachOpening,
+  createDawnreachOpeningState,
+  createDiscoveryReveal,
+  dawnreachOpeningCamera,
+  dawnreachOpeningGuidance,
+  freshDawnreachOpeningEligible,
+  markDawnreachOpeningLooked,
+  stepDawnreachOpening,
+  stepDiscoveryReveal,
+  type DiscoveryReveal,
+} from './opening-experience';
 import type {AdventureCameraState,PlayerMotionState} from './types';
 import '../exploration/exploration.css';
 import './adventure-vertical-slice.css';
@@ -149,6 +162,14 @@ const engagedModes=new Set(['suspicious','chase','windup','recover','stagger']);
 
 export default function AdventureVerticalSlice({state,onExit}:Props){
   const persisted=state.openAdventure.dawnreach;
+  const openingEligible=freshDawnreachOpeningEligible({
+    discoveredCount:persisted.discoveredIds.length,
+    campCleared:persisted.campCleared,
+    echoSenseUnlocked:persisted.echoSenseUnlocked,
+    skybreakBeaconReached:persisted.skybreak.beaconReached,
+    cloudGardenRestored:persisted.cloudGarden.restored,
+    tempestWardenDefeated:persisted.tempestWarden.defeated,
+  });
   const restoredRuin={
     ...createRuinPuzzleState(STARTING_RUIN_PUZZLE),
     ...(persisted.ruin.stonePosition?{
@@ -166,6 +187,8 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
   const playerRef=useRef<PlayerMotionState>({...DEFAULT_PLAYER_STATE,position:{...STARTING_FIELD.spawn}});
   const combatRef=useRef<PlayerCombatState>({...DEFAULT_PLAYER_COMBAT});
   const combatFeedbackRef=useRef({...DEFAULT_COMBAT_FEEDBACK});
+  const openingRef=useRef(createDawnreachOpeningState(openingEligible,STARTING_FIELD.spawn));
+  const discoveryRevealRef=useRef<DiscoveryReveal|null>(null);
   const enemiesRef=useRef<AdventureEnemyState[]>(createDawnreachFieldEnemies(
     persisted.campCleared,
     persisted.skybreak.beaconReached,
@@ -286,6 +309,11 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     tempestWardenPhase(enemiesRef.current.find(isTempestWarden)),
   );
   const [tempestWardenDefeated,setTempestWardenDefeated]=useState(persisted.tempestWarden.defeated);
+  const [openingTitleVisible,setOpeningTitleVisible]=useState(openingEligible);
+  const [openingGuide,setOpeningGuide]=useState<string|null>(
+    dawnreachOpeningGuidance(openingRef.current,null),
+  );
+  const [discoveryReveal,setDiscoveryReveal]=useState<DiscoveryReveal|null>(null);
 
   const snapPlayerTo=useCallback((position:PlayerMotionState['position'])=>{
     playerRef.current={
@@ -399,6 +427,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     const target=nearbyRef.current;
     if(!target||visitedRef.current.has(target.id))return;
     visitedRef.current=new Set(visitedRef.current).add(target.id);
+    const reveal=createDiscoveryReveal(target);
+    discoveryRevealRef.current=reveal;
+    openingRef.current=completeDawnreachOpening(openingRef.current);
+    setDiscoveryReveal(reveal);
+    setOpeningGuide(null);
+    setOpeningTitleVisible(false);
     setVisitedCount(visitedRef.current.size);
     if(isDawnreachDiscoveryId(target.id))requestOpenAdventureUpdate({type:'discover',id:target.id});
     setNotice(target.kind==='vista'
@@ -926,6 +960,12 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       resize();
       const rawDt=Math.min(.05,Math.max(0,(time-last)/1000));
       last=time;
+      openingRef.current=stepDawnreachOpening(
+        openingRef.current,
+        playerRef.current.position,
+        rawDt,
+      );
+      discoveryRevealRef.current=stepDiscoveryReveal(discoveryRevealRef.current,rawDt);
       const combatTimeScale=combatFeedbackTimeScale(combatFeedbackRef.current);
       combatFeedbackRef.current=stepCombatFeedback(combatFeedbackRef.current,rawDt);
       const dt=rawDt*combatTimeScale;
@@ -1350,7 +1390,10 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         canvas.clientHeight,
         STARTING_FIELD,
         playerRef.current,
-        combatFeedbackCamera(cameraRef.current,combatFeedbackRef.current),
+        dawnreachOpeningCamera(
+          combatFeedbackCamera(cameraRef.current,combatFeedbackRef.current),
+          openingRef.current,
+        ),
         visitedRef.current,
         nextNearby?.id??null,
         enemiesRef.current,
@@ -1394,6 +1437,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
             playerRef.current.position,
           ),
           combatFeedback:combatFeedbackRef.current,
+          discoveryReveal:discoveryRevealRef.current,
         },
       );
 
@@ -1511,6 +1555,15 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
           playerRef.current.position,
           cameraRef.current.yaw,
         ).length);
+        setOpeningTitleVisible(
+          openingRef.current.active&&
+          openingRef.current.clock<DAWNREACH_OPENING.titleDuration
+        );
+        setOpeningGuide(dawnreachOpeningGuidance(
+          openingRef.current,
+          nextNearby?.label??null,
+        ));
+        setDiscoveryReveal(discoveryRevealRef.current);
       }
 
       frame=requestAnimationFrame(tick);
@@ -1530,6 +1583,9 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     if(!drag||drag.pointerId!==event.pointerId)return;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
     drag.x=event.clientX;drag.y=event.clientY;
+    if(Math.abs(dx)+Math.abs(dy)>4){
+      openingRef.current=markDawnreachOpeningLooked(openingRef.current);
+    }
     if(lockedTargetRef.current&&Math.abs(dx)+Math.abs(dy)>5){
       lockedTargetRef.current=null;
       setLockedTargetId(null);
@@ -1549,6 +1605,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
     className="adventure3d"
     data-combat={combatEngaged||undefined}
     data-boss={tempestWardenPhaseState||undefined}
+    data-opening={openingTitleVisible||undefined}
     aria-label="새벽들판 자유 탐험 Vertical Slice"
   >
     <canvas
@@ -1559,9 +1616,27 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
       onPointerMove={moveLook}
       onPointerUp={endLook}
       onPointerCancel={endLook}
-      onWheel={event=>{event.preventDefault();cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);}}
+      onWheel={event=>{
+        event.preventDefault();
+        openingRef.current=markDawnreachOpeningLooked(openingRef.current);
+        cameraRef.current=zoomAdventureCamera(cameraRef.current,event.deltaY*.01);
+      }}
       aria-label="3D 자유 탐험 필드. WASD 이동, 드래그 카메라, Shift 전력질주, Space 점프 및 해금 후 활강, J 공격, K 회피, L 락온, T 타겟 변경, Q 바람밀기, C 불씨점화, E 상호작용, X 사건 지나가기"
     />
+
+    {openingTitleVisible&&!discoveryReveal&&<div className="adventure3d__opening" aria-live="polite">
+      <small>OPEN ADVENTURE</small>
+      <strong>{STARTING_FIELD.label}</strong>
+      <span>{openingGuide}</span>
+    </div>}
+    {!openingTitleVisible&&openingGuide&&!discoveryReveal&&<div className="adventure3d__guide">
+      {openingGuide}
+    </div>}
+    {discoveryReveal&&<div className="adventure3d__discovery-reveal" role="status" aria-live="polite">
+      <small>DISCOVERED</small>
+      <strong>{discoveryReveal.label}</strong>
+      <span>{discoveryReveal.hint}</span>
+    </div>}
 
     <header className="adventure3d__hud">
       <div><small>{insideHollowCave?'HIDDEN INTERIOR':insideCloudGarden?'SECRET SKY GARDEN':insideSkybreak?'HIGH ROUTE':combatEngaged?'COMBAT':'OPEN ADVENTURE'} · {state.year}년차</small><strong>{insideHollowCave?HOLLOW_CAVE.label:insideCloudGarden?CLOUD_GARDEN.label:insideSkybreak?SKYBREAK_HIGHLAND.label:STARTING_FIELD.label}</strong></div>
