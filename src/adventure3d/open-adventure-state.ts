@@ -95,7 +95,7 @@ export function hydrateOpenAdventureState(raw:unknown):OpenAdventureState{
   const skybreak=isRecord(dawnreach.skybreak)?dawnreach.skybreak:{};
   const shortcutOpen=hollowCave.shortcutOpen===true;
   const beaconReached=skybreak.beaconReached===true;
-  const windwalkTraces=Array.isArray(skybreak.windwalkTraces)
+  const windwalkTraces=beaconReached&&Array.isArray(skybreak.windwalkTraces)
     ?skybreak.windwalkTraces.filter((value):value is WindwalkTraceId=>typeof value==='string'&&isWindwalkTraceId(value)).filter((value,index,list)=>list.indexOf(value)===index)
     :[];
   if(shortcutOpen&&!discoveredIds.includes('hollow-cave'))discoveredIds.push('hollow-cave');
