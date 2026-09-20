@@ -12,6 +12,7 @@ import type {HollowCaveVisual} from './hollow-cave';
 import {SKYBREAK_HIGHLAND,skybreakHighlandHeight,type SkybreakHighlandVisual} from './skybreak-highland';
 import type {WindwalkRouteVisual} from './windwalk-routes';
 import {CLOUD_GARDEN,cloudGardenHeight,type CloudGardenEntranceVisual,type CloudGardenVisual} from './cloud-garden';
+import {isTempestWarden} from './tempest-warden';
 
 type Projected={x:number;y:number;depth:number;scale:number};
 
@@ -126,8 +127,23 @@ function drawEnemy(
   const base=projectAdventurePoint(enemy.position,camera,width,height);
   const top=projectAdventurePoint({...enemy.position,y:enemy.position.y+1.55},camera,width,height);
   if(!base||!top)return;
-  const scale=Math.max(5,Math.min(24,base.scale*.62));
+  const boss=isTempestWarden(enemy);
+  const scale=Math.max(5,Math.min(boss?32:24,base.scale*.62*(boss?1.28:1)));
   ctx.save();
+
+  if(boss){
+    const aura=Math.max(22,Math.min(88,base.scale*3.4));
+    ctx.strokeStyle=enemy.archetype==='skimmer'?'rgba(171,231,246,.72)':'rgba(223,205,155,.62)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.ellipse(base.x,base.y,aura,aura*.3,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(237,249,255,.24)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.arc(base.x,base.y-aura*.45,aura*.72,0,Math.PI*2);
+    ctx.stroke();
+  }
 
   if(enemy.archetype==='skimmer'){
     const ground=projectAdventurePoint(
@@ -230,12 +246,18 @@ function drawEnemy(
   }
 
   if(enemy.mode==='suspicious'||enemy.mode==='chase'||enemy.mode==='windup'||enemy.mode==='recover'||enemy.hp<enemy.maxHp){
-    const barWidth=Math.max(28,Math.min(70,scale*3.2));
+    const barWidth=boss?Math.max(74,Math.min(124,scale*4.2)):Math.max(28,Math.min(70,scale*3.2));
     const ratio=Math.max(0,Math.min(1,enemy.hp/enemy.maxHp));
     ctx.fillStyle='rgba(20,20,18,.72)';
     ctx.fillRect(top.x-barWidth/2,top.y-12,barWidth,5);
-    ctx.fillStyle=enemy.mode==='windup'?'#ff846f':'#d9b878';
+    ctx.fillStyle=enemy.mode==='windup'?'#ff846f':boss?'#b8dfe9':'#d9b878';
     ctx.fillRect(top.x-barWidth/2,top.y-12,barWidth*ratio,5);
+    if(boss){
+      ctx.fillStyle='rgba(238,248,252,.92)';
+      ctx.font=`800 ${Math.max(10,Math.min(14,scale*.55))}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText('폭풍갑주 감시자',top.x,top.y-18);
+    }
   }
 
   const mark=enemy.mode==='suspicious'
