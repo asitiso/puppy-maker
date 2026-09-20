@@ -41,7 +41,7 @@ export function stepCombatFeedback(
   state:CombatFeedbackState,
   dtRaw:number,
 ):CombatFeedbackState{
-  const dt=clamp(finite(dtRaw),0,.05);
+  const dt=clamp(finite(dtRaw),0,.25);
   if(dt<=0)return state;
   const events=state.events
     .map(event=>({...event,remaining:Math.max(0,event.remaining-dt)}))
