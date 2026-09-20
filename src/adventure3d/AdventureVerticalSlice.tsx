@@ -1243,7 +1243,7 @@ export default function AdventureVerticalSlice({state,onExit}:Props){
         setNearby(current=>current?.id===nextNearby?.id?current:nextNearby);
         setLivingEnemies(living);
         setCombatEngaged(enemiesRef.current.some(enemy=>enemy.hp>0&&engagedModes.has(enemy.mode)));
-        setCounterReady(combat.counterWindow>0);
+        setCounterReady(combat.counterWindow>0&&combat.dodgeClock<0);
         setNearPuzzle(!cloudGardenRef.current.inside&&playerNearRuinPuzzle(STARTING_RUIN_PUZZLE,playerRef.current.position));
         setNearStone(!cloudGardenRef.current.inside&&playerNearRuinStone(ruinPuzzleRef.current,playerRef.current.position));
         setRewardReady(!cloudGardenRef.current.inside&&canClaimRuinReward(ruinPuzzleRef.current,STARTING_RUIN_PUZZLE,playerRef.current.position));
