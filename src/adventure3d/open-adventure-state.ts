@@ -1,4 +1,4 @@
-import {dawnreachWorldEventIds,dawnreachWorldEventOutcomes,type DawnreachWorldEventId,type DawnreachWorldEventOutcome} from './world-events';
+import {isValidDawnreachWorldEventResolution,type DawnreachWorldEventId,type DawnreachWorldEventOutcome} from './world-events';
 
 export const dawnreachDiscoveryIds=[
   'skywatch','echo-ruins','ember-camp','fallen-cart','wind-crystal','stone-switch','hollow-cave','herb-ring','old-bridge',
@@ -36,8 +36,6 @@ export type OpenAdventureUpdate=
   |{type:'resolve-world-event';id:DawnreachWorldEventId;outcome:DawnreachWorldEventOutcome};
 
 const discoverySet=new Set<string>(dawnreachDiscoveryIds);
-const worldEventIdSet=new Set<string>(dawnreachWorldEventIds);
-const worldEventOutcomeSet=new Set<string>(dawnreachWorldEventOutcomes);
 export const isDawnreachDiscoveryId=(value:string):value is DawnreachDiscoveryId=>discoverySet.has(value);
 const isRecord=(value:unknown):value is Record<string,unknown>=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
@@ -64,7 +62,7 @@ function hydrateWorldEvents(raw:unknown):DawnreachWorldEventResolution[]{
   const result:DawnreachWorldEventResolution[]=[];
   for(const entry of raw){
     if(!isRecord(entry)||typeof entry.id!=='string'||typeof entry.outcome!=='string')continue;
-    if(!worldEventIdSet.has(entry.id)||!worldEventOutcomeSet.has(entry.outcome))continue;
+    if(!isValidDawnreachWorldEventResolution(entry.id,entry.outcome))continue;
     if(result.some(item=>item.id===entry.id))continue;
     result.push({id:entry.id as DawnreachWorldEventId,outcome:entry.outcome as DawnreachWorldEventOutcome});
   }
@@ -115,6 +113,7 @@ export function applyOpenAdventureUpdate(
   }
 
   if(update.type==='resolve-world-event'){
+    if(!isValidDawnreachWorldEventResolution(update.id,update.outcome))return current;
     if(dawnreach.worldEvents.some(event=>event.id===update.id))return current;
     return {...current,dawnreach:{...dawnreach,worldEvents:[...dawnreach.worldEvents,{id:update.id,outcome:update.outcome}]}};
   }
