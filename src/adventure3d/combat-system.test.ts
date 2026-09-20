@@ -5,6 +5,7 @@ import {
   PLAYER_ATTACK_DAMAGE,
   PLAYER_DODGE_STAMINA,
   PLAYER_COUNTER_DAMAGE,
+  PLAYER_ATTACK_VERTICAL_REACH,
   applyDodgeMotion,
   applyPlayerDamage,
   playerAttackConnects,
@@ -35,6 +36,12 @@ describe('V18 realtime combat system',()=>{
     expect(playerAttackConnects(player,0,{x:0,y:0,z:-2})).toBe(true);
     expect(playerAttackConnects(player,0,{x:0,y:0,z:2})).toBe(false);
     expect(playerAttackConnects(player,0,{x:0,y:0,z:-8})).toBe(false);
+  });
+
+  it('requires aerial targets to be within vertical melee reach',()=>{
+    const ground={x:0,y:0,z:0};
+    expect(playerAttackConnects(ground,0,{x:0,y:PLAYER_ATTACK_VERTICAL_REACH+2,z:-2})).toBe(false);
+    expect(playerAttackConnects({x:0,y:4.5,z:0},0,{x:0,y:5,z:-2})).toBe(true);
   });
 
   it('spends stamina for a dodge and grants a short invulnerability window',()=>{
