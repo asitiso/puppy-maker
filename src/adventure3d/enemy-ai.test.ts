@@ -81,6 +81,23 @@ describe('V18 perception-driven enemy AI',()=>{
     expect(alerted.find(item=>item.id==='c')?.mode).toBe('patrol');
   });
 
+  it('lets guard archetypes absorb ordinary hits but break under a counter',()=>{
+    const guarding=enemy({archetype:'guard',hp:64,maxHp:64,mode:'chase'});
+    const normal=applyEnemyDamage(guarding,18,1);
+    expect(normal.blocked).toBe(true);
+    expect(normal.guardBroken).toBe(false);
+    expect(normal.enemy.hp).toBe(55);
+    expect(normal.enemy.timer).toBe(.1);
+
+    const recovered={...normal.enemy,mode:'chase' as const,lastHitAttackSerial:-1};
+    const counter=applyEnemyDamage(recovered,30,2,{counter:true});
+    expect(counter.blocked).toBe(false);
+    expect(counter.guardBroken).toBe(true);
+    expect(counter.enemy.hp).toBe(25);
+    expect(counter.enemy.mode).toBe('stagger');
+    expect(counter.enemy.timer).toBe(.82);
+  });
+
   it('takes one hit per player attack serial and enters stagger before defeat',()=>{
     const first=applyEnemyDamage(enemy(),18,1);
     expect(first.damaged).toBe(true);

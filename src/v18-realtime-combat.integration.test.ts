@@ -18,7 +18,7 @@ describe('V18 realtime combat field integration',()=>{
   it('exposes direct attack and dodge controls with contextual combat HUD',()=>{
     expect(slice).toContain("event.code==='KeyJ'");
     expect(slice).toContain("event.code==='KeyK'");
-    expect(slice).toContain('>공격</button>');
+    expect(slice).toContain("{counterReady?'반격':'공격'}</button>");
     expect(slice).toContain('>회피</button>');
     expect(slice).toContain("combatEngaged?'COMBAT':'OPEN ADVENTURE'");
   });

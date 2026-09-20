@@ -4,10 +4,14 @@ import {
   PLAYER_ATTACK_ACTIVE_START,
   PLAYER_ATTACK_DAMAGE,
   PLAYER_DODGE_STAMINA,
+  PLAYER_COUNTER_DAMAGE,
   applyDodgeMotion,
   applyPlayerDamage,
   playerAttackConnects,
+  playerAttackDamage,
+  playerAttackIsCounter,
   playerAttackWindowOpen,
+  resolveEnemyAttack,
   stepPlayerCombat,
   tryStartPlayerAttack,
   tryStartPlayerDodge,
@@ -41,6 +45,36 @@ describe('V18 realtime combat system',()=>{
     const hit=applyPlayerDamage(result.state,30);
     expect(hit.damaged).toBe(false);
     expect(hit.state.hp).toBe(100);
+  });
+
+  it('turns an early dodge through an enemy strike into one counter opportunity',()=>{
+    let combat=tryStartPlayerDodge(DEFAULT_PLAYER_COMBAT,100,{x:1,z:0},0).state;
+    combat=stepPlayerCombat(combat,.05);
+    const evaded=resolveEnemyAttack(combat,30);
+    expect(evaded.damaged).toBe(false);
+    expect(evaded.perfectDodged).toBe(true);
+    expect(evaded.state.counterWindow).toBeGreaterThan(0);
+
+    combat=evaded.state;
+    for(let i=0;i<6&&combat.dodgeClock>=0;i++)combat=stepPlayerCombat(combat,.05);
+    combat=tryStartPlayerAttack(combat);
+    expect(playerAttackIsCounter(combat)).toBe(true);
+    expect(playerAttackDamage(combat)).toBe(PLAYER_COUNTER_DAMAGE);
+    expect(combat.counterWindow).toBe(0);
+
+    for(let i=0;i<12&&combat.attackClock>=0;i++)combat=stepPlayerCombat(combat,.05);
+    combat=tryStartPlayerAttack(combat);
+    expect(playerAttackIsCounter(combat)).toBe(false);
+    expect(playerAttackDamage(combat)).toBe(PLAYER_ATTACK_DAMAGE);
+  });
+
+  it('does not award a counter to a late invulnerability dodge',()=>{
+    let combat=tryStartPlayerDodge(DEFAULT_PLAYER_COMBAT,100,{x:1,z:0},0).state;
+    for(let i=0;i<4;i++)combat=stepPlayerCombat(combat,.05);
+    const evaded=resolveEnemyAttack(combat,30);
+    expect(evaded.damaged).toBe(false);
+    expect(evaded.perfectDodged).toBe(false);
+    expect(evaded.state.counterWindow).toBe(0);
   });
 
   it('moves a dodge as a burst instead of a stat-only defense',()=>{

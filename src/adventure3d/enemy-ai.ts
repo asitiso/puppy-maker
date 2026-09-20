@@ -174,25 +174,53 @@ export function stepEnemyAi(
   return {enemy:{...enemy,position,facingYaw},attack:null};
 }
 
+export type EnemyDamageOptions={counter?:boolean};
+
 export function applyEnemyDamage(
   enemy:AdventureEnemyState,
   damageRaw:number,
   attackSerial:number,
-):{enemy:AdventureEnemyState;damaged:boolean;defeated:boolean}{
-  if(enemy.mode==='defeated'||enemy.hp<=0||enemy.lastHitAttackSerial===attackSerial)return {enemy,damaged:false,defeated:enemy.hp<=0};
-  const damage=Math.max(0,Math.floor(Number.isFinite(damageRaw)?damageRaw:0));
-  if(!damage)return {enemy,damaged:false,defeated:false};
+  options:EnemyDamageOptions={},
+):{enemy:AdventureEnemyState;damaged:boolean;defeated:boolean;blocked:boolean;guardBroken:boolean}{
+  if(enemy.mode==='defeated'||enemy.hp<=0||enemy.lastHitAttackSerial===attackSerial){
+    return {
+      enemy,
+      damaged:false,
+      defeated:enemy.hp<=0,
+      blocked:false,
+      guardBroken:false,
+    };
+  }
+  const baseDamage=Math.max(0,Math.floor(Number.isFinite(damageRaw)?damageRaw:0));
+  if(!baseDamage)return {enemy,damaged:false,defeated:false,blocked:false,guardBroken:false};
+
+  const counter=options.counter===true;
+  const blocked=enemy.archetype==='guard'&&!counter&&enemy.mode!=='stagger';
+  const guardBroken=enemy.archetype==='guard'&&counter;
+  const damage=blocked?Math.max(1,Math.floor(baseDamage*.55)):baseDamage;
   const hp=Math.max(0,enemy.hp-damage);
+  const staggerTime=hp<=0
+    ?0
+    :guardBroken
+      ?.82
+      :counter
+        ?.42
+        :blocked
+          ?.1
+          :.24;
+
   return {
     enemy:{
       ...enemy,
       hp,
       lastHitAttackSerial:attackSerial,
       mode:hp<=0?'defeated':'stagger',
-      timer:hp<=0?0:.24,
+      timer:staggerTime,
     },
     damaged:true,
     defeated:hp<=0,
+    blocked,
+    guardBroken,
   };
 }
 
