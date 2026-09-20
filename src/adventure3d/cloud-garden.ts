@@ -25,6 +25,12 @@ export type CloudGardenState={
   restored:boolean;
 };
 
+export type CloudGardenEntranceVisual={
+  position:Vec3;
+  nearby:boolean;
+  restored:boolean;
+};
+
 export type CloudGardenVisual={
   active:boolean;
   label:string;
@@ -171,6 +177,20 @@ export function cloudGardenEnemiesDefeated(enemies:readonly AdventureEnemyState[
   const participants=enemies.filter(enemy=>isCloudGardenEnemy(enemy));
   return participants.length===cloudEnemyIds.size&&
     participants.every(enemy=>enemy.hp<=0||enemy.mode==='defeated');
+}
+
+export function cloudGardenEntranceVisual(
+  mastered:boolean,
+  restored:boolean,
+  player:Vec3,
+):CloudGardenEntranceVisual|null{
+  if(!mastered)return null;
+  const position=cloudGardenOutsideEntrancePosition();
+  return {
+    position,
+    nearby:playerNearCloudGardenOutsideEntrance(player,true),
+    restored,
+  };
 }
 
 export function cloudGardenVisual(
